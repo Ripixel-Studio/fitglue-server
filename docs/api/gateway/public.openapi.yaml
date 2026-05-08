@@ -608,6 +608,8 @@ components:
                     $ref: '#/components/schemas/ShowcaseTheme'
                 defaultDestination:
                     type: boolean
+                showPhotoGallery:
+                    type: boolean
         ShowcaseProfileEntry:
             type: object
             properties:
@@ -846,6 +848,10 @@ components:
                     type: string
                 ownerProfileSlug:
                     type: string
+                photoUrls:
+                    type: array
+                    items:
+                        type: string
             description: ShowcasedActivity represents a publicly shareable activity snapshot.
         StandardizedActivity:
             type: object

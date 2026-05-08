@@ -310,6 +310,60 @@ func (s *Service) GetShowcaseProfilePictureUploadUrl(ctx context.Context, req *p
 	}, nil
 }
 
+// GetActivityPhotoUploadUrl generates a signed URL for uploading an activity photo directly to GCS.
+func (s *Service) GetActivityPhotoUploadUrl(ctx context.Context, req *pbsvc.GetActivityPhotoUploadUrlRequest) (*pbsvc.GetActivityPhotoUploadUrlResponse, error) {
+	if req.UserId == "" || req.ActivityId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")
+	}
+
+	contentType := req.ContentType
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+
+	validTypes := map[string]string{
+		"image/jpeg": "jpg",
+		"image/png":  "png",
+		"image/webp": "webp",
+		"image/heic": "heic",
+	}
+	ext, ok := validTypes[contentType]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "content_type must be image/jpeg, image/png, image/webp, or image/heic")
+	}
+
+	// Use filename hint extension if provided and valid
+	if req.Filename != "" {
+		parts := strings.Split(req.Filename, ".")
+		if len(parts) > 1 {
+			hintExt := strings.ToLower(parts[len(parts)-1])
+			if hintExt == "jpg" || hintExt == "jpeg" || hintExt == "png" || hintExt == "webp" || hintExt == "heic" {
+				if hintExt == "jpeg" {
+					hintExt = "jpg"
+				}
+				ext = hintExt
+			}
+		}
+	}
+
+	fileUUID := fmt.Sprintf("%d", time.Now().UnixNano())
+	path := fmt.Sprintf("activity_photos/%s/%s/%s.%s", req.UserId, req.ActivityId, fileUUID, ext)
+	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", s.showcaseAssetsBucket, path)
+
+	uploadURL, err := s.blobStore.SignedURL(ctx, s.showcaseAssetsBucket, path, contentType, 10*1024*1024, 15*time.Minute)
+	if err != nil {
+		s.logger.Error(ctx, "failed to generate signed photo upload URL", "error", err)
+		return nil, status.Error(codes.Internal, "failed to generate upload URL")
+	}
+
+	return &pbsvc.GetActivityPhotoUploadUrlResponse{
+		UploadUrl:    uploadURL,
+		PublicUrl:    publicURL,
+		ContentType:  contentType,
+		MaxSizeBytes: 10 * 1024 * 1024,
+	}, nil
+}
+
 // GetPublicShowcaseProfile returns a public showcase profile page by slug, with paginated activities.
 func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPublicShowcaseProfileRequest) (*pbsvc.GetPublicShowcaseProfileResponse, error) {
 	if req.Slug == "" {

@@ -335,6 +335,7 @@ components:
                         - ENRICHER_PROVIDER_RECOVERY_ADVISOR
                         - ENRICHER_PROVIDER_EFFORT_SCORE
                         - ENRICHER_PROVIDER_INTERVALS
+                        - ENRICHER_PROVIDER_PHOTO_UPLOAD
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum

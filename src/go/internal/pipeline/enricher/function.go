@@ -58,6 +58,7 @@ import (
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/pace_summary"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/parkrun"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/personal_records"
+	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/photo_upload"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/power_summary"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/recovery_advisor"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/route_thumbnail"

@@ -133,6 +133,12 @@ service ActivityService {
       body: "*"
     };
   }
+  rpc GetActivityPhotoUploadUrl(GetActivityPhotoUploadUrlRequest) returns (GetActivityPhotoUploadUrlResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activity-photos/upload-url"
+      body: "*"
+    };
+  }
 }
 
 message GetActivityRequest {
@@ -269,6 +275,20 @@ message GetShowcaseProfilePictureUploadUrlRequest {
 }
 
 message GetShowcaseProfilePictureUploadUrlResponse {
+  string upload_url = 1;
+  string public_url = 2;
+  string content_type = 3;
+  int64 max_size_bytes = 4;
+}
+
+message GetActivityPhotoUploadUrlRequest {
+  string user_id = 1;
+  string activity_id = 2;
+  string filename = 3;
+  string content_type = 4;
+}
+
+message GetActivityPhotoUploadUrlResponse {
   string upload_url = 1;
   string public_url = 2;
   string content_type = 3;

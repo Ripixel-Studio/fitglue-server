@@ -517,6 +517,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/activity-photos/upload-url:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetActivityPhotoUploadUrl
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetActivityPhotoUploadUrlGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetActivityPhotoUploadUrlGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/auth-email/send-email-change:
         post:
             tags:
@@ -1844,6 +1868,7 @@ components:
                         - ENRICHER_PROVIDER_RECOVERY_ADVISOR
                         - ENRICHER_PROVIDER_EFFORT_SCORE
                         - ENRICHER_PROVIDER_INTERVALS
+                        - ENRICHER_PROVIDER_PHOTO_UPLOAD
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum
@@ -1877,6 +1902,26 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        GetActivityPhotoUploadUrlGatewayRequest:
+            type: object
+            properties:
+                activityId:
+                    type: string
+                filename:
+                    type: string
+                contentType:
+                    type: string
+        GetActivityPhotoUploadUrlGatewayResponse:
+            type: object
+            properties:
+                uploadUrl:
+                    type: string
+                publicUrl:
+                    type: string
+                contentType:
+                    type: string
+                maxSizeBytes:
+                    type: string
         GetActivityStatsGatewayResponse:
             type: object
             properties:
@@ -2812,6 +2857,8 @@ components:
                     $ref: '#/components/schemas/ShowcaseTheme'
                 defaultDestination:
                     type: boolean
+                showPhotoGallery:
+                    type: boolean
         ShowcaseProfileEntry:
             type: object
             properties:
@@ -3050,6 +3097,10 @@ components:
                     type: string
                 ownerProfileSlug:
                     type: string
+                photoUrls:
+                    type: array
+                    items:
+                        type: string
             description: ShowcasedActivity represents a publicly shareable activity snapshot.
         SpotifyIntegration:
             type: object

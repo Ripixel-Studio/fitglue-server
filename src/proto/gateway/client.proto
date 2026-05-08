@@ -351,6 +351,12 @@ service ClientGatewayService {
       body: "*"
     };
   }
+  rpc GetActivityPhotoUploadUrl(GetActivityPhotoUploadUrlGatewayRequest) returns (GetActivityPhotoUploadUrlGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/activity-photos/upload-url"
+      body: "*"
+    };
+  }
 
   // ===================== Data Export =====================
   rpc ExportData(EmptyRequest) returns (ExportDataGatewayResponse) {
@@ -634,6 +640,17 @@ message GetPictureUploadUrlGatewayRequest {
   string content_type = 1;
 }
 message GetPictureUploadUrlGatewayResponse {
+  string upload_url = 1;
+  string public_url = 2;
+  string content_type = 3;
+  int64 max_size_bytes = 4;
+}
+message GetActivityPhotoUploadUrlGatewayRequest {
+  string activity_id = 1;
+  string filename = 2;
+  string content_type = 3;
+}
+message GetActivityPhotoUploadUrlGatewayResponse {
   string upload_url = 1;
   string public_url = 2;
   string content_type = 3;

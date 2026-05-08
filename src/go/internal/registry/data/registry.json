@@ -3540,6 +3540,45 @@
       "enricherProviderType": 39
     },
     {
+      "id": "photo-upload",
+      "type": 2,
+      "name": "Photo Upload",
+      "description": "Upload activity photos and attach them to your showcase",
+      "icon": "📸",
+      "enabled": true,
+      "requiredIntegrations": [],
+      "configSchema": [],
+      "marketingDescription": "\n### Capture Your Activity in Photos\nAttach photos to your showcase activities to bring them to life. Perfect for race finishes, scenic routes, and memorable moments.\n\n### How it works\nWhen an activity is imported, FitGlue pauses the pipeline and asks you to upload photos (up to 10). Photos are stored securely and displayed on your public showcase activity page and profile gallery.\n  ",
+      "features": [
+        "✅ Upload up to 10 photos per activity",
+        "✅ Photos displayed on your public showcase page",
+        "✅ Optional profile gallery section",
+        "✅ Compatible with JPEG, PNG, WebP, and HEIC formats",
+        "✅ Direct-to-storage upload for fast performance"
+      ],
+      "transformations": [
+        {
+          "field": "photoUrls",
+          "label": "Activity Photos",
+          "before": "(no photos)",
+          "after": "",
+          "visualType": "photo-gallery",
+          "afterHtml": ""
+        }
+      ],
+      "useCases": [
+        "Document race finishes and scenic highlights",
+        "Add before/after photos to strength training",
+        "Showcase group rides and runs",
+        "Create shareable activity memories"
+      ],
+      "category": "media",
+      "sortOrder": 5,
+      "isPremium": false,
+      "popularityScore": 70,
+      "enricherProviderType": 40
+    },
+    {
       "id": "mock",
       "type": 2,
       "name": "Mock",

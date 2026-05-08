@@ -135,6 +135,9 @@ func (m *mockActivityServiceClient) RemoveShowcaseEntry(ctx context.Context, in 
 func (m *mockActivityServiceClient) GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *activitypb.GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*activitypb.GetShowcaseProfilePictureUploadUrlResponse, error) {
 	return &activitypb.GetShowcaseProfilePictureUploadUrlResponse{}, nil
 }
+func (m *mockActivityServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, in *activitypb.GetActivityPhotoUploadUrlRequest, opts ...grpc.CallOption) (*activitypb.GetActivityPhotoUploadUrlResponse, error) {
+	return &activitypb.GetActivityPhotoUploadUrlResponse{}, nil
+}
 func (m *mockActivityServiceClient) GetPublicShowcaseProfile(ctx context.Context, in *activitypb.GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*activitypb.GetPublicShowcaseProfileResponse, error) {
 	return &activitypb.GetPublicShowcaseProfileResponse{}, nil
 }

@@ -43,6 +43,7 @@ const (
 	ActivityService_AddShowcaseEntry_FullMethodName                   = "/fitglue.services.activity.ActivityService/AddShowcaseEntry"
 	ActivityService_RemoveShowcaseEntry_FullMethodName                = "/fitglue.services.activity.ActivityService/RemoveShowcaseEntry"
 	ActivityService_GetShowcaseProfilePictureUploadUrl_FullMethodName = "/fitglue.services.activity.ActivityService/GetShowcaseProfilePictureUploadUrl"
+	ActivityService_GetActivityPhotoUploadUrl_FullMethodName          = "/fitglue.services.activity.ActivityService/GetActivityPhotoUploadUrl"
 )
 
 // ActivityServiceClient is the client API for ActivityService service.
@@ -72,6 +73,7 @@ type ActivityServiceClient interface {
 	AddShowcaseEntry(ctx context.Context, in *AddShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RemoveShowcaseEntry(ctx context.Context, in *RemoveShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*GetShowcaseProfilePictureUploadUrlResponse, error)
+	GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlResponse, error)
 }
 
 type activityServiceClient struct {
@@ -302,6 +304,16 @@ func (c *activityServiceClient) GetShowcaseProfilePictureUploadUrl(ctx context.C
 	return out, nil
 }
 
+func (c *activityServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActivityPhotoUploadUrlResponse)
+	err := c.cc.Invoke(ctx, ActivityService_GetActivityPhotoUploadUrl_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActivityServiceServer is the server API for ActivityService service.
 // All implementations must embed UnimplementedActivityServiceServer
 // for forward compatibility.
@@ -329,6 +341,7 @@ type ActivityServiceServer interface {
 	AddShowcaseEntry(context.Context, *AddShowcaseEntryRequest) (*emptypb.Empty, error)
 	RemoveShowcaseEntry(context.Context, *RemoveShowcaseEntryRequest) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(context.Context, *GetShowcaseProfilePictureUploadUrlRequest) (*GetShowcaseProfilePictureUploadUrlResponse, error)
+	GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlRequest) (*GetActivityPhotoUploadUrlResponse, error)
 	mustEmbedUnimplementedActivityServiceServer()
 }
 
@@ -404,6 +417,9 @@ func (UnimplementedActivityServiceServer) RemoveShowcaseEntry(context.Context, *
 }
 func (UnimplementedActivityServiceServer) GetShowcaseProfilePictureUploadUrl(context.Context, *GetShowcaseProfilePictureUploadUrlRequest) (*GetShowcaseProfilePictureUploadUrlResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetShowcaseProfilePictureUploadUrl not implemented")
+}
+func (UnimplementedActivityServiceServer) GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlRequest) (*GetActivityPhotoUploadUrlResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetActivityPhotoUploadUrl not implemented")
 }
 func (UnimplementedActivityServiceServer) mustEmbedUnimplementedActivityServiceServer() {}
 func (UnimplementedActivityServiceServer) testEmbeddedByValue()                         {}
@@ -822,6 +838,24 @@ func _ActivityService_GetShowcaseProfilePictureUploadUrl_Handler(srv interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActivityService_GetActivityPhotoUploadUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActivityPhotoUploadUrlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetActivityPhotoUploadUrl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetActivityPhotoUploadUrl_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetActivityPhotoUploadUrl(ctx, req.(*GetActivityPhotoUploadUrlRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActivityService_ServiceDesc is the grpc.ServiceDesc for ActivityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -916,6 +950,10 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetShowcaseProfilePictureUploadUrl",
 			Handler:    _ActivityService_GetShowcaseProfilePictureUploadUrl_Handler,
+		},
+		{
+			MethodName: "GetActivityPhotoUploadUrl",
+			Handler:    _ActivityService_GetActivityPhotoUploadUrl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

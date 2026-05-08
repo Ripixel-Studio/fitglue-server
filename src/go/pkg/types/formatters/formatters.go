@@ -789,6 +789,8 @@ func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 		return "Effort Score"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS:
 		return "Intervals"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD:
+		return "Photo Upload"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -918,6 +920,9 @@ func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 		"effort score":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
 		"enricher_provider_intervals":            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS,
 		"intervals":                              pbplugin.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS,
+		"enricher_provider_photo_upload":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD,
+		"photo_upload":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD,
+		"photo upload":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD,
 		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}

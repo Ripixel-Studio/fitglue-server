@@ -36,6 +36,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Post("/users/me/showcase-management/profile/entries/{showcaseId}", s.handleAddShowcaseEntry)
 	r.Delete("/users/me/showcase-management/profile/entries/{showcaseId}", s.handleRemoveShowcaseEntry)
 	r.Post("/users/me/showcase-management/profile/picture", s.handleGetShowcaseProfilePictureUploadUrl)
+	r.Post("/users/me/activity-photos/upload-url", s.handleGetActivityPhotoUploadUrl)
 }
 
 func (s *APIServer) handleListActivities(w http.ResponseWriter, r *http.Request) {
@@ -458,6 +459,29 @@ func (s *APIServer) handleGetShowcaseProfilePictureUploadUrl(w http.ResponseWrit
 	reqBody.UserId = token.UID
 
 	res, err := s.activitySvc.GetShowcaseProfilePictureUploadUrl(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleGetActivityPhotoUploadUrl(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody activitypb.GetActivityPhotoUploadUrlRequest
+	if err := decodeProto(r, &reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+
+	res, err := s.activitySvc.GetActivityPhotoUploadUrl(r.Context(), &reqBody)
 	if err != nil {
 		WriteError(w, err)
 		return

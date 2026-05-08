@@ -185,6 +185,11 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		tags = strings.Split(tagsStr, ",")
 	}
 
+	var photoURLs []string
+	if photoURLsStr := payload.Metadata["photo_urls"]; photoURLsStr != "" {
+		photoURLs = strings.Split(photoURLsStr, ",")
+	}
+
 	showcasedActivity := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          showcaseID,
 		ActivityId:          payload.GetActivityId(),
@@ -203,6 +208,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		CreatedAt:           timestamppb.New(createdAt),
 		ExpiresAt:           nil,
 		OwnerDisplayName:    u.resolveOwnerDisplayName(ctx, payload.UserId, userRec, logger),
+		PhotoUrls:           photoURLs,
 	}
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {
@@ -288,6 +294,11 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		tags = strings.Split(tagsStr, ",")
 	}
 
+	var updatePhotoURLs []string
+	if photoURLsStr := payload.Metadata["photo_urls"]; photoURLsStr != "" {
+		updatePhotoURLs = strings.Split(photoURLsStr, ",")
+	}
+
 	showcasedActivity := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          showcaseID,
 		ActivityId:          payload.GetActivityId(),
@@ -305,6 +316,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		PipelineExecutionId: payload.PipelineExecutionId,
 		CreatedAt:           timestamppb.New(createdAt),
 		OwnerDisplayName:    u.resolveOwnerDisplayName(ctx, payload.UserId, userRec, logger),
+		PhotoUrls:           updatePhotoURLs,
 	}
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {

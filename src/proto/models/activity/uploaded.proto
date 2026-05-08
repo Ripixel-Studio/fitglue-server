@@ -50,6 +50,7 @@ message ShowcasedActivity {
   string activity_data_uri = 18;
   string owner_profile_picture_url = 19;
   string owner_profile_slug = 20;
+  repeated string photo_urls = 21;
 }
 
 message ShowcaseProfileEntry {
@@ -100,4 +101,5 @@ message ShowcaseProfile {
   ShowcaseTheme theme = 18;         
 
   bool default_destination = 19;    // Auto-add Showcase destination when creating new pipelines
+  bool show_photo_gallery = 20;
 }

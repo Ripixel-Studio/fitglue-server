@@ -146,6 +146,7 @@ type ShowcasedActivity struct {
 	ActivityDataUri        string                 `protobuf:"bytes,18,opt,name=activity_data_uri,json=activityDataUri,proto3" json:"activity_data_uri,omitempty"`
 	OwnerProfilePictureUrl string                 `protobuf:"bytes,19,opt,name=owner_profile_picture_url,json=ownerProfilePictureUrl,proto3" json:"owner_profile_picture_url,omitempty"`
 	OwnerProfileSlug       string                 `protobuf:"bytes,20,opt,name=owner_profile_slug,json=ownerProfileSlug,proto3" json:"owner_profile_slug,omitempty"`
+	PhotoUrls              []string               `protobuf:"bytes,21,rep,name=photo_urls,json=photoUrls,proto3" json:"photo_urls,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -318,6 +319,13 @@ func (x *ShowcasedActivity) GetOwnerProfileSlug() string {
 		return x.OwnerProfileSlug
 	}
 	return ""
+}
+
+func (x *ShowcasedActivity) GetPhotoUrls() []string {
+	if x != nil {
+		return x.PhotoUrls
+	}
+	return nil
 }
 
 type ShowcaseProfileEntry struct {
@@ -533,6 +541,7 @@ type ShowcaseProfile struct {
 	Visible              bool                    `protobuf:"varint,17,opt,name=visible,proto3" json:"visible,omitempty"`
 	Theme                *ShowcaseTheme          `protobuf:"bytes,18,opt,name=theme,proto3" json:"theme,omitempty"`
 	DefaultDestination   bool                    `protobuf:"varint,19,opt,name=default_destination,json=defaultDestination,proto3" json:"default_destination,omitempty"` // Auto-add Showcase destination when creating new pipelines
+	ShowPhotoGallery     bool                    `protobuf:"varint,20,opt,name=show_photo_gallery,json=showPhotoGallery,proto3" json:"show_photo_gallery,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -700,6 +709,13 @@ func (x *ShowcaseProfile) GetDefaultDestination() bool {
 	return false
 }
 
+func (x *ShowcaseProfile) GetShowPhotoGallery() bool {
+	if x != nil {
+		return x.ShowPhotoGallery
+	}
+	return false
+}
+
 var File_models_activity_uploaded_proto protoreflect.FileDescriptor
 
 const file_models_activity_uploaded_proto_rawDesc = "" +
@@ -716,7 +732,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\vdestination\x18\x06 \x01(\x0e2&.fitglue.models.plugin.DestinationTypeR\vdestination\x12%\n" +
 	"\x0edestination_id\x18\a \x01(\tR\rdestinationId\x12;\n" +
 	"\vuploaded_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"uploadedAt\"\xf1\b\n" +
+	"uploadedAt\"\x90\t\n" +
 	"\x11ShowcasedActivity\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x1f\n" +
@@ -744,7 +760,9 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x12owner_display_name\x18\x11 \x01(\tR\x10ownerDisplayName\x12*\n" +
 	"\x11activity_data_uri\x18\x12 \x01(\tR\x0factivityDataUri\x129\n" +
 	"\x19owner_profile_picture_url\x18\x13 \x01(\tR\x16ownerProfilePictureUrl\x12,\n" +
-	"\x12owner_profile_slug\x18\x14 \x01(\tR\x10ownerProfileSlug\x1aE\n" +
+	"\x12owner_profile_slug\x18\x14 \x01(\tR\x10ownerProfileSlug\x12\x1d\n" +
+	"\n" +
+	"photo_urls\x18\x15 \x03(\tR\tphotoUrls\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
@@ -771,7 +789,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x13custom_accent_color\x18\x02 \x01(\tR\x11customAccentColor\x12!\n" +
 	"\fanimation_id\x18\x03 \x01(\tR\vanimationId\x12\x1d\n" +
 	"\n" +
-	"card_style\x18\x04 \x01(\tR\tcardStyle\"\xcc\x06\n" +
+	"card_style\x18\x04 \x01(\tR\tcardStyle\"\xfa\x06\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -796,7 +814,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x13profile_picture_url\x18\x10 \x01(\tR\x11profilePictureUrl\x12\x18\n" +
 	"\avisible\x18\x11 \x01(\bR\avisible\x12<\n" +
 	"\x05theme\x18\x12 \x01(\v2&.fitglue.models.activity.ShowcaseThemeR\x05theme\x12/\n" +
-	"\x13default_destination\x18\x13 \x01(\bR\x12defaultDestinationB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
+	"\x13default_destination\x18\x13 \x01(\bR\x12defaultDestination\x12,\n" +
+	"\x12show_photo_gallery\x18\x14 \x01(\bR\x10showPhotoGalleryB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
 
 var (
 	file_models_activity_uploaded_proto_rawDescOnce sync.Once

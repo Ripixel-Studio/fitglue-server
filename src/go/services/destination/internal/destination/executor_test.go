@@ -189,6 +189,9 @@ func (m *mockActivityServiceClient) GetPublicShowcaseProfile(ctx context.Context
 func (m *mockActivityServiceClient) GetActivityStats(ctx context.Context, in *activitypb.GetActivityStatsRequest, opts ...grpc.CallOption) (*activitypb.GetActivityStatsResponse, error) {
 	return nil, nil
 }
+func (m *mockActivityServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, in *activitypb.GetActivityPhotoUploadUrlRequest, opts ...grpc.CallOption) (*activitypb.GetActivityPhotoUploadUrlResponse, error) {
+	return &activitypb.GetActivityPhotoUploadUrlResponse{}, nil
+}
 
 type mockNotificationService struct{}
 
