@@ -13,6 +13,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
+	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	ghclient "github.com/fitglue/server/src/go/pkg/integrations/github"
@@ -114,6 +115,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 
 	fitFileName := ""
 	if fitFileUri, ok := payload.Metadata["fit_file_uri"]; ok && fitFileUri != "" {
+		logger.Info("FIT file URI found, downloading for GitHub commit", "uri", fitFileUri)
 		fitData, fitErr := u.downloadFitFile(ctx, fitFileUri)
 		if fitErr != nil {
 			logger.Warn("Failed to download FIT file, continuing without it", "error", fitErr)
@@ -128,6 +130,8 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 				logger.Info("Committed FIT file to GitHub", "path", fitPath, "size", len(fitData))
 			}
 		}
+	} else {
+		logger.Info("No FIT file URI in payload metadata, skipping FIT commit")
 	}
 
 	markdownContent := buildMarkdownContent(payload, activityName, fitFileName)
@@ -230,6 +234,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 
 	fitFileName := ""
 	if fitFileUri, ok := payload.Metadata["fit_file_uri"]; ok && fitFileUri != "" {
+		logger.Info("FIT file URI found, downloading for GitHub update commit", "uri", fitFileUri)
 		fitData, fitErr := u.downloadFitFile(ctx, fitFileUri)
 		if fitErr != nil {
 			logger.Warn("Failed to download FIT file for update, continuing without it", "error", fitErr)
@@ -245,6 +250,8 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 				logger.Info("Updated FIT file in GitHub", "path", fitPath, "size", len(fitData))
 			}
 		}
+	} else {
+		logger.Info("No FIT file URI in payload metadata, skipping FIT update commit")
 	}
 
 	markdownContent := buildMarkdownContent(payload, activityName, fitFileName)
@@ -417,11 +424,10 @@ func (u *Uploader) createOrUpdateBinaryFile(ctx context.Context, ghClient *ghcli
 }
 
 func (u *Uploader) downloadFitFile(ctx context.Context, fitFileUri string) ([]byte, error) {
-	bucketName := u.svc.Config.GCSArtifactBucket
-	if bucketName == "" {
-		bucketName = "fitglue-server-dev-artifacts"
+	bucketName, objectName, ok := activityPkg.ParseGCSURI(fitFileUri)
+	if !ok {
+		return nil, fmt.Errorf("invalid FIT file URI: %q", fitFileUri)
 	}
-	objectName := strings.TrimPrefix(fitFileUri, "gs://"+bucketName+"/")
 
 	data, err := u.svc.Store.Get(ctx, bucketName, objectName)
 	if err != nil {
