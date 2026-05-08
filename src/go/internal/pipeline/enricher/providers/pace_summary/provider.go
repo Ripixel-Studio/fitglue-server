@@ -211,16 +211,56 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	}, nil
 }
 
+// lapElapsedSeconds returns the elapsed time for a lap in seconds.
+// For structured workouts (e.g. Garmin), TotalElapsedTime may be 0.
+// In that case we fall back to computing the duration from timestamps:
+// either (nextLapStartTime - thisLapStartTime) when a successor lap exists,
+// or (sessionEndTime - thisLapStartTime) for the final lap.
+func lapElapsedSeconds(lap *pbactivity.Lap, nextLapStartTime *timestamppb.Timestamp, sessionEndTime *timestamppb.Timestamp) float64 {
+	if lap.TotalElapsedTime > 0 {
+		return lap.TotalElapsedTime
+	}
+	if lap.StartTime == nil {
+		return 0
+	}
+	if nextLapStartTime != nil {
+		return nextLapStartTime.AsTime().Sub(lap.StartTime.AsTime()).Seconds()
+	}
+	if sessionEndTime != nil {
+		return sessionEndTime.AsTime().Sub(lap.StartTime.AsTime()).Seconds()
+	}
+	return 0
+}
+
 // calculateSplitsFromLaps attempts to derive km splits from lap data
 func calculateSplitsFromLaps(activity *pbactivity.StandardizedActivity) []Split {
 	var splits []Split
 
 	for _, session := range activity.Sessions {
-		for _, lap := range session.Laps {
+		laps := session.Laps
+
+		// Compute a session end time for the final lap's fallback
+		var sessionEndTime *timestamppb.Timestamp
+		if session.StartTime != nil && session.TotalElapsedTime > 0 {
+			end := session.StartTime.AsTime().Add(time.Duration(session.TotalElapsedTime * float64(time.Second)))
+			sessionEndTime = timestamppb.New(end)
+		}
+
+		for i, lap := range laps {
+			var nextStart *timestamppb.Timestamp
+			if i+1 < len(laps) && laps[i+1].StartTime != nil {
+				nextStart = laps[i+1].StartTime
+			}
+
+			elapsedSec := lapElapsedSeconds(lap, nextStart, sessionEndTime)
+
 			// Each lap with distance >= 900m is roughly a km split
 			if lap.TotalDistance >= 900 && lap.TotalDistance <= 1100 {
-				duration := time.Duration(lap.TotalElapsedTime * float64(time.Second))
-				pace := (lap.TotalElapsedTime / lap.TotalDistance) * 1000 / 60 // min/km
+				if elapsedSec <= 0 {
+					continue
+				}
+				duration := time.Duration(elapsedSec * float64(time.Second))
+				pace := (elapsedSec / lap.TotalDistance) * 1000 / 60 // min/km
 				splits = append(splits, Split{
 					Distance:  lap.TotalDistance,
 					Duration:  duration,
@@ -230,13 +270,13 @@ func calculateSplitsFromLaps(activity *pbactivity.StandardizedActivity) []Split 
 			} else if lap.TotalDistance > 1100 {
 				// Longer lap - estimate number of km splits within
 				numKm := int(math.Floor(lap.TotalDistance / 1000))
-				if numKm > 0 {
-					avgPace := (lap.TotalElapsedTime / lap.TotalDistance) * 1000 / 60
-					lapDuration := lap.TotalElapsedTime / float64(numKm)
-					for i := 0; i < numKm; i++ {
+				if numKm > 0 && elapsedSec > 0 {
+					avgPace := (elapsedSec / lap.TotalDistance) * 1000 / 60
+					lapDuration := elapsedSec / float64(numKm)
+					for k := 0; k < numKm; k++ {
 						var splitStart *timestamppb.Timestamp
 						if lap.StartTime != nil {
-							offset := time.Duration(float64(i) * lapDuration * float64(time.Second))
+							offset := time.Duration(float64(k) * lapDuration * float64(time.Second))
 							splitStart = timestamppb.New(lap.StartTime.AsTime().Add(offset))
 						}
 						splits = append(splits, Split{
