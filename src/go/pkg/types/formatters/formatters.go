@@ -791,6 +791,10 @@ func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 		return "Intervals"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD:
 		return "Photo Upload"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MANUAL_WORKOUT_ENTRY:
+		return "Manual Workout Entry"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_ACTIVITY_TYPE:
+		return "Ai Activity Type"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -923,6 +927,12 @@ func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 		"enricher_provider_photo_upload":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD,
 		"photo_upload":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD,
 		"photo upload":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PHOTO_UPLOAD,
+		"enricher_provider_manual_workout_entry": pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MANUAL_WORKOUT_ENTRY,
+		"manual_workout_entry":                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MANUAL_WORKOUT_ENTRY,
+		"manual workout entry":                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MANUAL_WORKOUT_ENTRY,
+		"enricher_provider_ai_activity_type":     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_ACTIVITY_TYPE,
+		"ai_activity_type":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_ACTIVITY_TYPE,
+		"ai activity type":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_ACTIVITY_TYPE,
 		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}

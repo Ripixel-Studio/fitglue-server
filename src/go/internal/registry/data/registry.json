@@ -2353,6 +2353,33 @@
       "enricherProviderType": 15
     },
     {
+      "id": "ai-activity-type",
+      "type": 2,
+      "name": "AI Activity Type",
+      "description": "Uses AI to infer the correct activity type when the source provides a generic category.",
+      "icon": "🤖",
+      "enabled": true,
+      "requiredIntegrations": [],
+      "configSchema": [],
+      "marketingDescription": "\n### AI-Powered Activity Type Detection\nWhen your fitness device or app records a generic activity type (such as Workout), this booster uses Gemini AI to analyse the activity name, duration, distance, heart rate, GPS data, and strength set details to automatically infer the most specific type — Run, WeightTraining, Ride, and many more.\n\n### How it works\nFitGlue examines all available signals from the activity and sends them to Gemini for classification. The AI responds with a precise activity type from the full FitGlue taxonomy, ensuring your activity feed, statistics, and destination uploads are correctly categorised.\n  ",
+      "features": [
+        "✅ Automatically corrects generic activity types",
+        "✅ Analyses name, distance, GPS, heart rate, and strength data",
+        "✅ Runs in Phase 2 with full enriched context available",
+        "✅ Falls back gracefully if AI is unavailable"
+      ],
+      "transformations": [],
+      "useCases": [
+        "Fix Workout activities imported from Hevy or Apple Health",
+        "Ensure correct type is sent to Strava and TrainingPeaks"
+      ],
+      "category": "ai_images",
+      "sortOrder": 2,
+      "isPremium": false,
+      "popularityScore": 80,
+      "enricherProviderType": 42
+    },
+    {
       "id": "pace-summary",
       "type": 2,
       "name": "Pace Summary",
@@ -3577,6 +3604,43 @@
       "isPremium": false,
       "popularityScore": 70,
       "enricherProviderType": 40
+    },
+    {
+      "id": "manual-workout-entry",
+      "type": 2,
+      "name": "Manual Workout Entry",
+      "description": "Pause the pipeline to manually log exercises, sets, and reps for activities that don't include strength data.",
+      "icon": "✍️",
+      "enabled": true,
+      "requiredIntegrations": [],
+      "configSchema": [],
+      "marketingDescription": "\n### Log Strength Workouts Manually\nFor activities that don't come with exercise data, FitGlue pauses the pipeline and asks you to log your exercises, sets, and reps — just like you would in a dedicated strength app.\n\n### How it works\nWhen an activity without strength data is imported, FitGlue prompts you to enter your workout. Provide each exercise with its sets, reps, and weights and FitGlue will populate the full workout summary for showcase and downstream enrichers.\n  ",
+      "features": [
+        "✅ Log any exercise with sets, reps, and weight",
+        "✅ Supports supersets and set types (warmup, dropset, failure)",
+        "✅ Works with all FitGlue destinations",
+        "✅ Compatible with the workout_summary enricher"
+      ],
+      "transformations": [
+        {
+          "field": "strengthSets",
+          "label": "Strength Sets",
+          "before": "(no strength data)",
+          "after": "Manually entered exercises and sets",
+          "visualType": "text",
+          "afterHtml": ""
+        }
+      ],
+      "useCases": [
+        "Log gym sessions recorded without a strength app",
+        "Add workout details to activities from sources that don't include exercise data",
+        "Capture strength training alongside cardio"
+      ],
+      "category": "strength",
+      "sortOrder": 6,
+      "isPremium": false,
+      "popularityScore": 65,
+      "enricherProviderType": 41
     },
     {
       "id": "mock",

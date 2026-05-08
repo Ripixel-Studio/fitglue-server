@@ -556,6 +556,13 @@ components:
                 maxHeartRate:
                     type: integer
                     format: int32
+        ShowcaseLink:
+            type: object
+            properties:
+                label:
+                    type: string
+                url:
+                    type: string
         ShowcaseProfile:
             type: object
             properties:
@@ -610,6 +617,10 @@ components:
                     type: boolean
                 showPhotoGallery:
                     type: boolean
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseLink'
         ShowcaseProfileEntry:
             type: object
             properties:

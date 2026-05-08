@@ -520,6 +520,58 @@ func (x *ShowcaseTheme) GetCardStyle() string {
 	return ""
 }
 
+type ShowcaseLink struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Label         string                 `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseLink) Reset() {
+	*x = ShowcaseLink{}
+	mi := &file_models_activity_uploaded_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseLink) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseLink) ProtoMessage() {}
+
+func (x *ShowcaseLink) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_uploaded_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseLink.ProtoReflect.Descriptor instead.
+func (*ShowcaseLink) Descriptor() ([]byte, []int) {
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ShowcaseLink) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *ShowcaseLink) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 type ShowcaseProfile struct {
 	state                protoimpl.MessageState  `protogen:"open.v1"`
 	Slug                 string                  `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
@@ -542,13 +594,14 @@ type ShowcaseProfile struct {
 	Theme                *ShowcaseTheme          `protobuf:"bytes,18,opt,name=theme,proto3" json:"theme,omitempty"`
 	DefaultDestination   bool                    `protobuf:"varint,19,opt,name=default_destination,json=defaultDestination,proto3" json:"default_destination,omitempty"` // Auto-add Showcase destination when creating new pipelines
 	ShowPhotoGallery     bool                    `protobuf:"varint,20,opt,name=show_photo_gallery,json=showPhotoGallery,proto3" json:"show_photo_gallery,omitempty"`
+	Links                []*ShowcaseLink         `protobuf:"bytes,21,rep,name=links,proto3" json:"links,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ShowcaseProfile) Reset() {
 	*x = ShowcaseProfile{}
-	mi := &file_models_activity_uploaded_proto_msgTypes[4]
+	mi := &file_models_activity_uploaded_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +613,7 @@ func (x *ShowcaseProfile) String() string {
 func (*ShowcaseProfile) ProtoMessage() {}
 
 func (x *ShowcaseProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_uploaded_proto_msgTypes[4]
+	mi := &file_models_activity_uploaded_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +626,7 @@ func (x *ShowcaseProfile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShowcaseProfile.ProtoReflect.Descriptor instead.
 func (*ShowcaseProfile) Descriptor() ([]byte, []int) {
-	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{4}
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ShowcaseProfile) GetSlug() string {
@@ -716,6 +769,13 @@ func (x *ShowcaseProfile) GetShowPhotoGallery() bool {
 	return false
 }
 
+func (x *ShowcaseProfile) GetLinks() []*ShowcaseLink {
+	if x != nil {
+		return x.Links
+	}
+	return nil
+}
+
 var File_models_activity_uploaded_proto protoreflect.FileDescriptor
 
 const file_models_activity_uploaded_proto_rawDesc = "" +
@@ -789,7 +849,10 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x13custom_accent_color\x18\x02 \x01(\tR\x11customAccentColor\x12!\n" +
 	"\fanimation_id\x18\x03 \x01(\tR\vanimationId\x12\x1d\n" +
 	"\n" +
-	"card_style\x18\x04 \x01(\tR\tcardStyle\"\xfa\x06\n" +
+	"card_style\x18\x04 \x01(\tR\tcardStyle\"6\n" +
+	"\fShowcaseLink\x12\x14\n" +
+	"\x05label\x18\x01 \x01(\tR\x05label\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\"\xb7\a\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -815,7 +878,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\avisible\x18\x11 \x01(\bR\avisible\x12<\n" +
 	"\x05theme\x18\x12 \x01(\v2&.fitglue.models.activity.ShowcaseThemeR\x05theme\x12/\n" +
 	"\x13default_destination\x18\x13 \x01(\bR\x12defaultDestination\x12,\n" +
-	"\x12show_photo_gallery\x18\x14 \x01(\bR\x10showPhotoGalleryB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
+	"\x12show_photo_gallery\x18\x14 \x01(\bR\x10showPhotoGallery\x12;\n" +
+	"\x05links\x18\x15 \x03(\v2%.fitglue.models.activity.ShowcaseLinkR\x05linksB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
 
 var (
 	file_models_activity_uploaded_proto_rawDescOnce sync.Once
@@ -829,45 +893,47 @@ func file_models_activity_uploaded_proto_rawDescGZIP() []byte {
 	return file_models_activity_uploaded_proto_rawDescData
 }
 
-var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_models_activity_uploaded_proto_goTypes = []any{
 	(*UploadedActivityRecord)(nil), // 0: fitglue.models.activity.UploadedActivityRecord
 	(*ShowcasedActivity)(nil),      // 1: fitglue.models.activity.ShowcasedActivity
 	(*ShowcaseProfileEntry)(nil),   // 2: fitglue.models.activity.ShowcaseProfileEntry
 	(*ShowcaseTheme)(nil),          // 3: fitglue.models.activity.ShowcaseTheme
-	(*ShowcaseProfile)(nil),        // 4: fitglue.models.activity.ShowcaseProfile
-	nil,                            // 5: fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
-	(ActivitySource)(0),            // 6: fitglue.models.activity.ActivitySource
-	(*timestamppb.Timestamp)(nil),  // 7: google.protobuf.Timestamp
-	(plugin.DestinationType)(0),    // 8: fitglue.models.plugin.DestinationType
-	(ActivityType)(0),              // 9: fitglue.models.activity.ActivityType
-	(*StandardizedActivity)(nil),   // 10: fitglue.models.activity.StandardizedActivity
+	(*ShowcaseLink)(nil),           // 4: fitglue.models.activity.ShowcaseLink
+	(*ShowcaseProfile)(nil),        // 5: fitglue.models.activity.ShowcaseProfile
+	nil,                            // 6: fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
+	(ActivitySource)(0),            // 7: fitglue.models.activity.ActivitySource
+	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
+	(plugin.DestinationType)(0),    // 9: fitglue.models.plugin.DestinationType
+	(ActivityType)(0),              // 10: fitglue.models.activity.ActivityType
+	(*StandardizedActivity)(nil),   // 11: fitglue.models.activity.StandardizedActivity
 }
 var file_models_activity_uploaded_proto_depIdxs = []int32{
-	6,  // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
-	7,  // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
-	8,  // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
-	7,  // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
-	9,  // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
-	6,  // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
-	7,  // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	10, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
-	5,  // 8: fitglue.models.activity.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
-	7,  // 9: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	7,  // 10: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	9,  // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
-	6,  // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
-	7,  // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
+	7,  // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
+	8,  // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
+	9,  // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
+	8,  // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
+	10, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
+	7,  // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
+	8,  // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	11, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
+	6,  // 8: fitglue.models.activity.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
+	8,  // 9: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	8,  // 10: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	10, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
+	7,  // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
+	8,  // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
 	2,  // 14: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	7,  // 15: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
-	7,  // 16: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
-	7,  // 17: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
+	8,  // 15: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
+	8,  // 16: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
+	8,  // 17: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
 	3,  // 18: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
-	19, // [19:19] is the sub-list for method output_type
-	19, // [19:19] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	4,  // 19: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_uploaded_proto_init() }
@@ -884,7 +950,7 @@ func file_models_activity_uploaded_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_uploaded_proto_rawDesc), len(file_models_activity_uploaded_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -16,6 +16,12 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+const (
+	maxLinks     = 10
+	maxLabelLen  = 50
+	maxURLLen    = 200
+)
+
 // Ensure unused imports are referenced
 var _ = time.Minute
 
@@ -74,6 +80,22 @@ func (s *Service) GetShowcaseSettings(ctx context.Context, req *pbsvc.GetShowcas
 func (s *Service) UpdateShowcaseSettings(ctx context.Context, req *pbsvc.UpdateShowcaseSettingsRequest) (*pbactivity.ShowcaseProfile, error) {
 	if req.UserId == "" || req.Settings == nil {
 		return nil, status.Error(codes.InvalidArgument, "user_id and settings are required")
+	}
+
+	// Validate links
+	if len(req.Settings.Links) > maxLinks {
+		return nil, status.Errorf(codes.InvalidArgument, "too many links: maximum is %d", maxLinks)
+	}
+	for i, link := range req.Settings.Links {
+		if len(link.Label) > maxLabelLen {
+			return nil, status.Errorf(codes.InvalidArgument, "link %d: label exceeds %d characters", i, maxLabelLen)
+		}
+		if len(link.Url) > maxURLLen {
+			return nil, status.Errorf(codes.InvalidArgument, "link %d: URL exceeds %d characters", i, maxURLLen)
+		}
+		if !strings.HasPrefix(link.Url, "https://") {
+			return nil, status.Errorf(codes.InvalidArgument, "link %d: URL must start with https://", i)
+		}
 	}
 
 	// Ensure the user ID is set on the settings

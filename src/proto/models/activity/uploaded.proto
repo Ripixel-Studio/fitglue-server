@@ -69,10 +69,15 @@ message ShowcaseProfileEntry {
 }
 
 message ShowcaseTheme {
-  string theme_id = 1;              
-  string custom_accent_color = 2;   
-  string animation_id = 3;          
-  string card_style = 4;            
+  string theme_id = 1;
+  string custom_accent_color = 2;
+  string animation_id = 3;
+  string card_style = 4;
+}
+
+message ShowcaseLink {
+  string label = 1;
+  string url = 2;
 }
 
 message ShowcaseProfile {
@@ -102,4 +107,5 @@ message ShowcaseProfile {
 
   bool default_destination = 19;    // Auto-add Showcase destination when creating new pipelines
   bool show_photo_gallery = 20;
+  repeated ShowcaseLink links = 21;
 }

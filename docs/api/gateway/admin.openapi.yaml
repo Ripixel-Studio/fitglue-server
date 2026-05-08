@@ -336,6 +336,8 @@ components:
                         - ENRICHER_PROVIDER_EFFORT_SCORE
                         - ENRICHER_PROVIDER_INTERVALS
                         - ENRICHER_PROVIDER_PHOTO_UPLOAD
+                        - ENRICHER_PROVIDER_MANUAL_WORKOUT_ENTRY
+                        - ENRICHER_PROVIDER_AI_ACTIVITY_TYPE
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum
