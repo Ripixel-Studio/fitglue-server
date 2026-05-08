@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	maxLinks     = 10
-	maxLabelLen  = 50
-	maxURLLen    = 200
+	maxLinks    = 10
+	maxLabelLen = 50
+	maxURLLen   = 200
 )
 
 // Ensure unused imports are referenced

@@ -122,11 +122,11 @@ func (p *Provider) EnrichResume(_ context.Context, activity *pbactivity.Standard
 
 // inputExercise is the JSON structure sent by the client.
 type inputExercise struct {
-	Exercise          string     `json:"exercise"`
-	Notes             string     `json:"notes"`
-	SupersetID        string     `json:"superset_id"`
-	TimestampOffsetS  int32      `json:"timestamp_offset_s"`
-	Sets              []inputSet `json:"sets"`
+	Exercise         string     `json:"exercise"`
+	Notes            string     `json:"notes"`
+	SupersetID       string     `json:"superset_id"`
+	TimestampOffsetS int32      `json:"timestamp_offset_s"`
+	Sets             []inputSet `json:"sets"`
 }
 
 type inputSet struct {

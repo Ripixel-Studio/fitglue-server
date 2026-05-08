@@ -76,9 +76,9 @@ func (p *AIActivityTypeProvider) Enrich(
 			Skipped:    true,
 			SkipReason: fmt.Sprintf("activity type %s is already specific", activity.Type.String()),
 			Metadata: map[string]string{
-				"status":        "skipped",
-				"reason":        "type_already_specific",
-				"current_type":  activity.Type.String(),
+				"status":       "skipped",
+				"reason":       "type_already_specific",
+				"current_type": activity.Type.String(),
 			},
 		}, nil
 	}
