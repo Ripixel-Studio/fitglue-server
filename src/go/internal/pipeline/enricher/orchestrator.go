@@ -425,6 +425,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					logger.Warn("Pending input not found or not completed", "pending_input_id", *payload.ResumePendingInputId, "status", pendingInput.GetStatus())
 					// Fall back to regular Enrich
 					res, err = provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+				} else if pendingInput.EnricherProviderId != provider.Name() {
+					// The resolved pending input belongs to a different provider — use regular
+					// Enrich so this provider can run normally (or raise its own WaitForInputError).
+					logger.Debug("Pending input belongs to different provider, using regular Enrich",
+						"provider", provider.Name(), "pending_input_provider", pendingInput.EnricherProviderId)
+					res, err = provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
 				} else {
 					// Call EnrichResume with the resolved pending input
 					logger.Info("Calling EnrichResume with resolved pending input", "provider", provider.Name(), "pending_input_id", *payload.ResumePendingInputId)
