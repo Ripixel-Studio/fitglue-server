@@ -72,6 +72,15 @@ func (p *Provider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb
 	pending, err := p.service.DB.GetPendingInput(ctx, userRec.UserId, stableID)
 	if err == nil && pending != nil {
 		if pending.Status == pbpipeline.PendingInput_STATUS_COMPLETED {
+			rawData := pending.InputData["workout_data"]
+			if rawData == "" {
+				// Completed with no data (user dismissed) — delete so it can be re-requested.
+				logger.Debug("manual-workout-entry: previous input was dismissed with no data — re-requesting")
+				if delErr := p.service.DB.DeletePendingInput(ctx, userRec.UserId, stableID); delErr != nil {
+					logger.Warn("manual-workout-entry: failed to delete stale pending input", "error", delErr)
+				}
+				return nil, buildWaitError(stableID, p.Name())
+			}
 			logger.Debug("manual-workout-entry: pending input completed — applying inline")
 			return p.EnrichResume(ctx, activity, userRec, pending)
 		}

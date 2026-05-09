@@ -938,6 +938,7 @@ func ShowcasedActivityToFirestore(s *pbactivity.ShowcasedActivity) map[string]in
 		"fit_file_uri":        s.FitFileUri,
 		"owner_display_name":  s.OwnerDisplayName,
 		"activity_data_uri":   s.ActivityDataUri,
+		"photo_urls":          s.PhotoUrls,
 	}
 
 	if s.StartTime != nil {
@@ -1027,6 +1028,16 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 		for i, val := range v {
 			if str, ok := val.(string); ok {
 				s.Tags[i] = str
+			}
+		}
+	}
+
+	// Photo URLs
+	if v, ok := m["photo_urls"].([]interface{}); ok {
+		s.PhotoUrls = make([]string, len(v))
+		for i, val := range v {
+			if str, ok := val.(string); ok {
+				s.PhotoUrls[i] = str
 			}
 		}
 	}

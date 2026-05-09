@@ -3764,7 +3764,7 @@
         "Embed activity summaries in blogs",
         "Create a public fitness portfolio"
       ],
-      "externalUrlTemplate": "/s/{id}",
+      "externalUrlTemplate": "/showcase/activity/{id}",
       "category": "social",
       "sortOrder": 2,
       "isPremium": false,
