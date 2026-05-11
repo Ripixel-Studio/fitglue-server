@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	maxLinks       = 10
-	maxCallouts    = 10
-	maxCalloutLen  = 150
-	maxLabelLen    = 50
-	maxURLLen      = 200
+	maxLinks      = 10
+	maxCallouts   = 10
+	maxCalloutLen = 150
+	maxLabelLen   = 50
+	maxURLLen     = 200
 )
 
 // Ensure unused imports are referenced
