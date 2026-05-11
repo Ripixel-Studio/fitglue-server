@@ -82,6 +82,7 @@ const (
 	ClientGatewayService_GetActivityPhotoUploadUrl_FullMethodName          = "/fitglue.gateway.ClientGatewayService/GetActivityPhotoUploadUrl"
 	ClientGatewayService_ExportData_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/ExportData"
 	ClientGatewayService_ParseFitFile_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/ParseFitFile"
+	ClientGatewayService_GetExerciseLibrary_FullMethodName                 = "/fitglue.gateway.ClientGatewayService/GetExerciseLibrary"
 	ClientGatewayService_RepostMissedDestination_FullMethodName            = "/fitglue.gateway.ClientGatewayService/RepostMissedDestination"
 	ClientGatewayService_RepostRetryDestination_FullMethodName             = "/fitglue.gateway.ClientGatewayService/RepostRetryDestination"
 	ClientGatewayService_RepostFullPipeline_FullMethodName                 = "/fitglue.gateway.ClientGatewayService/RepostFullPipeline"
@@ -185,6 +186,8 @@ type ClientGatewayServiceClient interface {
 	ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error)
 	// ===================== FIT File Parse =====================
 	ParseFitFile(ctx context.Context, in *ParseFitFileGatewayRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// ===================== Exercise Library =====================
+	GetExerciseLibrary(ctx context.Context, in *GetExerciseLibraryGatewayRequest, opts ...grpc.CallOption) (*GetExerciseLibraryGatewayResponse, error)
 	// ===================== Repost Variants =====================
 	RepostMissedDestination(ctx context.Context, in *RepostVariantGatewayRequest, opts ...grpc.CallOption) (*RepostGatewayResponse, error)
 	RepostRetryDestination(ctx context.Context, in *RepostVariantGatewayRequest, opts ...grpc.CallOption) (*RepostGatewayResponse, error)
@@ -793,6 +796,16 @@ func (c *clientGatewayServiceClient) ParseFitFile(ctx context.Context, in *Parse
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) GetExerciseLibrary(ctx context.Context, in *GetExerciseLibraryGatewayRequest, opts ...grpc.CallOption) (*GetExerciseLibraryGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetExerciseLibraryGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_GetExerciseLibrary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) RepostMissedDestination(ctx context.Context, in *RepostVariantGatewayRequest, opts ...grpc.CallOption) (*RepostGatewayResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RepostGatewayResponse)
@@ -1029,6 +1042,8 @@ type ClientGatewayServiceServer interface {
 	ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error)
 	// ===================== FIT File Parse =====================
 	ParseFitFile(context.Context, *ParseFitFileGatewayRequest) (*activity.StandardizedActivity, error)
+	// ===================== Exercise Library =====================
+	GetExerciseLibrary(context.Context, *GetExerciseLibraryGatewayRequest) (*GetExerciseLibraryGatewayResponse, error)
 	// ===================== Repost Variants =====================
 	RepostMissedDestination(context.Context, *RepostVariantGatewayRequest) (*RepostGatewayResponse, error)
 	RepostRetryDestination(context.Context, *RepostVariantGatewayRequest) (*RepostGatewayResponse, error)
@@ -1230,6 +1245,9 @@ func (UnimplementedClientGatewayServiceServer) ExportData(context.Context, *Empt
 }
 func (UnimplementedClientGatewayServiceServer) ParseFitFile(context.Context, *ParseFitFileGatewayRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method ParseFitFile not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) GetExerciseLibrary(context.Context, *GetExerciseLibraryGatewayRequest) (*GetExerciseLibraryGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetExerciseLibrary not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) RepostMissedDestination(context.Context, *RepostVariantGatewayRequest) (*RepostGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RepostMissedDestination not implemented")
@@ -2341,6 +2359,24 @@ func _ClientGatewayService_ParseFitFile_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_GetExerciseLibrary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExerciseLibraryGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).GetExerciseLibrary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_GetExerciseLibrary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).GetExerciseLibrary(ctx, req.(*GetExerciseLibraryGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_RepostMissedDestination_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RepostVariantGatewayRequest)
 	if err := dec(in); err != nil {
@@ -2849,6 +2885,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ParseFitFile",
 			Handler:    _ClientGatewayService_ParseFitFile_Handler,
+		},
+		{
+			MethodName: "GetExerciseLibrary",
+			Handler:    _ClientGatewayService_GetExerciseLibrary_Handler,
 		},
 		{
 			MethodName: "RepostMissedDestination",

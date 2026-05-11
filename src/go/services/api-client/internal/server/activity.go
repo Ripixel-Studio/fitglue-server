@@ -37,6 +37,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Delete("/users/me/showcase-management/profile/entries/{showcaseId}", s.handleRemoveShowcaseEntry)
 	r.Post("/users/me/showcase-management/profile/picture", s.handleGetShowcaseProfilePictureUploadUrl)
 	r.Post("/users/me/activity-photos/upload-url", s.handleGetActivityPhotoUploadUrl)
+	r.Get("/users/me/exercise-library", s.handleGetExerciseLibrary)
 }
 
 func (s *APIServer) handleListActivities(w http.ResponseWriter, r *http.Request) {

@@ -556,6 +556,11 @@ components:
                 maxHeartRate:
                     type: integer
                     format: int32
+        ShowcaseBioCallout:
+            type: object
+            properties:
+                text:
+                    type: string
         ShowcaseLink:
             type: object
             properties:
@@ -621,6 +626,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ShowcaseLink'
+                callouts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseBioCallout'
         ShowcaseProfileEntry:
             type: object
             properties:

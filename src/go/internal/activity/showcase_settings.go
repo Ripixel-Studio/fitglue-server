@@ -17,9 +17,11 @@ import (
 )
 
 const (
-	maxLinks    = 10
-	maxLabelLen = 50
-	maxURLLen   = 200
+	maxLinks       = 10
+	maxCallouts    = 10
+	maxCalloutLen  = 150
+	maxLabelLen    = 50
+	maxURLLen      = 200
 )
 
 // Ensure unused imports are referenced
@@ -95,6 +97,16 @@ func (s *Service) UpdateShowcaseSettings(ctx context.Context, req *pbsvc.UpdateS
 		}
 		if !strings.HasPrefix(link.Url, "https://") {
 			return nil, status.Errorf(codes.InvalidArgument, "link %d: URL must start with https://", i)
+		}
+	}
+
+	// Validate callouts
+	if len(req.Settings.Callouts) > maxCallouts {
+		return nil, status.Errorf(codes.InvalidArgument, "too many callouts: maximum is %d", maxCallouts)
+	}
+	for i, callout := range req.Settings.Callouts {
+		if len(callout.Text) > maxCalloutLen {
+			return nil, status.Errorf(codes.InvalidArgument, "callout %d: text exceeds %d characters", i, maxCalloutLen)
 		}
 	}
 

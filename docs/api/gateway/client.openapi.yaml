@@ -741,6 +741,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/exercise-library:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Exercise Library =====================
+            operationId: ClientGatewayService_GetExerciseLibrary
+            parameters:
+                - name: q
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetExerciseLibraryGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/export:
         post:
             tags:
@@ -1878,6 +1902,17 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+        ExerciseLibraryEntry:
+            type: object
+            properties:
+                name:
+                    type: string
+                category:
+                    type: string
+                primaryMuscle:
+                    type: string
+                source:
+                    type: string
         ExportDataGatewayResponse:
             type: object
             properties:
@@ -1943,6 +1978,13 @@ components:
                     additionalProperties:
                         type: object
             description: Booster Data
+        GetExerciseLibraryGatewayResponse:
+            type: object
+            properties:
+                exercises:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ExerciseLibraryEntry'
         GetIntegrationGatewayResponse:
             type: object
             properties:
@@ -2807,6 +2849,11 @@ components:
                     type: string
                 inProfile:
                     type: boolean
+        ShowcaseBioCallout:
+            type: object
+            properties:
+                text:
+                    type: string
         ShowcaseLink:
             type: object
             properties:
@@ -2872,6 +2919,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ShowcaseLink'
+                callouts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseBioCallout'
         ShowcaseProfileEntry:
             type: object
             properties:

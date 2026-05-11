@@ -373,6 +373,13 @@ service ClientGatewayService {
     };
   }
 
+  // ===================== Exercise Library =====================
+  rpc GetExerciseLibrary(GetExerciseLibraryGatewayRequest) returns (GetExerciseLibraryGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/exercise-library"
+    };
+  }
+
   // ===================== Repost Variants =====================
   rpc RepostMissedDestination(RepostVariantGatewayRequest) returns (RepostGatewayResponse) {
     option (google.api.http) = {
@@ -668,6 +675,20 @@ message ParseFitFileGatewayRequest {
   string title = 2;
   string description = 3;
   string pipeline_id = 4;
+}
+
+// Exercise Library
+message GetExerciseLibraryGatewayRequest {
+  string q = 1;  // optional search query
+}
+message ExerciseLibraryEntry {
+  string name = 1;
+  string category = 2;      // e.g. "Chest", "Back", "Legs"
+  string primary_muscle = 3; // e.g. "Pectoralis Major"
+  string source = 4;         // "hevy" or "builtin"
+}
+message GetExerciseLibraryGatewayResponse {
+  repeated ExerciseLibraryEntry exercises = 1;
 }
 
 // Repost Variants

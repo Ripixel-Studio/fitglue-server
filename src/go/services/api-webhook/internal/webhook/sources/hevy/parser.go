@@ -80,7 +80,7 @@ func mapToStandardizedActivity(rawJSON []byte, userID string, source activitypb.
 				exName = *ex.Title
 			}
 
-			supersetId := "0"
+			supersetId := ""
 			if ex.SupersetId != nil {
 				supersetId = fmt.Sprintf("%d", int(*ex.SupersetId))
 			}

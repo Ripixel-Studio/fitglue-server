@@ -80,6 +80,10 @@ message ShowcaseLink {
   string url = 2;
 }
 
+message ShowcaseBioCallout {
+  string text = 1;
+}
+
 message ShowcaseProfile {
   string slug = 1;                            
   string user_id = 2;                         
@@ -108,4 +112,5 @@ message ShowcaseProfile {
   bool default_destination = 19;    // Auto-add Showcase destination when creating new pipelines
   bool show_photo_gallery = 20;
   repeated ShowcaseLink links = 21;
+  repeated ShowcaseBioCallout callouts = 22;
 }

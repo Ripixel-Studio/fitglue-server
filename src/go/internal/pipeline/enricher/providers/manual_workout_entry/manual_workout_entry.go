@@ -139,9 +139,12 @@ type inputExercise struct {
 }
 
 type inputSet struct {
-	Reps     int32   `json:"reps"`
-	WeightKg float64 `json:"weight_kg"`
-	SetType  string  `json:"set_type"`
+	Reps            int32   `json:"reps"`
+	WeightKg        float64 `json:"weight_kg"`
+	DurationSeconds int32   `json:"duration_seconds"`
+	DistanceMeters  float64 `json:"distance_meters"`
+	SetMode         string  `json:"set_mode"` // "weight_reps" | "reps_only" | "duration" | "distance_duration"
+	SetType         string  `json:"set_type"` // "normal" | "warmup" | "failure" | "dropset"
 }
 
 // parseWorkoutData converts the raw JSON string from the pending input into
@@ -156,12 +159,14 @@ func parseWorkoutData(raw string) ([]*pbactivity.StrengthSet, error) {
 	for _, ex := range exercises {
 		for _, s := range ex.Sets {
 			sets = append(sets, &pbactivity.StrengthSet{
-				ExerciseName: ex.Exercise,
-				Reps:         s.Reps,
-				WeightKg:     s.WeightKg,
-				SetType:      normaliseSetType(s.SetType),
-				SupersetId:   ex.SupersetID,
-				Notes:        ex.Notes,
+				ExerciseName:    ex.Exercise,
+				Reps:            s.Reps,
+				WeightKg:        s.WeightKg,
+				DurationSeconds: s.DurationSeconds,
+				DistanceMeters:  s.DistanceMeters,
+				SetType:         normaliseSetType(s.SetType),
+				SupersetId:      ex.SupersetID,
+				Notes:           ex.Notes,
 			})
 		}
 	}

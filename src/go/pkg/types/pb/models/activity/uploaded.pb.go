@@ -572,6 +572,50 @@ func (x *ShowcaseLink) GetUrl() string {
 	return ""
 }
 
+type ShowcaseBioCallout struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseBioCallout) Reset() {
+	*x = ShowcaseBioCallout{}
+	mi := &file_models_activity_uploaded_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseBioCallout) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseBioCallout) ProtoMessage() {}
+
+func (x *ShowcaseBioCallout) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_uploaded_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseBioCallout.ProtoReflect.Descriptor instead.
+func (*ShowcaseBioCallout) Descriptor() ([]byte, []int) {
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ShowcaseBioCallout) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
 type ShowcaseProfile struct {
 	state                protoimpl.MessageState  `protogen:"open.v1"`
 	Slug                 string                  `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
@@ -595,13 +639,14 @@ type ShowcaseProfile struct {
 	DefaultDestination   bool                    `protobuf:"varint,19,opt,name=default_destination,json=defaultDestination,proto3" json:"default_destination,omitempty"` // Auto-add Showcase destination when creating new pipelines
 	ShowPhotoGallery     bool                    `protobuf:"varint,20,opt,name=show_photo_gallery,json=showPhotoGallery,proto3" json:"show_photo_gallery,omitempty"`
 	Links                []*ShowcaseLink         `protobuf:"bytes,21,rep,name=links,proto3" json:"links,omitempty"`
+	Callouts             []*ShowcaseBioCallout   `protobuf:"bytes,22,rep,name=callouts,proto3" json:"callouts,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ShowcaseProfile) Reset() {
 	*x = ShowcaseProfile{}
-	mi := &file_models_activity_uploaded_proto_msgTypes[5]
+	mi := &file_models_activity_uploaded_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -613,7 +658,7 @@ func (x *ShowcaseProfile) String() string {
 func (*ShowcaseProfile) ProtoMessage() {}
 
 func (x *ShowcaseProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_uploaded_proto_msgTypes[5]
+	mi := &file_models_activity_uploaded_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -626,7 +671,7 @@ func (x *ShowcaseProfile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShowcaseProfile.ProtoReflect.Descriptor instead.
 func (*ShowcaseProfile) Descriptor() ([]byte, []int) {
-	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{5}
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ShowcaseProfile) GetSlug() string {
@@ -776,6 +821,13 @@ func (x *ShowcaseProfile) GetLinks() []*ShowcaseLink {
 	return nil
 }
 
+func (x *ShowcaseProfile) GetCallouts() []*ShowcaseBioCallout {
+	if x != nil {
+		return x.Callouts
+	}
+	return nil
+}
+
 var File_models_activity_uploaded_proto protoreflect.FileDescriptor
 
 const file_models_activity_uploaded_proto_rawDesc = "" +
@@ -852,7 +904,9 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"card_style\x18\x04 \x01(\tR\tcardStyle\"6\n" +
 	"\fShowcaseLink\x12\x14\n" +
 	"\x05label\x18\x01 \x01(\tR\x05label\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03url\"\xb7\a\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\"(\n" +
+	"\x12ShowcaseBioCallout\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"\x80\b\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -879,7 +933,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x05theme\x18\x12 \x01(\v2&.fitglue.models.activity.ShowcaseThemeR\x05theme\x12/\n" +
 	"\x13default_destination\x18\x13 \x01(\bR\x12defaultDestination\x12,\n" +
 	"\x12show_photo_gallery\x18\x14 \x01(\bR\x10showPhotoGallery\x12;\n" +
-	"\x05links\x18\x15 \x03(\v2%.fitglue.models.activity.ShowcaseLinkR\x05linksB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
+	"\x05links\x18\x15 \x03(\v2%.fitglue.models.activity.ShowcaseLinkR\x05links\x12G\n" +
+	"\bcallouts\x18\x16 \x03(\v2+.fitglue.models.activity.ShowcaseBioCalloutR\bcalloutsB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
 
 var (
 	file_models_activity_uploaded_proto_rawDescOnce sync.Once
@@ -893,47 +948,49 @@ func file_models_activity_uploaded_proto_rawDescGZIP() []byte {
 	return file_models_activity_uploaded_proto_rawDescData
 }
 
-var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_models_activity_uploaded_proto_goTypes = []any{
 	(*UploadedActivityRecord)(nil), // 0: fitglue.models.activity.UploadedActivityRecord
 	(*ShowcasedActivity)(nil),      // 1: fitglue.models.activity.ShowcasedActivity
 	(*ShowcaseProfileEntry)(nil),   // 2: fitglue.models.activity.ShowcaseProfileEntry
 	(*ShowcaseTheme)(nil),          // 3: fitglue.models.activity.ShowcaseTheme
 	(*ShowcaseLink)(nil),           // 4: fitglue.models.activity.ShowcaseLink
-	(*ShowcaseProfile)(nil),        // 5: fitglue.models.activity.ShowcaseProfile
-	nil,                            // 6: fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
-	(ActivitySource)(0),            // 7: fitglue.models.activity.ActivitySource
-	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
-	(plugin.DestinationType)(0),    // 9: fitglue.models.plugin.DestinationType
-	(ActivityType)(0),              // 10: fitglue.models.activity.ActivityType
-	(*StandardizedActivity)(nil),   // 11: fitglue.models.activity.StandardizedActivity
+	(*ShowcaseBioCallout)(nil),     // 5: fitglue.models.activity.ShowcaseBioCallout
+	(*ShowcaseProfile)(nil),        // 6: fitglue.models.activity.ShowcaseProfile
+	nil,                            // 7: fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
+	(ActivitySource)(0),            // 8: fitglue.models.activity.ActivitySource
+	(*timestamppb.Timestamp)(nil),  // 9: google.protobuf.Timestamp
+	(plugin.DestinationType)(0),    // 10: fitglue.models.plugin.DestinationType
+	(ActivityType)(0),              // 11: fitglue.models.activity.ActivityType
+	(*StandardizedActivity)(nil),   // 12: fitglue.models.activity.StandardizedActivity
 }
 var file_models_activity_uploaded_proto_depIdxs = []int32{
-	7,  // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
-	8,  // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
-	9,  // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
-	8,  // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
-	10, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
-	7,  // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
-	8,  // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	11, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
-	6,  // 8: fitglue.models.activity.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
-	8,  // 9: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 10: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	10, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
-	7,  // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
-	8,  // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
+	8,  // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
+	9,  // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
+	10, // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
+	9,  // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
+	11, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
+	8,  // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
+	9,  // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	12, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
+	7,  // 8: fitglue.models.activity.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.models.activity.ShowcasedActivity.EnrichmentMetadataEntry
+	9,  // 9: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 10: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	11, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
+	8,  // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
+	9,  // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
 	2,  // 14: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	8,  // 15: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
-	8,  // 16: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 17: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
+	9,  // 15: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
+	9,  // 16: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 17: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
 	3,  // 18: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
 	4,  // 19: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	5,  // 20: fitglue.models.activity.ShowcaseProfile.callouts:type_name -> fitglue.models.activity.ShowcaseBioCallout
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_uploaded_proto_init() }
@@ -950,7 +1007,7 @@ func file_models_activity_uploaded_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_uploaded_proto_rawDesc), len(file_models_activity_uploaded_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
