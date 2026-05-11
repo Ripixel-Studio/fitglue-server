@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.5.0](https://github.com/FitGlue/server/compare/v16.4.0...v16.5.0) (2026-05-11)
+
+
+### Features
+
+* **enricher:** add manual workout entry and AI activity type enrichers ([3461acf](https://github.com/FitGlue/server/commit/3461acff9353a40029979f21f8709fac495156a7))
+* **enrichers:** add manual workout entry, AI activity type, showcase links, and photo gallery proto ([7e02963](https://github.com/FitGlue/server/commit/7e02963eed0876ab3fa3b3734b5d29fbecd0e272))
+* **photo-upload:** add photo upload enricher with pending input ([2c50109](https://github.com/FitGlue/server/commit/2c501096f827c5cda311df2c62cf54c653fc7eef))
+* **photo-upload:** add photo_urls to showcase proto and activity photo upload endpoint ([532bb9e](https://github.com/FitGlue/server/commit/532bb9efb420bbac359bc5cde13393a6f6834244))
+* **showcase,workout:** bio callouts, exercise library endpoint, and bug fixes ([3767e02](https://github.com/FitGlue/server/commit/3767e024222d60c9288092a8fc2dcae5d0e0febd))
+
+
+### Bug Fixes
+
+* **github:** resolve FIT file upload not committing to repository ([0bd16c6](https://github.com/FitGlue/server/commit/0bd16c60e61055a1bb15c8d467e774b50d3d64eb))
+* **pipeline:** orchestrator calls EnrichResume only for matching provider ([146d919](https://github.com/FitGlue/server/commit/146d9191fc97ec82796151fb727140f63ae813c8))
+* **showcase:** three bugs in photo upload, manual workout entry, and showcase URL ([b709998](https://github.com/FitGlue/server/commit/b709998ba36b19a89258dc8986afe524c9d6bec9))
+* **splits:** correct per-split time calculation for structured workouts ([42a28e9](https://github.com/FitGlue/server/commit/42a28e92871c240cd91f1a855e8feaa8af41582f))
+* update Hevy uploader to handle both object and array response formats for workout IDs ([4ba7a19](https://github.com/FitGlue/server/commit/4ba7a190682c6a9e12c158f7de1c87d17c6dcc50))
+
 ## [16.4.0](https://github.com/FitGlue/server/compare/v16.3.0...v16.4.0) (2026-04-13)
 
 
