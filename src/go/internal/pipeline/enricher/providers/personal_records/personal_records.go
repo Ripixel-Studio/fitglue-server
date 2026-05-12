@@ -154,12 +154,20 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 	}
 	prDescription := sb.String()
 
+	prMeta := map[string]string{
+		"pr_status": "pr_detected",
+		"pr_count":  fmt.Sprintf("%d", len(newPRs)),
+	}
+	for i, pr := range newPRs {
+		prefix := fmt.Sprintf("pr_%d_", i)
+		prMeta[prefix+"type"] = pr.RecordType
+		prMeta[prefix+"label"] = formatRecordTypeForDisplay(pr.RecordType)
+		prMeta[prefix+"value"] = formatPRValue(pr.NewValue, pr.Unit)
+	}
+
 	result := &providers.EnrichmentResult{
 		Description: prDescription,
-		Metadata: map[string]string{
-			"pr_status": "pr_detected",
-			"pr_count":  fmt.Sprintf("%d", len(newPRs)),
-		},
+		Metadata:    prMeta,
 	}
 
 	// Optionally add celebration to name
@@ -718,4 +726,24 @@ func formatVolume(kg float64) string {
 		return fmt.Sprintf("%.1f tonnes", kg/1000)
 	}
 	return fmt.Sprintf("%.0fkg", kg)
+}
+
+// formatPRValue returns a concise formatted value string for a PR result.
+// Used to populate per-PR metadata keys consumed by the showcase export UI.
+func formatPRValue(value float64, unit string) string {
+	switch unit {
+	case "seconds":
+		return formatDuration(value)
+	case "meters":
+		if value >= 1000 {
+			return fmt.Sprintf("%.2fkm", value/1000)
+		}
+		return fmt.Sprintf("%.0fm", value)
+	case "kg":
+		return formatWeight(value)
+	case "reps":
+		return fmt.Sprintf("%d", int(value))
+	default:
+		return fmt.Sprintf("%.2f %s", value, unit)
+	}
 }
