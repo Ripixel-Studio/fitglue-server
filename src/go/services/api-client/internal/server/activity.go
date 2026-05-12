@@ -1,12 +1,17 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	pbactivitym "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc/metadata"
 )
 
 func (s *APIServer) registerActivityRoutes(r chi.Router) {
@@ -274,22 +279,43 @@ func (s *APIServer) handleUpdateShowcasePreferences(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var prefs pbactivitym.ShowcaseProfile
-	if err := decodeProto(r, &prefs); err != nil {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+
+	var prefs pbactivitym.ShowcaseProfile
+	if err := protoUnmarshaler.Unmarshal(body, &prefs); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
 	var reqBody activitypb.UpdateShowcasePreferencesRequest
 	reqBody.Preferences = &prefs
 	reqBody.UserId = token.UID
 
-	res, err := s.activitySvc.UpdateShowcasePreferences(r.Context(), &reqBody)
+	res, err := s.activitySvc.UpdateShowcasePreferences(showcaseUpdateCtx(r.Context(), body), &reqBody)
 	if err != nil {
 		WriteError(w, err)
 		return
 	}
 
 	WriteJSON(w, res)
+}
+
+// showcaseUpdateCtx attaches the top-level JSON field names from body to the outgoing gRPC
+// metadata so the activity service can perform a targeted partial update.
+func showcaseUpdateCtx(ctx context.Context, body []byte) context.Context {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil || len(raw) == 0 {
+		return ctx
+	}
+	keys := make([]string, 0, len(raw))
+	for k := range raw {
+		keys = append(keys, k)
+	}
+	return metadata.AppendToOutgoingContext(ctx, "x-showcase-update-fields", strings.Join(keys, ","))
 }
 
 func (s *APIServer) handleGenerateShowcaseImages(w http.ResponseWriter, r *http.Request) {
@@ -366,16 +392,23 @@ func (s *APIServer) handleUpdateShowcaseSettings(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var settings pbactivitym.ShowcaseProfile
-	if err := decodeProto(r, &settings); err != nil {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+
+	var settings pbactivitym.ShowcaseProfile
+	if err := protoUnmarshaler.Unmarshal(body, &settings); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
 	var reqBody activitypb.UpdateShowcaseSettingsRequest
 	reqBody.Settings = &settings
 	reqBody.UserId = token.UID
 
-	res, err := s.activitySvc.UpdateShowcaseSettings(r.Context(), &reqBody)
+	res, err := s.activitySvc.UpdateShowcaseSettings(showcaseUpdateCtx(r.Context(), body), &reqBody)
 	if err != nil {
 		WriteError(w, err)
 		return

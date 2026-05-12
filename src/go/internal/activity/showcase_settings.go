@@ -11,6 +11,7 @@ import (
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -113,6 +114,27 @@ func (s *Service) UpdateShowcaseSettings(ctx context.Context, req *pbsvc.UpdateS
 	// Ensure the user ID is set on the settings
 	req.Settings.UserId = req.UserId
 
+	// When the HTTP handler sends a partial update it includes an "x-showcase-update-fields"
+	// metadata key listing the top-level JSON fields that were actually present in the request
+	// body. We use that to build a targeted patch map so only the intended fields are written
+	// to Firestore — preventing one section's save from blanking out another section's data.
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if values := md.Get("x-showcase-update-fields"); len(values) > 0 && values[0] != "" {
+			fieldNames := strings.Split(values[0], ",")
+			patch, err := buildShowcasePatch(req.Settings, fieldNames)
+			if err != nil {
+				s.logger.Error(ctx, "failed to build showcase patch", "error", err)
+				return nil, status.Error(codes.Internal, "failed to update showcase settings")
+			}
+			updated, err := s.store.PatchShowcaseProfile(ctx, req.UserId, patch)
+			if err != nil {
+				s.logger.Error(ctx, "failed to patch showcase settings", "error", err)
+				return nil, status.Error(codes.Internal, "failed to update showcase settings")
+			}
+			return updated, nil
+		}
+	}
+
 	updated, err := s.store.UpdateShowcasePreferences(ctx, req.UserId, req.Settings)
 	if err != nil {
 		s.logger.Error(ctx, "failed to update showcase settings", "error", err)
@@ -120,6 +142,25 @@ func (s *Service) UpdateShowcaseSettings(ctx context.Context, req *pbsvc.UpdateS
 	}
 
 	return updated, nil
+}
+
+// buildShowcasePatch builds a Firestore field map containing only the fields named in fieldNames
+// (proto JSON snake_case names), plus user_id. Relies on encodeProtoMap's EmitUnpopulated so
+// that explicitly-cleared fields (e.g. links:[]) are included when the caller asked for them.
+func buildShowcasePatch(prefs *pbactivity.ShowcaseProfile, fieldNames []string) (map[string]interface{}, error) {
+	fullData, err := encodeProtoMap(prefs)
+	if err != nil {
+		return nil, err
+	}
+	patch := map[string]interface{}{
+		"user_id": prefs.UserId,
+	}
+	for _, name := range fieldNames {
+		if val, ok := fullData[name]; ok {
+			patch[name] = val
+		}
+	}
+	return patch, nil
 }
 
 // UpdateShowcaseSlug updates the user's showcase profile slug (URL-friendly unique identifier).

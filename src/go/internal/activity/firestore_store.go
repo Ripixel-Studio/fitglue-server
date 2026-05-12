@@ -209,6 +209,16 @@ func (s *FirestoreStore) UpdateShowcasePreferences(ctx context.Context, userID s
 	return prefs, err
 }
 
+// PatchShowcaseProfile writes only the provided fields to the showcase profile document.
+// This avoids overwriting unrelated sections when the frontend sends a partial update.
+func (s *FirestoreStore) PatchShowcaseProfile(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error) {
+	_, err := s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Set(ctx, fields, firestore.MergeAll)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetShowcasePreferences(ctx, userID)
+}
+
 func (s *FirestoreStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
 	doc, err := s.client.Collection("showcased_activities").Doc(showcaseID).Get(ctx)
 	if err != nil {

@@ -22,6 +22,7 @@ type ActivityStore interface {
 	// Showcase Management RPCs
 	GetShowcasePreferences(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error)
 	UpdateShowcasePreferences(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error)
+	PatchShowcaseProfile(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error)
 	GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error)
 
 	// Showcase Settings & Profile
