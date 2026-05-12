@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.6.0](https://github.com/FitGlue/server/compare/v16.5.0...v16.6.0) (2026-05-12)
+
+
+### Features
+
+* **pipeline:** enhance PR metadata handling and add formatPRValue function ([c22a960](https://github.com/FitGlue/server/commit/c22a960231244eaf43f8065a86a1bd3a398456e9))
+
 ## [16.5.0](https://github.com/FitGlue/server/compare/v16.4.0...v16.5.0) (2026-05-11)
 
 
