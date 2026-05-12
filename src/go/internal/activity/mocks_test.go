@@ -105,6 +105,10 @@ func (m *MockActivityStore) UpdateShowcasePreferences(ctx context.Context, userI
 	return prefs, nil
 }
 
+func (m *MockActivityStore) PatchShowcaseProfile(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error) {
+	return &pbactivity.ShowcaseProfile{}, nil
+}
+
 func (m *MockActivityStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
 	if m.GetPublicShowcaseFunc != nil {
 		return m.GetPublicShowcaseFunc(ctx, showcaseID)
