@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.7.0](https://github.com/FitGlue/server/compare/v16.6.0...v16.7.0) (2026-05-13)
+
+
+### Features
+
+* **showcase:** support partial profile updates via field-level patch ([c136f62](https://github.com/FitGlue/server/commit/c136f626138c19131faa97a6da14beae961a4743))
+
+
+### Bug Fixes
+
+* **activity:** add PatchShowcaseProfile to MockActivityStore ([eade517](https://github.com/FitGlue/server/commit/eade517b2e45d54c6291c1ec31bf84cd5d327fcb))
+* **activity:** upgrade PatchShowcaseProfile mock to use func field pattern ([e9427ef](https://github.com/FitGlue/server/commit/e9427efcd3cd2324397d4477e5a96faf5a9b36e3))
+
 ## [16.6.0](https://github.com/FitGlue/server/compare/v16.5.0...v16.6.0) (2026-05-12)
 
 
