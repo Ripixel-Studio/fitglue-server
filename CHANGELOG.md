@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.7.2](https://github.com/FitGlue/server/compare/v16.7.1...v16.7.2) (2026-05-13)
+
+
+### Bug Fixes
+
+* **executor:** add Timestamp field to activity metadata for accurate event timing ([c52dd62](https://github.com/FitGlue/server/commit/c52dd62d6d3baac5de3a99ade15b5b86ddc321ef))
+
 ### [16.7.1](https://github.com/FitGlue/server/compare/v16.7.0...v16.7.1) (2026-05-13)
 
 
