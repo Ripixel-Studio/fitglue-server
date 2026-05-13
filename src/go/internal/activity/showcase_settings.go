@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
@@ -156,11 +157,24 @@ func buildShowcasePatch(prefs *pbactivity.ShowcaseProfile, fieldNames []string) 
 		"user_id": prefs.UserId,
 	}
 	for _, name := range fieldNames {
-		if val, ok := fullData[name]; ok {
-			patch[name] = val
+		snake := camelToSnake(name)
+		if val, ok := fullData[snake]; ok {
+			patch[snake] = val
 		}
 	}
 	return patch, nil
+}
+
+// camelToSnake converts a camelCase or PascalCase string to snake_case.
+func camelToSnake(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) && i > 0 {
+			b.WriteByte('_')
+		}
+		b.WriteRune(unicode.ToLower(r))
+	}
+	return b.String()
 }
 
 // UpdateShowcaseSlug updates the user's showcase profile slug (URL-friendly unique identifier).
