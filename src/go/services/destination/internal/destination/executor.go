@@ -195,6 +195,7 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		OriginalPayloadJson:  "",
 		Metadata:             metadata, // Injected Metadata
 		PipelineExecutionId:  payload.PipelineExecutionId,
+		Timestamp:            payload.StartTime, // Activity start time, not upload time
 	}
 
 	isUpdate := false
