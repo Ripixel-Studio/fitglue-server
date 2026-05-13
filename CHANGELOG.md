@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.7.1](https://github.com/FitGlue/server/compare/v16.7.0...v16.7.1) (2026-05-13)
+
+
+### Bug Fixes
+
+* **manual_workout_entry:** handle cases with no workout data gracefully ([5f737a2](https://github.com/FitGlue/server/commit/5f737a2fafe518b173c8e583e0bd9485641707f2))
+* **showcase:** normalize camelCase field names to snake_case in patch builder ([5a42a72](https://github.com/FitGlue/server/commit/5a42a725e22c4347b1601a18b5d9fb3f311b91d4))
+
 ## [16.7.0](https://github.com/FitGlue/server/compare/v16.6.0...v16.7.0) (2026-05-13)
 
 
