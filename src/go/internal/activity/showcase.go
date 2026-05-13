@@ -214,7 +214,7 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 
 	// Hydrate owner metadata from showcase profile
 	if profile, err := s.store.GetShowcasePreferences(ctx, showcase.UserId); err == nil && profile != nil {
-		if showcase.OwnerDisplayName == "" {
+		if profile.DisplayName != "" {
 			showcase.OwnerDisplayName = profile.DisplayName
 		}
 		if profile.ProfilePictureUrl != "" {

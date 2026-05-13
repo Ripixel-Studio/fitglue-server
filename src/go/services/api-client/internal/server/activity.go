@@ -382,6 +382,20 @@ func (s *APIServer) handleGetShowcaseSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Backfill display_name from the Firebase Auth JWT on first load.
+	// Lazy migration for accounts where the name was never propagated to the showcase profile.
+	if res.Profile != nil && res.Profile.DisplayName == "" {
+		if name, ok := token.Claims["name"].(string); ok && name != "" {
+			updateCtx := showcaseUpdateCtx(r.Context(), []byte(`{"display_name":""}`))
+			if updated, updateErr := s.activitySvc.UpdateShowcaseSettings(updateCtx, &activitypb.UpdateShowcaseSettingsRequest{
+				UserId:   token.UID,
+				Settings: &pbactivitym.ShowcaseProfile{DisplayName: name},
+			}); updateErr == nil {
+				res.Profile = updated
+			}
+		}
+	}
+
 	WriteJSON(w, res)
 }
 
