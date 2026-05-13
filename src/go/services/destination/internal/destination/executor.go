@@ -203,10 +203,20 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		isUpdate = true
 	}
 
-	// Fetch the parent PipelineRun
+	// Fetch the parent PipelineRun — needed by Update() to find the existing destination activity ID
 	var pr *pbpipeline.PipelineRun
-	// pipelineRunId already extracted above for early failure writes
+	if pipelineRunId != "" {
+		pr, _ = e.db.GetPipelineRun(ctx, payload.UserId, pipelineRunId)
+	}
 
+	// Pre-fetch destination outcomes once; used below to skip already-succeeded destinations
+	// on Pub/Sub redelivery (prevents double-posting).
+	var priorOutcomes []*pbpipeline.DestinationOutcome
+	if pipelineRunId != "" {
+		priorOutcomes, _ = e.db.GetDestinationOutcomes(ctx, payload.UserId, pipelineRunId)
+	}
+
+destinations:
 	for _, destEnum := range payload.Destinations {
 		if destEnum == pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
 			continue
@@ -219,6 +229,17 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger)
 			}
 			continue
+		}
+
+		// Idempotency guard: if this destination already succeeded in a prior delivery of
+		// the same pipeline run, skip rather than double-posting.
+		if !isUpdate {
+			for _, outcome := range priorOutcomes {
+				if outcome.Destination == destEnum && outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
+					e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
+					continue destinations
+				}
+			}
 		}
 
 		e.logger.Info(ctx, "Triggering destination uploader", "destination", destEnum.String(), "is_update", isUpdate)

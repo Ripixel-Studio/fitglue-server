@@ -90,7 +90,7 @@ func (m *mockPublisher) PublishCloudEvent(ctx context.Context, topic string, eve
 
 func TestProcessor_HandleVerification(t *testing.T) {
 	logger := infra.NewLogger()
-	processor := webhook.NewProcessor(logger, nil, nil)
+	processor := webhook.NewProcessor(logger, nil, nil, nil)
 	mock := &mockProvider{id: "testprovider"}
 	processor.Register(mock)
 
@@ -120,7 +120,7 @@ func TestProcessor_HandleEvent(t *testing.T) {
 	userClient := &mockUserServiceClient{}
 	publisher := &mockPublisher{}
 	logger := infra.NewLogger()
-	processor := webhook.NewProcessor(logger, userClient, publisher)
+	processor := webhook.NewProcessor(logger, userClient, publisher, nil)
 
 	mock := &mockProvider{
 		id: "testprovider",

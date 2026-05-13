@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
 	firebase "firebase.google.com/go/v4"
 	"github.com/fitglue/server/src/go/internal/infra"
+	infradb "github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	billingpb "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
@@ -118,8 +120,17 @@ func main() {
 
 	publisher := &infraps.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
+	// Setup Firestore for bounceback detection
+	fsClient, err := firestore.NewClient(ctx, projectID)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize Firestore client", "error", err)
+		os.Exit(1)
+	}
+	defer fsClient.Close()
+	db := infradb.NewFirestoreAdapter(fsClient)
+
 	// Instantiate Webhook Processor & Providers
-	processor := webhook.NewProcessor(logger, userClient, publisher)
+	processor := webhook.NewProcessor(logger, userClient, publisher, db)
 
 	stravaToken := os.Getenv("STRAVA_WEBHOOK_VERIFY_TOKEN")
 	processor.Register(strava.NewProvider(stravaToken))

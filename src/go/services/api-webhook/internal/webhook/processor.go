@@ -8,6 +8,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
@@ -47,15 +48,17 @@ type Processor struct {
 	providers map[string]SourceProvider
 	userSvc   userpb.UserServiceClient
 	publisher Publisher
+	db        loopprevention.UploadedActivityStore
 	logger    infra.Logger
 }
 
 // NewProcessor creates a new WebhookProcessor
-func NewProcessor(logger infra.Logger, userSvc userpb.UserServiceClient, publisher Publisher) *Processor {
+func NewProcessor(logger infra.Logger, userSvc userpb.UserServiceClient, publisher Publisher, db loopprevention.UploadedActivityStore) *Processor {
 	return &Processor{
 		providers: make(map[string]SourceProvider),
 		userSvc:   userSvc,
 		publisher: publisher,
+		db:        db,
 		logger:    logger,
 	}
 }
@@ -123,7 +126,18 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 			continue
 		}
 
-		// 3. Construct and export the CloudEvent
+		// 3. Bounceback check — skip if this activity was uploaded by us
+		if activityPayload.StandardizedActivity != nil {
+			isBounceback, bbErr := loopprevention.IsBounceback(r.Context(), p.db, internalUserID, activityPayload.Source, activityPayload.StandardizedActivity.GetExternalId())
+			if bbErr != nil {
+				p.logger.Warn(r.Context(), "Bounceback check failed, proceeding", "provider", evt.Provider, "error", bbErr)
+			} else if isBounceback {
+				p.logger.Info(r.Context(), "Skipping bounceback activity", "provider", evt.Provider, "activity_id", evt.ActivityID)
+				continue
+			}
+		}
+
+		// 4. Construct and export the CloudEvent
 		ce, err := infrapubsub.NewCloudEvent(
 			fmt.Sprintf("/integrations/%s/webhook", evt.Provider),
 			"com.fitglue.activity.created",

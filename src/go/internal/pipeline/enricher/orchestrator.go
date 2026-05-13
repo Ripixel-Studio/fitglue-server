@@ -1176,20 +1176,29 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pbevents.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError, linkedActivityId string) (*ProcessResult, error) {
 	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID, "linked_activity_id", linkedActivityId)
 
-	// SAFETY CHECK: Verify that we're not overwriting a completed pending input
-	// This can happen when resume mode falls back to regular Enrich due to status mismatch
+	// SAFETY CHECK: Don't overwrite an existing pending input (completed or already waiting).
+	// Pub/Sub redelivery can cause this handler to fire multiple times for the same activity —
+	// re-creating a WAITING input resets its timestamps and interferes with user dismissal.
 	existingInput, fetchErr := o.database.GetPendingInput(ctx, payload.UserId, waitErr.ActivityID)
-	if fetchErr == nil && existingInput != nil && existingInput.Status == pbpipeline.PendingInput_STATUS_COMPLETED {
-		logger.Warn("Pending input already exists and is completed - skipping creation to prevent overwrite",
-			"activity_id", waitErr.ActivityID,
-			"existing_status", existingInput.Status.String())
-		// Return WAITING status to halt pipeline, but don't overwrite the completed input
-		// This indicates a logic issue upstream that should be investigated
-		return &ProcessResult{
-			Events:             []*pbevents.EnrichedActivityEvent{},
-			ProviderExecutions: allExecs,
-			Status:             pbpipeline.ExecutionStatus_STATUS_WAITING,
-		}, nil
+	if fetchErr == nil && existingInput != nil {
+		switch existingInput.Status {
+		case pbpipeline.PendingInput_STATUS_COMPLETED:
+			logger.Warn("Pending input already completed - skipping creation to prevent overwrite",
+				"activity_id", waitErr.ActivityID)
+			return &ProcessResult{
+				Events:             []*pbevents.EnrichedActivityEvent{},
+				ProviderExecutions: allExecs,
+				Status:             pbpipeline.ExecutionStatus_STATUS_WAITING,
+			}, nil
+		case pbpipeline.PendingInput_STATUS_WAITING:
+			logger.Info("Pending input already waiting - skipping duplicate creation",
+				"activity_id", waitErr.ActivityID)
+			return &ProcessResult{
+				Events:             []*pbevents.EnrichedActivityEvent{},
+				ProviderExecutions: allExecs,
+				Status:             pbpipeline.ExecutionStatus_STATUS_WAITING,
+			}, nil
+		}
 	}
 
 	// Upload original payload to GCS for later retrieval
