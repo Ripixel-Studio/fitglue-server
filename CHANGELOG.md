@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.7.3](https://github.com/FitGlue/server/compare/v16.7.2...v16.7.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* **showcase:** backfill display_name from Firebase Auth JWT for accounts with missing profile names ([c49efc4](https://github.com/FitGlue/server/commit/c49efc477ac75e782970729b03bdd7ab9a88d95e))
+
 ### [16.7.2](https://github.com/FitGlue/server/compare/v16.7.1...v16.7.2) (2026-05-13)
 
 
