@@ -33,6 +33,7 @@ type MockActivityStore struct {
 	ListShowcaseProfileEntriesFunc func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
 	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
 	DeleteShowcaseProfileEntryFunc func(ctx context.Context, userID, showcaseID string) error
+	PatchShowcaseProfileFunc       func(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error)
 }
 
 func (m *MockActivityStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {
@@ -106,7 +107,10 @@ func (m *MockActivityStore) UpdateShowcasePreferences(ctx context.Context, userI
 }
 
 func (m *MockActivityStore) PatchShowcaseProfile(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error) {
-	return &pbactivity.ShowcaseProfile{}, nil
+	if m.PatchShowcaseProfileFunc != nil {
+		return m.PatchShowcaseProfileFunc(ctx, userID, fields)
+	}
+	return nil, nil
 }
 
 func (m *MockActivityStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
