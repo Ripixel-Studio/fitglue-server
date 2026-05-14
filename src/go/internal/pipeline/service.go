@@ -182,8 +182,8 @@ func (s *Service) DeletePipeline(ctx context.Context, req *pbsvc.DeletePipelineR
 }
 
 func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest) (*emptypb.Empty, error) {
-	if req.UserId == "" || req.PendingInputId == "" || req.InputData == nil {
-		return nil, status.Error(codes.InvalidArgument, "user_id, pending_input_id, and input_data are required")
+	if req.UserId == "" || req.PendingInputId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and pending_input_id are required")
 	}
 
 	input, err := s.store.GetPendingInput(ctx, req.UserId, req.PendingInputId)

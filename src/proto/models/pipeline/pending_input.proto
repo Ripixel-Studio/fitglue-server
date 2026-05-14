@@ -32,8 +32,14 @@ message PendingInput {
   string enricher_provider_id = 13;     
 
   bool auto_populated = 14;
-  google.protobuf.Timestamp auto_deadline = 15;  
+  google.protobuf.Timestamp auto_deadline = 15;
   map<string, string> provider_metadata = 16;
+
+  // Display metadata about the source activity (populated when the pending input is created).
+  // Used by the web UI to identify which activity a pending input relates to.
+  string source_display_name = 18;
+  string source_activity_type = 19;
+  google.protobuf.Timestamp source_start_time = 20;
 }
 
 enum ParkrunResultsState {

@@ -144,8 +144,13 @@ type PendingInput struct {
 	AutoPopulated              bool                   `protobuf:"varint,14,opt,name=auto_populated,json=autoPopulated,proto3" json:"auto_populated,omitempty"`
 	AutoDeadline               *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=auto_deadline,json=autoDeadline,proto3" json:"auto_deadline,omitempty"`
 	ProviderMetadata           map[string]string      `protobuf:"bytes,16,rep,name=provider_metadata,json=providerMetadata,proto3" json:"provider_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	// Display metadata about the source activity (populated when the pending input is created).
+	// Used by the web UI to identify which activity a pending input relates to.
+	SourceDisplayName  string                 `protobuf:"bytes,18,opt,name=source_display_name,json=sourceDisplayName,proto3" json:"source_display_name,omitempty"`
+	SourceActivityType string                 `protobuf:"bytes,19,opt,name=source_activity_type,json=sourceActivityType,proto3" json:"source_activity_type,omitempty"`
+	SourceStartTime    *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=source_start_time,json=sourceStartTime,proto3" json:"source_start_time,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *PendingInput) Reset() {
@@ -290,11 +295,33 @@ func (x *PendingInput) GetProviderMetadata() map[string]string {
 	return nil
 }
 
+func (x *PendingInput) GetSourceDisplayName() string {
+	if x != nil {
+		return x.SourceDisplayName
+	}
+	return ""
+}
+
+func (x *PendingInput) GetSourceActivityType() string {
+	if x != nil {
+		return x.SourceActivityType
+	}
+	return ""
+}
+
+func (x *PendingInput) GetSourceStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.SourceStartTime
+	}
+	return nil
+}
+
 var File_models_pipeline_pending_input_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_pending_input_proto_rawDesc = "" +
 	"\n" +
-	"#models/pipeline/pending_input.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd7\b\n" +
+	"#models/pipeline/pending_input.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\"\x81\n" +
+	"\n" +
 	"\fPendingInput\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -317,7 +344,10 @@ const file_models_pipeline_pending_input_proto_rawDesc = "" +
 	"\x14enricher_provider_id\x18\r \x01(\tR\x12enricherProviderId\x12%\n" +
 	"\x0eauto_populated\x18\x0e \x01(\bR\rautoPopulated\x12?\n" +
 	"\rauto_deadline\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\fautoDeadline\x12h\n" +
-	"\x11provider_metadata\x18\x10 \x03(\v2;.fitglue.models.pipeline.PendingInput.ProviderMetadataEntryR\x10providerMetadata\x1a<\n" +
+	"\x11provider_metadata\x18\x10 \x03(\v2;.fitglue.models.pipeline.PendingInput.ProviderMetadataEntryR\x10providerMetadata\x12.\n" +
+	"\x13source_display_name\x18\x12 \x01(\tR\x11sourceDisplayName\x120\n" +
+	"\x14source_activity_type\x18\x13 \x01(\tR\x12sourceActivityType\x12F\n" +
+	"\x11source_start_time\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\x0fsourceStartTime\x1a<\n" +
 	"\x0eInputDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
@@ -365,11 +395,12 @@ var file_models_pipeline_pending_input_proto_depIdxs = []int32{
 	5, // 4: fitglue.models.pipeline.PendingInput.completed_at:type_name -> google.protobuf.Timestamp
 	5, // 5: fitglue.models.pipeline.PendingInput.auto_deadline:type_name -> google.protobuf.Timestamp
 	4, // 6: fitglue.models.pipeline.PendingInput.provider_metadata:type_name -> fitglue.models.pipeline.PendingInput.ProviderMetadataEntry
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	5, // 7: fitglue.models.pipeline.PendingInput.source_start_time:type_name -> google.protobuf.Timestamp
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_models_pipeline_pending_input_proto_init() }

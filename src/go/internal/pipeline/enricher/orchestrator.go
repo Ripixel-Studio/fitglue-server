@@ -1230,6 +1230,11 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		LinkedActivityId:   linkedActivityId,    // Activity ID for resume mode
 		PipelineId:         *payload.PipelineId, // Pipeline that created this pending input
 	}
+	if act := payload.GetStandardizedActivity(); act != nil {
+		pi.SourceDisplayName = act.Name
+		pi.SourceActivityType = act.Type.String()
+		pi.SourceStartTime = act.StartTime
+	}
 	if err := o.database.CreatePendingInput(ctx, payload.UserId, pi); err != nil {
 		logger.Warn("Failed to create pending input (might already exist)", "error", err)
 	}
