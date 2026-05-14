@@ -53,7 +53,7 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 			activityName:   "Weight Training Session",
 			activityType:   pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
 			typeRules:      `{"treadmill": "VirtualRun"}`,
-			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED, // no mapping — orchestrator preserves original
 			expectMetadata: false,
 		},
 		{
@@ -61,7 +61,7 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 			activityName:   "Morning Run",
 			activityType:   pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
 			typeRules:      "",
-			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED, // no mapping — orchestrator preserves original
 			expectMetadata: false,
 		},
 		{
@@ -69,7 +69,7 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 			activityName:   "Morning Run",
 			activityType:   pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
 			typeRules:      `{invalid}`,
-			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED, // no mapping — orchestrator preserves original
 			expectMetadata: false,
 		},
 		{
@@ -98,12 +98,16 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 				t.Fatalf("Enrich failed: %v", err)
 			}
 
-			if act.Type != tt.expectedType {
-				t.Errorf("expected type %v, got %v", tt.expectedType, act.Type)
+			// Type is returned via EnrichmentResult.ActivityType, not by mutating act.Type
+			if act.Type != tt.activityType {
+				t.Errorf("act.Type should not be mutated: expected %v, got %v", tt.activityType, act.Type)
+			}
+			if res.ActivityType != tt.expectedType {
+				t.Errorf("expected result ActivityType %v, got %v", tt.expectedType, res.ActivityType)
 			}
 
 			if tt.expectMetadata {
-				expectedStravaName := activity.GetStravaActivityType(act.Type)
+				expectedStravaName := activity.GetStravaActivityType(tt.expectedType)
 				if res.Metadata["new_type"] != expectedStravaName {
 					t.Errorf("Metadata new_type expected %s, got %s", expectedStravaName, res.Metadata["new_type"])
 				}
