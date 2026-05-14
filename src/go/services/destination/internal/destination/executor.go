@@ -231,9 +231,22 @@ destinations:
 			continue
 		}
 
+		// Same-source-destination flows (e.g. Hevy→Hevy) must use Update, not Create.
+		// The orchestrator sets same_source_destination_{name}=true in EnrichmentMetadata
+		// for these flows, but use_update_method is only set in resume mode. Without this
+		// per-destination check, Create() is called for every initial same-source webhook,
+		// producing a duplicate activity in the destination platform.
+		effectiveIsUpdate := isUpdate
+		if !effectiveIsUpdate {
+			destName := strings.ToLower(strings.TrimPrefix(destEnum.String(), "DESTINATION_"))
+			if val, ok := metadata["same_source_destination_"+destName]; ok && val == "true" {
+				effectiveIsUpdate = true
+			}
+		}
+
 		// Idempotency guard: if this destination already succeeded in a prior delivery of
 		// the same pipeline run, skip rather than double-posting.
-		if !isUpdate {
+		if !effectiveIsUpdate {
 			for _, outcome := range priorOutcomes {
 				if outcome.Destination == destEnum && outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
 					e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
@@ -242,13 +255,13 @@ destinations:
 			}
 		}
 
-		e.logger.Info(ctx, "Triggering destination uploader", "destination", destEnum.String(), "is_update", isUpdate)
+		e.logger.Info(ctx, "Triggering destination uploader", "destination", destEnum.String(), "is_update", effectiveIsUpdate)
 
 		var externalId string
 		var uploadErr error
 
 		// Create or Update
-		if isUpdate {
+		if effectiveIsUpdate {
 			uploadErr = uploader.Update(ctx, activityPayload, userRecord, pr)
 		} else {
 			externalId, uploadErr = uploader.Create(ctx, activityPayload, userRecord)

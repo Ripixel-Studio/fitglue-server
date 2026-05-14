@@ -367,7 +367,7 @@ func (u *Uploader) createHevyWorkout(ctx context.Context, apiKey string, workout
 	}
 
 	if workoutData, ok := rawResp["workout"]; ok {
-		// Handle single object (typical for POST /v1/workouts)
+		// Wrapped format: {"workout": {"id": "..."}}
 		if obj, ok := workoutData.(map[string]interface{}); ok {
 			if id, ok := obj["id"]; ok {
 				if idStr, ok := id.(string); ok && idStr != "" {
@@ -375,8 +375,7 @@ func (u *Uploader) createHevyWorkout(ctx context.Context, apiKey string, workout
 				}
 			}
 		}
-
-		// Handle array (just in case Hevy returns an array of workouts)
+		// Array variant: {"workout": [{"id": "..."}, ...]}
 		if arr, ok := workoutData.([]interface{}); ok && len(arr) > 0 {
 			if first, ok := arr[0].(map[string]interface{}); ok {
 				if id, ok := first["id"]; ok {
@@ -385,6 +384,15 @@ func (u *Uploader) createHevyWorkout(ctx context.Context, apiKey string, workout
 					}
 				}
 			}
+		}
+	}
+
+	// Flat format: {"id": "..."} — this is what POST /v1/workouts actually returns.
+	// The generated client (ParsePostV1WorkoutsResponse) unmarshals the body directly
+	// into a Workout struct, confirming the response is not wrapped.
+	if id, ok := rawResp["id"]; ok {
+		if idStr, ok := id.(string); ok && idStr != "" {
+			return idStr, nil
 		}
 	}
 

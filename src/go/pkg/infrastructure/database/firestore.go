@@ -394,30 +394,33 @@ func (a *FirestoreAdapter) SetUploadedActivity(ctx context.Context, userId strin
 }
 
 // GetUploadedActivity retrieves an uploaded activity record by destination and destination ID.
-// This matches how webhooks arrive: when Hevy sends a webhook, we look up by HEVY:{hevy_workout_id}
+// Uses a direct document lookup by the composite ID (e.g. "hevy:workout-xyz") — faster than
+// a compound query and requires no composite Firestore index.
 func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
-	// Query for the record with matching destination and destination_id
-	iter := a.Client.Collection("users").Doc(userId).Collection("uploaded_activities").
-		Where("destination", "==", int32(destination)).
-		Where("destination_id", "==", destinationId).
-		Limit(1).
-		Documents(ctx)
-
-	docs, err := iter.GetAll()
+	docId := buildUploadedActivityID(destination, destinationId)
+	snap, err := a.Client.Collection("users").Doc(userId).Collection("uploaded_activities").Doc(docId).Get(ctx)
 	if err != nil {
+		if isNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
-
-	if len(docs) == 0 {
-		return nil, nil // Not found - not an error, just no match
-	}
-
-	m := docs[0].Data()
-	record := storage.FirestoreToUploadedActivity(m)
+	record := storage.FirestoreToUploadedActivity(snap.Data())
 	if record.Id == "" {
-		record.Id = docs[0].Ref.ID
+		record.Id = snap.Ref.ID
 	}
 	return record, nil
+}
+
+// buildUploadedActivityID mirrors loopprevention.BuildUploadedActivityID without the import cycle.
+func buildUploadedActivityID(destination pbplugin.DestinationType, destinationId string) string {
+	destName := strings.TrimPrefix(destination.String(), "DESTINATION_")
+	return strings.ToLower(destName) + ":" + destinationId
+}
+
+// isNotFound returns true for Firestore "document not found" errors.
+func isNotFound(err error) bool {
+	return strings.Contains(err.Error(), "NotFound") || strings.Contains(err.Error(), "not found")
 }
 
 // --- Pipeline Runs (lifecycle tracking) ---
