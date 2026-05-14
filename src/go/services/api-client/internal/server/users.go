@@ -173,20 +173,19 @@ func (s *APIServer) handleSetIntegration(w http.ResponseWriter, r *http.Request)
 	// Provider-specific pre-processing before storing.
 	if provider == "intervals" {
 		apiKey, _ := bodyMap["apiKey"].(string)
-		if apiKey == "" {
-			WriteError(w, statusError(http.StatusBadRequest, "api key is required"))
+		athleteID, _ := bodyMap["athleteId"].(string)
+		if apiKey == "" || athleteID == "" {
+			WriteError(w, statusError(http.StatusBadRequest, "API key and athlete ID are both required"))
 			return
 		}
-		athlete, err := intervals.GetSelf(r.Context(), apiKey)
-		if err != nil {
-			WriteError(w, statusError(http.StatusBadRequest, fmt.Sprintf("could not verify Intervals.icu API key: %s", err.Error())))
+		if err := intervals.VerifyCredentials(r.Context(), apiKey, athleteID); err != nil {
+			WriteError(w, statusError(http.StatusBadRequest, fmt.Sprintf("could not verify Intervals.icu credentials: %s", err.Error())))
 			return
 		}
-		// Rebuild bodyMap with the snake_case field names the Firestore converter expects,
-		// and include the auto-resolved athlete_id so the user never has to find it manually.
+		// Rebuild bodyMap with the snake_case field names the Firestore converter expects.
 		bodyMap = map[string]interface{}{
 			"api_key":    apiKey,
-			"athlete_id": athlete.ID,
+			"athlete_id": athleteID,
 		}
 	}
 

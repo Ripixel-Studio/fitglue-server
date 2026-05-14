@@ -14,46 +14,35 @@ const (
 	baseURL = "https://intervals.icu/api/v1"
 )
 
-// Athlete represents a minimal Intervals.icu athlete profile.
-type Athlete struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// GetSelf fetches the authenticated athlete's profile using just an API key.
-// Used to resolve the athlete ID during initial connection setup, before a Client
-// can be constructed (which requires the ID).
-func GetSelf(ctx context.Context, apiKey string) (*Athlete, error) {
-	url := fmt.Sprintf("%s/athlete/self", baseURL)
+// VerifyCredentials checks that the given API key and athlete ID form a valid
+// Intervals.icu credential pair by fetching the athlete's own profile.
+// Returns an error with a user-friendly message if the credentials are invalid.
+func VerifyCredentials(ctx context.Context, apiKey, athleteID string) error {
+	url := fmt.Sprintf("%s/athlete/%s", baseURL, athleteID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return fmt.Errorf("create request: %w", err)
 	}
 	req.SetBasicAuth(apiKey, "")
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("execute request: %w", err)
+		return fmt.Errorf("could not reach Intervals.icu: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, fmt.Errorf("invalid API key")
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("invalid API key or athlete ID")
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("athlete ID %q not found", athleteID)
 	}
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
-
-	var athlete Athlete
-	if err := json.NewDecoder(resp.Body).Decode(&athlete); err != nil {
-		return nil, fmt.Errorf("decode response: %w", err)
-	}
-	if athlete.ID == "" {
-		return nil, fmt.Errorf("athlete ID not returned by Intervals.icu API")
-	}
-	return &athlete, nil
+	return nil
 }
 
 // Client is an API client for Intervals.icu
