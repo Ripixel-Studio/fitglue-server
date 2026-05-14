@@ -3,10 +3,12 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/domain/apikey"
+	"github.com/fitglue/server/src/go/pkg/integrations/intervals"
 
 	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -166,6 +168,26 @@ func (s *APIServer) handleSetIntegration(w http.ResponseWriter, r *http.Request)
 	if err := json.NewDecoder(r.Body).Decode(&bodyMap); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
+	}
+
+	// Provider-specific pre-processing before storing.
+	if provider == "intervals" {
+		apiKey, _ := bodyMap["apiKey"].(string)
+		if apiKey == "" {
+			WriteError(w, statusError(http.StatusBadRequest, "api key is required"))
+			return
+		}
+		athlete, err := intervals.GetSelf(r.Context(), apiKey)
+		if err != nil {
+			WriteError(w, statusError(http.StatusBadRequest, fmt.Sprintf("could not verify Intervals.icu API key: %s", err.Error())))
+			return
+		}
+		// Rebuild bodyMap with the snake_case field names the Firestore converter expects,
+		// and include the auto-resolved athlete_id so the user never has to find it manually.
+		bodyMap = map[string]interface{}{
+			"api_key":    apiKey,
+			"athlete_id": athlete.ID,
+		}
 	}
 
 	// Enrich integration data with standard metadata

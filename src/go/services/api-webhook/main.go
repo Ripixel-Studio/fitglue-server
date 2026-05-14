@@ -21,6 +21,7 @@ import (
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/fitbit"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/github"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/hevy"
+	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/intervals"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/mobile"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/mock"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/oura"
@@ -134,6 +135,7 @@ func main() {
 
 	stravaToken := os.Getenv("STRAVA_WEBHOOK_VERIFY_TOKEN")
 	processor.Register(strava.NewProvider(stravaToken))
+	processor.Register(intervals.NewProvider())
 
 	fitbitToken := os.Getenv("FITBIT_SUBSCRIBER_VERIFICATION_TOKEN")
 	fitbitClientSecret := os.Getenv("FITBIT_OAUTH_CLIENT_SECRET")
