@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.8.0](https://github.com/FitGlue/server/compare/v16.7.3...v16.8.0) (2026-05-14)
+
+
+### Features
+
+* **intervals:** implement full source ingestion pipeline ([f4c6128](https://github.com/FitGlue/server/commit/f4c61280efe35cd0f6d9e7e885e431687a2f7e5b))
+* **pending-inputs:** add source activity metadata fields to PendingInput proto ([38fbade](https://github.com/FitGlue/server/commit/38fbadedf4bbe9b05f49070ffd82b5d3004ca12b))
+
+
+### Bug Fixes
+
+* **pipeline:** prevent bounceback loops, duplicate pending inputs, and Strava double-posts ([22fae58](https://github.com/FitGlue/server/commit/22fae580ea9085127af871a76af920b23205b22c))
+* **type-mapper:** return ActivityType via EnrichmentResult instead of direct mutation ([6045d90](https://github.com/FitGlue/server/commit/6045d90fb9b4e4eb7323960438637ca5756f2d6e))
+
 ### [16.7.3](https://github.com/FitGlue/server/compare/v16.7.2...v16.7.3) (2026-05-13)
 
 
