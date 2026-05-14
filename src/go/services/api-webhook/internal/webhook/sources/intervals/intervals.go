@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
-	intervalsclient "github.com/fitglue/server/src/go/pkg/integrations/intervals"
 	fit_parser "github.com/fitglue/server/src/go/pkg/domain/fit_parser"
+	intervalsclient "github.com/fitglue/server/src/go/pkg/integrations/intervals"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
