@@ -123,7 +123,6 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 			// Parse the target type
 			newType := activity.ParseActivityTypeFromString(rule.TargetType)
 			if newType != pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
-				act.Type = newType
 				logger.Debug("type_mapper: matched rule - changing type",
 					"rule_index", i,
 					"matched_substring", rule.Substring,
@@ -131,6 +130,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 					"new_type", activity.GetStravaActivityType(newType),
 				)
 				return &providers.EnrichmentResult{
+					ActivityType: newType,
 					Metadata: map[string]string{
 						"original_type":   originalTypeName,
 						"new_type":        activity.GetStravaActivityType(newType),
