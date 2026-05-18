@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.10.0](https://github.com/FitGlue/server/compare/v16.9.1...v16.10.0) (2026-05-18)
+
+
+### Features
+
+* **parkrun:** enhance timezone handling for local time estimation and add tests for edge cases ([5311f0a](https://github.com/FitGlue/server/commit/5311f0ad0951cfbb4a0c99b0951985764d0465c9))
+
 ### [16.9.1](https://github.com/FitGlue/server/compare/v16.9.0...v16.9.1) (2026-05-18)
 
 
