@@ -20,8 +20,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
+	shared "github.com/fitglue/server/src/go/pkg"
 )
 
 // MockDatabase implements shared.Database

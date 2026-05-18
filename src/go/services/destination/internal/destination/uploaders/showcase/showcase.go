@@ -238,7 +238,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			"showcase_id", showcaseID, "user_id", payload.UserId)
 	}
 
-
 	return showcaseID, nil
 }
 
@@ -339,7 +338,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		logger.Warn("Failed to update showcase profile entry via activity service", "error", err,
 			"showcase_id", showcaseID, "user_id", payload.UserId)
 	}
-
 
 	return nil
 }

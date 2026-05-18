@@ -74,7 +74,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 	}
 
-
 	return workoutID, nil
 }
 
@@ -142,7 +141,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if err := u.updateTrainingPeaksWorkout(ctx, httpClient, athleteID, workoutIDStr, updatePayload, logger); err != nil {
 		return fmt.Errorf("failed to update TrainingPeaks workout: %w", err)
 	}
-
 
 	return nil
 }

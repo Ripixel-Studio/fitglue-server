@@ -131,7 +131,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 	}
 
-
 	return intervalsDestID, nil
 }
 
@@ -243,7 +242,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if putResp.StatusCode >= 400 {
 		return httputil.WrapResponseError(putResp, "Intervals PUT failed")
 	}
-
 
 	return nil
 }

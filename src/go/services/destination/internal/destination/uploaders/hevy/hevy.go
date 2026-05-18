@@ -80,7 +80,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 	}
 
-
 	return workoutID, nil
 }
 

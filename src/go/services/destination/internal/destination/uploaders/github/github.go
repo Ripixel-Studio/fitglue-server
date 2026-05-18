@@ -161,7 +161,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 	_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 
-
 	return externalID, nil
 }
 
@@ -263,7 +262,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if err != nil {
 		return fmt.Errorf("GitHub update failed: %w", err)
 	}
-
 
 	return nil
 }
