@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.9.1](https://github.com/FitGlue/server/compare/v16.9.0...v16.9.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* **executor:** filter uploads by target destination to prevent redundant processing ([48c98a0](https://github.com/FitGlue/server/commit/48c98a0df9f69c30a77f4bb08de65fee77823440))
+
 ## [16.9.0](https://github.com/FitGlue/server/compare/v16.8.0...v16.9.0) (2026-05-18)
 
 
