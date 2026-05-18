@@ -127,16 +127,32 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 		},
 		{
 			name: "Australian Parkrun (Timezone check - Albert Park)",
-			// Albert Park: -37.8427, 144.9654
-			// UTC+10 (Dec is Summer, so +11 actually)
-			// Logic uses Longitude/15 for offset (approx 9.66h).
-			// We need to land in 08:45-09:15 local "simulated" time.
-			// 23:20 UTC + 9h40m = 09:00 local approx
-			time:      "2025-12-19T23:20:00Z",
+			// Albert Park Melbourne: AEDT = UTC+11 in December (southern hemisphere summer)
+			// Parkrun at 09:00 AEDT = 22:00 UTC the previous day
+			// 2025-12-19T22:00:00Z → 2025-12-20T09:00:00+11:00 (Saturday)
+			time:      "2025-12-19T22:00:00Z",
 			lat:       -37.8427,
 			long:      144.9654,
 			wantMatch: true,
 			wantName:  "Albert Parkrun, Melbourne",
+		},
+		{
+			name:      "Saturday Morning at Bushy Park (BST - Summer, 09:00 local = 08:00 UTC)",
+			time:      "2025-06-21T08:00:00Z", // 09:00 BST (UTC+1)
+			lat:       51.4106,
+			long:      -0.3421,
+			wantMatch: true,
+			wantName:  "Bushy Park Parkrun",
+			wantTags:  []string{"Parkrun"},
+		},
+		{
+			name:      "Saturday Morning at Bushy Park (BST early start - 07:56 UTC = 08:56 BST)",
+			time:      "2025-06-21T07:56:00Z", // 08:56 BST, the reported bug case
+			lat:       51.4106,
+			long:      -0.3421,
+			wantMatch: true,
+			wantName:  "Bushy Park Parkrun",
+			wantTags:  []string{"Parkrun"},
 		},
 		{
 			name: "Custom Tags",

@@ -7,6 +7,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	_ "time/tzdata" // embed timezone database for distroless containers
 
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 
@@ -208,9 +209,8 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 		}, nil
 	}
 
-	// 6. Estimate local time based on longitude
-	estimatedOffsetHours := matchedLocation.Longitude / 15.0
-	estimatedLocalTime := startTime.Add(time.Duration(estimatedOffsetHours * float64(time.Hour)))
+	// 6. Determine local time using IANA timezone (handles DST correctly)
+	estimatedLocalTime := localTimeForLocation(startTime, *matchedLocation)
 
 	// 7. Check for Parkrun day (Saturday or special event)
 	isSaturday := estimatedLocalTime.Weekday() == time.Saturday
@@ -427,6 +427,95 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 	}
 
 	return result, nil
+}
+
+// localTimeForLocation converts a UTC time to the local time for a parkrun location.
+// Uses IANA timezone names for DST-correct conversion; falls back to longitude estimation.
+func localTimeForLocation(utc time.Time, loc ParkrunLocation) time.Time {
+	if tzName := resolveTimezone(loc); tzName != "" {
+		if tzLoc, err := time.LoadLocation(tzName); err == nil {
+			return utc.In(tzLoc)
+		}
+	}
+	// Fallback: rough longitude-based offset (no DST awareness)
+	offsetHours := loc.Longitude / 15.0
+	return utc.Add(time.Duration(offsetHours * float64(time.Hour)))
+}
+
+// resolveTimezone returns the IANA timezone name for a parkrun location.
+// Returns "" for unknown countries, triggering longitude-based fallback.
+func resolveTimezone(loc ParkrunLocation) string {
+	switch loc.CountryURL {
+	case "www.parkrun.org.uk":
+		return "Europe/London"
+	case "www.parkrun.ie":
+		return "Europe/Dublin"
+	case "www.parkrun.de":
+		return "Europe/Berlin"
+	case "www.parkrun.dk":
+		return "Europe/Copenhagen"
+	case "www.parkrun.fi":
+		return "Europe/Helsinki"
+	case "www.parkrun.fr":
+		return "Europe/Paris"
+	case "www.parkrun.it":
+		return "Europe/Rome"
+	case "www.parkrun.nl":
+		return "Europe/Amsterdam"
+	case "www.parkrun.no":
+		return "Europe/Oslo"
+	case "www.parkrun.pl":
+		return "Europe/Warsaw"
+	case "www.parkrun.se":
+		return "Europe/Stockholm"
+	case "www.parkrun.jp":
+		return "Asia/Tokyo"
+	case "www.parkrun.sg":
+		return "Asia/Singapore"
+	case "www.parkrun.my":
+		return "Asia/Kuala_Lumpur"
+	case "www.parkrun.co.nz":
+		return "Pacific/Auckland"
+	case "www.parkrun.co.za":
+		return "Africa/Johannesburg"
+	case "www.parkrun.com.au":
+		// Australia spans three main zones; use longitude to pick the right one
+		switch {
+		case loc.Longitude < 129:
+			return "Australia/Perth"
+		case loc.Longitude < 138:
+			return "Australia/Darwin"
+		case loc.Longitude < 141:
+			return "Australia/Adelaide"
+		default:
+			return "Australia/Sydney"
+		}
+	case "www.parkrun.ca":
+		switch {
+		case loc.Longitude > -60:
+			return "America/Halifax"
+		case loc.Longitude > -75:
+			return "America/Toronto"
+		case loc.Longitude > -90:
+			return "America/Winnipeg"
+		case loc.Longitude > -110:
+			return "America/Denver"
+		default:
+			return "America/Vancouver"
+		}
+	case "www.parkrun.us":
+		switch {
+		case loc.Longitude > -75:
+			return "America/New_York"
+		case loc.Longitude > -90:
+			return "America/Chicago"
+		case loc.Longitude > -115:
+			return "America/Denver"
+		default:
+			return "America/Los_Angeles"
+		}
+	}
+	return ""
 }
 
 // getSpecialDay returns the special day name if applicable, or empty string.
