@@ -315,4 +315,5 @@ message GetActivityStatsResponse {
   int32 total_activities = 1;
   int32 total_showcases = 2;
   string last_activity_at = 3;
+  int32 uploads_this_month = 5;
 }

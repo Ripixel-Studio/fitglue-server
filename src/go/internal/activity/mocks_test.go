@@ -29,6 +29,8 @@ type MockActivityStore struct {
 	ListShowcasedActivitiesByUserFunc func(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
 	CountPipelineRunsByStatusFunc     func(ctx context.Context, userID, status string) (int32, error)
 	CountShowcasedActivitiesFunc      func(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsFunc            func(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsForPeriodFunc   func(ctx context.Context, userID, period string) (int32, error)
 
 	ListShowcaseProfileEntriesFunc func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
 	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
@@ -151,6 +153,20 @@ func (m *MockActivityStore) CountPipelineRunsByStatus(ctx context.Context, userI
 func (m *MockActivityStore) CountShowcasedActivities(ctx context.Context, userID string) (int32, error) {
 	if m.CountShowcasedActivitiesFunc != nil {
 		return m.CountShowcasedActivitiesFunc(ctx, userID)
+	}
+	return 0, nil
+}
+
+func (m *MockActivityStore) CountBillingEvents(ctx context.Context, userID string) (int32, error) {
+	if m.CountBillingEventsFunc != nil {
+		return m.CountBillingEventsFunc(ctx, userID)
+	}
+	return 0, nil
+}
+
+func (m *MockActivityStore) CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error) {
+	if m.CountBillingEventsForPeriodFunc != nil {
+		return m.CountBillingEventsForPeriodFunc(ctx, userID, period)
 	}
 	return 0, nil
 }

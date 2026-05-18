@@ -38,4 +38,6 @@ type ActivityStore interface {
 	// Activity Stats
 	CountPipelineRunsByStatus(ctx context.Context, userID, status string) (int32, error)
 	CountShowcasedActivities(ctx context.Context, userID string) (int32, error)
+	CountBillingEvents(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error)
 }

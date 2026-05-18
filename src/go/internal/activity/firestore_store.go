@@ -381,6 +381,38 @@ func (s *FirestoreStore) CountShowcasedActivities(ctx context.Context, userID st
 	return 0, nil
 }
 
+func (s *FirestoreStore) CountBillingEvents(ctx context.Context, userID string) (int32, error) {
+	q := s.client.Collection("users").Doc(userID).Collection("billing_events")
+	countResult, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	total, ok := countResult["total"]
+	if !ok {
+		return 0, nil
+	}
+	if intVal, ok := total.(int64); ok {
+		return int32(intVal), nil
+	}
+	return 0, nil
+}
+
+func (s *FirestoreStore) CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error) {
+	q := s.client.Collection("users").Doc(userID).Collection("billing_events").Where("period", "==", period)
+	countResult, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	total, ok := countResult["total"]
+	if !ok {
+		return 0, nil
+	}
+	if intVal, ok := total.(int64); ok {
+		return int32(intVal), nil
+	}
+	return 0, nil
+}
+
 // entryCollectionRef returns the sub-collection ref for showcase profile entries.
 func (s *FirestoreStore) entryCollectionRef(userID string) *firestore.CollectionRef {
 	return s.client.Collection("users").Doc(userID).Collection("showcase_profile_entries")

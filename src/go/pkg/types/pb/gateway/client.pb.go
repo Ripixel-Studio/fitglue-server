@@ -1796,12 +1796,13 @@ func (x *ListActivitiesGatewayResponse) GetNextPageToken() string {
 }
 
 type GetActivityStatsGatewayResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	TotalActivities int32                  `protobuf:"varint,1,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
-	TotalShowcases  int32                  `protobuf:"varint,2,opt,name=total_showcases,json=totalShowcases,proto3" json:"total_showcases,omitempty"`
-	LastActivityAt  string                 `protobuf:"bytes,3,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TotalActivities  int32                  `protobuf:"varint,1,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
+	TotalShowcases   int32                  `protobuf:"varint,2,opt,name=total_showcases,json=totalShowcases,proto3" json:"total_showcases,omitempty"`
+	LastActivityAt   string                 `protobuf:"bytes,3,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
+	UploadsThisMonth int32                  `protobuf:"varint,5,opt,name=uploads_this_month,json=uploadsThisMonth,proto3" json:"uploads_this_month,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetActivityStatsGatewayResponse) Reset() {
@@ -1853,6 +1854,13 @@ func (x *GetActivityStatsGatewayResponse) GetLastActivityAt() string {
 		return x.LastActivityAt
 	}
 	return ""
+}
+
+func (x *GetActivityStatsGatewayResponse) GetUploadsThisMonth() int32 {
+	if x != nil {
+		return x.UploadsThisMonth
+	}
+	return 0
 }
 
 // Showcases
@@ -3425,11 +3433,12 @@ const file_gateway_client_proto_rawDesc = "" +
 	"\n" +
 	"activities\x18\x01 \x03(\v2-.fitglue.models.activity.StandardizedActivityR\n" +
 	"activities\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9f\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xcd\x01\n" +
 	"\x1fGetActivityStatsGatewayResponse\x12)\n" +
 	"\x10total_activities\x18\x01 \x01(\x05R\x0ftotalActivities\x12'\n" +
 	"\x0ftotal_showcases\x18\x02 \x01(\x05R\x0etotalShowcases\x12(\n" +
-	"\x10last_activity_at\x18\x03 \x01(\tR\x0elastActivityAt\"k\n" +
+	"\x10last_activity_at\x18\x03 \x01(\tR\x0elastActivityAt\x12,\n" +
+	"\x12uploads_this_month\x18\x05 \x01(\x05R\x10uploadsThisMonth\"k\n" +
 	"\x1cListShowcasesGatewayResponse\x12K\n" +
 	"\tshowcases\x18\x01 \x03(\v2-.fitglue.models.activity.ShowcaseProfileEntryR\tshowcases\"f\n" +
 	"\x1cCreateShowcaseGatewayRequest\x12F\n" +

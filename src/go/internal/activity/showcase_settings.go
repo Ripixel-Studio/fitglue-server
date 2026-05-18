@@ -245,19 +245,21 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 
 	// Populate metrics from ActivityData if available
 	if showcase.ActivityData != nil && len(showcase.ActivityData.Sessions) > 0 {
-		newEntry.DistanceMeters = showcase.ActivityData.Sessions[0].TotalDistance
+		if activityTypeHasDistance(showcase.ActivityType) {
+			newEntry.DistanceMeters = showcase.ActivityData.Sessions[0].TotalDistance
+		}
 		newEntry.DurationSeconds = showcase.ActivityData.Sessions[0].TotalElapsedTime
 		newEntry.TotalSets = int32(len(showcase.ActivityData.Sessions[0].StrengthSets))
 
-		// Sum reps and weight if it's a strength activity
+		// Sum reps and volume (reps × weight per set) across all strength sets.
 		var totalReps int32
-		var totalWeight float64
+		var totalVolumeKg float64
 		for _, set := range showcase.ActivityData.Sessions[0].StrengthSets {
 			totalReps += set.Reps
-			totalWeight += set.WeightKg
+			totalVolumeKg += float64(set.Reps) * set.WeightKg
 		}
 		newEntry.TotalReps = totalReps
-		newEntry.TotalWeightKg = totalWeight
+		newEntry.TotalWeightKg = totalVolumeKg
 	}
 
 	// Write entry to sub-collection (idempotent via MergeAll)
@@ -266,27 +268,9 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		return nil, status.Error(codes.Internal, "failed to add entry")
 	}
 
-	// Delta update: increment profile stats
-	profile, err := s.ensureShowcaseProfile(ctx, req.UserId)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get showcase profile for stats update", "error", err)
-		return &emptypb.Empty{}, nil // Entry saved, stats update is best-effort
-	}
-
-	profile.TotalActivities++
-	profile.TotalDistanceMeters += newEntry.DistanceMeters
-	profile.TotalDurationSeconds += newEntry.DurationSeconds
-	profile.TotalSets += newEntry.TotalSets
-	profile.TotalReps += newEntry.TotalReps
-	profile.TotalWeightKg += newEntry.TotalWeightKg
-
-	if newEntry.StartTime != nil && (profile.LatestActivityAt == nil || newEntry.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
-		profile.LatestActivityAt = newEntry.StartTime
-	}
-
-	if _, err := s.store.UpdateShowcasePreferences(ctx, req.UserId, profile); err != nil {
-		s.logger.Error(ctx, "failed to update profile stats after add", "error", err)
-	}
+	// Recompute profile stats from all entries so the totals are always consistent
+	// regardless of retries or prior data corrections (no delta drift).
+	s.recomputeAndSaveProfileStats(ctx, req.UserId)
 
 	return &emptypb.Empty{}, nil
 }
@@ -297,22 +281,21 @@ func (s *Service) RemoveShowcaseEntry(ctx context.Context, req *pbsvc.RemoveShow
 		return nil, status.Error(codes.InvalidArgument, "user_id and showcase_id are required")
 	}
 
-	// Read the entry before deleting so we can apply delta subtraction
+	// Check the entry exists before attempting deletion.
 	entries, err := s.store.ListShowcaseProfileEntries(ctx, req.UserId)
 	if err != nil {
 		s.logger.Error(ctx, "failed to list entries for removal", "error", err)
 		return nil, status.Error(codes.Internal, "failed to read entries")
 	}
 
-	var removedEntry *pbactivity.ShowcaseProfileEntry
+	var found bool
 	for _, e := range entries {
 		if e.ShowcaseId == req.ShowcaseId {
-			removedEntry = e
+			found = true
 			break
 		}
 	}
-
-	if removedEntry == nil {
+	if !found {
 		return &emptypb.Empty{}, nil // Not in profile, nothing to remove
 	}
 
@@ -322,40 +305,8 @@ func (s *Service) RemoveShowcaseEntry(ctx context.Context, req *pbsvc.RemoveShow
 		return nil, status.Error(codes.Internal, "failed to remove entry")
 	}
 
-	// Delta update: decrement profile stats
-	profile, err := s.ensureShowcaseProfile(ctx, req.UserId)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get showcase profile for stats update", "error", err)
-		return &emptypb.Empty{}, nil // Entry removed, stats update is best-effort
-	}
-
-	profile.TotalActivities--
-	if profile.TotalActivities < 0 {
-		profile.TotalActivities = 0
-	}
-	profile.TotalDistanceMeters -= removedEntry.DistanceMeters
-	profile.TotalDurationSeconds -= removedEntry.DurationSeconds
-	profile.TotalSets -= removedEntry.TotalSets
-	profile.TotalReps -= removedEntry.TotalReps
-	profile.TotalWeightKg -= removedEntry.TotalWeightKg
-
-	// If we removed the latest activity, find the new latest from remaining entries
-	if removedEntry.StartTime != nil && profile.LatestActivityAt != nil &&
-		removedEntry.StartTime.AsTime().Equal(profile.LatestActivityAt.AsTime()) {
-		profile.LatestActivityAt = nil
-		for _, e := range entries {
-			if e.ShowcaseId == req.ShowcaseId {
-				continue // skip the removed one
-			}
-			if e.StartTime != nil && (profile.LatestActivityAt == nil || e.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
-				profile.LatestActivityAt = e.StartTime
-			}
-		}
-	}
-
-	if _, err := s.store.UpdateShowcasePreferences(ctx, req.UserId, profile); err != nil {
-		s.logger.Error(ctx, "failed to update profile stats after remove", "error", err)
-	}
+	// Recompute profile stats from all remaining entries.
+	s.recomputeAndSaveProfileStats(ctx, req.UserId)
 
 	return &emptypb.Empty{}, nil
 }
@@ -525,20 +476,106 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 	}, nil
 }
 
-// GetActivityStats returns aggregated activity statistics for a user (pipeline run counts, showcase counts).
+// recomputeAndSaveProfileStats reads every entry in the user's showcase_profile_entries
+// sub-collection and derives all profile totals from scratch. Calling this after every
+// add/remove ensures the profile is always consistent with its entries — no delta drift,
+// no double-counting on retries, no stale values after external data corrections.
+func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID string) {
+	profile, err := s.ensureShowcaseProfile(ctx, userID)
+	if err != nil {
+		s.logger.Error(ctx, "recompute: failed to load profile", "error", err)
+		return
+	}
+
+	entries, err := s.store.ListShowcaseProfileEntries(ctx, userID)
+	if err != nil {
+		s.logger.Error(ctx, "recompute: failed to list entries", "error", err)
+		return
+	}
+
+	profile.TotalActivities = int32(len(entries))
+	profile.TotalDistanceMeters = 0
+	profile.TotalDurationSeconds = 0
+	profile.TotalSets = 0
+	profile.TotalReps = 0
+	profile.TotalWeightKg = 0
+	profile.LatestActivityAt = nil
+
+	for _, e := range entries {
+		profile.TotalDistanceMeters += e.DistanceMeters
+		profile.TotalDurationSeconds += e.DurationSeconds
+		profile.TotalSets += e.TotalSets
+		profile.TotalReps += e.TotalReps
+		profile.TotalWeightKg += e.TotalWeightKg
+		if e.StartTime != nil && (profile.LatestActivityAt == nil || e.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
+			profile.LatestActivityAt = e.StartTime
+		}
+	}
+
+	if _, err := s.store.UpdateShowcasePreferences(ctx, userID, profile); err != nil {
+		s.logger.Error(ctx, "recompute: failed to save profile", "error", err)
+	}
+}
+
+// activityTypeHasDistance returns true for activity types where distance is a meaningful metric.
+// Non-distance types (yoga, strength, HIIT, etc.) must not contribute to distance totals,
+// as their source data often carries the FIT "invalid" sentinel (0xFFFFFFFF) rather than zero.
+func activityTypeHasDistance(t pbactivity.ActivityType) bool {
+	switch t {
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+		pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
+		pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
+		pbactivity.ActivityType_ACTIVITY_TYPE_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SWIM,
+		pbactivity.ActivityType_ACTIVITY_TYPE_WALK,
+		pbactivity.ActivityType_ACTIVITY_TYPE_HIKE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_ROWING,
+		pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
+		pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER,
+		pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS,
+		pbactivity.ActivityType_ACTIVITY_TYPE_GOLF,
+		pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING,
+		pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SURFING,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SAIL,
+		pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING:
+		return true
+	default:
+		return false
+	}
+}
+
+// GetActivityStats returns aggregated activity statistics for a user.
 func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivityStatsRequest) (*pbsvc.GetActivityStatsResponse, error) {
 	if req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	// Count total pipeline runs (all statuses)
-	totalActivities, err := s.store.CountPipelineRunsByStatus(ctx, req.UserId, "")
+	// All-time count from billing_events (durable; not subject to pipeline_runs TTL).
+	totalActivities, err := s.store.CountBillingEvents(ctx, req.UserId)
 	if err != nil {
-		s.logger.Error(ctx, "failed to count total pipeline runs", "error", err)
+		s.logger.Error(ctx, "failed to count billing events", "error", err)
 		totalActivities = 0
 	}
 
-	// Count showcased activities
+	// Current-month count from billing_events.
+	period := time.Now().Format("2006-01")
+	uploadsThisMonth, err := s.store.CountBillingEventsForPeriod(ctx, req.UserId, period)
+	if err != nil {
+		s.logger.Error(ctx, "failed to count billing events for period", "error", err, "period", period)
+		uploadsThisMonth = 0
+	}
+
+	// Count showcased activities.
 	totalShowcases, err := s.store.CountShowcasedActivities(ctx, req.UserId)
 	if err != nil {
 		s.logger.Error(ctx, "failed to count showcased activities", "error", err)
@@ -546,7 +583,8 @@ func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivitySt
 	}
 
 	return &pbsvc.GetActivityStatsResponse{
-		TotalActivities: totalActivities,
-		TotalShowcases:  totalShowcases,
+		TotalActivities:  totalActivities,
+		TotalShowcases:   totalShowcases,
+		UploadsThisMonth: uploadsThisMonth,
 	}, nil
 }

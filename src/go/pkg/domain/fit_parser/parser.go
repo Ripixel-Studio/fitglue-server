@@ -68,7 +68,9 @@ func ParseFitFile(data []byte) (*pbactivity.StandardizedActivity, error) {
 				li := lapInfo{
 					startTime:        lapMsg.StartTime.UTC(),
 					totalElapsedTime: float64(lapMsg.TotalElapsedTime) / 1000,
-					totalDistance:    float64(lapMsg.TotalDistance) / 100,
+				}
+				if lapMsg.TotalDistance != 0xFFFFFFFF {
+					li.totalDistance = float64(lapMsg.TotalDistance) / 100
 				}
 
 				// Extract workout step index for auto-detecting lap groups
@@ -99,14 +101,17 @@ func ParseFitFile(data []byte) (*pbactivity.StandardizedActivity, error) {
 
 			case typedef.MesgNumSession:
 				sessionMsg := mesgdef.NewSession(&msg)
-				sessionInfos = append(sessionInfos, sessionInfo{
+				si := sessionInfo{
 					startTime:        sessionMsg.StartTime.UTC(),
 					totalElapsedTime: float64(sessionMsg.TotalElapsedTime) / 1000,
-					totalDistance:    float64(sessionMsg.TotalDistance) / 100,
 					sport:            sessionMsg.Sport,
 					subSport:         sessionMsg.SubSport,
 					sportProfileName: sessionMsg.SportProfileName,
-				})
+				}
+				if sessionMsg.TotalDistance != 0xFFFFFFFF {
+					si.totalDistance = float64(sessionMsg.TotalDistance) / 100
+				}
+				sessionInfos = append(sessionInfos, si)
 
 				// Set activity type from first session
 				if activityType == pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {

@@ -442,6 +442,10 @@ components:
                     type: object
                     additionalProperties:
                         $ref: '#/components/schemas/DestinationConfig'
+                sources:
+                    type: array
+                    items:
+                        type: string
         PipelineRun:
             type: object
             properties:

@@ -1970,6 +1970,9 @@ components:
                     format: int32
                 lastActivityAt:
                     type: string
+                uploadsThisMonth:
+                    type: integer
+                    format: int32
         GetBoosterDataGatewayResponse:
             type: object
             properties:
@@ -2495,6 +2498,10 @@ components:
                     type: object
                     additionalProperties:
                         $ref: '#/components/schemas/DestinationConfig'
+                sources:
+                    type: array
+                    items:
+                        type: string
         PipelineRun:
             type: object
             properties:
