@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.11.0](https://github.com/FitGlue/server/compare/v16.10.0...v16.11.0) (2026-05-18)
+
+
+### Features
+
+* **billing:** centralise billing event recording at executor level ([d1071dc](https://github.com/FitGlue/server/commit/d1071dcbd53345110d5a26cda5da141d5d10cfd0))
+* **pipeline:** support multiple sources per pipeline ([e1881dd](https://github.com/FitGlue/server/commit/e1881dda557769173d1b891eec056e986a526f5d))
+
+
+### Bug Fixes
+
+* **showcase:** recompute profile stats from entries; fix volume and distance ([c094a73](https://github.com/FitGlue/server/commit/c094a7338bf03c9b4c1a42c62e2bac3030ed4858))
+
 ## [16.10.0](https://github.com/FitGlue/server/compare/v16.9.1...v16.10.0) (2026-05-18)
 
 
