@@ -298,6 +298,15 @@ destinations:
 		if pipelineRunId != "" {
 			destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger)
 		}
+		if err := e.db.RecordBillingEvent(ctx, payload.UserId, shared.BillingEvent{
+			ActivityID:    payload.ActivityId,
+			PipelineRunID: payload.GetPipelineExecutionId(),
+			PipelineID:    payload.PipelineId,
+			Source:        payload.Source.String(),
+			Destination:   destEnum.String(),
+		}); err != nil {
+			e.logger.Warn(ctx, "Failed to record billing event", "error", err, "destination", destEnum.String())
+		}
 
 		e.logger.Info(ctx, "Destination uploader completed successfully", "destination", destEnum.String())
 	}

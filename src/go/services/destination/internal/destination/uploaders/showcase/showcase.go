@@ -238,7 +238,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			"showcase_id", showcaseID, "user_id", payload.UserId)
 	}
 
-	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 
 	return showcaseID, nil
 }
@@ -341,7 +340,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 			"showcase_id", showcaseID, "user_id", payload.UserId)
 	}
 
-	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 
 	return nil
 }

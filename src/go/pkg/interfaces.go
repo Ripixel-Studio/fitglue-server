@@ -14,6 +14,15 @@ import (
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 )
 
+// BillingEvent records one successful destination upload for audit and stats purposes.
+type BillingEvent struct {
+	ActivityID    string
+	PipelineRunID string
+	PipelineID    string
+	Source        string
+	Destination   string
+}
+
 // --- Persistence Interfaces ---
 
 type Database interface {
@@ -21,6 +30,11 @@ type Database interface {
 	UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	GetUser(ctx context.Context, id string) (*user.Record, error)
 	UpdateUser(ctx context.Context, id string, data map[string]interface{}) error
+
+	// Billing Events (durable audit log of successful destination uploads)
+	RecordBillingEvent(ctx context.Context, userID string, event BillingEvent) error
+	CountBillingEvents(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error)
 
 	// Sync Count (for tier limits)
 	IncrementSyncCount(ctx context.Context, userID string) error

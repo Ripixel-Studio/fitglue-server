@@ -20,6 +20,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 )
 
@@ -70,6 +71,15 @@ func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pbus
 }
 func (m *MockDatabase) DeleteCounter(ctx context.Context, userId string, id string) error {
 	return nil
+}
+func (m *MockDatabase) RecordBillingEvent(_ context.Context, _ string, _ shared.BillingEvent) error {
+	return nil
+}
+func (m *MockDatabase) CountBillingEvents(_ context.Context, _ string) (int32, error) {
+	return 0, nil
+}
+func (m *MockDatabase) CountBillingEventsForPeriod(_ context.Context, _, _ string) (int32, error) {
+	return 0, nil
 }
 func (m *MockDatabase) IncrementSyncCount(ctx context.Context, userID string) error {
 	return nil

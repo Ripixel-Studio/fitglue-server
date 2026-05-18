@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -66,6 +67,66 @@ func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (*user.Record
 
 func (a *FirestoreAdapter) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	return a.storage.Users().Doc(id).Update(ctx, data)
+}
+
+// --- Billing Events (durable audit log of destination uploads) ---
+
+// RecordBillingEvent writes a billing_events document and increments sync_count_this_month.
+// It replaces the standalone IncrementSyncCount call in destination uploaders.
+func (a *FirestoreAdapter) RecordBillingEvent(ctx context.Context, userID string, event shared.BillingEvent) error {
+	period := time.Now().Format("2006-01")
+	data := map[string]interface{}{
+		"activity_id":     event.ActivityID,
+		"pipeline_run_id": event.PipelineRunID,
+		"pipeline_id":     event.PipelineID,
+		"source":          event.Source,
+		"destination":     event.Destination,
+		"period":          period,
+		"created_at":      time.Now(),
+	}
+	_, _, err := a.Client.Collection("users").Doc(userID).Collection("billing_events").Add(ctx, data)
+	if err != nil {
+		return err
+	}
+	_, err = a.Client.Collection("users").Doc(userID).Update(ctx, []firestore.Update{
+		{Path: "sync_count_this_month", Value: firestore.Increment(1)},
+	})
+	return err
+}
+
+// CountBillingEvents returns the all-time count of successful destination uploads for a user.
+func (a *FirestoreAdapter) CountBillingEvents(ctx context.Context, userID string) (int32, error) {
+	q := a.Client.Collection("users").Doc(userID).Collection("billing_events")
+	result, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	total, ok := result["total"]
+	if !ok {
+		return 0, nil
+	}
+	if v, ok := total.(int64); ok {
+		return int32(v), nil
+	}
+	return 0, nil
+}
+
+// CountBillingEventsForPeriod returns the count of successful destination uploads for a given month.
+// period should be formatted as "YYYY-MM" (e.g. "2026-05").
+func (a *FirestoreAdapter) CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error) {
+	q := a.Client.Collection("users").Doc(userID).Collection("billing_events").Where("period", "==", period)
+	result, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	total, ok := result["total"]
+	if !ok {
+		return 0, nil
+	}
+	if v, ok := total.(int64); ok {
+		return int32(v), nil
+	}
+	return 0, nil
 }
 
 // --- Sync Count (for tier limits) ---

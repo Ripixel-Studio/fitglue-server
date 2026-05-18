@@ -161,7 +161,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 	_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 
-	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 
 	return externalID, nil
 }
@@ -265,7 +264,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		return fmt.Errorf("GitHub update failed: %w", err)
 	}
 
-	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 
 	return nil
 }

@@ -95,7 +95,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 	}
 
-	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 
 	return googlesheetsDestID, nil
 }

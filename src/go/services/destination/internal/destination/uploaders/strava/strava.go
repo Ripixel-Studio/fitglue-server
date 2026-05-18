@@ -149,7 +149,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			UploadedAt:    timestamppb.Now(),
 		}
 		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
-		_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 
 		return stravaDestID, nil
 	}
@@ -279,7 +278,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	if !isSameSource {
-		_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
 	}
 
 	uploadRecord := &pbactivity.UploadedActivityRecord{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -118,6 +119,20 @@ func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pbus
 func (m *MockDatabase) DeleteCounter(ctx context.Context, userId string, id string) error {
 	// No-op for tests by default
 	return nil
+}
+
+// --- Billing Events (durable audit log) ---
+
+func (m *MockDatabase) RecordBillingEvent(_ context.Context, _ string, _ shared.BillingEvent) error {
+	return nil
+}
+
+func (m *MockDatabase) CountBillingEvents(_ context.Context, _ string) (int32, error) {
+	return 0, nil
+}
+
+func (m *MockDatabase) CountBillingEventsForPeriod(_ context.Context, _, _ string) (int32, error) {
+	return 0, nil
 }
 
 // --- Sync Count (for tier limits) ---

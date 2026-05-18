@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/types"
 )
@@ -72,6 +73,15 @@ func (m *MockDB) ListCounters(ctx context.Context, userId string) ([]*pbuser.Cou
 }
 func (m *MockDB) DeleteCounter(ctx context.Context, userId string, id string) error {
 	return nil
+}
+func (m *MockDB) RecordBillingEvent(_ context.Context, _ string, _ shared.BillingEvent) error {
+	return nil
+}
+func (m *MockDB) CountBillingEvents(_ context.Context, _ string) (int32, error) {
+	return 0, nil
+}
+func (m *MockDB) CountBillingEventsForPeriod(_ context.Context, _, _ string) (int32, error) {
+	return 0, nil
 }
 func (m *MockDB) IncrementSyncCount(ctx context.Context, userID string) error {
 	return nil
