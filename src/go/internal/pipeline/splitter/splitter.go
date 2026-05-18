@@ -108,7 +108,9 @@ func (s *Splitter) passThrough(ctx context.Context, payload *pbevents.ActivityPa
 	return nil
 }
 
-// resolvePipelinesForSource finds all pipelines matching the given source
+// resolvePipelinesForSource finds all pipelines matching the given source.
+// Checks the Sources list first; falls back to the legacy Source field for
+// pipelines created before multi-source support was added.
 func (s *Splitter) resolvePipelinesForSource(ctx context.Context, userId string, source pbactivity.ActivitySource) ([]*pbpipeline.PipelineConfig, error) {
 	userPipelines, err := s.store.ListPipelines(ctx, userId)
 	if err != nil {
@@ -118,21 +120,31 @@ func (s *Splitter) resolvePipelinesForSource(ctx context.Context, userId string,
 	var matching []*pbpipeline.PipelineConfig
 
 	for _, p := range userPipelines {
-		// Skip disabled pipelines
 		if p.Disabled {
 			s.logger.Info(ctx, "Skipping disabled pipeline", "id", p.Id, "name", p.Name)
 			continue
 		}
-
-		// Match by source - normalize the stored source string to an enum for comparison,
-		// since Firestore stores "file_upload" but the proto enum name is "SOURCE_FILE_UPLOAD"
-		parsedSource := formatters.ParseActivitySource(p.Source)
-		if parsedSource == source && parsedSource != pbactivity.ActivitySource_SOURCE_UNSPECIFIED {
+		if s.pipelineMatchesSource(p, source) {
 			matching = append(matching, p)
 		}
 	}
 
 	return matching, nil
+}
+
+// pipelineMatchesSource returns true if the pipeline is configured to handle the given source.
+func (s *Splitter) pipelineMatchesSource(p *pbpipeline.PipelineConfig, source pbactivity.ActivitySource) bool {
+	if len(p.Sources) > 0 {
+		for _, src := range p.Sources {
+			if formatters.ParseActivitySource(src) == source {
+				return true
+			}
+		}
+		return false
+	}
+	// Legacy: single Source field (existing Firestore docs pre-multi-source)
+	parsed := formatters.ParseActivitySource(p.Source)
+	return parsed == source && parsed != pbactivity.ActivitySource_SOURCE_UNSPECIFIED
 }
 
 // publishToPipelineActivity publishes an ActivityPayload to the pipeline-activity topic

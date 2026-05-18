@@ -7,14 +7,15 @@ import "models/plugin/provider.proto";
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
 
 message PipelineConfig {
-  string id = 1; 
-  string source = 2; // e.g. "SOURCE_HEVY"
+  string id = 1;
+  string source = 2; // deprecated: use sources. kept for backward-compat with existing Firestore docs.
   repeated EnricherConfig enrichers = 3;
   repeated fitglue.models.plugin.DestinationType destinations = 4;
-  string name = 5; 
-  bool disabled = 6; 
+  string name = 5;
+  bool disabled = 6;
   map<string, string> source_config = 7;
   map<string, DestinationConfig> destination_configs = 8;
+  repeated string sources = 9; // e.g. ["SOURCE_HEVY", "SOURCE_STRAVA"]
 }
 
 message DestinationConfig {

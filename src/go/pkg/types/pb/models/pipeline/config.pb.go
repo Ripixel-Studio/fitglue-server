@@ -25,13 +25,14 @@ const (
 type PipelineConfig struct {
 	state              protoimpl.MessageState        `protogen:"open.v1"`
 	Id                 string                        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Source             string                        `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"` // e.g. "SOURCE_HEVY"
+	Source             string                        `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"` // deprecated: use sources. kept for backward-compat with existing Firestore docs.
 	Enrichers          []*EnricherConfig             `protobuf:"bytes,3,rep,name=enrichers,proto3" json:"enrichers,omitempty"`
 	Destinations       []plugin.DestinationType      `protobuf:"varint,4,rep,packed,name=destinations,proto3,enum=fitglue.models.plugin.DestinationType" json:"destinations,omitempty"`
 	Name               string                        `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
 	Disabled           bool                          `protobuf:"varint,6,opt,name=disabled,proto3" json:"disabled,omitempty"`
 	SourceConfig       map[string]string             `protobuf:"bytes,7,rep,name=source_config,json=sourceConfig,proto3" json:"source_config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	DestinationConfigs map[string]*DestinationConfig `protobuf:"bytes,8,rep,name=destination_configs,json=destinationConfigs,proto3" json:"destination_configs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Sources            []string                      `protobuf:"bytes,9,rep,name=sources,proto3" json:"sources,omitempty"` // e.g. ["SOURCE_HEVY", "SOURCE_STRAVA"]
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -118,6 +119,13 @@ func (x *PipelineConfig) GetSourceConfig() map[string]string {
 func (x *PipelineConfig) GetDestinationConfigs() map[string]*DestinationConfig {
 	if x != nil {
 		return x.DestinationConfigs
+	}
+	return nil
+}
+
+func (x *PipelineConfig) GetSources() []string {
+	if x != nil {
+		return x.Sources
 	}
 	return nil
 }
@@ -342,7 +350,7 @@ var File_models_pipeline_config_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_config_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/pipeline/config.proto\x12\x17fitglue.models.pipeline\x1a\x1cmodels/plugin/provider.proto\"\x81\x05\n" +
+	"\x1cmodels/pipeline/config.proto\x12\x17fitglue.models.pipeline\x1a\x1cmodels/plugin/provider.proto\"\x9b\x05\n" +
 	"\x0ePipelineConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12E\n" +
@@ -351,7 +359,8 @@ const file_models_pipeline_config_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x1a\n" +
 	"\bdisabled\x18\x06 \x01(\bR\bdisabled\x12^\n" +
 	"\rsource_config\x18\a \x03(\v29.fitglue.models.pipeline.PipelineConfig.SourceConfigEntryR\fsourceConfig\x12p\n" +
-	"\x13destination_configs\x18\b \x03(\v2?.fitglue.models.pipeline.PipelineConfig.DestinationConfigsEntryR\x12destinationConfigs\x1a?\n" +
+	"\x13destination_configs\x18\b \x03(\v2?.fitglue.models.pipeline.PipelineConfig.DestinationConfigsEntryR\x12destinationConfigs\x12\x18\n" +
+	"\asources\x18\t \x03(\tR\asources\x1a?\n" +
 	"\x11SourceConfigEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aq\n" +

@@ -309,6 +309,60 @@ func TestSplitByPipeline_MultiplePipelines(t *testing.T) {
 	}
 }
 
+func TestSplitByPipeline_MultiSourcePipeline(t *testing.T) {
+	// A pipeline with Sources=["SOURCE_HEVY","SOURCE_STRAVA"] should match either source.
+	store := &mockSplitterStore{
+		pipelines: []*pbpipeline.PipelineConfig{
+			{Id: "pipe-multi", Sources: []string{"SOURCE_HEVY", "SOURCE_STRAVA"}},
+			{Id: "pipe-fitbit", Sources: []string{"SOURCE_FITBIT"}}, // non-matching
+		},
+	}
+	pub := &mockSplitterPublisher{}
+	s := splitter.NewSplitter(store, pub, &mockLogger{})
+
+	execID := "exec-ms"
+	payload := &pbevents.ActivityPayload{
+		UserId:              "user1",
+		Source:              pbactivity.ActivitySource_SOURCE_STRAVA,
+		PipelineExecutionId: &execID,
+	}
+
+	err := s.SplitByPipeline(context.Background(), makeEvent(payload))
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if len(pub.published) != 1 {
+		t.Errorf("expected 1 published event (multi-source pipeline), got %d", len(pub.published))
+	}
+}
+
+func TestSplitByPipeline_LegacySourceFieldStillMatches(t *testing.T) {
+	// Pipelines written before multi-source support use the legacy Source field;
+	// the splitter must still route them correctly.
+	store := &mockSplitterStore{
+		pipelines: []*pbpipeline.PipelineConfig{
+			{Id: "pipe-legacy", Source: "SOURCE_HEVY"}, // no Sources field
+		},
+	}
+	pub := &mockSplitterPublisher{}
+	s := splitter.NewSplitter(store, pub, &mockLogger{})
+
+	execID := "exec-leg"
+	payload := &pbevents.ActivityPayload{
+		UserId:              "user1",
+		Source:              pbactivity.ActivitySource_SOURCE_HEVY,
+		PipelineExecutionId: &execID,
+	}
+
+	err := s.SplitByPipeline(context.Background(), makeEvent(payload))
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if len(pub.published) != 1 {
+		t.Errorf("expected 1 published event for legacy source field, got %d", len(pub.published))
+	}
+}
+
 func TestSplitByPipeline_ShortFormatSourceMatching(t *testing.T) {
 	// Regression: Firestore stores "file_upload" but source.String() returns "SOURCE_FILE_UPLOAD"
 	store := &mockSplitterStore{

@@ -70,18 +70,27 @@ func (s *Service) GetPipeline(ctx context.Context, req *pbsvc.GetPipelineRequest
 	return cfg, nil
 }
 
-// validateAndNormalizeSource validates that a source string maps to a known ActivitySource
-// enum value and returns the canonical enum name (e.g. "SOURCE_FILE_UPLOAD").
-// This prevents silent business logic failures from storing unrecognized source formats.
-func validateAndNormalizeSource(source string) (string, error) {
-	if source == "" {
-		return "", fmt.Errorf("source is required")
+// validateAndNormalizeSources validates each source string and returns canonical enum names.
+// At least one source must be provided. Duplicate sources are not allowed.
+func validateAndNormalizeSources(sources []string) ([]string, error) {
+	if len(sources) == 0 {
+		return nil, fmt.Errorf("at least one source is required")
 	}
-	parsed := formatters.ParseActivitySource(source)
-	if parsed == pbactivity.ActivitySource_SOURCE_UNSPECIFIED {
-		return "", fmt.Errorf("unknown source: %q", source)
+	seen := make(map[string]bool, len(sources))
+	normalized := make([]string, 0, len(sources))
+	for _, s := range sources {
+		parsed := formatters.ParseActivitySource(s)
+		if parsed == pbactivity.ActivitySource_SOURCE_UNSPECIFIED {
+			return nil, fmt.Errorf("unknown source: %q", s)
+		}
+		canonical := parsed.String()
+		if seen[canonical] {
+			return nil, fmt.Errorf("duplicate source: %q", canonical)
+		}
+		seen[canonical] = true
+		normalized = append(normalized, canonical)
 	}
-	return parsed.String(), nil
+	return normalized, nil
 }
 
 func (s *Service) CreatePipeline(ctx context.Context, req *pbsvc.CreatePipelineRequest) (*pipeline.PipelineConfig, error) {
@@ -89,11 +98,17 @@ func (s *Service) CreatePipeline(ctx context.Context, req *pbsvc.CreatePipelineR
 		return nil, status.Error(codes.InvalidArgument, "user_id and pipeline config are required")
 	}
 
-	normalizedSource, err := validateAndNormalizeSource(req.Pipeline.Source)
+	// Accept either sources (new) or source (legacy); always store as sources.
+	rawSources := req.Pipeline.Sources
+	if len(rawSources) == 0 && req.Pipeline.Source != "" {
+		rawSources = []string{req.Pipeline.Source}
+	}
+	normalizedSources, err := validateAndNormalizeSources(rawSources)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid source: %s", err))
 	}
-	req.Pipeline.Source = normalizedSource
+	req.Pipeline.Sources = normalizedSources
+	req.Pipeline.Source = ""
 
 	if len(req.Pipeline.Destinations) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Missing required field: destinations (must be non-empty array)")
@@ -133,12 +148,18 @@ func (s *Service) UpdatePipeline(ctx context.Context, req *pbsvc.UpdatePipelineR
 
 	// Merge: apply non-default fields from request onto existing
 	if req.Pipeline != nil {
-		if req.Pipeline.Source != "" {
-			normalizedSource, err := validateAndNormalizeSource(req.Pipeline.Source)
+		// Accept sources (new) or source (legacy); always store as sources.
+		rawSources := req.Pipeline.Sources
+		if len(rawSources) == 0 && req.Pipeline.Source != "" {
+			rawSources = []string{req.Pipeline.Source}
+		}
+		if len(rawSources) > 0 {
+			normalizedSources, err := validateAndNormalizeSources(rawSources)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid source: %s", err))
 			}
-			existing.Source = normalizedSource
+			existing.Sources = normalizedSources
+			existing.Source = ""
 		}
 		if len(req.Pipeline.Destinations) > 0 {
 			existing.Destinations = req.Pipeline.Destinations

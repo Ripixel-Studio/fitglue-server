@@ -177,6 +177,13 @@ func TestPipelineCRUD(t *testing.T) {
 	if res.Id == "" {
 		t.Errorf("expected pipeline ID to be generated")
 	}
+	// Legacy Source field should be migrated into Sources; Source cleared.
+	if len(res.Sources) != 1 || res.Sources[0] != "SOURCE_STRAVA" {
+		t.Errorf("expected Sources=[SOURCE_STRAVA], got %v", res.Sources)
+	}
+	if res.Source != "" {
+		t.Errorf("expected Source to be cleared, got %q", res.Source)
+	}
 
 	pipelineID := res.Id
 
@@ -226,6 +233,81 @@ func TestPipelineCRUD(t *testing.T) {
 	_, err = svc.GetPipeline(ctx, getReq)
 	if status.Code(err) != codes.NotFound {
 		t.Errorf("expected NotFound, got %v", err)
+	}
+}
+
+func TestCreatePipelineWithMultipleSources(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	ctx := context.Background()
+
+	res, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
+		UserId: "user1",
+		Pipeline: &pipeline.PipelineConfig{
+			Name:         "Multi-Source Pipeline",
+			Sources:      []string{"SOURCE_HEVY", "SOURCE_STRAVA"},
+			Destinations: []plugin.DestinationType{1},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Sources) != 2 {
+		t.Fatalf("expected 2 sources, got %d: %v", len(res.Sources), res.Sources)
+	}
+	if res.Source != "" {
+		t.Errorf("expected legacy Source to be cleared, got %q", res.Source)
+	}
+}
+
+func TestCreatePipelineRejectsDuplicateSources(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	ctx := context.Background()
+
+	_, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
+		UserId: "user1",
+		Pipeline: &pipeline.PipelineConfig{
+			Sources:      []string{"SOURCE_HEVY", "SOURCE_HEVY"},
+			Destinations: []plugin.DestinationType{1},
+		},
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("expected InvalidArgument for duplicate sources, got %v", err)
+	}
+}
+
+func TestUpdatePipelineToMultipleSources(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	ctx := context.Background()
+
+	created, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
+		UserId: "user1",
+		Pipeline: &pipeline.PipelineConfig{
+			Sources:      []string{"SOURCE_HEVY"},
+			Destinations: []plugin.DestinationType{1},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	updated, err := svc.UpdatePipeline(ctx, &pbsvc.UpdatePipelineRequest{
+		UserId:     "user1",
+		PipelineId: created.Id,
+		Pipeline: &pipeline.PipelineConfig{
+			Sources: []string{"SOURCE_HEVY", "SOURCE_STRAVA"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if len(updated.Sources) != 2 {
+		t.Errorf("expected 2 sources after update, got %v", updated.Sources)
+	}
+	if updated.Source != "" {
+		t.Errorf("expected Source cleared after update, got %q", updated.Source)
 	}
 }
 
@@ -354,8 +436,12 @@ func TestCreatePipeline_NormalizesShortSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if res.Source != "SOURCE_FILE_UPLOAD" {
-		t.Errorf("expected normalized source 'SOURCE_FILE_UPLOAD', got %q", res.Source)
+	// Legacy Source field is migrated to Sources and cleared.
+	if len(res.Sources) != 1 || res.Sources[0] != "SOURCE_FILE_UPLOAD" {
+		t.Errorf("expected Sources=[SOURCE_FILE_UPLOAD], got %v", res.Sources)
+	}
+	if res.Source != "" {
+		t.Errorf("expected Source cleared, got %q", res.Source)
 	}
 }
 
@@ -412,7 +498,11 @@ func TestUpdatePipeline_NormalizesSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if res.Source != "SOURCE_HEVY" {
-		t.Errorf("expected normalized source 'SOURCE_HEVY', got %q", res.Source)
+	// Legacy Source field is migrated to Sources and cleared.
+	if len(res.Sources) != 1 || res.Sources[0] != "SOURCE_HEVY" {
+		t.Errorf("expected Sources=[SOURCE_HEVY], got %v", res.Sources)
+	}
+	if res.Source != "" {
+		t.Errorf("expected Source cleared, got %q", res.Source)
 	}
 }
