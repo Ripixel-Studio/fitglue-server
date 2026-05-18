@@ -11,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
+	"github.com/google/uuid"
 )
 
 // WebhookEvent represents a normalized event across all providers
@@ -137,7 +138,13 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 			}
 		}
 
-		// 4. Construct and export the CloudEvent
+		// 4. Assign a unique execution ID so each activity gets its own GCS path.
+		// Without this the splitter falls back to "exec-unknown", causing all
+		// activities for the same pipeline to share and overwrite one GCS file.
+		execID := uuid.NewString()
+		activityPayload.PipelineExecutionId = &execID
+
+		// 5. Construct and export the CloudEvent
 		ce, err := infrapubsub.NewCloudEvent(
 			fmt.Sprintf("/integrations/%s/webhook", evt.Provider),
 			"com.fitglue.activity.created",

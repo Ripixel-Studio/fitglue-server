@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -54,7 +55,8 @@ func (r *Router) RouteActivity(ctx context.Context, e cloudevents.Event) error {
 		pipelineExecID = *eventPayload.PipelineExecutionId
 	}
 	if pipelineExecID == "" {
-		pipelineExecID = "exec-unknown" // Fallback
+		pipelineExecID = uuid.NewString()
+		r.logger.Warn(ctx, "PipelineExecutionId missing from enriched event, generated fallback", "fallback_id", pipelineExecID)
 	}
 
 	destinations := eventPayload.Destinations

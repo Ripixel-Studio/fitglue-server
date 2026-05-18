@@ -63,7 +63,13 @@ func (s *Service) ListShowcases(ctx context.Context, req *pbsvc.ListShowcasesReq
 
 func (s *Service) offloadShowcaseData(ctx context.Context, showcase *pbactivity.ShowcasedActivity) error {
 	if showcase.ActivityData != nil {
-		data, err := protojson.Marshal(showcase.ActivityData)
+		// Wrap in EnrichedActivityEvent so readers (GetShowcase / GetPublicShowcase)
+		// can unmarshal the blob as a full EnrichedActivityEvent and extract ActivityData.
+		wrapper := &pbevents.EnrichedActivityEvent{
+			ActivityData: showcase.ActivityData,
+			UserId:       showcase.UserId,
+		}
+		data, err := protojson.Marshal(wrapper)
 		if err != nil {
 			return err
 		}

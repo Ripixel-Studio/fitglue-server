@@ -17,6 +17,7 @@ import (
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+	"github.com/google/uuid"
 )
 
 type Splitter struct {
@@ -70,8 +71,8 @@ func (s *Splitter) SplitByPipeline(ctx context.Context, e cloudevents.Event) err
 		basePipelineExecId = *payload.PipelineExecutionId
 	}
 	if basePipelineExecId == "" {
-		s.logger.Warn(ctx, "PipelineExecutionId missing from payload, setting to default unknown")
-		basePipelineExecId = "exec-unknown" // It should realistically come from the webhook
+		basePipelineExecId = uuid.NewString()
+		s.logger.Warn(ctx, "PipelineExecutionId missing from payload, generated fallback", "fallback_id", basePipelineExecId)
 	}
 
 	s.logger.Info(ctx, "Fanning out to pipelines", "count", len(pipelines), "source", payload.Source.String())
