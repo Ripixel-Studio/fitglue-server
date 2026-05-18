@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.9.0](https://github.com/FitGlue/server/compare/v16.8.0...v16.9.0) (2026-05-18)
+
+
+### Features
+
+* **pipeline:** generate unique PipelineExecutionId using UUID for fallback scenarios ([d36cb86](https://github.com/FitGlue/server/commit/d36cb865cda08d25c228591eeaca5bfa601b345c))
+
+
+### Bug Fixes
+
+* **destination:** same-source dedup, Firestore point read, Hevy response parsing ([4a6e120](https://github.com/FitGlue/server/commit/4a6e1203c8800a0450fb180f169a3506824e2562))
+* **intervals:** replace auto-detect with explicit athlete ID field ([e653178](https://github.com/FitGlue/server/commit/e65317873e6bbabe54cb4a837f990adcc1132824))
+
 ## [16.8.0](https://github.com/FitGlue/server/compare/v16.7.3...v16.8.0) (2026-05-14)
 
 
