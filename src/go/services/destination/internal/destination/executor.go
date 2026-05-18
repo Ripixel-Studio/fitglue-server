@@ -114,7 +114,19 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		return nil // Return nil so pubsub ack's it as a bad payload
 	}
 
-	e.logger.Info(ctx, "Processing upload for activity", "activity_id", payload.ActivityId, "user_id", payload.UserId, "destinations_count", len(payload.Destinations))
+	// The router publishes one event per destination (type = "com.fitglue.job.DESTINATION_X").
+	// Extract the target destination so we only process the one this message was routed for.
+	// Without this filter the executor processes ALL destinations from every routed message,
+	// causing N uploads per destination when a pipeline has N destinations.
+	targetDest := pbplugin.DestinationType_DESTINATION_UNSPECIFIED
+	if t := ce.Type(); strings.HasPrefix(t, "com.fitglue.job.") {
+		destStr := strings.TrimPrefix(t, "com.fitglue.job.")
+		if val, ok := pbplugin.DestinationType_value[destStr]; ok {
+			targetDest = pbplugin.DestinationType(val)
+		}
+	}
+
+	e.logger.Info(ctx, "Processing upload for activity", "activity_id", payload.ActivityId, "user_id", payload.UserId, "destinations_count", len(payload.Destinations), "target_dest", targetDest.String())
 
 	if len(payload.Destinations) == 0 {
 		return nil
@@ -130,14 +142,14 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 	profileResp, err := e.userClient.GetProfile(ctx, &userpb.GetProfileRequest{UserId: payload.UserId})
 	if err != nil {
 		e.logger.Error(ctx, "Failed to fetch user profile", "error", err)
-		e.writeFailureForAllDestinations(ctx, &payload, pipelineRunId, fmt.Sprintf("Failed to fetch user profile: %v", err))
+		e.writeFailureForTargetedDestinations(ctx, &payload, targetDest, pipelineRunId, fmt.Sprintf("Failed to fetch user profile: %v", err))
 		return fmt.Errorf("getting user profile: %w", err)
 	}
 
 	integrationsResp, err := e.userClient.ListIntegrations(ctx, &userpb.ListIntegrationsRequest{UserId: payload.UserId})
 	if err != nil {
 		e.logger.Error(ctx, "Failed to fetch user integrations", "error", err)
-		e.writeFailureForAllDestinations(ctx, &payload, pipelineRunId, fmt.Sprintf("Failed to fetch user integrations: %v", err))
+		e.writeFailureForTargetedDestinations(ctx, &payload, targetDest, pipelineRunId, fmt.Sprintf("Failed to fetch user integrations: %v", err))
 		return fmt.Errorf("getting user integrations: %w", err)
 	}
 
@@ -222,6 +234,13 @@ destinations:
 			continue
 		}
 
+		// Each routed message targets exactly one destination; skip the rest.
+		// Falls back to processing all if the event type is not destination-specific.
+		if targetDest != pbplugin.DestinationType_DESTINATION_UNSPECIFIED && destEnum != targetDest {
+			e.logger.Debug(ctx, "Skipping destination not targeted by this event", "destination", destEnum.String(), "target", targetDest.String())
+			continue
+		}
+
 		uploader, ok := e.registry.Get(destEnum)
 		if !ok {
 			e.logger.Warn(ctx, "No uploader registered for destination", "destination", destEnum.String())
@@ -286,15 +305,18 @@ destinations:
 	return nil
 }
 
-// writeFailureForAllDestinations writes DESTINATION_STATUS_FAILED for every destination
-// in the payload. Used when a systemic error (e.g. user service 403) prevents any
-// uploader from running, so the user sees "failed" instead of "pending" forever.
-func (e *UploadExecutor) writeFailureForAllDestinations(ctx context.Context, payload *pbevents.EnrichedActivityEvent, pipelineRunId string, errMsg string) {
+// writeFailureForTargetedDestinations writes DESTINATION_STATUS_FAILED for the destinations
+// this event was routed for. If targetDest is UNSPECIFIED (legacy / non-routed event),
+// falls back to marking all destinations failed so the user never sees "pending" forever.
+func (e *UploadExecutor) writeFailureForTargetedDestinations(ctx context.Context, payload *pbevents.EnrichedActivityEvent, targetDest pbplugin.DestinationType, pipelineRunId string, errMsg string) {
 	if pipelineRunId == "" {
 		return
 	}
 	for _, destEnum := range payload.Destinations {
 		if destEnum == pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
+			continue
+		}
+		if targetDest != pbplugin.DestinationType_DESTINATION_UNSPECIFIED && destEnum != targetDest {
 			continue
 		}
 		destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
