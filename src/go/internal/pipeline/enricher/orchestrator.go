@@ -921,7 +921,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
-	// Build AppliedEnrichments list and merge metadata from results
+	// Build AppliedEnrichments list and merge metadata + typed enrichments from results
 	for i, res := range results {
 		if res == nil {
 			continue
@@ -938,6 +938,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		// Propagate section header for replaceable description sections
 		if res.SectionHeader != "" {
 			finalEvent.EnrichmentMetadata["section_header_"+cfgName] = res.SectionHeader
+		}
+
+		// Merge typed enrichments: copy non-nil sub-messages from this result
+		if res.Enrichments != nil {
+			finalEvent.Enrichments = mergeEnrichments(finalEvent.Enrichments, res.Enrichments)
 		}
 	}
 	// Add branding if it was applied
@@ -1326,6 +1331,10 @@ func (o *Orchestrator) updatePipelineRunStatus(ctx context.Context, logger *slog
 	if statusMessage != "" {
 		updateData["status_message"] = statusMessage
 	}
+	if len(providerExecs) > 0 {
+		stepStatus := pipelineRunStatusToStepStatus(status)
+		updateData["steps"] = []map[string]interface{}{buildEnricherBatchStep(pipelineRunId, providerExecs, stepStatus)}
+	}
 
 	if err := o.database.UpdatePipelineRun(ctx, userId, pipelineRunId, updateData); err != nil {
 		logger.Error("Failed to update pipeline run status", "error", err, "pipeline_run_id", pipelineRunId, "status", status)
@@ -1358,11 +1367,63 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 		"boosters":             boosters,
 		"original_payload_uri": originalPayloadUri,
 	}
+	if len(providerExecs) > 0 {
+		updateData["steps"] = []map[string]interface{}{buildEnricherBatchStep(*event.PipelineExecutionId, providerExecs, pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_OK)}
+	}
 
 	if err := o.database.UpdatePipelineRun(ctx, userId, *event.PipelineExecutionId, updateData); err != nil {
 		logger.Error("Failed to finalize pipeline run", "error", err, "pipeline_run_id", *event.PipelineExecutionId)
 	} else {
 		logger.Debug("Finalized pipeline run", "pipeline_run_id", *event.PipelineExecutionId, "activity_id", event.ActivityId)
+	}
+}
+
+// buildEnricherBatchStep converts ProviderExecutions into an ExecutionStep record
+// for the enricher-batch stage. Duration is the sum of all provider DurationMs values.
+func buildEnricherBatchStep(pipelineRunID string, providerExecs []ProviderExecution, stepStatus pbpipeline.ExecutionStepStatus) map[string]interface{} {
+	var totalDurationMs int64
+	okCount, failCount := 0, 0
+	for _, pe := range providerExecs {
+		totalDurationMs += pe.DurationMs
+		switch pe.Status {
+		case "SUCCESS":
+			okCount++
+		case "FAILED":
+			failCount++
+		}
+	}
+	total := len(providerExecs)
+	statusLabel := fmt.Sprintf("✓ %d/%d", okCount, total)
+	if failCount > 0 {
+		statusLabel = fmt.Sprintf("⚠ %d/%d", okCount, total)
+	}
+	return map[string]interface{}{
+		"id":           pipelineRunID + "_enricher",
+		"ordinal":      int32(4),
+		"kind":         int32(pbpipeline.ExecutionStepKind_EXECUTION_STEP_KIND_ENRICHER_BATCH),
+		"display_name": "Enricher Batch",
+		"service":      "pipeline",
+		"status":       int32(stepStatus),
+		"offset_ms":    int64(0),
+		"duration_ms":  totalDurationMs,
+		"status_label": statusLabel,
+		"metadata":     map[string]string{},
+	}
+}
+
+// pipelineRunStatusToStepStatus maps a PipelineRunStatus to the corresponding ExecutionStepStatus
+// for the enricher batch step written alongside each status update.
+func pipelineRunStatusToStepStatus(s pbpipeline.PipelineRunStatus) pbpipeline.ExecutionStepStatus {
+	switch s {
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED:
+		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_FAILED
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED:
+		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_SKIPPED
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING:
+		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_QUEUED
+	default:
+		// RUNNING (retry-in-progress) and any other transitional status.
+		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_RETRIED
 	}
 }
 
@@ -1416,6 +1477,57 @@ func buildPendingInputStatusMessage(waitErr *user_input.WaitForInputError) strin
 		humanized = append(humanized, humanizeFieldName(field))
 	}
 	return fmt.Sprintf("Waiting for user input: %s", strings.Join(humanized, ", "))
+}
+
+// mergeEnrichments copies non-nil sub-message fields from src into dst (allocating dst if nil).
+// Each enricher provider owns exactly one sub-message field; last write wins per field.
+func mergeEnrichments(dst, src *pbactivity.ActivityEnrichments) *pbactivity.ActivityEnrichments {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		dst = &pbactivity.ActivityEnrichments{}
+	}
+	if src.HeartRate != nil {
+		dst.HeartRate = src.HeartRate
+	}
+	if src.HeartRateZones != nil {
+		dst.HeartRateZones = src.HeartRateZones
+	}
+	if src.Effort != nil {
+		dst.Effort = src.Effort
+	}
+	if src.Calories != nil {
+		dst.Calories = src.Calories
+	}
+	if src.TrainingLoad != nil {
+		dst.TrainingLoad = src.TrainingLoad
+	}
+	if src.Recovery != nil {
+		dst.Recovery = src.Recovery
+	}
+	if src.Streak != nil {
+		dst.Streak = src.Streak
+	}
+	if src.AiSummary != nil {
+		dst.AiSummary = src.AiSummary
+	}
+	if src.AiBanner != nil {
+		dst.AiBanner = src.AiBanner
+	}
+	if src.Pace != nil {
+		dst.Pace = src.Pace
+	}
+	if src.Cadence != nil {
+		dst.Cadence = src.Cadence
+	}
+	if src.Power != nil {
+		dst.Power = src.Power
+	}
+	if src.Elevation != nil {
+		dst.Elevation = src.Elevation
+	}
+	return dst
 }
 
 // humanizeFieldName converts snake_case to Title Case (e.g. "fit_file_base64" -> "Fit File Base64")
