@@ -7,8 +7,10 @@ import (
 	"os"
 
 	"cloud.google.com/go/pubsub"
+	gcstorage "cloud.google.com/go/storage"
 	"github.com/fitglue/server/src/go/internal/infra"
 	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	"github.com/fitglue/server/src/go/services/api-client/internal/server"
 
 	firebase "firebase.google.com/go/v4"
@@ -107,12 +109,22 @@ func main() {
 	defer firestoreClient.Close()
 	apiKeyStore := server.NewFirestoreApiKeyStore(firestoreClient)
 
+	// Setup GCS client for signed payload download URLs
+	gcsClient, err := gcstorage.NewClient(ctx)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize GCS client", "error", err)
+		os.Exit(1)
+	}
+	defer gcsClient.Close()
+	gcsSigner := &infrastorage.StorageAdapter{Client: gcsClient}
+
 	// Build API Gateway router
 	apiServer := server.NewAPIServer(
 		logger,
 		authClient,
 		publisher,
 		apiKeyStore,
+		gcsSigner,
 		userClient,
 		billingClient,
 		pipelineClient,

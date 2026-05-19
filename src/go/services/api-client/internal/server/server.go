@@ -29,6 +29,11 @@ type ApiKeyStore interface {
 	CreateIngressKey(ctx context.Context, keyHash, userID, label string, scopes []string, createdAt time.Time) error
 }
 
+// GCSSigner generates short-lived signed download URLs for GCS objects.
+type GCSSigner interface {
+	SignedURL(ctx context.Context, bucketName, objectName, contentType string, contentLength int64, expiry time.Duration) (string, error)
+}
+
 // APIServer implements the HTTP router interfacing with FitGlue domain gRPC services
 type APIServer struct {
 	router         *chi.Mux
@@ -36,6 +41,7 @@ type APIServer struct {
 	authClient     *auth.Client
 	publisher      Publisher
 	apiKeyStore    ApiKeyStore
+	gcsSigner      GCSSigner // may be nil in test environments
 	userService    userpb.UserServiceClient
 	billingService billingpb.BillingServiceClient
 	pipelineSvc    pipelinepb.PipelineServiceClient
@@ -49,6 +55,7 @@ func NewAPIServer(
 	authClient *auth.Client,
 	publisher Publisher,
 	apiKeyStore ApiKeyStore,
+	gcsSigner GCSSigner,
 	userSvc userpb.UserServiceClient,
 	billingSvc billingpb.BillingServiceClient,
 	pipelineSvc pipelinepb.PipelineServiceClient,
@@ -61,6 +68,7 @@ func NewAPIServer(
 		authClient:     authClient,
 		publisher:      publisher,
 		apiKeyStore:    apiKeyStore,
+		gcsSigner:      gcsSigner,
 		userService:    userSvc,
 		billingService: billingSvc,
 		pipelineSvc:    pipelineSvc,
