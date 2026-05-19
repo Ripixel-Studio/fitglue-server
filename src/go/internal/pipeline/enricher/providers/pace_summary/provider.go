@@ -218,9 +218,9 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		Metadata:    metadata,
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Pace: &pbactivity.PaceSummary{
-				AvgPaceSecondsPerKm:  avgPace * 60,
+				AvgPaceSecondsPerKm:   avgPace * 60,
 				BestSplitSecondsPerKm: bestPace * 60,
-				Splits:              paceSplits,
+				Splits:                paceSplits,
 			},
 		},
 	}, nil

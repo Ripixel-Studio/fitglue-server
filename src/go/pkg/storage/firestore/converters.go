@@ -1067,18 +1067,18 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 
 func ShowcaseProfileEntryToFirestore(e *pbactivity.ShowcaseProfileEntry) map[string]interface{} {
 	m := map[string]interface{}{
-		"showcase_id":       e.ShowcaseId,
-		"title":             e.Title,
-		"activity_type":     int32(e.ActivityType),
-		"source":            int32(e.Source),
+		"showcase_id":         e.ShowcaseId,
+		"title":               e.Title,
+		"activity_type":       int32(e.ActivityType),
+		"source":              int32(e.Source),
 		"route_thumbnail_url": e.RouteThumbnailUrl,
-		"distance_meters":   e.DistanceMeters,
-		"duration_seconds":  e.DurationSeconds,
-		"total_sets":        e.TotalSets,
-		"total_reps":        e.TotalReps,
-		"total_weight_kg":   e.TotalWeightKg,
-		"booster_count":     e.BoosterCount,
-		"destination_count": e.DestinationCount,
+		"distance_meters":     e.DistanceMeters,
+		"duration_seconds":    e.DurationSeconds,
+		"total_sets":          e.TotalSets,
+		"total_reps":          e.TotalReps,
+		"total_weight_kg":     e.TotalWeightKg,
+		"booster_count":       e.BoosterCount,
+		"destination_count":   e.DestinationCount,
 	}
 	if e.StartTime != nil {
 		m["start_time"] = e.StartTime.AsTime()

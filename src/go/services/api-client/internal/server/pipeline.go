@@ -252,8 +252,8 @@ func (s *APIServer) handleListSourceActivities(w http.ResponseWriter, r *http.Re
 }
 
 type backfillRequestBody struct {
-	Source             string   `json:"source"`
-	SourceActivityIds  []string `json:"sourceActivityIds"`
+	Source            string   `json:"source"`
+	SourceActivityIds []string `json:"sourceActivityIds"`
 }
 
 func (s *APIServer) handleBackfillActivities(w http.ResponseWriter, r *http.Request) {
@@ -270,10 +270,10 @@ func (s *APIServer) handleBackfillActivities(w http.ResponseWriter, r *http.Requ
 	}
 
 	req := &pipelinepb.BackfillActivitiesRequest{
-		UserId:             token.UID,
-		PipelineId:         chi.URLParam(r, "id"),
-		Source:             body.Source,
-		SourceActivityIds:  body.SourceActivityIds,
+		UserId:            token.UID,
+		PipelineId:        chi.URLParam(r, "id"),
+		Source:            body.Source,
+		SourceActivityIds: body.SourceActivityIds,
 	}
 
 	res, err := s.pipelineSvc.BackfillActivities(r.Context(), req)
@@ -363,8 +363,8 @@ func (s *APIServer) handleGetPipelineRunPayload(w http.ResponseWriter, r *http.R
 
 	expiresAt := time.Now().Add(signedURLExpiry)
 	WriteJSON(w, map[string]interface{}{
-		"download_url":  downloadURL,
-		"content_type":  "application/json",
-		"expires_at":    timestamppb.New(expiresAt),
+		"download_url": downloadURL,
+		"content_type": "application/json",
+		"expires_at":   timestamppb.New(expiresAt),
 	})
 }

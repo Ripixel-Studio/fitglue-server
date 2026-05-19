@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	hevyapi "github.com/fitglue/server/src/go/pkg/api/hevy"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
