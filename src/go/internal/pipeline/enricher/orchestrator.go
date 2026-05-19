@@ -1323,17 +1323,17 @@ func (o *Orchestrator) updatePipelineRunStatus(ctx context.Context, logger *slog
 	// Convert ProviderExecutions to snake_case maps for Firestore
 	boosters := boostersToFirestoreMaps(providerExecs)
 
+	gateSkipped := status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED && len(providerExecs) == 0
+	enricherFailed := status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED
+
 	updateData := map[string]interface{}{
 		"status":     int32(status),
 		"updated_at": time.Now(),
 		"boosters":   boosters,
+		"steps":      buildAllSteps(pipelineRunId, providerExecs, gateSkipped, enricherFailed),
 	}
 	if statusMessage != "" {
 		updateData["status_message"] = statusMessage
-	}
-	if len(providerExecs) > 0 {
-		stepStatus := pipelineRunStatusToStepStatus(status)
-		updateData["steps"] = []map[string]interface{}{buildEnricherBatchStep(pipelineRunId, providerExecs, stepStatus)}
 	}
 
 	if err := o.database.UpdatePipelineRun(ctx, userId, pipelineRunId, updateData); err != nil {
@@ -1366,9 +1366,7 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 		"status_message":       nil, // Clear pending input message on successful resume
 		"boosters":             boosters,
 		"original_payload_uri": originalPayloadUri,
-	}
-	if len(providerExecs) > 0 {
-		updateData["steps"] = []map[string]interface{}{buildEnricherBatchStep(*event.PipelineExecutionId, providerExecs, pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_OK)}
+		"steps":                buildAllSteps(*event.PipelineExecutionId, providerExecs, false, false),
 	}
 
 	if err := o.database.UpdatePipelineRun(ctx, userId, *event.PipelineExecutionId, updateData); err != nil {
@@ -1376,6 +1374,66 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	} else {
 		logger.Debug("Finalized pipeline run", "pipeline_run_id", *event.PipelineExecutionId, "activity_id", event.ActivityId)
 	}
+}
+
+// buildSimpleStep returns a minimal ExecutionStep map for steps we don't time individually
+// (source ingest, parse, gate, router). Duration and offset are 0 since they are not
+// instrumented at this level — the enricher batch is the only timed step.
+func buildSimpleStep(runID string, ordinal int32, kind pbpipeline.ExecutionStepKind, displayName, service string, status pbpipeline.ExecutionStepStatus, statusLabel string) map[string]interface{} {
+	m := map[string]interface{}{
+		"id":           fmt.Sprintf("%s_%d", runID, ordinal),
+		"ordinal":      ordinal,
+		"kind":         int32(kind),
+		"display_name": displayName,
+		"service":      service,
+		"status":       int32(status),
+		"offset_ms":    int64(0),
+		"duration_ms":  int64(0),
+		"metadata":     map[string]string{},
+	}
+	if statusLabel != "" {
+		m["status_label"] = statusLabel
+	}
+	return m
+}
+
+// buildAllSteps builds the complete ExecutionStep array for a pipeline run.
+// providerExecs should be non-nil when the enricher batch ran; gateSkipped=true
+// when the activity was dropped by a condition matcher before enrichers ran.
+func buildAllSteps(runID string, providerExecs []ProviderExecution, gateSkipped bool, enricherFailed bool) []map[string]interface{} {
+	ok := pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_OK
+	pass := pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_PASS
+	skipped := pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_SKIPPED
+	failed := pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_FAILED
+
+	steps := []map[string]interface{}{
+		buildSimpleStep(runID, 1, pbpipeline.ExecutionStepKind_EXECUTION_STEP_KIND_SOURCE, "Source Activity", "webhook", ok, "✓ OK"),
+		buildSimpleStep(runID, 2, pbpipeline.ExecutionStepKind_EXECUTION_STEP_KIND_PARSE, "Parse & Normalise", "pipeline", ok, "✓ OK"),
+	}
+
+	if gateSkipped {
+		steps = append(steps, buildSimpleStep(runID, 3, pbpipeline.ExecutionStepKind_EXECUTION_STEP_KIND_GATE, "Filter", "pipeline", skipped, "SKIP"))
+		return steps
+	}
+
+	gateStatus := pass
+	if enricherFailed && len(providerExecs) == 0 {
+		gateStatus = failed
+	}
+	steps = append(steps, buildSimpleStep(runID, 3, pbpipeline.ExecutionStepKind_EXECUTION_STEP_KIND_GATE, "Filter", "pipeline", gateStatus, "✓ PASS"))
+
+	if len(providerExecs) > 0 {
+		enricherStatus := pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_OK
+		if enricherFailed {
+			enricherStatus = failed
+		}
+		steps = append(steps, buildEnricherBatchStep(runID, providerExecs, enricherStatus))
+		if !enricherFailed {
+			steps = append(steps, buildSimpleStep(runID, 5, pbpipeline.ExecutionStepKind_EXECUTION_STEP_KIND_ROUTER, "Route to Destinations", "pipeline", ok, "✓ OK"))
+		}
+	}
+
+	return steps
 }
 
 // buildEnricherBatchStep converts ProviderExecutions into an ExecutionStep record
