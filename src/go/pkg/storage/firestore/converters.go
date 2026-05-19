@@ -960,6 +960,12 @@ func ShowcasedActivityToFirestore(s *pbactivity.ShowcasedActivity) map[string]in
 		m["pipeline_execution_id"] = ""
 	}
 
+	if s.Enrichments != nil {
+		if b, err := protojson.Marshal(s.Enrichments); err == nil {
+			m["enrichments"] = string(b)
+		}
+	}
+
 	return m
 }
 
@@ -1042,6 +1048,23 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 	}
 
 	// enrichment_metadata (field 12) was removed from ShowcasedActivity — skipped on read
+
+	// Typed enrichments — stored as protojson string
+	if v, ok := m["enrichments"]; ok {
+		var jsonStr string
+		switch val := v.(type) {
+		case string:
+			jsonStr = val
+		case []byte:
+			jsonStr = string(val)
+		}
+		if jsonStr != "" {
+			var enrichments pbactivity.ActivityEnrichments
+			if err := protojson.Unmarshal([]byte(jsonStr), &enrichments); err == nil {
+				s.Enrichments = &enrichments
+			}
+		}
+	}
 
 	// Activity data - deserialize from JSON
 	if v, ok := m["activity_data"]; ok {
