@@ -73,6 +73,68 @@ func (PluginType) EnumDescriptor() ([]byte, []int) {
 	return file_models_plugin_manifest_proto_rawDescGZIP(), []int{0}
 }
 
+// PipelineStage is the display grouping for enricher boosters in the pipeline editor.
+type PipelineStage int32
+
+const (
+	PipelineStage_PIPELINE_STAGE_UNSPECIFIED PipelineStage = 0
+	PipelineStage_PIPELINE_STAGE_GATE        PipelineStage = 1 // condition matcher, activity filter, logic gate
+	PipelineStage_PIPELINE_STAGE_ENRICHMENT  PipelineStage = 2 // trackers + achievements (parkrun, PRs, goals, streaks, milestones)
+	PipelineStage_PIPELINE_STAGE_METRICS     PipelineStage = 3 // computed metrics (pace, HR, power, zones, effort, training load, recovery, cadence, speed, elevation, intervals, running dynamics, calories)
+	PipelineStage_PIPELINE_STAGE_CONTEXT_AI  PipelineStage = 4 // LLM + external APIs (location naming, weather, AI banner, type mapper, AI companion, AI activity type)
+	PipelineStage_PIPELINE_STAGE_INPUT       PipelineStage = 5 // user input prompts (user input, manual workout entry, photo upload)
+	PipelineStage_PIPELINE_STAGE_VIZ         PipelineStage = 6 // visual outputs (muscle heatmap, muscle heatmap image, route thumbnail, workout summary)
+)
+
+// Enum value maps for PipelineStage.
+var (
+	PipelineStage_name = map[int32]string{
+		0: "PIPELINE_STAGE_UNSPECIFIED",
+		1: "PIPELINE_STAGE_GATE",
+		2: "PIPELINE_STAGE_ENRICHMENT",
+		3: "PIPELINE_STAGE_METRICS",
+		4: "PIPELINE_STAGE_CONTEXT_AI",
+		5: "PIPELINE_STAGE_INPUT",
+		6: "PIPELINE_STAGE_VIZ",
+	}
+	PipelineStage_value = map[string]int32{
+		"PIPELINE_STAGE_UNSPECIFIED": 0,
+		"PIPELINE_STAGE_GATE":        1,
+		"PIPELINE_STAGE_ENRICHMENT":  2,
+		"PIPELINE_STAGE_METRICS":     3,
+		"PIPELINE_STAGE_CONTEXT_AI":  4,
+		"PIPELINE_STAGE_INPUT":       5,
+		"PIPELINE_STAGE_VIZ":         6,
+	}
+)
+
+func (x PipelineStage) Enum() *PipelineStage {
+	p := new(PipelineStage)
+	*p = x
+	return p
+}
+
+func (x PipelineStage) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PipelineStage) Descriptor() protoreflect.EnumDescriptor {
+	return file_models_plugin_manifest_proto_enumTypes[1].Descriptor()
+}
+
+func (PipelineStage) Type() protoreflect.EnumType {
+	return &file_models_plugin_manifest_proto_enumTypes[1]
+}
+
+func (x PipelineStage) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PipelineStage.Descriptor instead.
+func (PipelineStage) EnumDescriptor() ([]byte, []int) {
+	return file_models_plugin_manifest_proto_rawDescGZIP(), []int{1}
+}
+
 type ConfigFieldType int32
 
 const (
@@ -121,11 +183,11 @@ func (x ConfigFieldType) String() string {
 }
 
 func (ConfigFieldType) Descriptor() protoreflect.EnumDescriptor {
-	return file_models_plugin_manifest_proto_enumTypes[1].Descriptor()
+	return file_models_plugin_manifest_proto_enumTypes[2].Descriptor()
 }
 
 func (ConfigFieldType) Type() protoreflect.EnumType {
-	return &file_models_plugin_manifest_proto_enumTypes[1]
+	return &file_models_plugin_manifest_proto_enumTypes[2]
 }
 
 func (x ConfigFieldType) Number() protoreflect.EnumNumber {
@@ -134,7 +196,7 @@ func (x ConfigFieldType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ConfigFieldType.Descriptor instead.
 func (ConfigFieldType) EnumDescriptor() ([]byte, []int) {
-	return file_models_plugin_manifest_proto_rawDescGZIP(), []int{1}
+	return file_models_plugin_manifest_proto_rawDescGZIP(), []int{2}
 }
 
 type IntegrationAuthType int32
@@ -176,11 +238,11 @@ func (x IntegrationAuthType) String() string {
 }
 
 func (IntegrationAuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_models_plugin_manifest_proto_enumTypes[2].Descriptor()
+	return file_models_plugin_manifest_proto_enumTypes[3].Descriptor()
 }
 
 func (IntegrationAuthType) Type() protoreflect.EnumType {
-	return &file_models_plugin_manifest_proto_enumTypes[2]
+	return &file_models_plugin_manifest_proto_enumTypes[3]
 }
 
 func (x IntegrationAuthType) Number() protoreflect.EnumNumber {
@@ -189,7 +251,7 @@ func (x IntegrationAuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IntegrationAuthType.Descriptor instead.
 func (IntegrationAuthType) EnumDescriptor() ([]byte, []int) {
-	return file_models_plugin_manifest_proto_rawDescGZIP(), []int{2}
+	return file_models_plugin_manifest_proto_rawDescGZIP(), []int{3}
 }
 
 type PluginManifest struct {
@@ -218,8 +280,11 @@ type PluginManifest struct {
 	IconPath                 *string                `protobuf:"bytes,22,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"`
 	IsTemporarilyUnavailable *bool                  `protobuf:"varint,23,opt,name=is_temporarily_unavailable,json=isTemporarilyUnavailable,proto3,oneof" json:"is_temporarily_unavailable,omitempty"`
 	AllowMultipleInstances   *bool                  `protobuf:"varint,24,opt,name=allow_multiple_instances,json=allowMultipleInstances,proto3,oneof" json:"allow_multiple_instances,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// PipelineStage groups boosters in the pipeline editor UI.
+	// Only meaningful for type == PLUGIN_TYPE_ENRICHER.
+	Stage         *PipelineStage `protobuf:"varint,25,opt,name=stage,proto3,enum=fitglue.models.plugin.PipelineStage,oneof" json:"stage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PluginManifest) Reset() {
@@ -418,6 +483,13 @@ func (x *PluginManifest) GetAllowMultipleInstances() bool {
 		return *x.AllowMultipleInstances
 	}
 	return false
+}
+
+func (x *PluginManifest) GetStage() PipelineStage {
+	if x != nil && x.Stage != nil {
+		return *x.Stage
+	}
+	return PipelineStage_PIPELINE_STAGE_UNSPECIFIED
 }
 
 type Transformation struct {
@@ -1136,7 +1208,7 @@ var File_models_plugin_manifest_proto protoreflect.FileDescriptor
 
 const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/plugin/manifest.proto\x12\x15fitglue.models.plugin\"\x9f\n" +
+	"\x1cmodels/plugin/manifest.proto\x12\x15fitglue.models.plugin\"\xea\n" +
 	"\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x125\n" +
@@ -1166,7 +1238,8 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\ticon_path\x18\x16 \x01(\tH\tR\biconPath\x88\x01\x01\x12A\n" +
 	"\x1ais_temporarily_unavailable\x18\x17 \x01(\bH\n" +
 	"R\x18isTemporarilyUnavailable\x88\x01\x01\x12=\n" +
-	"\x18allow_multiple_instances\x18\x18 \x01(\bH\vR\x16allowMultipleInstances\x88\x01\x01B\x19\n" +
+	"\x18allow_multiple_instances\x18\x18 \x01(\bH\vR\x16allowMultipleInstances\x88\x01\x01\x12?\n" +
+	"\x05stage\x18\x19 \x01(\x0e2$.fitglue.models.plugin.PipelineStageH\fR\x05stage\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
 	"\x11_destination_typeB\x18\n" +
 	"\x16_external_url_templateB\x10\n" +
@@ -1180,7 +1253,8 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\n" +
 	"_icon_pathB\x1d\n" +
 	"\x1b_is_temporarily_unavailableB\x1b\n" +
-	"\x19_allow_multiple_instances\"\xaa\x01\n" +
+	"\x19_allow_multiple_instancesB\b\n" +
+	"\x06_stage\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +
@@ -1275,7 +1349,15 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\x17PLUGIN_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12PLUGIN_TYPE_SOURCE\x10\x01\x12\x18\n" +
 	"\x14PLUGIN_TYPE_ENRICHER\x10\x02\x12\x1b\n" +
-	"\x17PLUGIN_TYPE_DESTINATION\x10\x03*\x9c\x02\n" +
+	"\x17PLUGIN_TYPE_DESTINATION\x10\x03*\xd4\x01\n" +
+	"\rPipelineStage\x12\x1e\n" +
+	"\x1aPIPELINE_STAGE_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13PIPELINE_STAGE_GATE\x10\x01\x12\x1d\n" +
+	"\x19PIPELINE_STAGE_ENRICHMENT\x10\x02\x12\x1a\n" +
+	"\x16PIPELINE_STAGE_METRICS\x10\x03\x12\x1d\n" +
+	"\x19PIPELINE_STAGE_CONTEXT_AI\x10\x04\x12\x18\n" +
+	"\x14PIPELINE_STAGE_INPUT\x10\x05\x12\x16\n" +
+	"\x12PIPELINE_STAGE_VIZ\x10\x06*\x9c\x02\n" +
 	"\x0fConfigFieldType\x12!\n" +
 	"\x1dCONFIG_FIELD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18CONFIG_FIELD_TYPE_STRING\x10\x01\x12\x1c\n" +
@@ -1304,43 +1386,45 @@ func file_models_plugin_manifest_proto_rawDescGZIP() []byte {
 	return file_models_plugin_manifest_proto_rawDescData
 }
 
-var file_models_plugin_manifest_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_models_plugin_manifest_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_models_plugin_manifest_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_models_plugin_manifest_proto_goTypes = []any{
 	(PluginType)(0),                // 0: fitglue.models.plugin.PluginType
-	(ConfigFieldType)(0),           // 1: fitglue.models.plugin.ConfigFieldType
-	(IntegrationAuthType)(0),       // 2: fitglue.models.plugin.IntegrationAuthType
-	(*PluginManifest)(nil),         // 3: fitglue.models.plugin.PluginManifest
-	(*Transformation)(nil),         // 4: fitglue.models.plugin.Transformation
-	(*ConfigFieldSchema)(nil),      // 5: fitglue.models.plugin.ConfigFieldSchema
-	(*ConfigFieldDependency)(nil),  // 6: fitglue.models.plugin.ConfigFieldDependency
-	(*ConfigFieldOption)(nil),      // 7: fitglue.models.plugin.ConfigFieldOption
-	(*ConfigFieldValidation)(nil),  // 8: fitglue.models.plugin.ConfigFieldValidation
-	(*IntegrationAction)(nil),      // 9: fitglue.models.plugin.IntegrationAction
-	(*IntegrationManifest)(nil),    // 10: fitglue.models.plugin.IntegrationManifest
-	(*PluginRegistryResponse)(nil), // 11: fitglue.models.plugin.PluginRegistryResponse
+	(PipelineStage)(0),             // 1: fitglue.models.plugin.PipelineStage
+	(ConfigFieldType)(0),           // 2: fitglue.models.plugin.ConfigFieldType
+	(IntegrationAuthType)(0),       // 3: fitglue.models.plugin.IntegrationAuthType
+	(*PluginManifest)(nil),         // 4: fitglue.models.plugin.PluginManifest
+	(*Transformation)(nil),         // 5: fitglue.models.plugin.Transformation
+	(*ConfigFieldSchema)(nil),      // 6: fitglue.models.plugin.ConfigFieldSchema
+	(*ConfigFieldDependency)(nil),  // 7: fitglue.models.plugin.ConfigFieldDependency
+	(*ConfigFieldOption)(nil),      // 8: fitglue.models.plugin.ConfigFieldOption
+	(*ConfigFieldValidation)(nil),  // 9: fitglue.models.plugin.ConfigFieldValidation
+	(*IntegrationAction)(nil),      // 10: fitglue.models.plugin.IntegrationAction
+	(*IntegrationManifest)(nil),    // 11: fitglue.models.plugin.IntegrationManifest
+	(*PluginRegistryResponse)(nil), // 12: fitglue.models.plugin.PluginRegistryResponse
 }
 var file_models_plugin_manifest_proto_depIdxs = []int32{
 	0,  // 0: fitglue.models.plugin.PluginManifest.type:type_name -> fitglue.models.plugin.PluginType
-	5,  // 1: fitglue.models.plugin.PluginManifest.config_schema:type_name -> fitglue.models.plugin.ConfigFieldSchema
-	4,  // 2: fitglue.models.plugin.PluginManifest.transformations:type_name -> fitglue.models.plugin.Transformation
-	1,  // 3: fitglue.models.plugin.ConfigFieldSchema.field_type:type_name -> fitglue.models.plugin.ConfigFieldType
-	7,  // 4: fitglue.models.plugin.ConfigFieldSchema.options:type_name -> fitglue.models.plugin.ConfigFieldOption
-	8,  // 5: fitglue.models.plugin.ConfigFieldSchema.validation:type_name -> fitglue.models.plugin.ConfigFieldValidation
-	6,  // 6: fitglue.models.plugin.ConfigFieldSchema.depends_on:type_name -> fitglue.models.plugin.ConfigFieldDependency
-	7,  // 7: fitglue.models.plugin.ConfigFieldSchema.key_options:type_name -> fitglue.models.plugin.ConfigFieldOption
-	7,  // 8: fitglue.models.plugin.ConfigFieldSchema.value_options:type_name -> fitglue.models.plugin.ConfigFieldOption
-	2,  // 9: fitglue.models.plugin.IntegrationManifest.auth_type:type_name -> fitglue.models.plugin.IntegrationAuthType
-	9,  // 10: fitglue.models.plugin.IntegrationManifest.actions:type_name -> fitglue.models.plugin.IntegrationAction
-	3,  // 11: fitglue.models.plugin.PluginRegistryResponse.sources:type_name -> fitglue.models.plugin.PluginManifest
-	3,  // 12: fitglue.models.plugin.PluginRegistryResponse.enrichers:type_name -> fitglue.models.plugin.PluginManifest
-	3,  // 13: fitglue.models.plugin.PluginRegistryResponse.destinations:type_name -> fitglue.models.plugin.PluginManifest
-	10, // 14: fitglue.models.plugin.PluginRegistryResponse.integrations:type_name -> fitglue.models.plugin.IntegrationManifest
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	6,  // 1: fitglue.models.plugin.PluginManifest.config_schema:type_name -> fitglue.models.plugin.ConfigFieldSchema
+	5,  // 2: fitglue.models.plugin.PluginManifest.transformations:type_name -> fitglue.models.plugin.Transformation
+	1,  // 3: fitglue.models.plugin.PluginManifest.stage:type_name -> fitglue.models.plugin.PipelineStage
+	2,  // 4: fitglue.models.plugin.ConfigFieldSchema.field_type:type_name -> fitglue.models.plugin.ConfigFieldType
+	8,  // 5: fitglue.models.plugin.ConfigFieldSchema.options:type_name -> fitglue.models.plugin.ConfigFieldOption
+	9,  // 6: fitglue.models.plugin.ConfigFieldSchema.validation:type_name -> fitglue.models.plugin.ConfigFieldValidation
+	7,  // 7: fitglue.models.plugin.ConfigFieldSchema.depends_on:type_name -> fitglue.models.plugin.ConfigFieldDependency
+	8,  // 8: fitglue.models.plugin.ConfigFieldSchema.key_options:type_name -> fitglue.models.plugin.ConfigFieldOption
+	8,  // 9: fitglue.models.plugin.ConfigFieldSchema.value_options:type_name -> fitglue.models.plugin.ConfigFieldOption
+	3,  // 10: fitglue.models.plugin.IntegrationManifest.auth_type:type_name -> fitglue.models.plugin.IntegrationAuthType
+	10, // 11: fitglue.models.plugin.IntegrationManifest.actions:type_name -> fitglue.models.plugin.IntegrationAction
+	4,  // 12: fitglue.models.plugin.PluginRegistryResponse.sources:type_name -> fitglue.models.plugin.PluginManifest
+	4,  // 13: fitglue.models.plugin.PluginRegistryResponse.enrichers:type_name -> fitglue.models.plugin.PluginManifest
+	4,  // 14: fitglue.models.plugin.PluginRegistryResponse.destinations:type_name -> fitglue.models.plugin.PluginManifest
+	11, // 15: fitglue.models.plugin.PluginRegistryResponse.integrations:type_name -> fitglue.models.plugin.IntegrationManifest
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_models_plugin_manifest_proto_init() }
@@ -1357,7 +1441,7 @@ func file_models_plugin_manifest_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_plugin_manifest_proto_rawDesc), len(file_models_plugin_manifest_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -91,6 +91,131 @@ func (PipelineRunStatus) EnumDescriptor() ([]byte, []int) {
 	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{0}
 }
 
+type ExecutionStepKind int32
+
+const (
+	ExecutionStepKind_EXECUTION_STEP_KIND_UNSPECIFIED    ExecutionStepKind = 0
+	ExecutionStepKind_EXECUTION_STEP_KIND_SOURCE         ExecutionStepKind = 1 // webhook ingestion
+	ExecutionStepKind_EXECUTION_STEP_KIND_PARSE          ExecutionStepKind = 2 // FIT parse
+	ExecutionStepKind_EXECUTION_STEP_KIND_GATE           ExecutionStepKind = 3 // condition matcher / activity filter
+	ExecutionStepKind_EXECUTION_STEP_KIND_ENRICHER_BATCH ExecutionStepKind = 4 // the enricher chain as one step
+	ExecutionStepKind_EXECUTION_STEP_KIND_ROUTER         ExecutionStepKind = 5
+	ExecutionStepKind_EXECUTION_STEP_KIND_DESTINATION    ExecutionStepKind = 6
+)
+
+// Enum value maps for ExecutionStepKind.
+var (
+	ExecutionStepKind_name = map[int32]string{
+		0: "EXECUTION_STEP_KIND_UNSPECIFIED",
+		1: "EXECUTION_STEP_KIND_SOURCE",
+		2: "EXECUTION_STEP_KIND_PARSE",
+		3: "EXECUTION_STEP_KIND_GATE",
+		4: "EXECUTION_STEP_KIND_ENRICHER_BATCH",
+		5: "EXECUTION_STEP_KIND_ROUTER",
+		6: "EXECUTION_STEP_KIND_DESTINATION",
+	}
+	ExecutionStepKind_value = map[string]int32{
+		"EXECUTION_STEP_KIND_UNSPECIFIED":    0,
+		"EXECUTION_STEP_KIND_SOURCE":         1,
+		"EXECUTION_STEP_KIND_PARSE":          2,
+		"EXECUTION_STEP_KIND_GATE":           3,
+		"EXECUTION_STEP_KIND_ENRICHER_BATCH": 4,
+		"EXECUTION_STEP_KIND_ROUTER":         5,
+		"EXECUTION_STEP_KIND_DESTINATION":    6,
+	}
+)
+
+func (x ExecutionStepKind) Enum() *ExecutionStepKind {
+	p := new(ExecutionStepKind)
+	*p = x
+	return p
+}
+
+func (x ExecutionStepKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExecutionStepKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_models_pipeline_execution_proto_enumTypes[1].Descriptor()
+}
+
+func (ExecutionStepKind) Type() protoreflect.EnumType {
+	return &file_models_pipeline_execution_proto_enumTypes[1]
+}
+
+func (x ExecutionStepKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExecutionStepKind.Descriptor instead.
+func (ExecutionStepKind) EnumDescriptor() ([]byte, []int) {
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{1}
+}
+
+type ExecutionStepStatus int32
+
+const (
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_UNSPECIFIED ExecutionStepStatus = 0
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_QUEUED      ExecutionStepStatus = 1
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_RUNNING     ExecutionStepStatus = 2
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_OK          ExecutionStepStatus = 3
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_PASS        ExecutionStepStatus = 4 // gate passed
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_SKIPPED     ExecutionStepStatus = 5
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_FAILED      ExecutionStepStatus = 6
+	ExecutionStepStatus_EXECUTION_STEP_STATUS_RETRIED     ExecutionStepStatus = 7 // re-run via Repost*
+)
+
+// Enum value maps for ExecutionStepStatus.
+var (
+	ExecutionStepStatus_name = map[int32]string{
+		0: "EXECUTION_STEP_STATUS_UNSPECIFIED",
+		1: "EXECUTION_STEP_STATUS_QUEUED",
+		2: "EXECUTION_STEP_STATUS_RUNNING",
+		3: "EXECUTION_STEP_STATUS_OK",
+		4: "EXECUTION_STEP_STATUS_PASS",
+		5: "EXECUTION_STEP_STATUS_SKIPPED",
+		6: "EXECUTION_STEP_STATUS_FAILED",
+		7: "EXECUTION_STEP_STATUS_RETRIED",
+	}
+	ExecutionStepStatus_value = map[string]int32{
+		"EXECUTION_STEP_STATUS_UNSPECIFIED": 0,
+		"EXECUTION_STEP_STATUS_QUEUED":      1,
+		"EXECUTION_STEP_STATUS_RUNNING":     2,
+		"EXECUTION_STEP_STATUS_OK":          3,
+		"EXECUTION_STEP_STATUS_PASS":        4,
+		"EXECUTION_STEP_STATUS_SKIPPED":     5,
+		"EXECUTION_STEP_STATUS_FAILED":      6,
+		"EXECUTION_STEP_STATUS_RETRIED":     7,
+	}
+)
+
+func (x ExecutionStepStatus) Enum() *ExecutionStepStatus {
+	p := new(ExecutionStepStatus)
+	*p = x
+	return p
+}
+
+func (x ExecutionStepStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExecutionStepStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_models_pipeline_execution_proto_enumTypes[2].Descriptor()
+}
+
+func (ExecutionStepStatus) Type() protoreflect.EnumType {
+	return &file_models_pipeline_execution_proto_enumTypes[2]
+}
+
+func (x ExecutionStepStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExecutionStepStatus.Descriptor instead.
+func (ExecutionStepStatus) EnumDescriptor() ([]byte, []int) {
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{2}
+}
+
 type DestinationStatus int32
 
 const (
@@ -130,11 +255,11 @@ func (x DestinationStatus) String() string {
 }
 
 func (DestinationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_models_pipeline_execution_proto_enumTypes[1].Descriptor()
+	return file_models_pipeline_execution_proto_enumTypes[3].Descriptor()
 }
 
 func (DestinationStatus) Type() protoreflect.EnumType {
-	return &file_models_pipeline_execution_proto_enumTypes[1]
+	return &file_models_pipeline_execution_proto_enumTypes[3]
 }
 
 func (x DestinationStatus) Number() protoreflect.EnumNumber {
@@ -143,7 +268,7 @@ func (x DestinationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DestinationStatus.Descriptor instead.
 func (DestinationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{1}
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{3}
 }
 
 type ExecutionStatus int32
@@ -194,11 +319,11 @@ func (x ExecutionStatus) String() string {
 }
 
 func (ExecutionStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_models_pipeline_execution_proto_enumTypes[2].Descriptor()
+	return file_models_pipeline_execution_proto_enumTypes[4].Descriptor()
 }
 
 func (ExecutionStatus) Type() protoreflect.EnumType {
-	return &file_models_pipeline_execution_proto_enumTypes[2]
+	return &file_models_pipeline_execution_proto_enumTypes[4]
 }
 
 func (x ExecutionStatus) Number() protoreflect.EnumNumber {
@@ -207,7 +332,7 @@ func (x ExecutionStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExecutionStatus.Descriptor instead.
 func (ExecutionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{2}
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{4}
 }
 
 type PipelineRun struct {
@@ -230,8 +355,12 @@ type PipelineRun struct {
 	PendingInputId     *string                `protobuf:"bytes,16,opt,name=pending_input_id,json=pendingInputId,proto3,oneof" json:"pending_input_id,omitempty"`
 	OriginalPayloadUri string                 `protobuf:"bytes,22,opt,name=original_payload_uri,json=originalPayloadUri,proto3" json:"original_payload_uri,omitempty"`
 	EnrichedEventUri   string                 `protobuf:"bytes,23,opt,name=enriched_event_uri,json=enrichedEventUri,proto3" json:"enriched_event_uri,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Unified record of every step in a pipeline run — source, parse, gate,
+	// enricher batch, router, and per-destination uploaders.
+	// boosters[] is preserved for existing documents; new clients should prefer steps[].
+	Steps         []*ExecutionStep `protobuf:"bytes,24,rep,name=steps,proto3" json:"steps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PipelineRun) Reset() {
@@ -390,20 +519,152 @@ func (x *PipelineRun) GetEnrichedEventUri() string {
 	return ""
 }
 
+func (x *PipelineRun) GetSteps() []*ExecutionStep {
+	if x != nil {
+		return x.Steps
+	}
+	return nil
+}
+
+// ExecutionStep is the unified record for a single step in a pipeline run.
+type ExecutionStep struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`            // stable per-step ID for deep-linking
+	Ordinal       int32                  `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"` // 1-indexed display order
+	Kind          ExecutionStepKind      `protobuf:"varint,3,opt,name=kind,proto3,enum=fitglue.models.pipeline.ExecutionStepKind" json:"kind,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"` // "File Upload", "Parse FIT", "Strava Upload"
+	Service       string                 `protobuf:"bytes,5,opt,name=service,proto3" json:"service,omitempty"`                            // e.g. "webhook · strava"
+	Status        ExecutionStepStatus    `protobuf:"varint,6,opt,name=status,proto3,enum=fitglue.models.pipeline.ExecutionStepStatus" json:"status,omitempty"`
+	OffsetMs      int64                  `protobuf:"varint,7,opt,name=offset_ms,json=offsetMs,proto3" json:"offset_ms,omitempty"` // ms from run start
+	DurationMs    int64                  `protobuf:"varint,8,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	StatusLabel   *string                `protobuf:"bytes,9,opt,name=status_label,json=statusLabel,proto3,oneof" json:"status_label,omitempty"` // override pill text, e.g. "✓ 25/25"
+	Error         *string                `protobuf:"bytes,10,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,11,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecutionStep) Reset() {
+	*x = ExecutionStep{}
+	mi := &file_models_pipeline_execution_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutionStep) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutionStep) ProtoMessage() {}
+
+func (x *ExecutionStep) ProtoReflect() protoreflect.Message {
+	mi := &file_models_pipeline_execution_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutionStep.ProtoReflect.Descriptor instead.
+func (*ExecutionStep) Descriptor() ([]byte, []int) {
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ExecutionStep) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetOrdinal() int32 {
+	if x != nil {
+		return x.Ordinal
+	}
+	return 0
+}
+
+func (x *ExecutionStep) GetKind() ExecutionStepKind {
+	if x != nil {
+		return x.Kind
+	}
+	return ExecutionStepKind_EXECUTION_STEP_KIND_UNSPECIFIED
+}
+
+func (x *ExecutionStep) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetStatus() ExecutionStepStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ExecutionStepStatus_EXECUTION_STEP_STATUS_UNSPECIFIED
+}
+
+func (x *ExecutionStep) GetOffsetMs() int64 {
+	if x != nil {
+		return x.OffsetMs
+	}
+	return 0
+}
+
+func (x *ExecutionStep) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *ExecutionStep) GetStatusLabel() string {
+	if x != nil && x.StatusLabel != nil {
+		return *x.StatusLabel
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetError() string {
+	if x != nil && x.Error != nil {
+		return *x.Error
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 type BoosterExecution struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProviderName  string                 `protobuf:"bytes,1,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	DurationMs    int64                  `protobuf:"varint,3,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
 	Metadata      map[string]string      `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Error         *string                `protobuf:"bytes,5,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Status        ExecutionStepStatus    `protobuf:"varint,6,opt,name=status,proto3,enum=fitglue.models.pipeline.ExecutionStepStatus" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BoosterExecution) Reset() {
 	*x = BoosterExecution{}
-	mi := &file_models_pipeline_execution_proto_msgTypes[1]
+	mi := &file_models_pipeline_execution_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -415,7 +676,7 @@ func (x *BoosterExecution) String() string {
 func (*BoosterExecution) ProtoMessage() {}
 
 func (x *BoosterExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_models_pipeline_execution_proto_msgTypes[1]
+	mi := &file_models_pipeline_execution_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -428,19 +689,12 @@ func (x *BoosterExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoosterExecution.ProtoReflect.Descriptor instead.
 func (*BoosterExecution) Descriptor() ([]byte, []int) {
-	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{1}
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *BoosterExecution) GetProviderName() string {
 	if x != nil {
 		return x.ProviderName
-	}
-	return ""
-}
-
-func (x *BoosterExecution) GetStatus() string {
-	if x != nil {
-		return x.Status
 	}
 	return ""
 }
@@ -466,6 +720,13 @@ func (x *BoosterExecution) GetError() string {
 	return ""
 }
 
+func (x *BoosterExecution) GetStatus() ExecutionStepStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ExecutionStepStatus_EXECUTION_STEP_STATUS_UNSPECIFIED
+}
+
 type DestinationOutcome struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Destination   plugin.DestinationType `protobuf:"varint,1,opt,name=destination,proto3,enum=fitglue.models.plugin.DestinationType" json:"destination,omitempty"`
@@ -479,7 +740,7 @@ type DestinationOutcome struct {
 
 func (x *DestinationOutcome) Reset() {
 	*x = DestinationOutcome{}
-	mi := &file_models_pipeline_execution_proto_msgTypes[2]
+	mi := &file_models_pipeline_execution_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -491,7 +752,7 @@ func (x *DestinationOutcome) String() string {
 func (*DestinationOutcome) ProtoMessage() {}
 
 func (x *DestinationOutcome) ProtoReflect() protoreflect.Message {
-	mi := &file_models_pipeline_execution_proto_msgTypes[2]
+	mi := &file_models_pipeline_execution_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -504,7 +765,7 @@ func (x *DestinationOutcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DestinationOutcome.ProtoReflect.Descriptor instead.
 func (*DestinationOutcome) Descriptor() ([]byte, []int) {
-	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{2}
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DestinationOutcome) GetDestination() plugin.DestinationType {
@@ -564,7 +825,7 @@ type ExecutionRecord struct {
 
 func (x *ExecutionRecord) Reset() {
 	*x = ExecutionRecord{}
-	mi := &file_models_pipeline_execution_proto_msgTypes[3]
+	mi := &file_models_pipeline_execution_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -576,7 +837,7 @@ func (x *ExecutionRecord) String() string {
 func (*ExecutionRecord) ProtoMessage() {}
 
 func (x *ExecutionRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_models_pipeline_execution_proto_msgTypes[3]
+	mi := &file_models_pipeline_execution_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -589,7 +850,7 @@ func (x *ExecutionRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecutionRecord.ProtoReflect.Descriptor instead.
 func (*ExecutionRecord) Descriptor() ([]byte, []int) {
-	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{3}
+	return file_models_pipeline_execution_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ExecutionRecord) GetExecutionId() string {
@@ -694,7 +955,7 @@ var File_models_pipeline_execution_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\n" +
-	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x88\a\n" +
+	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\xc6\a\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -719,20 +980,40 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\x0estatus_message\x18\x0f \x01(\tH\x00R\rstatusMessage\x88\x01\x01\x12-\n" +
 	"\x10pending_input_id\x18\x10 \x01(\tH\x01R\x0ependingInputId\x88\x01\x01\x120\n" +
 	"\x14original_payload_uri\x18\x16 \x01(\tR\x12originalPayloadUri\x12,\n" +
-	"\x12enriched_event_uri\x18\x17 \x01(\tR\x10enrichedEventUriB\x11\n" +
+	"\x12enriched_event_uri\x18\x17 \x01(\tR\x10enrichedEventUri\x12<\n" +
+	"\x05steps\x18\x18 \x03(\v2&.fitglue.models.pipeline.ExecutionStepR\x05stepsB\x11\n" +
 	"\x0f_status_messageB\x13\n" +
-	"\x11_pending_input_id\"\xa7\x02\n" +
+	"\x11_pending_input_id\"\xa7\x04\n" +
+	"\rExecutionStep\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\aordinal\x18\x02 \x01(\x05R\aordinal\x12>\n" +
+	"\x04kind\x18\x03 \x01(\x0e2*.fitglue.models.pipeline.ExecutionStepKindR\x04kind\x12!\n" +
+	"\fdisplay_name\x18\x04 \x01(\tR\vdisplayName\x12\x18\n" +
+	"\aservice\x18\x05 \x01(\tR\aservice\x12D\n" +
+	"\x06status\x18\x06 \x01(\x0e2,.fitglue.models.pipeline.ExecutionStepStatusR\x06status\x12\x1b\n" +
+	"\toffset_ms\x18\a \x01(\x03R\boffsetMs\x12\x1f\n" +
+	"\vduration_ms\x18\b \x01(\x03R\n" +
+	"durationMs\x12&\n" +
+	"\fstatus_label\x18\t \x01(\tH\x00R\vstatusLabel\x88\x01\x01\x12\x19\n" +
+	"\x05error\x18\n" +
+	" \x01(\tH\x01R\x05error\x88\x01\x01\x12P\n" +
+	"\bmetadata\x18\v \x03(\v24.fitglue.models.pipeline.ExecutionStep.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_status_labelB\b\n" +
+	"\x06_error\"\xdb\x02\n" +
 	"\x10BoosterExecution\x12#\n" +
-	"\rprovider_name\x18\x01 \x01(\tR\fproviderName\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1f\n" +
+	"\rprovider_name\x18\x01 \x01(\tR\fproviderName\x12\x1f\n" +
 	"\vduration_ms\x18\x03 \x01(\x03R\n" +
 	"durationMs\x12S\n" +
 	"\bmetadata\x18\x04 \x03(\v27.fitglue.models.pipeline.BoosterExecution.MetadataEntryR\bmetadata\x12\x19\n" +
-	"\x05error\x18\x05 \x01(\tH\x00R\x05error\x88\x01\x01\x1a;\n" +
+	"\x05error\x18\x05 \x01(\tH\x00R\x05error\x88\x01\x01\x12D\n" +
+	"\x06status\x18\x06 \x01(\x0e2,.fitglue.models.pipeline.ExecutionStepStatusR\x06status\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\b\n" +
-	"\x06_error\"\xbc\x02\n" +
+	"\x06_errorJ\x04\b\x02\x10\x03\"\xbc\x02\n" +
 	"\x12DestinationOutcome\x12H\n" +
 	"\vdestination\x18\x01 \x01(\x0e2&.fitglue.models.plugin.DestinationTypeR\vdestination\x12B\n" +
 	"\x06status\x18\x02 \x01(\x0e2*.fitglue.models.pipeline.DestinationStatusR\x06status\x12$\n" +
@@ -780,7 +1061,24 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\x1bPIPELINE_RUN_STATUS_PENDING\x10\x05\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_SKIPPED\x10\x06\x12 \n" +
 	"\x1cPIPELINE_RUN_STATUS_ARCHIVED\x10\a\x12$\n" +
-	" PIPELINE_RUN_STATUS_TIER_BLOCKED\x10\b*\xb6\x01\n" +
+	" PIPELINE_RUN_STATUS_TIER_BLOCKED\x10\b*\x82\x02\n" +
+	"\x11ExecutionStepKind\x12#\n" +
+	"\x1fEXECUTION_STEP_KIND_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aEXECUTION_STEP_KIND_SOURCE\x10\x01\x12\x1d\n" +
+	"\x19EXECUTION_STEP_KIND_PARSE\x10\x02\x12\x1c\n" +
+	"\x18EXECUTION_STEP_KIND_GATE\x10\x03\x12&\n" +
+	"\"EXECUTION_STEP_KIND_ENRICHER_BATCH\x10\x04\x12\x1e\n" +
+	"\x1aEXECUTION_STEP_KIND_ROUTER\x10\x05\x12#\n" +
+	"\x1fEXECUTION_STEP_KIND_DESTINATION\x10\x06*\xa7\x02\n" +
+	"\x13ExecutionStepStatus\x12%\n" +
+	"!EXECUTION_STEP_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cEXECUTION_STEP_STATUS_QUEUED\x10\x01\x12!\n" +
+	"\x1dEXECUTION_STEP_STATUS_RUNNING\x10\x02\x12\x1c\n" +
+	"\x18EXECUTION_STEP_STATUS_OK\x10\x03\x12\x1e\n" +
+	"\x1aEXECUTION_STEP_STATUS_PASS\x10\x04\x12!\n" +
+	"\x1dEXECUTION_STEP_STATUS_SKIPPED\x10\x05\x12 \n" +
+	"\x1cEXECUTION_STEP_STATUS_FAILED\x10\x06\x12!\n" +
+	"\x1dEXECUTION_STEP_STATUS_RETRIED\x10\a*\xb6\x01\n" +
 	"\x11DestinationStatus\x12\"\n" +
 	"\x1eDESTINATION_STATUS_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aDESTINATION_STATUS_PENDING\x10\x01\x12\x1e\n" +
@@ -809,43 +1107,52 @@ func file_models_pipeline_execution_proto_rawDescGZIP() []byte {
 	return file_models_pipeline_execution_proto_rawDescData
 }
 
-var file_models_pipeline_execution_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_models_pipeline_execution_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_models_pipeline_execution_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_models_pipeline_execution_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_models_pipeline_execution_proto_goTypes = []any{
 	(PipelineRunStatus)(0),        // 0: fitglue.models.pipeline.PipelineRunStatus
-	(DestinationStatus)(0),        // 1: fitglue.models.pipeline.DestinationStatus
-	(ExecutionStatus)(0),          // 2: fitglue.models.pipeline.ExecutionStatus
-	(*PipelineRun)(nil),           // 3: fitglue.models.pipeline.PipelineRun
-	(*BoosterExecution)(nil),      // 4: fitglue.models.pipeline.BoosterExecution
-	(*DestinationOutcome)(nil),    // 5: fitglue.models.pipeline.DestinationOutcome
-	(*ExecutionRecord)(nil),       // 6: fitglue.models.pipeline.ExecutionRecord
-	nil,                           // 7: fitglue.models.pipeline.BoosterExecution.MetadataEntry
-	(activity.ActivityType)(0),    // 8: fitglue.models.activity.ActivityType
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
-	(plugin.DestinationType)(0),   // 10: fitglue.models.plugin.DestinationType
+	(ExecutionStepKind)(0),        // 1: fitglue.models.pipeline.ExecutionStepKind
+	(ExecutionStepStatus)(0),      // 2: fitglue.models.pipeline.ExecutionStepStatus
+	(DestinationStatus)(0),        // 3: fitglue.models.pipeline.DestinationStatus
+	(ExecutionStatus)(0),          // 4: fitglue.models.pipeline.ExecutionStatus
+	(*PipelineRun)(nil),           // 5: fitglue.models.pipeline.PipelineRun
+	(*ExecutionStep)(nil),         // 6: fitglue.models.pipeline.ExecutionStep
+	(*BoosterExecution)(nil),      // 7: fitglue.models.pipeline.BoosterExecution
+	(*DestinationOutcome)(nil),    // 8: fitglue.models.pipeline.DestinationOutcome
+	(*ExecutionRecord)(nil),       // 9: fitglue.models.pipeline.ExecutionRecord
+	nil,                           // 10: fitglue.models.pipeline.ExecutionStep.MetadataEntry
+	nil,                           // 11: fitglue.models.pipeline.BoosterExecution.MetadataEntry
+	(activity.ActivityType)(0),    // 12: fitglue.models.activity.ActivityType
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(plugin.DestinationType)(0),   // 14: fitglue.models.plugin.DestinationType
 }
 var file_models_pipeline_execution_proto_depIdxs = []int32{
-	8,  // 0: fitglue.models.pipeline.PipelineRun.type:type_name -> fitglue.models.activity.ActivityType
-	9,  // 1: fitglue.models.pipeline.PipelineRun.start_time:type_name -> google.protobuf.Timestamp
+	12, // 0: fitglue.models.pipeline.PipelineRun.type:type_name -> fitglue.models.activity.ActivityType
+	13, // 1: fitglue.models.pipeline.PipelineRun.start_time:type_name -> google.protobuf.Timestamp
 	0,  // 2: fitglue.models.pipeline.PipelineRun.status:type_name -> fitglue.models.pipeline.PipelineRunStatus
-	9,  // 3: fitglue.models.pipeline.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
-	9,  // 4: fitglue.models.pipeline.PipelineRun.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 5: fitglue.models.pipeline.PipelineRun.boosters:type_name -> fitglue.models.pipeline.BoosterExecution
-	5,  // 6: fitglue.models.pipeline.PipelineRun.destinations:type_name -> fitglue.models.pipeline.DestinationOutcome
-	7,  // 7: fitglue.models.pipeline.BoosterExecution.metadata:type_name -> fitglue.models.pipeline.BoosterExecution.MetadataEntry
-	10, // 8: fitglue.models.pipeline.DestinationOutcome.destination:type_name -> fitglue.models.plugin.DestinationType
-	1,  // 9: fitglue.models.pipeline.DestinationOutcome.status:type_name -> fitglue.models.pipeline.DestinationStatus
-	9,  // 10: fitglue.models.pipeline.DestinationOutcome.completed_at:type_name -> google.protobuf.Timestamp
-	2,  // 11: fitglue.models.pipeline.ExecutionRecord.status:type_name -> fitglue.models.pipeline.ExecutionStatus
-	9,  // 12: fitglue.models.pipeline.ExecutionRecord.timestamp:type_name -> google.protobuf.Timestamp
-	9,  // 13: fitglue.models.pipeline.ExecutionRecord.start_time:type_name -> google.protobuf.Timestamp
-	9,  // 14: fitglue.models.pipeline.ExecutionRecord.end_time:type_name -> google.protobuf.Timestamp
-	9,  // 15: fitglue.models.pipeline.ExecutionRecord.expire_at:type_name -> google.protobuf.Timestamp
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	13, // 3: fitglue.models.pipeline.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
+	13, // 4: fitglue.models.pipeline.PipelineRun.updated_at:type_name -> google.protobuf.Timestamp
+	7,  // 5: fitglue.models.pipeline.PipelineRun.boosters:type_name -> fitglue.models.pipeline.BoosterExecution
+	8,  // 6: fitglue.models.pipeline.PipelineRun.destinations:type_name -> fitglue.models.pipeline.DestinationOutcome
+	6,  // 7: fitglue.models.pipeline.PipelineRun.steps:type_name -> fitglue.models.pipeline.ExecutionStep
+	1,  // 8: fitglue.models.pipeline.ExecutionStep.kind:type_name -> fitglue.models.pipeline.ExecutionStepKind
+	2,  // 9: fitglue.models.pipeline.ExecutionStep.status:type_name -> fitglue.models.pipeline.ExecutionStepStatus
+	10, // 10: fitglue.models.pipeline.ExecutionStep.metadata:type_name -> fitglue.models.pipeline.ExecutionStep.MetadataEntry
+	11, // 11: fitglue.models.pipeline.BoosterExecution.metadata:type_name -> fitglue.models.pipeline.BoosterExecution.MetadataEntry
+	2,  // 12: fitglue.models.pipeline.BoosterExecution.status:type_name -> fitglue.models.pipeline.ExecutionStepStatus
+	14, // 13: fitglue.models.pipeline.DestinationOutcome.destination:type_name -> fitglue.models.plugin.DestinationType
+	3,  // 14: fitglue.models.pipeline.DestinationOutcome.status:type_name -> fitglue.models.pipeline.DestinationStatus
+	13, // 15: fitglue.models.pipeline.DestinationOutcome.completed_at:type_name -> google.protobuf.Timestamp
+	4,  // 16: fitglue.models.pipeline.ExecutionRecord.status:type_name -> fitglue.models.pipeline.ExecutionStatus
+	13, // 17: fitglue.models.pipeline.ExecutionRecord.timestamp:type_name -> google.protobuf.Timestamp
+	13, // 18: fitglue.models.pipeline.ExecutionRecord.start_time:type_name -> google.protobuf.Timestamp
+	13, // 19: fitglue.models.pipeline.ExecutionRecord.end_time:type_name -> google.protobuf.Timestamp
+	13, // 20: fitglue.models.pipeline.ExecutionRecord.expire_at:type_name -> google.protobuf.Timestamp
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_models_pipeline_execution_proto_init() }
@@ -857,13 +1164,14 @@ func file_models_pipeline_execution_proto_init() {
 	file_models_pipeline_execution_proto_msgTypes[1].OneofWrappers = []any{}
 	file_models_pipeline_execution_proto_msgTypes[2].OneofWrappers = []any{}
 	file_models_pipeline_execution_proto_msgTypes[3].OneofWrappers = []any{}
+	file_models_pipeline_execution_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_pipeline_execution_proto_rawDesc), len(file_models_pipeline_execution_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   5,
+			NumEnums:      5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

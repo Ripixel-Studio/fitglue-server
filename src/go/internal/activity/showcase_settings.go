@@ -222,6 +222,7 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 
 	// Hydrate ActivityData from GCS if not inline.
 	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish).
+	var hydratedEnrichments *pbactivity.ActivityEnrichments
 	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
 		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
 		if err == nil && len(data) > 0 {
@@ -229,37 +230,60 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
 			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
 				showcase.ActivityData = fullEvent.ActivityData
+				hydratedEnrichments = fullEvent.Enrichments
 			}
 		}
 	}
 
 	// Build the entry from showcase metadata
 	newEntry := &pbactivity.ShowcaseProfileEntry{
-		ShowcaseId:        req.ShowcaseId,
-		Title:             showcase.Title,
-		ActivityType:      showcase.ActivityType,
-		Source:            showcase.Source,
-		StartTime:         showcase.StartTime,
-		RouteThumbnailUrl: showcase.EnrichmentMetadata["asset_route_thumbnail"],
+		ShowcaseId:       req.ShowcaseId,
+		Title:            showcase.Title,
+		ActivityType:     showcase.ActivityType,
+		Source:           showcase.Source,
+		StartTime:        showcase.StartTime,
+		BoosterCount:     int32(len(showcase.AppliedEnrichments)),
+		DestinationCount: req.DestinationCount,
+		// RouteThumbnailUrl populated by route_thumbnail enricher write on activity sync
 	}
 
 	// Populate metrics from ActivityData if available
 	if showcase.ActivityData != nil && len(showcase.ActivityData.Sessions) > 0 {
+		sess := showcase.ActivityData.Sessions[0]
 		if activityTypeHasDistance(showcase.ActivityType) {
-			newEntry.DistanceMeters = showcase.ActivityData.Sessions[0].TotalDistance
+			newEntry.DistanceMeters = sess.TotalDistance
 		}
-		newEntry.DurationSeconds = showcase.ActivityData.Sessions[0].TotalElapsedTime
-		newEntry.TotalSets = int32(len(showcase.ActivityData.Sessions[0].StrengthSets))
+		newEntry.DurationSeconds = sess.TotalElapsedTime
+		newEntry.TotalSets = int32(len(sess.StrengthSets))
 
 		// Sum reps and volume (reps × weight per set) across all strength sets.
 		var totalReps int32
 		var totalVolumeKg float64
-		for _, set := range showcase.ActivityData.Sessions[0].StrengthSets {
+		for _, set := range sess.StrengthSets {
 			totalReps += set.Reps
 			totalVolumeKg += float64(set.Reps) * set.WeightKg
 		}
 		newEntry.TotalReps = totalReps
 		newEntry.TotalWeightKg = totalVolumeKg
+
+		// avg_heart_rate: prefer typed enrichment, fall back to session field
+		if hydratedEnrichments != nil && hydratedEnrichments.HeartRate != nil && hydratedEnrichments.HeartRate.AvgBpm > 0 {
+			v := hydratedEnrichments.HeartRate.AvgBpm
+			newEntry.AvgHeartRate = &v
+		} else if sess.AvgHeartRate != nil && *sess.AvgHeartRate > 0 {
+			newEntry.AvgHeartRate = sess.AvgHeartRate
+		}
+
+		// calories_kcal: from typed enrichment
+		if hydratedEnrichments != nil && hydratedEnrichments.Calories != nil && hydratedEnrichments.Calories.Kcal > 0 {
+			v := hydratedEnrichments.Calories.Kcal
+			newEntry.CaloriesKcal = &v
+		}
+
+		// sparkline: downsample HR timeseries from lap records (≤ 24 points)
+		if sparkline := buildSparkline(sess); sparkline != nil {
+			newEntry.Sparkline = sparkline
+		}
 	}
 
 	// Write entry to sub-collection (idempotent via MergeAll)
@@ -568,11 +592,24 @@ func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivitySt
 	}
 
 	// Current-month count from billing_events.
-	period := time.Now().Format("2006-01")
+	now := time.Now()
+	period := now.Format("2006-01")
 	uploadsThisMonth, err := s.store.CountBillingEventsForPeriod(ctx, req.UserId, period)
 	if err != nil {
 		s.logger.Error(ctx, "failed to count billing events for period", "error", err, "period", period)
 		uploadsThisMonth = 0
+	}
+
+	// Current-week count: Monday 00:00 UTC to now.
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7 // Sunday → 7 so Monday=1
+	}
+	startOfWeek := time.Date(now.Year(), now.Month(), now.Day()-weekday+1, 0, 0, 0, 0, time.UTC)
+	activitiesThisWeek, err := s.store.CountBillingEventsSince(ctx, req.UserId, startOfWeek)
+	if err != nil {
+		s.logger.Error(ctx, "failed to count billing events this week", "error", err)
+		activitiesThisWeek = 0
 	}
 
 	// Count showcased activities.
@@ -583,8 +620,74 @@ func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivitySt
 	}
 
 	return &pbsvc.GetActivityStatsResponse{
-		TotalActivities:  totalActivities,
-		TotalShowcases:   totalShowcases,
-		UploadsThisMonth: uploadsThisMonth,
+		TotalActivities:     totalActivities,
+		TotalShowcases:      totalShowcases,
+		UploadsThisMonth:    uploadsThisMonth,
+		ActivitiesThisMonth: uploadsThisMonth,
+		ActivitiesThisWeek:  activitiesThisWeek,
 	}, nil
+}
+
+// buildSparkline builds a downsampled timeseries for a showcase card from lap records.
+// It picks the best available metric (heart_rate > power > speed) and returns ≤ 24 samples.
+// Returns nil if no non-zero values are found.
+func buildSparkline(sess *pbactivity.Session) *pbactivity.EntrySparkline {
+	const maxPoints = 24
+
+	// Collect all non-zero values from all laps for each candidate metric.
+	var hrVals, powerVals, speedVals []float64
+	for _, lap := range sess.Laps {
+		for _, rec := range lap.Records {
+			if rec.HeartRate > 0 {
+				hrVals = append(hrVals, float64(rec.HeartRate))
+			}
+			if rec.Power > 0 {
+				powerVals = append(powerVals, float64(rec.Power))
+			}
+			if rec.Speed > 0 {
+				speedVals = append(speedVals, rec.Speed)
+			}
+		}
+	}
+
+	var metric string
+	var raw []float64
+	switch {
+	case len(hrVals) > 0:
+		metric, raw = "heart_rate", hrVals
+	case len(powerVals) > 0:
+		metric, raw = "power", powerVals
+	case len(speedVals) > 0:
+		metric, raw = "speed", speedVals
+	default:
+		return nil
+	}
+
+	values := downsample(raw, maxPoints)
+	return &pbactivity.EntrySparkline{Metric: metric, Values: values}
+}
+
+// downsample reduces a slice to at most n evenly-spaced samples using bucket averaging.
+func downsample(in []float64, n int) []float64 {
+	if len(in) == 0 {
+		return nil
+	}
+	if len(in) <= n {
+		return in
+	}
+	out := make([]float64, n)
+	step := float64(len(in)) / float64(n)
+	for i := range out {
+		start := int(float64(i) * step)
+		end := int(float64(i+1) * step)
+		if end > len(in) {
+			end = len(in)
+		}
+		var sum float64
+		for _, v := range in[start:end] {
+			sum += v
+		}
+		out[i] = sum / float64(end-start)
+	}
+	return out
 }

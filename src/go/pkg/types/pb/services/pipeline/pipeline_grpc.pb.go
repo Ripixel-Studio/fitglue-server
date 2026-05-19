@@ -33,6 +33,8 @@ const (
 	PipelineService_GetPipelineRun_FullMethodName        = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
 	PipelineService_ListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
 	PipelineService_AdminListPipelineRuns_FullMethodName = "/fitglue.services.pipeline.PipelineService/AdminListPipelineRuns"
+	PipelineService_ListSourceActivities_FullMethodName  = "/fitglue.services.pipeline.PipelineService/ListSourceActivities"
+	PipelineService_BackfillActivities_FullMethodName    = "/fitglue.services.pipeline.PipelineService/BackfillActivities"
 )
 
 // PipelineServiceClient is the client API for PipelineService service.
@@ -51,6 +53,8 @@ type PipelineServiceClient interface {
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsRequest, opts ...grpc.CallOption) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(ctx context.Context, in *AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*AdminListPipelineRunsResponse, error)
+	ListSourceActivities(ctx context.Context, in *ListSourceActivitiesRequest, opts ...grpc.CallOption) (*ListSourceActivitiesResponse, error)
+	BackfillActivities(ctx context.Context, in *BackfillActivitiesRequest, opts ...grpc.CallOption) (*BackfillActivitiesResponse, error)
 }
 
 type pipelineServiceClient struct {
@@ -181,6 +185,26 @@ func (c *pipelineServiceClient) AdminListPipelineRuns(ctx context.Context, in *A
 	return out, nil
 }
 
+func (c *pipelineServiceClient) ListSourceActivities(ctx context.Context, in *ListSourceActivitiesRequest, opts ...grpc.CallOption) (*ListSourceActivitiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSourceActivitiesResponse)
+	err := c.cc.Invoke(ctx, PipelineService_ListSourceActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelineServiceClient) BackfillActivities(ctx context.Context, in *BackfillActivitiesRequest, opts ...grpc.CallOption) (*BackfillActivitiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BackfillActivitiesResponse)
+	err := c.cc.Invoke(ctx, PipelineService_BackfillActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PipelineServiceServer is the server API for PipelineService service.
 // All implementations must embed UnimplementedPipelineServiceServer
 // for forward compatibility.
@@ -197,6 +221,8 @@ type PipelineServiceServer interface {
 	GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error)
+	ListSourceActivities(context.Context, *ListSourceActivitiesRequest) (*ListSourceActivitiesResponse, error)
+	BackfillActivities(context.Context, *BackfillActivitiesRequest) (*BackfillActivitiesResponse, error)
 	mustEmbedUnimplementedPipelineServiceServer()
 }
 
@@ -242,6 +268,12 @@ func (UnimplementedPipelineServiceServer) ListPipelineRuns(context.Context, *Lis
 }
 func (UnimplementedPipelineServiceServer) AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminListPipelineRuns not implemented")
+}
+func (UnimplementedPipelineServiceServer) ListSourceActivities(context.Context, *ListSourceActivitiesRequest) (*ListSourceActivitiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSourceActivities not implemented")
+}
+func (UnimplementedPipelineServiceServer) BackfillActivities(context.Context, *BackfillActivitiesRequest) (*BackfillActivitiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BackfillActivities not implemented")
 }
 func (UnimplementedPipelineServiceServer) mustEmbedUnimplementedPipelineServiceServer() {}
 func (UnimplementedPipelineServiceServer) testEmbeddedByValue()                         {}
@@ -480,6 +512,42 @@ func _PipelineService_AdminListPipelineRuns_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_ListSourceActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSourceActivitiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).ListSourceActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_ListSourceActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).ListSourceActivities(ctx, req.(*ListSourceActivitiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelineService_BackfillActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BackfillActivitiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).BackfillActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_BackfillActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).BackfillActivities(ctx, req.(*BackfillActivitiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PipelineService_ServiceDesc is the grpc.ServiceDesc for PipelineService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -534,6 +602,14 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminListPipelineRuns",
 			Handler:    _PipelineService_AdminListPipelineRuns_Handler,
+		},
+		{
+			MethodName: "ListSourceActivities",
+			Handler:    _PipelineService_ListSourceActivities_Handler,
+		},
+		{
+			MethodName: "BackfillActivities",
+			Handler:    _PipelineService_BackfillActivities_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

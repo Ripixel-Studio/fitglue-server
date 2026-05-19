@@ -933,7 +933,6 @@ func ShowcasedActivityToFirestore(s *pbactivity.ShowcasedActivity) map[string]in
 		"activity_type":       int32(s.ActivityType),
 		"source":              int32(s.Source),
 		"applied_enrichments": s.AppliedEnrichments,
-		"enrichment_metadata": s.EnrichmentMetadata,
 		"tags":                s.Tags,
 		"fit_file_uri":        s.FitFileUri,
 		"owner_display_name":  s.OwnerDisplayName,
@@ -1042,15 +1041,7 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 		}
 	}
 
-	// Enrichment metadata
-	if v, ok := m["enrichment_metadata"].(map[string]interface{}); ok {
-		s.EnrichmentMetadata = make(map[string]string)
-		for k, val := range v {
-			if str, ok := val.(string); ok {
-				s.EnrichmentMetadata[k] = str
-			}
-		}
-	}
+	// enrichment_metadata (field 12) was removed from ShowcasedActivity — skipped on read
 
 	// Activity data - deserialize from JSON
 	if v, ok := m["activity_data"]; ok {
@@ -1076,21 +1067,35 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 
 func ShowcaseProfileEntryToFirestore(e *pbactivity.ShowcaseProfileEntry) map[string]interface{} {
 	m := map[string]interface{}{
-		"showcase_id":         e.ShowcaseId,
-		"title":               e.Title,
-		"activity_type":       int32(e.ActivityType),
-		"source":              int32(e.Source),
+		"showcase_id":       e.ShowcaseId,
+		"title":             e.Title,
+		"activity_type":     int32(e.ActivityType),
+		"source":            int32(e.Source),
 		"route_thumbnail_url": e.RouteThumbnailUrl,
-		"distance_meters":     e.DistanceMeters,
-		"duration_seconds":    e.DurationSeconds,
-		"total_sets":          e.TotalSets,
-		"total_reps":          e.TotalReps,
-		"total_weight_kg":     e.TotalWeightKg,
+		"distance_meters":   e.DistanceMeters,
+		"duration_seconds":  e.DurationSeconds,
+		"total_sets":        e.TotalSets,
+		"total_reps":        e.TotalReps,
+		"total_weight_kg":   e.TotalWeightKg,
+		"booster_count":     e.BoosterCount,
+		"destination_count": e.DestinationCount,
 	}
 	if e.StartTime != nil {
 		m["start_time"] = e.StartTime.AsTime()
 	} else {
 		m["start_time"] = nil
+	}
+	if e.AvgHeartRate != nil {
+		m["avg_heart_rate"] = *e.AvgHeartRate
+	}
+	if e.CaloriesKcal != nil {
+		m["calories_kcal"] = *e.CaloriesKcal
+	}
+	if e.Sparkline != nil {
+		m["sparkline"] = map[string]interface{}{
+			"metric": e.Sparkline.Metric,
+			"values": e.Sparkline.Values,
+		}
 	}
 	return m
 }
@@ -1178,6 +1183,72 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pbactivity.Showc
 			e.TotalWeightKg = n
 		case int64:
 			e.TotalWeightKg = float64(n)
+		}
+	}
+
+	// BoosterCount
+	if v, ok := m["booster_count"]; ok {
+		switch n := v.(type) {
+		case int64:
+			e.BoosterCount = int32(n)
+		case float64:
+			e.BoosterCount = int32(n)
+		}
+	}
+
+	// DestinationCount
+	if v, ok := m["destination_count"]; ok {
+		switch n := v.(type) {
+		case int64:
+			e.DestinationCount = int32(n)
+		case float64:
+			e.DestinationCount = int32(n)
+		}
+	}
+
+	// AvgHeartRate (optional)
+	if v, ok := m["avg_heart_rate"]; ok {
+		switch n := v.(type) {
+		case int64:
+			hr := int32(n)
+			e.AvgHeartRate = &hr
+		case float64:
+			hr := int32(n)
+			e.AvgHeartRate = &hr
+		}
+	}
+
+	// CaloriesKcal (optional)
+	if v, ok := m["calories_kcal"]; ok {
+		switch n := v.(type) {
+		case int64:
+			kcal := int32(n)
+			e.CaloriesKcal = &kcal
+		case float64:
+			kcal := int32(n)
+			e.CaloriesKcal = &kcal
+		}
+	}
+
+	// Sparkline (optional)
+	if v, ok := m["sparkline"]; ok {
+		if sparkMap, ok := v.(map[string]interface{}); ok {
+			sparkline := &pbactivity.EntrySparkline{
+				Metric: getString(sparkMap, "metric"),
+			}
+			if vals, ok := sparkMap["values"]; ok {
+				switch vs := vals.(type) {
+				case []interface{}:
+					for _, fv := range vs {
+						if f, ok := fv.(float64); ok {
+							sparkline.Values = append(sparkline.Values, f)
+						}
+					}
+				case []float64:
+					sparkline.Values = vs
+				}
+			}
+			e.Sparkline = sparkline
 		}
 	}
 
@@ -1584,8 +1655,22 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
 			if bMap, ok := bRaw.(map[string]interface{}); ok {
 				booster := &pbpipeline.BoosterExecution{
 					ProviderName: getString(bMap, "provider_name"),
-					Status:       getString(bMap, "status"),
 					Error:        stringPtrOrNil(getString(bMap, "error")),
+				}
+				// "status" was a freeform string (field 2, now reserved); map to typed enum
+				if v, ok := bMap["status"]; ok {
+					switch val := v.(type) {
+					case int64:
+						booster.Status = pbpipeline.ExecutionStepStatus(val)
+					case int:
+						booster.Status = pbpipeline.ExecutionStepStatus(int32(val))
+					case float64:
+						booster.Status = pbpipeline.ExecutionStepStatus(int32(val))
+					case string:
+						if enumVal, ok := pbpipeline.ExecutionStepStatus_value[val]; ok {
+							booster.Status = pbpipeline.ExecutionStepStatus(enumVal)
+						}
+					}
 				}
 				if v, ok := bMap["duration_ms"]; ok {
 					switch n := v.(type) {

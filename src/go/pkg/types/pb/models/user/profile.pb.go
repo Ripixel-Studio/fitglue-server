@@ -92,8 +92,13 @@ type UserProfile struct {
 	TrialEndsAt             *timestamppb.Timestamp   `protobuf:"bytes,11,opt,name=trial_ends_at,json=trialEndsAt,proto3" json:"trial_ends_at,omitempty"`
 	Email                   string                   `protobuf:"bytes,12,opt,name=email,proto3" json:"email,omitempty"`
 	DisplayName             string                   `protobuf:"bytes,13,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// Streak aggregates — written by streak-tracker enricher rollup on every activity sync.
+	// A "streak day" is any calendar day with at least one qualifying activity.
+	// Optional; absent means not yet computed.
+	CurrentStreakDays *int32 `protobuf:"varint,14,opt,name=current_streak_days,json=currentStreakDays,proto3,oneof" json:"current_streak_days,omitempty"`
+	LongestStreakDays *int32 `protobuf:"varint,15,opt,name=longest_streak_days,json=longestStreakDays,proto3,oneof" json:"longest_streak_days,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *UserProfile) Reset() {
@@ -215,6 +220,20 @@ func (x *UserProfile) GetDisplayName() string {
 		return x.DisplayName
 	}
 	return ""
+}
+
+func (x *UserProfile) GetCurrentStreakDays() int32 {
+	if x != nil && x.CurrentStreakDays != nil {
+		return *x.CurrentStreakDays
+	}
+	return 0
+}
+
+func (x *UserProfile) GetLongestStreakDays() int32 {
+	if x != nil && x.LongestStreakDays != nil {
+		return *x.LongestStreakDays
+	}
+	return 0
 }
 
 type NotificationPreferences struct {
@@ -442,7 +461,7 @@ var File_models_user_profile_proto protoreflect.FileDescriptor
 
 const file_models_user_profile_proto_rawDesc = "" +
 	"\n" +
-	"\x19models/user/profile.proto\x12\x13fitglue.models.user\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\x87\x05\n" +
+	"\x19models/user/profile.proto\x12\x13fitglue.models.user\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\xa1\x06\n" +
 	"\vUserProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
 	"\n" +
@@ -459,7 +478,11 @@ const file_models_user_profile_proto_rawDesc = "" +
 	" \x01(\v2,.fitglue.models.user.NotificationPreferencesR\x17notificationPreferences\x12>\n" +
 	"\rtrial_ends_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vtrialEndsAt\x12\x14\n" +
 	"\x05email\x18\f \x01(\tR\x05email\x12!\n" +
-	"\fdisplay_name\x18\r \x01(\tR\vdisplayName\"\xbb\x01\n" +
+	"\fdisplay_name\x18\r \x01(\tR\vdisplayName\x123\n" +
+	"\x13current_streak_days\x18\x0e \x01(\x05H\x00R\x11currentStreakDays\x88\x01\x01\x123\n" +
+	"\x13longest_streak_days\x18\x0f \x01(\x05H\x01R\x11longestStreakDays\x88\x01\x01B\x16\n" +
+	"\x14_current_streak_daysB\x16\n" +
+	"\x14_longest_streak_days\"\xbb\x01\n" +
 	"\x17NotificationPreferences\x120\n" +
 	"\x14notify_pending_input\x18\x01 \x01(\bR\x12notifyPendingInput\x126\n" +
 	"\x17notify_pipeline_success\x18\x02 \x01(\bR\x15notifyPipelineSuccess\x126\n" +
@@ -531,6 +554,7 @@ func file_models_user_profile_proto_init() {
 	if File_models_user_profile_proto != nil {
 		return
 	}
+	file_models_user_profile_proto_msgTypes[0].OneofWrappers = []any{}
 	file_models_user_profile_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

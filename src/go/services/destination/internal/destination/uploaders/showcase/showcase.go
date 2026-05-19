@@ -201,12 +201,11 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		StartTime:           timestamppb.New(startTime),
 		ActivityData:        nil,
 		FitFileUri:          payload.Metadata["fit_file_uri"],
-		AppliedEnrichments:  appliedEnrichments,
-		EnrichmentMetadata:  payload.Metadata,
-		Tags:                tags,
+		AppliedEnrichments: appliedEnrichments,
+		Tags:               tags,
 		PipelineExecutionId: payload.PipelineExecutionId,
-		CreatedAt:           timestamppb.New(createdAt),
-		ExpiresAt:           nil,
+		CreatedAt:          timestamppb.New(createdAt),
+		ExpiresAt:          nil,
 		OwnerDisplayName:    u.resolveOwnerDisplayName(ctx, payload.UserId, userRec, logger),
 		PhotoUrls:           photoURLs,
 	}
@@ -233,6 +232,8 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	if _, err := u.activityClient.AddShowcaseEntry(ctx, &activitypb.AddShowcaseEntryRequest{
 		UserId:     payload.UserId,
 		ShowcaseId: showcaseID,
+		// destination_count is not available from ActivityPayload (no Destinations field);
+		// the Update path will set it correctly from the pipeline run.
 	}); err != nil {
 		logger.Warn("Failed to add showcase profile entry via activity service", "error", err,
 			"showcase_id", showcaseID, "user_id", payload.UserId)
@@ -309,7 +310,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		ActivityData:        nil,
 		FitFileUri:          payload.Metadata["fit_file_uri"],
 		AppliedEnrichments:  appliedEnrichments,
-		EnrichmentMetadata:  payload.Metadata,
 		Tags:                tags,
 		PipelineExecutionId: payload.PipelineExecutionId,
 		CreatedAt:           timestamppb.New(createdAt),
@@ -331,9 +331,14 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 
 	// Delegate profile entry + stats management to the activity service.
 	// AddShowcaseEntry handles: GCS hydration, profile entry creation, and stats aggregation.
+	destCount := int32(0)
+	if pipelineRun != nil {
+		destCount = int32(len(pipelineRun.Destinations))
+	}
 	if _, err := u.activityClient.AddShowcaseEntry(ctx, &activitypb.AddShowcaseEntryRequest{
-		UserId:     payload.UserId,
-		ShowcaseId: showcaseID,
+		UserId:           payload.UserId,
+		ShowcaseId:       showcaseID,
+		DestinationCount: destCount,
 	}); err != nil {
 		logger.Warn("Failed to update showcase profile entry via activity service", "error", err,
 			"showcase_id", showcaseID, "user_id", payload.UserId)

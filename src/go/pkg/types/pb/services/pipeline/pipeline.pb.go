@@ -12,6 +12,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -785,6 +786,8 @@ type ListPipelineRunsRequest struct {
 	PipelineId    string                 `protobuf:"bytes,2,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
 	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	PageToken     string                 `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	Since         *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=since,proto3,oneof" json:"since,omitempty"`
+	Until         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=until,proto3,oneof" json:"until,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -847,6 +850,20 @@ func (x *ListPipelineRunsRequest) GetPageToken() string {
 	return ""
 }
 
+func (x *ListPipelineRunsRequest) GetSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Since
+	}
+	return nil
+}
+
+func (x *ListPipelineRunsRequest) GetUntil() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Until
+	}
+	return nil
+}
+
 type ListPipelineRunsResponse struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Runs          []*pipeline.PipelineRun `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
@@ -899,11 +916,319 @@ func (x *ListPipelineRunsResponse) GetNextPageToken() string {
 	return ""
 }
 
+type SourceActivityItem struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	SourceActivityId string                 `protobuf:"bytes,1,opt,name=source_activity_id,json=sourceActivityId,proto3" json:"source_activity_id,omitempty"`
+	Title            string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Type             string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	StartTime        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	AlreadySynced    bool                   `protobuf:"varint,5,opt,name=already_synced,json=alreadySynced,proto3" json:"already_synced,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SourceActivityItem) Reset() {
+	*x = SourceActivityItem{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SourceActivityItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SourceActivityItem) ProtoMessage() {}
+
+func (x *SourceActivityItem) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SourceActivityItem.ProtoReflect.Descriptor instead.
+func (*SourceActivityItem) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SourceActivityItem) GetSourceActivityId() string {
+	if x != nil {
+		return x.SourceActivityId
+	}
+	return ""
+}
+
+func (x *SourceActivityItem) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *SourceActivityItem) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *SourceActivityItem) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *SourceActivityItem) GetAlreadySynced() bool {
+	if x != nil {
+		return x.AlreadySynced
+	}
+	return false
+}
+
+type ListSourceActivitiesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PipelineId    string                 `protobuf:"bytes,2,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
+	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	PageToken     string                 `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSourceActivitiesRequest) Reset() {
+	*x = ListSourceActivitiesRequest{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSourceActivitiesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSourceActivitiesRequest) ProtoMessage() {}
+
+func (x *ListSourceActivitiesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSourceActivitiesRequest.ProtoReflect.Descriptor instead.
+func (*ListSourceActivitiesRequest) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListSourceActivitiesRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *ListSourceActivitiesRequest) GetPipelineId() string {
+	if x != nil {
+		return x.PipelineId
+	}
+	return ""
+}
+
+func (x *ListSourceActivitiesRequest) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *ListSourceActivitiesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListSourceActivitiesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Activities    []*SourceActivityItem  `protobuf:"bytes,1,rep,name=activities,proto3" json:"activities,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSourceActivitiesResponse) Reset() {
+	*x = ListSourceActivitiesResponse{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSourceActivitiesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSourceActivitiesResponse) ProtoMessage() {}
+
+func (x *ListSourceActivitiesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSourceActivitiesResponse.ProtoReflect.Descriptor instead.
+func (*ListSourceActivitiesResponse) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListSourceActivitiesResponse) GetActivities() []*SourceActivityItem {
+	if x != nil {
+		return x.Activities
+	}
+	return nil
+}
+
+func (x *ListSourceActivitiesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+type BackfillActivitiesRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	UserId            string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PipelineId        string                 `protobuf:"bytes,2,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
+	Source            string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	SourceActivityIds []string               `protobuf:"bytes,4,rep,name=source_activity_ids,json=sourceActivityIds,proto3" json:"source_activity_ids,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *BackfillActivitiesRequest) Reset() {
+	*x = BackfillActivitiesRequest{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BackfillActivitiesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BackfillActivitiesRequest) ProtoMessage() {}
+
+func (x *BackfillActivitiesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BackfillActivitiesRequest.ProtoReflect.Descriptor instead.
+func (*BackfillActivitiesRequest) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *BackfillActivitiesRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *BackfillActivitiesRequest) GetPipelineId() string {
+	if x != nil {
+		return x.PipelineId
+	}
+	return ""
+}
+
+func (x *BackfillActivitiesRequest) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *BackfillActivitiesRequest) GetSourceActivityIds() []string {
+	if x != nil {
+		return x.SourceActivityIds
+	}
+	return nil
+}
+
+type BackfillActivitiesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	QueuedCount   int32                  `protobuf:"varint,1,opt,name=queued_count,json=queuedCount,proto3" json:"queued_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BackfillActivitiesResponse) Reset() {
+	*x = BackfillActivitiesResponse{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BackfillActivitiesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BackfillActivitiesResponse) ProtoMessage() {}
+
+func (x *BackfillActivitiesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BackfillActivitiesResponse.ProtoReflect.Descriptor instead.
+func (*BackfillActivitiesResponse) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *BackfillActivitiesResponse) GetQueuedCount() int32 {
+	if x != nil {
+		return x.QueuedCount
+	}
+	return 0
+}
+
 var File_services_pipeline_pipeline_proto protoreflect.FileDescriptor
 
 const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"\n" +
-	" services/pipeline/pipeline.proto\x12\x19fitglue.services.pipeline\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/pipeline/config.proto\x1a\x1fmodels/pipeline/execution.proto\x1a#models/pipeline/pending_input.proto\"\x9c\x01\n" +
+	" services/pipeline/pipeline.proto\x12\x19fitglue.services.pipeline\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/pipeline/config.proto\x1a\x1fmodels/pipeline/execution.proto\x1a#models/pipeline/pending_input.proto\"\x9c\x01\n" +
 	"\x1cAdminListPipelineRunsRequest\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12\x17\n" +
@@ -957,17 +1282,48 @@ const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"\vdestination\x18\x04 \x01(\tR\vdestination\"G\n" +
 	"\x15GetPipelineRunRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06run_id\x18\x02 \x01(\tR\x05runId\"\x88\x01\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"\x8a\x02\n" +
 	"\x17ListPipelineRunsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
 	"pipelineId\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\"|\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\x125\n" +
+	"\x05since\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\x05since\x88\x01\x01\x125\n" +
+	"\x05until\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x01R\x05until\x88\x01\x01B\b\n" +
+	"\x06_sinceB\b\n" +
+	"\x06_until\"|\n" +
 	"\x18ListPipelineRunsResponse\x128\n" +
 	"\x04runs\x18\x01 \x03(\v2$.fitglue.models.pipeline.PipelineRunR\x04runs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xb9\x0f\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xce\x01\n" +
+	"\x12SourceActivityItem\x12,\n" +
+	"\x12source_activity_id\x18\x01 \x01(\tR\x10sourceActivityId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x129\n" +
+	"\n" +
+	"start_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12%\n" +
+	"\x0ealready_synced\x18\x05 \x01(\bR\ralreadySynced\"\x8e\x01\n" +
+	"\x1bListSourceActivitiesRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vpipeline_id\x18\x02 \x01(\tR\n" +
+	"pipelineId\x12\x16\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"\x95\x01\n" +
+	"\x1cListSourceActivitiesResponse\x12M\n" +
+	"\n" +
+	"activities\x18\x01 \x03(\v2-.fitglue.services.pipeline.SourceActivityItemR\n" +
+	"activities\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9d\x01\n" +
+	"\x19BackfillActivitiesRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vpipeline_id\x18\x02 \x01(\tR\n" +
+	"pipelineId\x12\x16\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12.\n" +
+	"\x13source_activity_ids\x18\x04 \x03(\tR\x11sourceActivityIds\"?\n" +
+	"\x1aBackfillActivitiesResponse\x12!\n" +
+	"\fqueued_count\x18\x01 \x01(\x05R\vqueuedCount2\xcf\x12\n" +
 	"\x0fPipelineService\x12\x99\x01\n" +
 	"\rListPipelines\x12/.fitglue.services.pipeline.ListPipelinesRequest\x1a0.fitglue.services.pipeline.ListPipelinesResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v2/users/{user_id}/pipelines\x12\x9a\x01\n" +
 	"\vGetPipeline\x12-.fitglue.services.pipeline.GetPipelineRequest\x1a'.fitglue.models.pipeline.PipelineConfig\"3\x82\xd3\xe4\x93\x02-\x12+/v2/users/{user_id}/pipelines/{pipeline_id}\x12\x9c\x01\n" +
@@ -980,7 +1336,9 @@ const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"\x0eRepostActivity\x120.fitglue.services.pipeline.RepostActivityRequest\x1a\x16.google.protobuf.Empty\">\x82\xd3\xe4\x93\x028:\x01*\"3/v2/users/{user_id}/activities/{activity_id}/repost\x12\x9c\x01\n" +
 	"\x0eGetPipelineRun\x120.fitglue.services.pipeline.GetPipelineRunRequest\x1a$.fitglue.models.pipeline.PipelineRun\"2\x82\xd3\xe4\x93\x02,\x12*/v2/users/{user_id}/pipeline-runs/{run_id}\x12\xa6\x01\n" +
 	"\x10ListPipelineRuns\x122.fitglue.services.pipeline.ListPipelineRunsRequest\x1a3.fitglue.services.pipeline.ListPipelineRunsResponse\")\x82\xd3\xe4\x93\x02#\x12!/v2/users/{user_id}/pipeline-runs\x12\xab\x01\n" +
-	"\x15AdminListPipelineRuns\x127.fitglue.services.pipeline.AdminListPipelineRunsRequest\x1a8.fitglue.services.pipeline.AdminListPipelineRunsResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v2/admin/pipeline-runsBAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/pipelineb\x06proto3"
+	"\x15AdminListPipelineRuns\x127.fitglue.services.pipeline.AdminListPipelineRunsRequest\x1a8.fitglue.services.pipeline.AdminListPipelineRunsResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v2/admin/pipeline-runs\x12\xce\x01\n" +
+	"\x14ListSourceActivities\x126.fitglue.services.pipeline.ListSourceActivitiesRequest\x1a7.fitglue.services.pipeline.ListSourceActivitiesResponse\"E\x82\xd3\xe4\x93\x02?\x12=/v2/users/{user_id}/pipelines/{pipeline_id}/source-activities\x12\xc2\x01\n" +
+	"\x12BackfillActivities\x124.fitglue.services.pipeline.BackfillActivitiesRequest\x1a5.fitglue.services.pipeline.BackfillActivitiesResponse\"?\x82\xd3\xe4\x93\x029:\x01*\"4/v2/users/{user_id}/pipelines/{pipeline_id}/backfillBAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/pipelineb\x06proto3"
 
 var (
 	file_services_pipeline_pipeline_proto_rawDescOnce sync.Once
@@ -994,7 +1352,7 @@ func file_services_pipeline_pipeline_proto_rawDescGZIP() []byte {
 	return file_services_pipeline_pipeline_proto_rawDescData
 }
 
-var file_services_pipeline_pipeline_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_services_pipeline_pipeline_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_services_pipeline_pipeline_proto_goTypes = []any{
 	(*AdminListPipelineRunsRequest)(nil),  // 0: fitglue.services.pipeline.AdminListPipelineRunsRequest
 	(*AdminListPipelineRunsResponse)(nil), // 1: fitglue.services.pipeline.AdminListPipelineRunsResponse
@@ -1012,49 +1370,63 @@ var file_services_pipeline_pipeline_proto_goTypes = []any{
 	(*GetPipelineRunRequest)(nil),         // 13: fitglue.services.pipeline.GetPipelineRunRequest
 	(*ListPipelineRunsRequest)(nil),       // 14: fitglue.services.pipeline.ListPipelineRunsRequest
 	(*ListPipelineRunsResponse)(nil),      // 15: fitglue.services.pipeline.ListPipelineRunsResponse
-	nil,                                   // 16: fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
-	(*pipeline.PipelineRun)(nil),          // 17: fitglue.models.pipeline.PipelineRun
-	(*pipeline.PipelineConfig)(nil),       // 18: fitglue.models.pipeline.PipelineConfig
-	(*pipeline.PendingInput)(nil),         // 19: fitglue.models.pipeline.PendingInput
-	(*emptypb.Empty)(nil),                 // 20: google.protobuf.Empty
+	(*SourceActivityItem)(nil),            // 16: fitglue.services.pipeline.SourceActivityItem
+	(*ListSourceActivitiesRequest)(nil),   // 17: fitglue.services.pipeline.ListSourceActivitiesRequest
+	(*ListSourceActivitiesResponse)(nil),  // 18: fitglue.services.pipeline.ListSourceActivitiesResponse
+	(*BackfillActivitiesRequest)(nil),     // 19: fitglue.services.pipeline.BackfillActivitiesRequest
+	(*BackfillActivitiesResponse)(nil),    // 20: fitglue.services.pipeline.BackfillActivitiesResponse
+	nil,                                   // 21: fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
+	(*pipeline.PipelineRun)(nil),          // 22: fitglue.models.pipeline.PipelineRun
+	(*pipeline.PipelineConfig)(nil),       // 23: fitglue.models.pipeline.PipelineConfig
+	(*pipeline.PendingInput)(nil),         // 24: fitglue.models.pipeline.PendingInput
+	(*timestamppb.Timestamp)(nil),         // 25: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                 // 26: google.protobuf.Empty
 }
 var file_services_pipeline_pipeline_proto_depIdxs = []int32{
-	17, // 0: fitglue.services.pipeline.AdminListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
-	18, // 1: fitglue.services.pipeline.ListPipelinesResponse.pipelines:type_name -> fitglue.models.pipeline.PipelineConfig
-	18, // 2: fitglue.services.pipeline.CreatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
-	18, // 3: fitglue.services.pipeline.UpdatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
-	16, // 4: fitglue.services.pipeline.SubmitInputRequest.input_data:type_name -> fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
-	19, // 5: fitglue.services.pipeline.ListPendingInputsResponse.inputs:type_name -> fitglue.models.pipeline.PendingInput
-	17, // 6: fitglue.services.pipeline.ListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
-	2,  // 7: fitglue.services.pipeline.PipelineService.ListPipelines:input_type -> fitglue.services.pipeline.ListPipelinesRequest
-	4,  // 8: fitglue.services.pipeline.PipelineService.GetPipeline:input_type -> fitglue.services.pipeline.GetPipelineRequest
-	5,  // 9: fitglue.services.pipeline.PipelineService.CreatePipeline:input_type -> fitglue.services.pipeline.CreatePipelineRequest
-	6,  // 10: fitglue.services.pipeline.PipelineService.UpdatePipeline:input_type -> fitglue.services.pipeline.UpdatePipelineRequest
-	7,  // 11: fitglue.services.pipeline.PipelineService.DeletePipeline:input_type -> fitglue.services.pipeline.DeletePipelineRequest
-	8,  // 12: fitglue.services.pipeline.PipelineService.SubmitInput:input_type -> fitglue.services.pipeline.SubmitInputRequest
-	9,  // 13: fitglue.services.pipeline.PipelineService.ListPendingInputs:input_type -> fitglue.services.pipeline.ListPendingInputsRequest
-	11, // 14: fitglue.services.pipeline.PipelineService.ResolvePendingInput:input_type -> fitglue.services.pipeline.ResolvePendingInputRequest
-	12, // 15: fitglue.services.pipeline.PipelineService.RepostActivity:input_type -> fitglue.services.pipeline.RepostActivityRequest
-	13, // 16: fitglue.services.pipeline.PipelineService.GetPipelineRun:input_type -> fitglue.services.pipeline.GetPipelineRunRequest
-	14, // 17: fitglue.services.pipeline.PipelineService.ListPipelineRuns:input_type -> fitglue.services.pipeline.ListPipelineRunsRequest
-	0,  // 18: fitglue.services.pipeline.PipelineService.AdminListPipelineRuns:input_type -> fitglue.services.pipeline.AdminListPipelineRunsRequest
-	3,  // 19: fitglue.services.pipeline.PipelineService.ListPipelines:output_type -> fitglue.services.pipeline.ListPipelinesResponse
-	18, // 20: fitglue.services.pipeline.PipelineService.GetPipeline:output_type -> fitglue.models.pipeline.PipelineConfig
-	18, // 21: fitglue.services.pipeline.PipelineService.CreatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
-	18, // 22: fitglue.services.pipeline.PipelineService.UpdatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
-	20, // 23: fitglue.services.pipeline.PipelineService.DeletePipeline:output_type -> google.protobuf.Empty
-	20, // 24: fitglue.services.pipeline.PipelineService.SubmitInput:output_type -> google.protobuf.Empty
-	10, // 25: fitglue.services.pipeline.PipelineService.ListPendingInputs:output_type -> fitglue.services.pipeline.ListPendingInputsResponse
-	20, // 26: fitglue.services.pipeline.PipelineService.ResolvePendingInput:output_type -> google.protobuf.Empty
-	20, // 27: fitglue.services.pipeline.PipelineService.RepostActivity:output_type -> google.protobuf.Empty
-	17, // 28: fitglue.services.pipeline.PipelineService.GetPipelineRun:output_type -> fitglue.models.pipeline.PipelineRun
-	15, // 29: fitglue.services.pipeline.PipelineService.ListPipelineRuns:output_type -> fitglue.services.pipeline.ListPipelineRunsResponse
-	1,  // 30: fitglue.services.pipeline.PipelineService.AdminListPipelineRuns:output_type -> fitglue.services.pipeline.AdminListPipelineRunsResponse
-	19, // [19:31] is the sub-list for method output_type
-	7,  // [7:19] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	22, // 0: fitglue.services.pipeline.AdminListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
+	23, // 1: fitglue.services.pipeline.ListPipelinesResponse.pipelines:type_name -> fitglue.models.pipeline.PipelineConfig
+	23, // 2: fitglue.services.pipeline.CreatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
+	23, // 3: fitglue.services.pipeline.UpdatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
+	21, // 4: fitglue.services.pipeline.SubmitInputRequest.input_data:type_name -> fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
+	24, // 5: fitglue.services.pipeline.ListPendingInputsResponse.inputs:type_name -> fitglue.models.pipeline.PendingInput
+	25, // 6: fitglue.services.pipeline.ListPipelineRunsRequest.since:type_name -> google.protobuf.Timestamp
+	25, // 7: fitglue.services.pipeline.ListPipelineRunsRequest.until:type_name -> google.protobuf.Timestamp
+	22, // 8: fitglue.services.pipeline.ListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
+	25, // 9: fitglue.services.pipeline.SourceActivityItem.start_time:type_name -> google.protobuf.Timestamp
+	16, // 10: fitglue.services.pipeline.ListSourceActivitiesResponse.activities:type_name -> fitglue.services.pipeline.SourceActivityItem
+	2,  // 11: fitglue.services.pipeline.PipelineService.ListPipelines:input_type -> fitglue.services.pipeline.ListPipelinesRequest
+	4,  // 12: fitglue.services.pipeline.PipelineService.GetPipeline:input_type -> fitglue.services.pipeline.GetPipelineRequest
+	5,  // 13: fitglue.services.pipeline.PipelineService.CreatePipeline:input_type -> fitglue.services.pipeline.CreatePipelineRequest
+	6,  // 14: fitglue.services.pipeline.PipelineService.UpdatePipeline:input_type -> fitglue.services.pipeline.UpdatePipelineRequest
+	7,  // 15: fitglue.services.pipeline.PipelineService.DeletePipeline:input_type -> fitglue.services.pipeline.DeletePipelineRequest
+	8,  // 16: fitglue.services.pipeline.PipelineService.SubmitInput:input_type -> fitglue.services.pipeline.SubmitInputRequest
+	9,  // 17: fitglue.services.pipeline.PipelineService.ListPendingInputs:input_type -> fitglue.services.pipeline.ListPendingInputsRequest
+	11, // 18: fitglue.services.pipeline.PipelineService.ResolvePendingInput:input_type -> fitglue.services.pipeline.ResolvePendingInputRequest
+	12, // 19: fitglue.services.pipeline.PipelineService.RepostActivity:input_type -> fitglue.services.pipeline.RepostActivityRequest
+	13, // 20: fitglue.services.pipeline.PipelineService.GetPipelineRun:input_type -> fitglue.services.pipeline.GetPipelineRunRequest
+	14, // 21: fitglue.services.pipeline.PipelineService.ListPipelineRuns:input_type -> fitglue.services.pipeline.ListPipelineRunsRequest
+	0,  // 22: fitglue.services.pipeline.PipelineService.AdminListPipelineRuns:input_type -> fitglue.services.pipeline.AdminListPipelineRunsRequest
+	17, // 23: fitglue.services.pipeline.PipelineService.ListSourceActivities:input_type -> fitglue.services.pipeline.ListSourceActivitiesRequest
+	19, // 24: fitglue.services.pipeline.PipelineService.BackfillActivities:input_type -> fitglue.services.pipeline.BackfillActivitiesRequest
+	3,  // 25: fitglue.services.pipeline.PipelineService.ListPipelines:output_type -> fitglue.services.pipeline.ListPipelinesResponse
+	23, // 26: fitglue.services.pipeline.PipelineService.GetPipeline:output_type -> fitglue.models.pipeline.PipelineConfig
+	23, // 27: fitglue.services.pipeline.PipelineService.CreatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
+	23, // 28: fitglue.services.pipeline.PipelineService.UpdatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
+	26, // 29: fitglue.services.pipeline.PipelineService.DeletePipeline:output_type -> google.protobuf.Empty
+	26, // 30: fitglue.services.pipeline.PipelineService.SubmitInput:output_type -> google.protobuf.Empty
+	10, // 31: fitglue.services.pipeline.PipelineService.ListPendingInputs:output_type -> fitglue.services.pipeline.ListPendingInputsResponse
+	26, // 32: fitglue.services.pipeline.PipelineService.ResolvePendingInput:output_type -> google.protobuf.Empty
+	26, // 33: fitglue.services.pipeline.PipelineService.RepostActivity:output_type -> google.protobuf.Empty
+	22, // 34: fitglue.services.pipeline.PipelineService.GetPipelineRun:output_type -> fitglue.models.pipeline.PipelineRun
+	15, // 35: fitglue.services.pipeline.PipelineService.ListPipelineRuns:output_type -> fitglue.services.pipeline.ListPipelineRunsResponse
+	1,  // 36: fitglue.services.pipeline.PipelineService.AdminListPipelineRuns:output_type -> fitglue.services.pipeline.AdminListPipelineRunsResponse
+	18, // 37: fitglue.services.pipeline.PipelineService.ListSourceActivities:output_type -> fitglue.services.pipeline.ListSourceActivitiesResponse
+	20, // 38: fitglue.services.pipeline.PipelineService.BackfillActivities:output_type -> fitglue.services.pipeline.BackfillActivitiesResponse
+	25, // [25:39] is the sub-list for method output_type
+	11, // [11:25] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_services_pipeline_pipeline_proto_init() }
@@ -1062,13 +1434,14 @@ func file_services_pipeline_pipeline_proto_init() {
 	if File_services_pipeline_pipeline_proto != nil {
 		return
 	}
+	file_services_pipeline_pipeline_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_pipeline_pipeline_proto_rawDesc), len(file_services_pipeline_pipeline_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

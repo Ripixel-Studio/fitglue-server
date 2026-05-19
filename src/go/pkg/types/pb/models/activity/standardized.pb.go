@@ -463,6 +463,7 @@ type Session struct {
 	TotalCalories    *float64               `protobuf:"fixed64,6,opt,name=total_calories,json=totalCalories,proto3,oneof" json:"total_calories,omitempty"`
 	AvgHeartRate     *int32                 `protobuf:"varint,7,opt,name=avg_heart_rate,json=avgHeartRate,proto3,oneof" json:"avg_heart_rate,omitempty"`
 	MaxHeartRate     *int32                 `protobuf:"varint,8,opt,name=max_heart_rate,json=maxHeartRate,proto3,oneof" json:"max_heart_rate,omitempty"`
+	MinHeartRate     *int32                 `protobuf:"varint,9,opt,name=min_heart_rate,json=minHeartRate,proto3,oneof" json:"min_heart_rate,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -549,6 +550,13 @@ func (x *Session) GetAvgHeartRate() int32 {
 func (x *Session) GetMaxHeartRate() int32 {
 	if x != nil && x.MaxHeartRate != nil {
 		return *x.MaxHeartRate
+	}
+	return 0
+}
+
+func (x *Session) GetMinHeartRate() int32 {
+	if x != nil && x.MinHeartRate != nil {
+		return *x.MinHeartRate
 	}
 	return 0
 }
@@ -1085,7 +1093,7 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1f\n" +
 	"\vmarker_type\x18\x03 \x01(\tR\n" +
 	"markerType\x12)\n" +
-	"\x10duration_seconds\x18\x04 \x01(\x05R\x0fdurationSeconds\"\xd1\x03\n" +
+	"\x10duration_seconds\x18\x04 \x01(\x05R\x0fdurationSeconds\"\x8f\x04\n" +
 	"\aSession\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +
@@ -1095,10 +1103,12 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\rstrength_sets\x18\x05 \x03(\v2$.fitglue.models.activity.StrengthSetR\fstrengthSets\x12*\n" +
 	"\x0etotal_calories\x18\x06 \x01(\x01H\x00R\rtotalCalories\x88\x01\x01\x12)\n" +
 	"\x0eavg_heart_rate\x18\a \x01(\x05H\x01R\favgHeartRate\x88\x01\x01\x12)\n" +
-	"\x0emax_heart_rate\x18\b \x01(\x05H\x02R\fmaxHeartRate\x88\x01\x01B\x11\n" +
+	"\x0emax_heart_rate\x18\b \x01(\x05H\x02R\fmaxHeartRate\x88\x01\x01\x12)\n" +
+	"\x0emin_heart_rate\x18\t \x01(\x05H\x03R\fminHeartRate\x88\x01\x01B\x11\n" +
 	"\x0f_total_caloriesB\x11\n" +
 	"\x0f_avg_heart_rateB\x11\n" +
-	"\x0f_max_heart_rate\"\xd2\x02\n" +
+	"\x0f_max_heart_rateB\x11\n" +
+	"\x0f_min_heart_rate\"\xd2\x02\n" +
 	"\x03Lap\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +

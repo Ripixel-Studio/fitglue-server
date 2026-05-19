@@ -59,6 +59,8 @@ const (
 	ClientGatewayService_DeletePipeline_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/DeletePipeline"
 	ClientGatewayService_ListPipelineRuns_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/ListPipelineRuns"
 	ClientGatewayService_GetPipelineRun_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/GetPipelineRun"
+	ClientGatewayService_ListSourceActivities_FullMethodName               = "/fitglue.gateway.ClientGatewayService/ListSourceActivities"
+	ClientGatewayService_BackfillActivities_FullMethodName                 = "/fitglue.gateway.ClientGatewayService/BackfillActivities"
 	ClientGatewayService_SubmitInput_FullMethodName                        = "/fitglue.gateway.ClientGatewayService/SubmitInput"
 	ClientGatewayService_RepostActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/RepostActivity"
 	ClientGatewayService_ListActivities_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ListActivities"
@@ -92,6 +94,7 @@ const (
 	ClientGatewayService_GetTierStatus_FullMethodName                      = "/fitglue.gateway.ClientGatewayService/GetTierStatus"
 	ClientGatewayService_StartTrial_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/StartTrial"
 	ClientGatewayService_CreateBillingPortal_FullMethodName                = "/fitglue.gateway.ClientGatewayService/CreateBillingPortal"
+	ClientGatewayService_GetPipelineRunPayload_FullMethodName              = "/fitglue.gateway.ClientGatewayService/GetPipelineRunPayload"
 	ClientGatewayService_GetPluginRegistry_FullMethodName                  = "/fitglue.gateway.ClientGatewayService/GetPluginRegistry"
 	ClientGatewayService_GetPluginRegistryPlugins_FullMethodName           = "/fitglue.gateway.ClientGatewayService/GetPluginRegistryPlugins"
 	ClientGatewayService_GetPlugin_FullMethodName                          = "/fitglue.gateway.ClientGatewayService/GetPlugin"
@@ -158,6 +161,8 @@ type ClientGatewayServiceClient interface {
 	DeletePipeline(ctx context.Context, in *PipelineIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsGatewayRequest, opts ...grpc.CallOption) (*ListPipelineRunsGatewayResponse, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunGatewayRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
+	ListSourceActivities(ctx context.Context, in *ListSourceActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListSourceActivitiesGatewayResponse, error)
+	BackfillActivities(ctx context.Context, in *BackfillActivitiesGatewayRequest, opts ...grpc.CallOption) (*BackfillActivitiesGatewayResponse, error)
 	SubmitInput(ctx context.Context, in *SubmitInputGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RepostActivity(ctx context.Context, in *RepostActivityGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// ===================== Activities =====================
@@ -199,6 +204,8 @@ type ClientGatewayServiceClient interface {
 	GetTierStatus(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*GetTierStatusGatewayResponse, error)
 	StartTrial(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*user.SubscriptionState, error)
 	CreateBillingPortal(ctx context.Context, in *CreateBillingPortalGatewayRequest, opts ...grpc.CallOption) (*CreateBillingPortalGatewayResponse, error)
+	// ===================== Pipeline Run Payloads =====================
+	GetPipelineRunPayload(ctx context.Context, in *GetPipelineRunPayloadGatewayRequest, opts ...grpc.CallOption) (*GetPipelineRunPayloadGatewayResponse, error)
 	// ===================== Registry (Unauthenticated, but on api-client) =====================
 	GetPluginRegistry(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error)
 	GetPluginRegistryPlugins(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error)
@@ -566,6 +573,26 @@ func (c *clientGatewayServiceClient) GetPipelineRun(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) ListSourceActivities(ctx context.Context, in *ListSourceActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListSourceActivitiesGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSourceActivitiesGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_ListSourceActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) BackfillActivities(ctx context.Context, in *BackfillActivitiesGatewayRequest, opts ...grpc.CallOption) (*BackfillActivitiesGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BackfillActivitiesGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_BackfillActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) SubmitInput(ctx context.Context, in *SubmitInputGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -896,6 +923,16 @@ func (c *clientGatewayServiceClient) CreateBillingPortal(ctx context.Context, in
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) GetPipelineRunPayload(ctx context.Context, in *GetPipelineRunPayloadGatewayRequest, opts ...grpc.CallOption) (*GetPipelineRunPayloadGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPipelineRunPayloadGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_GetPipelineRunPayload_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) GetPluginRegistry(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(plugin.PluginRegistryResponse)
@@ -1014,6 +1051,8 @@ type ClientGatewayServiceServer interface {
 	DeletePipeline(context.Context, *PipelineIdRequest) (*emptypb.Empty, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsGatewayRequest) (*ListPipelineRunsGatewayResponse, error)
 	GetPipelineRun(context.Context, *GetPipelineRunGatewayRequest) (*pipeline.PipelineRun, error)
+	ListSourceActivities(context.Context, *ListSourceActivitiesGatewayRequest) (*ListSourceActivitiesGatewayResponse, error)
+	BackfillActivities(context.Context, *BackfillActivitiesGatewayRequest) (*BackfillActivitiesGatewayResponse, error)
 	SubmitInput(context.Context, *SubmitInputGatewayRequest) (*emptypb.Empty, error)
 	RepostActivity(context.Context, *RepostActivityGatewayRequest) (*emptypb.Empty, error)
 	// ===================== Activities =====================
@@ -1055,6 +1094,8 @@ type ClientGatewayServiceServer interface {
 	GetTierStatus(context.Context, *EmptyRequest) (*GetTierStatusGatewayResponse, error)
 	StartTrial(context.Context, *EmptyRequest) (*user.SubscriptionState, error)
 	CreateBillingPortal(context.Context, *CreateBillingPortalGatewayRequest) (*CreateBillingPortalGatewayResponse, error)
+	// ===================== Pipeline Run Payloads =====================
+	GetPipelineRunPayload(context.Context, *GetPipelineRunPayloadGatewayRequest) (*GetPipelineRunPayloadGatewayResponse, error)
 	// ===================== Registry (Unauthenticated, but on api-client) =====================
 	GetPluginRegistry(context.Context, *EmptyRequest) (*plugin.PluginRegistryResponse, error)
 	GetPluginRegistryPlugins(context.Context, *EmptyRequest) (*plugin.PluginRegistryResponse, error)
@@ -1177,6 +1218,12 @@ func (UnimplementedClientGatewayServiceServer) ListPipelineRuns(context.Context,
 func (UnimplementedClientGatewayServiceServer) GetPipelineRun(context.Context, *GetPipelineRunGatewayRequest) (*pipeline.PipelineRun, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPipelineRun not implemented")
 }
+func (UnimplementedClientGatewayServiceServer) ListSourceActivities(context.Context, *ListSourceActivitiesGatewayRequest) (*ListSourceActivitiesGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSourceActivities not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) BackfillActivities(context.Context, *BackfillActivitiesGatewayRequest) (*BackfillActivitiesGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BackfillActivities not implemented")
+}
 func (UnimplementedClientGatewayServiceServer) SubmitInput(context.Context, *SubmitInputGatewayRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitInput not implemented")
 }
@@ -1275,6 +1322,9 @@ func (UnimplementedClientGatewayServiceServer) StartTrial(context.Context, *Empt
 }
 func (UnimplementedClientGatewayServiceServer) CreateBillingPortal(context.Context, *CreateBillingPortalGatewayRequest) (*CreateBillingPortalGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateBillingPortal not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) GetPipelineRunPayload(context.Context, *GetPipelineRunPayloadGatewayRequest) (*GetPipelineRunPayloadGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPipelineRunPayload not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) GetPluginRegistry(context.Context, *EmptyRequest) (*plugin.PluginRegistryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPluginRegistry not implemented")
@@ -1945,6 +1995,42 @@ func _ClientGatewayService_GetPipelineRun_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_ListSourceActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSourceActivitiesGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).ListSourceActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_ListSourceActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).ListSourceActivities(ctx, req.(*ListSourceActivitiesGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_BackfillActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BackfillActivitiesGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).BackfillActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_BackfillActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).BackfillActivities(ctx, req.(*BackfillActivitiesGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_SubmitInput_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitInputGatewayRequest)
 	if err := dec(in); err != nil {
@@ -2539,6 +2625,24 @@ func _ClientGatewayService_CreateBillingPortal_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_GetPipelineRunPayload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPipelineRunPayloadGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).GetPipelineRunPayload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_GetPipelineRunPayload_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).GetPipelineRunPayload(ctx, req.(*GetPipelineRunPayloadGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_GetPluginRegistry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyRequest)
 	if err := dec(in); err != nil {
@@ -2795,6 +2899,14 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClientGatewayService_GetPipelineRun_Handler,
 		},
 		{
+			MethodName: "ListSourceActivities",
+			Handler:    _ClientGatewayService_ListSourceActivities_Handler,
+		},
+		{
+			MethodName: "BackfillActivities",
+			Handler:    _ClientGatewayService_BackfillActivities_Handler,
+		},
+		{
 			MethodName: "SubmitInput",
 			Handler:    _ClientGatewayService_SubmitInput_Handler,
 		},
@@ -2925,6 +3037,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateBillingPortal",
 			Handler:    _ClientGatewayService_CreateBillingPortal_Handler,
+		},
+		{
+			MethodName: "GetPipelineRunPayload",
+			Handler:    _ClientGatewayService_GetPipelineRunPayload_Handler,
 		},
 		{
 			MethodName: "GetPluginRegistry",

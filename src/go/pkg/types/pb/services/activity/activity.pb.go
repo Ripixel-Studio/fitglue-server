@@ -1238,11 +1238,14 @@ func (x *UpdateShowcaseSlugResponse) GetSlug() string {
 }
 
 type AddShowcaseEntryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ShowcaseId    string                 `protobuf:"bytes,2,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	UserId     string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ShowcaseId string                 `protobuf:"bytes,2,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
+	// destination_count is the number of destinations the activity was uploaded to.
+	// Passed by the showcase uploader so the profile entry can reflect the full upload scope.
+	DestinationCount int32 `protobuf:"varint,3,opt,name=destination_count,json=destinationCount,proto3" json:"destination_count,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AddShowcaseEntryRequest) Reset() {
@@ -1287,6 +1290,13 @@ func (x *AddShowcaseEntryRequest) GetShowcaseId() string {
 		return x.ShowcaseId
 	}
 	return ""
+}
+
+func (x *AddShowcaseEntryRequest) GetDestinationCount() int32 {
+	if x != nil {
+		return x.DestinationCount
+	}
+	return 0
 }
 
 type RemoveShowcaseEntryRequest struct {
@@ -1762,13 +1772,17 @@ func (x *GetActivityStatsRequest) GetUserId() string {
 }
 
 type GetActivityStatsResponse struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	TotalActivities  int32                  `protobuf:"varint,1,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
-	TotalShowcases   int32                  `protobuf:"varint,2,opt,name=total_showcases,json=totalShowcases,proto3" json:"total_showcases,omitempty"`
-	LastActivityAt   string                 `protobuf:"bytes,3,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
-	UploadsThisMonth int32                  `protobuf:"varint,5,opt,name=uploads_this_month,json=uploadsThisMonth,proto3" json:"uploads_this_month,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	TotalActivities     int32                  `protobuf:"varint,1,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
+	TotalShowcases      int32                  `protobuf:"varint,2,opt,name=total_showcases,json=totalShowcases,proto3" json:"total_showcases,omitempty"`
+	LastActivityAt      string                 `protobuf:"bytes,3,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
+	UploadsThisMonth    int32                  `protobuf:"varint,5,opt,name=uploads_this_month,json=uploadsThisMonth,proto3" json:"uploads_this_month,omitempty"` // DEPRECATED — prefer activities_this_month
+	ActivitiesThisMonth int32                  `protobuf:"varint,6,opt,name=activities_this_month,json=activitiesThisMonth,proto3" json:"activities_this_month,omitempty"`
+	ActivitiesThisWeek  int32                  `protobuf:"varint,7,opt,name=activities_this_week,json=activitiesThisWeek,proto3" json:"activities_this_week,omitempty"`
+	CurrentStreakDays   int32                  `protobuf:"varint,8,opt,name=current_streak_days,json=currentStreakDays,proto3" json:"current_streak_days,omitempty"`
+	LongestStreakDays   int32                  `protobuf:"varint,9,opt,name=longest_streak_days,json=longestStreakDays,proto3" json:"longest_streak_days,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *GetActivityStatsResponse) Reset() {
@@ -1825,6 +1839,34 @@ func (x *GetActivityStatsResponse) GetLastActivityAt() string {
 func (x *GetActivityStatsResponse) GetUploadsThisMonth() int32 {
 	if x != nil {
 		return x.UploadsThisMonth
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetActivitiesThisMonth() int32 {
+	if x != nil {
+		return x.ActivitiesThisMonth
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetActivitiesThisWeek() int32 {
+	if x != nil {
+		return x.ActivitiesThisWeek
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetCurrentStreakDays() int32 {
+	if x != nil {
+		return x.CurrentStreakDays
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetLongestStreakDays() int32 {
+	if x != nil {
+		return x.LongestStreakDays
 	}
 	return 0
 }
@@ -1921,11 +1963,12 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\"0\n" +
 	"\x1aUpdateShowcaseSlugResponse\x12\x12\n" +
-	"\x04slug\x18\x01 \x01(\tR\x04slug\"S\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\"\x80\x01\n" +
 	"\x17AddShowcaseEntryRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
 	"\vshowcase_id\x18\x02 \x01(\tR\n" +
-	"showcaseId\"V\n" +
+	"showcaseId\x12+\n" +
+	"\x11destination_count\x18\x03 \x01(\x05R\x10destinationCount\"V\n" +
 	"\x1aRemoveShowcaseEntryRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
 	"\vshowcase_id\x18\x02 \x01(\tR\n" +
@@ -1963,12 +2006,16 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"totalPages\x12!\n" +
 	"\fcurrent_page\x18\x04 \x01(\x05R\vcurrentPage\"2\n" +
 	"\x17GetActivityStatsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xc6\x01\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x8c\x03\n" +
 	"\x18GetActivityStatsResponse\x12)\n" +
 	"\x10total_activities\x18\x01 \x01(\x05R\x0ftotalActivities\x12'\n" +
 	"\x0ftotal_showcases\x18\x02 \x01(\x05R\x0etotalShowcases\x12(\n" +
 	"\x10last_activity_at\x18\x03 \x01(\tR\x0elastActivityAt\x12,\n" +
-	"\x12uploads_this_month\x18\x05 \x01(\x05R\x10uploadsThisMonth2\xfd\x1f\n" +
+	"\x12uploads_this_month\x18\x05 \x01(\x05R\x10uploadsThisMonth\x122\n" +
+	"\x15activities_this_month\x18\x06 \x01(\x05R\x13activitiesThisMonth\x120\n" +
+	"\x14activities_this_week\x18\a \x01(\x05R\x12activitiesThisWeek\x12.\n" +
+	"\x13current_streak_days\x18\b \x01(\x05R\x11currentStreakDays\x12.\n" +
+	"\x13longest_streak_days\x18\t \x01(\x05R\x11longestStreakDays2\xfd\x1f\n" +
 	"\x0fActivityService\x12\xa1\x01\n" +
 	"\vGetActivity\x12-.fitglue.services.activity.GetActivityRequest\x1a-.fitglue.models.activity.StandardizedActivity\"4\x82\xd3\xe4\x93\x02.\x12,/v2/users/{user_id}/activities/{activity_id}\x12\x9d\x01\n" +
 	"\x0eListActivities\x120.fitglue.services.activity.ListActivitiesRequest\x1a1.fitglue.services.activity.ListActivitiesResponse\"&\x82\xd3\xe4\x93\x02 \x12\x1e/v2/users/{user_id}/activities\x12\x90\x01\n" +

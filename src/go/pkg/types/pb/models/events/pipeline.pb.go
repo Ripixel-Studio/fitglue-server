@@ -368,11 +368,12 @@ type EnrichedActivityEvent struct {
 	Source              activity.ActivitySource        `protobuf:"varint,9,opt,name=source,proto3,enum=fitglue.models.activity.ActivitySource" json:"source,omitempty"`
 	ActivityData        *activity.StandardizedActivity `protobuf:"bytes,10,opt,name=activity_data,json=activityData,proto3" json:"activity_data,omitempty"`
 	AppliedEnrichments  []string                       `protobuf:"bytes,11,rep,name=applied_enrichments,json=appliedEnrichments,proto3" json:"applied_enrichments,omitempty"`
-	EnrichmentMetadata  map[string]string              `protobuf:"bytes,12,rep,name=enrichment_metadata,json=enrichmentMetadata,proto3" json:"enrichment_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	EnrichmentMetadata  map[string]string              `protobuf:"bytes,12,rep,name=enrichment_metadata,json=enrichmentMetadata,proto3" json:"enrichment_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // operational pipeline flags for destination service
 	Destinations        []plugin.DestinationType       `protobuf:"varint,13,rep,packed,name=destinations,proto3,enum=fitglue.models.plugin.DestinationType" json:"destinations,omitempty"`
 	Tags                []string                       `protobuf:"bytes,14,rep,name=tags,proto3" json:"tags,omitempty"`
 	PipelineExecutionId *string                        `protobuf:"bytes,15,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
 	ActivityDataUri     string                         `protobuf:"bytes,16,opt,name=activity_data_uri,json=activityDataUri,proto3" json:"activity_data_uri,omitempty"`
+	Enrichments         *activity.ActivityEnrichments  `protobuf:"bytes,17,opt,name=enrichments,proto3" json:"enrichments,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -519,6 +520,13 @@ func (x *EnrichedActivityEvent) GetActivityDataUri() string {
 	return ""
 }
 
+func (x *EnrichedActivityEvent) GetEnrichments() *activity.ActivityEnrichments {
+	if x != nil {
+		return x.Enrichments
+	}
+	return nil
+}
+
 type MessagePublishedData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
@@ -618,7 +626,7 @@ var File_models_events_pipeline_proto protoreflect.FileDescriptor
 
 const file_models_events_pipeline_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/events/pipeline.proto\x12\x15fitglue.models.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\"models/activity/standardized.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x98\b\n" +
+	"\x1cmodels/events/pipeline.proto\x12\x15fitglue.models.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\"models/activity/standardized.proto\x1a!models/activity/enrichments.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x98\b\n" +
 	"\x0fActivityPayload\x12?\n" +
 	"\x06source\x18\x01 \x01(\x0e2'.fitglue.models.activity.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
@@ -648,7 +656,7 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination\"\xb4\a\n" +
+	"\x13_origin_destination\"\x84\b\n" +
 	"\x15EnrichedActivityEvent\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -670,7 +678,8 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\fdestinations\x18\r \x03(\x0e2&.fitglue.models.plugin.DestinationTypeR\fdestinations\x12\x12\n" +
 	"\x04tags\x18\x0e \x03(\tR\x04tags\x127\n" +
 	"\x15pipeline_execution_id\x18\x0f \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x12*\n" +
-	"\x11activity_data_uri\x18\x10 \x01(\tR\x0factivityDataUri\x1aE\n" +
+	"\x11activity_data_uri\x18\x10 \x01(\tR\x0factivityDataUri\x12N\n" +
+	"\venrichments\x18\x11 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichments\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
@@ -746,7 +755,8 @@ var file_models_events_pipeline_proto_goTypes = []any{
 	(*activity.StandardizedActivity)(nil), // 10: fitglue.models.activity.StandardizedActivity
 	(activity.ActivityType)(0),            // 11: fitglue.models.activity.ActivityType
 	(plugin.DestinationType)(0),           // 12: fitglue.models.plugin.DestinationType
-	(*descriptorpb.EnumValueOptions)(nil), // 13: google.protobuf.EnumValueOptions
+	(*activity.ActivityEnrichments)(nil),  // 13: fitglue.models.activity.ActivityEnrichments
+	(*descriptorpb.EnumValueOptions)(nil), // 14: google.protobuf.EnumValueOptions
 }
 var file_models_events_pipeline_proto_depIdxs = []int32{
 	8,  // 0: fitglue.models.events.ActivityPayload.source:type_name -> fitglue.models.activity.ActivitySource
@@ -759,14 +769,15 @@ var file_models_events_pipeline_proto_depIdxs = []int32{
 	10, // 7: fitglue.models.events.EnrichedActivityEvent.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
 	6,  // 8: fitglue.models.events.EnrichedActivityEvent.enrichment_metadata:type_name -> fitglue.models.events.EnrichedActivityEvent.EnrichmentMetadataEntry
 	12, // 9: fitglue.models.events.EnrichedActivityEvent.destinations:type_name -> fitglue.models.plugin.DestinationType
-	7,  // 10: fitglue.models.events.MessagePublishedData.attributes:type_name -> fitglue.models.events.MessagePublishedData.AttributesEntry
-	13, // 11: fitglue.models.events.ce_type:extendee -> google.protobuf.EnumValueOptions
-	13, // 12: fitglue.models.events.ce_source:extendee -> google.protobuf.EnumValueOptions
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	11, // [11:13] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	13, // 10: fitglue.models.events.EnrichedActivityEvent.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
+	7,  // 11: fitglue.models.events.MessagePublishedData.attributes:type_name -> fitglue.models.events.MessagePublishedData.AttributesEntry
+	14, // 12: fitglue.models.events.ce_type:extendee -> google.protobuf.EnumValueOptions
+	14, // 13: fitglue.models.events.ce_source:extendee -> google.protobuf.EnumValueOptions
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	12, // [12:14] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_models_events_pipeline_proto_init() }

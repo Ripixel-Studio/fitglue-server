@@ -262,6 +262,9 @@ message UpdateShowcaseSlugResponse {
 message AddShowcaseEntryRequest {
   string user_id = 1;
   string showcase_id = 2;
+  // destination_count is the number of destinations the activity was uploaded to.
+  // Passed by the showcase uploader so the profile entry can reflect the full upload scope.
+  int32 destination_count = 3;
 }
 
 message RemoveShowcaseEntryRequest {
@@ -315,5 +318,9 @@ message GetActivityStatsResponse {
   int32 total_activities = 1;
   int32 total_showcases = 2;
   string last_activity_at = 3;
-  int32 uploads_this_month = 5;
+  int32 uploads_this_month = 5;   // DEPRECATED — prefer activities_this_month
+  int32 activities_this_month = 6;
+  int32 activities_this_week = 7;
+  int32 current_streak_days = 8;
+  int32 longest_streak_days = 9;
 }
