@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 	_ "time/tzdata" // embed timezone database for distroless containers
@@ -74,6 +75,7 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pbactivity
 	timeStr := pendingInput.InputData["time"]
 	ageGrade := pendingInput.InputData["age_grade"]
 
+	pos, _ := strconv.Atoi(position)
 	result := &providers.EnrichmentResult{
 		Description:   description, // description already contains the header from FormatResultsDescription
 		SectionHeader: "🏃 Parkrun Results:",
@@ -85,6 +87,14 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pbactivity
 			"parkrun_time":          timeStr,
 			"parkrun_age_grade":     ageGrade,
 			"parkrun_results_state": "COMPLETE",
+		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Parkrun: &pbactivity.ParkrunSummary{
+				EventName:  pendingInput.ProviderMetadata["parkrun_event_name"],
+				Position:   int32(pos),
+				FinishTime: timeStr,
+				AgeGrade:   ageGrade,
+			},
 		},
 	}
 
@@ -341,6 +351,17 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 				result.Metadata["parkrun_time"] = parkrunResults.Time
 				result.Metadata["parkrun_age_grade"] = parkrunResults.AgeGrade
 				result.Metadata["results_source"] = "immediate_fetch"
+				result.Enrichments = &pbactivity.ActivityEnrichments{
+					Parkrun: &pbactivity.ParkrunSummary{
+						EventName:     matchedLocation.Name,
+						Position:      int32(parkrunResults.Position),
+						FinishTime:    parkrunResults.Time,
+						AgeGrade:      parkrunResults.AgeGrade,
+						TotalParkruns: int32(parkrunResults.TotalAllTime),
+						IsTimePb:      parkrunResults.TimeAllTimePB,
+						IsAgeGradePb:  parkrunResults.AgeGradeAllTimePB,
+					},
+				}
 			} else if p.service != nil {
 				// Step 2: Results not available yet - create pending input for background polling
 				logger.Debug("parkrun: results not yet available, creating pending input")

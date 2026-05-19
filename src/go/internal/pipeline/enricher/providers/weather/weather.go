@@ -178,6 +178,15 @@ func (p *Weather) Enrich(ctx context.Context, logger *slog.Logger, activity *pba
 			"wind_speed":          fmt.Sprintf("%.0f", windSpeed),
 			"wind_direction":      windCardinal,
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Weather: &pbactivity.WeatherSummary{
+				TempC:              temperature,
+				WeatherDescription: weatherDesc,
+				WindSpeedKph:       windSpeed,
+				WindDirection:      windCardinal,
+				WeatherCode:        int32(weatherCode),
+			},
+		},
 	}, nil
 }
 

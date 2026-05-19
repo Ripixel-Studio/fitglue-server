@@ -244,6 +244,15 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 		},
 	}
 
+	result.Enrichments = &pbactivity.ActivityEnrichments{
+		Location: &pbactivity.LocationSummary{
+			LocationName: displayLocation,
+			Country:      cityName,
+			Latitude:     latitude,
+			Longitude:    longitude,
+		},
+	}
+
 	if timePrefix != "" {
 		result.Metadata["time_context"] = timePrefix
 	}

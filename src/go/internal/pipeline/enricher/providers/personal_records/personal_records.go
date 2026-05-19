@@ -165,9 +165,31 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 		prMeta[prefix+"value"] = formatPRValue(pr.NewValue, pr.Unit)
 	}
 
+	prRecords := make([]*pbactivity.PersonalRecord, 0, len(newPRs))
+	for _, pr := range newPRs {
+		rec := &pbactivity.PersonalRecord{
+			RecordType:     pr.RecordType,
+			NewValue:       pr.NewValue,
+			Unit:           pr.Unit,
+			DisplayMessage: pr.DisplayMessage,
+		}
+		if pr.PreviousValue != nil {
+			rec.PreviousValue = pr.PreviousValue
+		}
+		if pr.Improvement != nil {
+			rec.Improvement = pr.Improvement
+		}
+		prRecords = append(prRecords, rec)
+	}
+
 	result := &providers.EnrichmentResult{
 		Description: prDescription,
 		Metadata:    prMeta,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			PersonalRecords: &pbactivity.PersonalRecordsSummary{
+				Records: prRecords,
+			},
+		},
 	}
 
 	// Optionally add celebration to name

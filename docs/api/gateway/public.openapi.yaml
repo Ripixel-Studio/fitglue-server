@@ -199,6 +199,28 @@ components:
                     $ref: '#/components/schemas/PowerSummary'
                 elevation:
                     $ref: '#/components/schemas/ElevationSummary'
+                speed:
+                    $ref: '#/components/schemas/SpeedSummary'
+                parkrun:
+                    $ref: '#/components/schemas/ParkrunSummary'
+                weather:
+                    $ref: '#/components/schemas/WeatherSummary'
+                location:
+                    $ref: '#/components/schemas/LocationSummary'
+                runningDynamics:
+                    $ref: '#/components/schemas/RunningDynamicsSummary'
+                personalRecords:
+                    $ref: '#/components/schemas/PersonalRecordsSummary'
+                distanceMilestone:
+                    $ref: '#/components/schemas/DistanceMilestoneSummary'
+                goalTracker:
+                    $ref: '#/components/schemas/GoalTrackerSummary'
+                spotify:
+                    $ref: '#/components/schemas/SpotifyTracksSummary'
+                intervals:
+                    $ref: '#/components/schemas/IntervalsSummary'
+                muscleHeatmap:
+                    $ref: '#/components/schemas/MuscleHeatmapSummary'
             description: |-
                 ActivityEnrichments holds typed outputs from the enricher pipeline.
                  Each sub-message is optional — only present if the corresponding enricher
@@ -317,6 +339,20 @@ components:
                 maxValue:
                     type: number
                     format: double
+        DistanceMilestoneSummary:
+            type: object
+            properties:
+                milestoneKm:
+                    type: number
+                    format: double
+                lifetimeDistanceKm:
+                    type: number
+                    format: double
+                nextMilestoneKm:
+                    type: number
+                    format: double
+                activityTypeLabel:
+                    type: string
         EffortFactor:
             type: object
             properties:
@@ -372,6 +408,31 @@ components:
                 currentPage:
                     type: integer
                     format: int32
+        GoalEntry:
+            type: object
+            properties:
+                label:
+                    type: string
+                current:
+                    type: number
+                    format: double
+                target:
+                    type: number
+                    format: double
+                unit:
+                    type: string
+                onPace:
+                    type: boolean
+                daysRemaining:
+                    type: integer
+                    format: int32
+        GoalTrackerSummary:
+            type: object
+            properties:
+                goals:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoalEntry'
         GoogleProtobufAny:
             type: object
             properties:
@@ -502,6 +563,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/IntegrationAction'
+        IntervalSegment:
+            type: object
+            properties:
+                type:
+                    type: string
+                label:
+                    type: string
+                durationSeconds:
+                    type: number
+                    format: double
+                distanceMeters:
+                    type: number
+                    format: double
+                avgHr:
+                    type: number
+                    format: double
+                avgSpeedMs:
+                    type: number
+                    format: double
+        IntervalsSummary:
+            type: object
+            properties:
+                segments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/IntervalSegment'
+                workoutName:
+                    type: string
         Lap:
             type: object
             properties:
@@ -557,6 +646,32 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/PluginManifest'
+        LocationSummary:
+            type: object
+            properties:
+                locationName:
+                    type: string
+                country:
+                    type: string
+                latitude:
+                    type: number
+                    format: double
+                longitude:
+                    type: number
+                    format: double
+        MuscleHeatmapSummary:
+            type: object
+            properties:
+                primary:
+                    type: array
+                    items:
+                        type: string
+                secondary:
+                    type: array
+                    items:
+                        type: string
+                imageUrl:
+                    type: string
         PaceSplit:
             type: object
             properties:
@@ -579,6 +694,50 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/PaceSplit'
+        ParkrunSummary:
+            type: object
+            properties:
+                eventName:
+                    type: string
+                position:
+                    type: integer
+                    format: int32
+                finishTime:
+                    type: string
+                ageGrade:
+                    type: string
+                totalParkruns:
+                    type: integer
+                    format: int32
+                isTimePb:
+                    type: boolean
+                isAgeGradePb:
+                    type: boolean
+        PersonalRecord:
+            type: object
+            properties:
+                recordType:
+                    type: string
+                newValue:
+                    type: number
+                    format: double
+                unit:
+                    type: string
+                previousValue:
+                    type: number
+                    format: double
+                improvement:
+                    type: number
+                    format: double
+                displayMessage:
+                    type: string
+        PersonalRecordsSummary:
+            type: object
+            properties:
+                records:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PersonalRecord'
         PluginManifest:
             type: object
             properties:
@@ -756,6 +915,18 @@ components:
                     type: boolean
                 alertText:
                     type: string
+        RunningDynamicsSummary:
+            type: object
+            properties:
+                avgGroundContactMs:
+                    type: number
+                    format: double
+                avgVerticalOscillationCm:
+                    type: number
+                    format: double
+                avgStepLengthM:
+                    type: number
+                    format: double
         Session:
             type: object
             properties:
@@ -1124,6 +1295,35 @@ components:
                 enrichments:
                     $ref: '#/components/schemas/ActivityEnrichments'
             description: ShowcasedActivity represents a publicly shareable activity snapshot.
+        SpeedSummary:
+            type: object
+            properties:
+                avgSpeedKmh:
+                    type: number
+                    format: double
+                maxSpeedKmh:
+                    type: number
+                    format: double
+        SpotifyTrack:
+            type: object
+            properties:
+                title:
+                    type: string
+                artist:
+                    type: string
+                durationSeconds:
+                    type: integer
+                    format: int32
+        SpotifyTracksSummary:
+            type: object
+            properties:
+                tracks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SpotifyTrack'
+                totalCount:
+                    type: integer
+                    format: int32
         StandardizedActivity:
             type: object
             properties:
@@ -1390,6 +1590,22 @@ components:
                     type: string
                 afterHtml:
                     type: string
+        WeatherSummary:
+            type: object
+            properties:
+                tempC:
+                    type: number
+                    format: double
+                weatherDescription:
+                    type: string
+                windSpeedKph:
+                    type: number
+                    format: double
+                windDirection:
+                    type: string
+                weatherCode:
+                    type: integer
+                    format: int32
         WeeklyStreakHistory:
             type: object
             properties:

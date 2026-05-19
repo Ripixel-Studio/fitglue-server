@@ -190,6 +190,20 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata:    resultMetadata,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			GoalTracker: &pbactivity.GoalTrackerSummary{
+				Goals: []*pbactivity.GoalEntry{
+					{
+						Label:         fmt.Sprintf("%s · %.0f %s", getPeriodLabel(period), target, getMetricLabel(metric)),
+						Current:       newTotal,
+						Target:        target,
+						Unit:          getMetricLabel(metric),
+						OnPace:        newTotal >= target,
+						DaysRemaining: int32(getDaysRemaining(period)),
+					},
+				},
+			},
+		},
 	}, nil
 }
 

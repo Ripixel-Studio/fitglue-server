@@ -126,5 +126,45 @@ func (p *RunningDynamics) Enrich(ctx context.Context, logger *slog.Logger, activ
 		Metadata: map[string]string{
 			"running_dynamics_status": "success",
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			RunningDynamics: &pbactivity.RunningDynamicsSummary{
+				AvgGroundContactMs:       avgGCT(gcts),
+				AvgVerticalOscillationCm: avgVO(vos),
+				AvgStepLengthM:           avgSL(sls),
+			},
+		},
 	}, nil
+}
+
+func avgGCT(v []int32) float64 {
+	if len(v) == 0 {
+		return 0
+	}
+	var s int64
+	for _, x := range v {
+		s += int64(x)
+	}
+	return float64(s) / float64(len(v))
+}
+
+func avgVO(v []int32) float64 {
+	if len(v) == 0 {
+		return 0
+	}
+	var s int64
+	for _, x := range v {
+		s += int64(x)
+	}
+	return float64(s) / float64(len(v)) / 10.0 // mm → cm
+}
+
+func avgSL(v []float64) float64 {
+	if len(v) == 0 {
+		return 0
+	}
+	var s float64
+	for _, x := range v {
+		s += x
+	}
+	return s / float64(len(v))
 }

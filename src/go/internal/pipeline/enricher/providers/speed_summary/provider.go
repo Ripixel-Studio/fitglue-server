@@ -129,6 +129,12 @@ func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 			"speed_max_kmh":        fmt.Sprintf("%.1f", maxSpeedKmh),
 			"speed_sample_count":   fmt.Sprintf("%d", len(speeds)),
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Speed: &pbactivity.SpeedSummary{
+				AvgSpeedKmh: avgSpeedKmh,
+				MaxSpeedKmh: maxSpeedKmh,
+			},
+		},
 	}, nil
 }
 

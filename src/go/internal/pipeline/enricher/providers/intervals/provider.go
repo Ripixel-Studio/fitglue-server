@@ -219,11 +219,49 @@ func (p *Intervals) Enrich(
 	sectionHeader := formatSectionHeader(workoutName)
 	desc := sectionHeader + "\n" + strings.TrimLeft(sb.String(), "\n")
 
+	// Build interval segments for Enrichments
+	intervalSegments := make([]*pbactivity.IntervalSegment, 0, len(laps))
+	activeIdx := 0
+	recoveryIdx := 0
+	lapIdx := 0
+	for _, l := range laps {
+		var label string
+		switch l.intensity {
+		case "warmup":
+			label = "Warmup"
+		case "cooldown":
+			label = "Cooldown"
+		case "active":
+			activeIdx++
+			label = fmt.Sprintf("Interval %d", activeIdx)
+		case "recovery":
+			recoveryIdx++
+			label = fmt.Sprintf("Recovery %d", recoveryIdx)
+		default:
+			lapIdx++
+			label = fmt.Sprintf("Lap %d", lapIdx)
+		}
+		intervalSegments = append(intervalSegments, &pbactivity.IntervalSegment{
+			Type:            l.intensity,
+			Label:           label,
+			DurationSeconds: l.duration,
+			DistanceMeters:  l.distance,
+			AvgHr:           l.avgHR,
+			AvgSpeedMs:      l.avgSpeed,
+		})
+	}
+
 	return &providers.EnrichmentResult{
 		Description:   desc,
 		SectionHeader: sectionHeader,
 		TimeMarkers:   timeMarkers,
 		Metadata:      metadata,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Intervals: &pbactivity.IntervalsSummary{
+				Segments:    intervalSegments,
+				WorkoutName: metadataWorkoutName,
+			},
+		},
 	}, nil
 }
 

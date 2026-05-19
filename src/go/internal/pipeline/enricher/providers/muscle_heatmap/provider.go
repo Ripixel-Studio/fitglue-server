@@ -253,11 +253,27 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, logger *slog.Logger,
 		sb.WriteString(p.formatMuscleRow(k, score, rating, maxScore, barLength, style))
 	}
 
+	var primaryMuscles, secondaryMuscles []string
+	for _, k := range keys {
+		score := volumeScores[k]
+		if maxScore > 0 && score/maxScore >= 0.5 {
+			primaryMuscles = append(primaryMuscles, k)
+		} else {
+			secondaryMuscles = append(secondaryMuscles, k)
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata: map[string]string{
 			"muscle_groups_displayed": fmt.Sprintf("%d", len(keys)),
 			"max_score":               fmt.Sprintf("%.2f", maxScore),
+		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			MuscleHeatmap: &pbactivity.MuscleHeatmapSummary{
+				Primary:   primaryMuscles,
+				Secondary: secondaryMuscles,
+			},
 		},
 	}, nil
 }

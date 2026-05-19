@@ -23,6 +23,17 @@ message ActivityEnrichments {
   optional CadenceSummary cadence = 11;
   optional PowerSummary power = 12;
   optional ElevationSummary elevation = 13;
+  optional SpeedSummary speed = 14;
+  optional ParkrunSummary parkrun = 15;
+  optional WeatherSummary weather = 16;
+  optional LocationSummary location = 17;
+  optional RunningDynamicsSummary running_dynamics = 18;
+  optional PersonalRecordsSummary personal_records = 19;
+  optional DistanceMilestoneSummary distance_milestone = 20;
+  optional GoalTrackerSummary goal_tracker = 21;
+  optional SpotifyTracksSummary spotify = 22;
+  optional IntervalsSummary intervals = 23;
+  optional MuscleHeatmapSummary muscle_heatmap = 24;
 }
 
 message HeartRateSummary {
@@ -131,4 +142,104 @@ message PowerSummary {
 message ElevationSummary {
   double total_gain_m = 1;
   double total_loss_m = 2;
+}
+
+message SpeedSummary {
+  double avg_speed_kmh = 1;
+  double max_speed_kmh = 2;
+}
+
+message WeatherSummary {
+  double temp_c = 1;
+  string weather_description = 2;  // "Clear", "Rain", "Partly Cloudy", etc.
+  double wind_speed_kph = 3;
+  string wind_direction = 4;       // "N", "NE", "SW", etc.
+  int32 weather_code = 5;          // WMO weather code
+}
+
+message LocationSummary {
+  string location_name = 1;  // e.g. "Bushy Park, London"
+  string country = 2;
+  double latitude = 3;
+  double longitude = 4;
+}
+
+message RunningDynamicsSummary {
+  double avg_ground_contact_ms = 1;
+  double avg_vertical_oscillation_cm = 2;
+  double avg_step_length_m = 3;
+}
+
+message ParkrunSummary {
+  string event_name = 1;    // e.g. "Bushy parkrun"
+  int32 position = 2;
+  string finish_time = 3;   // e.g. "19:42"
+  string age_grade = 4;     // e.g. "76.2%"
+  int32 total_parkruns = 5; // all-time run count
+  bool is_time_pb = 6;
+  bool is_age_grade_pb = 7;
+}
+
+message PersonalRecord {
+  string record_type = 1;           // e.g. "5k", "bench_press_1rm"
+  double new_value = 2;
+  string unit = 3;                  // "seconds", "kg"
+  optional double previous_value = 4;
+  optional double improvement = 5;  // percentage
+  string display_message = 6;       // formatted human-readable summary
+}
+
+message PersonalRecordsSummary {
+  repeated PersonalRecord records = 1;
+}
+
+message DistanceMilestoneSummary {
+  double milestone_km = 1;
+  double lifetime_distance_km = 2;
+  optional double next_milestone_km = 3;
+  string activity_type_label = 4;  // e.g. "running"
+}
+
+message GoalEntry {
+  string label = 1;        // e.g. "Run · 2,500 km"
+  double current = 2;      // accumulated progress this period
+  double target = 3;
+  string unit = 4;         // "km", "hours", "activities"
+  bool on_pace = 5;
+  int32 days_remaining = 6;
+}
+
+message GoalTrackerSummary {
+  repeated GoalEntry goals = 1;
+}
+
+message SpotifyTrack {
+  string title = 1;
+  string artist = 2;
+  int32 duration_seconds = 3;
+}
+
+message SpotifyTracksSummary {
+  repeated SpotifyTrack tracks = 1;
+  int32 total_count = 2;
+}
+
+message IntervalSegment {
+  string type = 1;              // "warmup", "active", "recovery", "cooldown"
+  string label = 2;             // e.g. "Interval 1", "Recovery 2"
+  double duration_seconds = 3;
+  double distance_meters = 4;
+  double avg_hr = 5;
+  double avg_speed_ms = 6;      // m/s — derive pace/speed from activity category
+}
+
+message IntervalsSummary {
+  repeated IntervalSegment segments = 1;
+  string workout_name = 2;      // e.g. "4×400m" if structured workout
+}
+
+message MuscleHeatmapSummary {
+  repeated string primary = 1;    // e.g. ["chest", "triceps"]
+  repeated string secondary = 2;  // e.g. ["shoulders"]
+  string image_url = 3;           // populated by MUSCLE_HEATMAP_IMAGE if it ran
 }

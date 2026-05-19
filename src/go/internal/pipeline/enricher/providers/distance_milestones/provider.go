@@ -192,9 +192,30 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 		}
 	}
 
+	var milestoneSummary *pbactivity.DistanceMilestoneSummary
+	if len(crossedMilestones) > 0 {
+		biggest := crossedMilestones[len(crossedMilestones)-1]
+		milestoneSummary = &pbactivity.DistanceMilestoneSummary{
+			MilestoneKm:        biggest,
+			LifetimeDistanceKm: newDistance,
+			ActivityTypeLabel:  getSportLabel(sport),
+		}
+	} else {
+		nextMilestoneVal := getNextMilestone(newDistance)
+		milestoneSummary = &pbactivity.DistanceMilestoneSummary{
+			MilestoneKm:        0,
+			LifetimeDistanceKm: newDistance,
+			NextMilestoneKm:    &nextMilestoneVal,
+			ActivityTypeLabel:  getSportLabel(sport),
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata:    resultMetadata,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			DistanceMilestone: milestoneSummary,
+		},
 	}, nil
 }
 

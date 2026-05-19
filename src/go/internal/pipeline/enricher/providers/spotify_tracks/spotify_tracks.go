@@ -213,6 +213,18 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, logger *slog.Logge
 		"playlist", playlistName,
 	)
 
+	spotifyTracks := make([]*pbactivity.SpotifyTrack, 0, len(recentlyPlayed.Items))
+	for _, item := range recentlyPlayed.Items {
+		artist := ""
+		if len(item.Track.Artists) > 0 {
+			artist = item.Track.Artists[0].Name
+		}
+		spotifyTracks = append(spotifyTracks, &pbactivity.SpotifyTrack{
+			Title:  item.Track.Name,
+			Artist: artist,
+		})
+	}
+
 	return &providers.EnrichmentResult{
 		Description: newDescription,
 		Metadata: map[string]string{
@@ -222,6 +234,12 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, logger *slog.Logge
 			"top_artist":     trackInfo[topTrack],
 			"playlist":       playlistName,
 			"status_detail":  "Successfully added soundtrack",
+		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Spotify: &pbactivity.SpotifyTracksSummary{
+				Tracks:     spotifyTracks,
+				TotalCount: int32(len(recentlyPlayed.Items)),
+			},
 		},
 	}, nil
 }
