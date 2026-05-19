@@ -195,11 +195,25 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
 			logger.Warn("Failed to save streak data", "error", err)
 		}
+
+		// Roll up current/longest streak onto UserProfile for the stats dashboard.
+		if err := p.Service.DB.UpdateUser(ctx, user.UserId, map[string]interface{}{
+			"current_streak_days": currentStreak,
+			"longest_streak_days": longestStreak,
+		}); err != nil {
+			logger.Warn("Failed to update user streak fields", "error", err)
+		}
 	}
 
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata:    resultMetadata,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Streak: &pbactivity.StreakSummary{
+				CurrentDays: int32(currentStreak),
+				LongestDays: int32(longestStreak),
+			},
+		},
 	}, nil
 }
 

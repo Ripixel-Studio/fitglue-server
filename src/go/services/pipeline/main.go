@@ -22,6 +22,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/pipeline/splitter"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
+	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -61,8 +62,20 @@ func main() {
 		bucketName = "fitglue-server-dev-artifacts"
 	}
 
+	// Connect to user service for source credential lookups (backfill feature)
+	userTarget := os.Getenv("USER_SERVICE_URL")
+	if userTarget == "" {
+		userTarget = "localhost:50051"
+	}
+	userConn, err := infra.GRPCDial(userTarget)
+	if err != nil {
+		log.Fatalf("failed to dial user service: %v", err)
+	}
+	defer userConn.Close()
+	userClient := userpb.NewUserServiceClient(userConn)
+
 	// 1. gRPC Service (CRUD) — serves on the same port as HTTP (required for Cloud Run single-port)
-	svc := pipeline.NewService(store, pubClient, blobStore, logger)
+	svc := pipeline.NewService(store, pubClient, blobStore, logger, userClient)
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pb.RegisterPipelineServiceServer(grpcServer, svc)

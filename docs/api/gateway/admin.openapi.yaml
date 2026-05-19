@@ -238,8 +238,6 @@ components:
             properties:
                 providerName:
                     type: string
-                status:
-                    type: string
                 durationMs:
                     type: string
                 metadata:
@@ -248,6 +246,18 @@ components:
                         type: string
                 error:
                     type: string
+                status:
+                    enum:
+                        - EXECUTION_STEP_STATUS_UNSPECIFIED
+                        - EXECUTION_STEP_STATUS_QUEUED
+                        - EXECUTION_STEP_STATUS_RUNNING
+                        - EXECUTION_STEP_STATUS_OK
+                        - EXECUTION_STEP_STATUS_PASS
+                        - EXECUTION_STEP_STATUS_SKIPPED
+                        - EXECUTION_STEP_STATUS_FAILED
+                        - EXECUTION_STEP_STATUS_RETRIED
+                    type: string
+                    format: enum
         DestinationConfig:
             type: object
             properties:
@@ -345,6 +355,54 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+        ExecutionStep:
+            type: object
+            properties:
+                id:
+                    type: string
+                ordinal:
+                    type: integer
+                    format: int32
+                kind:
+                    enum:
+                        - EXECUTION_STEP_KIND_UNSPECIFIED
+                        - EXECUTION_STEP_KIND_SOURCE
+                        - EXECUTION_STEP_KIND_PARSE
+                        - EXECUTION_STEP_KIND_GATE
+                        - EXECUTION_STEP_KIND_ENRICHER_BATCH
+                        - EXECUTION_STEP_KIND_ROUTER
+                        - EXECUTION_STEP_KIND_DESTINATION
+                    type: string
+                    format: enum
+                displayName:
+                    type: string
+                service:
+                    type: string
+                status:
+                    enum:
+                        - EXECUTION_STEP_STATUS_UNSPECIFIED
+                        - EXECUTION_STEP_STATUS_QUEUED
+                        - EXECUTION_STEP_STATUS_RUNNING
+                        - EXECUTION_STEP_STATUS_OK
+                        - EXECUTION_STEP_STATUS_PASS
+                        - EXECUTION_STEP_STATUS_SKIPPED
+                        - EXECUTION_STEP_STATUS_FAILED
+                        - EXECUTION_STEP_STATUS_RETRIED
+                    type: string
+                    format: enum
+                offsetMs:
+                    type: string
+                durationMs:
+                    type: string
+                statusLabel:
+                    type: string
+                error:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: ExecutionStep is the unified record for a single step in a pipeline run.
         GetAdminStatsResponse:
             type: object
             properties:
@@ -556,6 +614,14 @@ components:
                     type: string
                 enrichedEventUri:
                     type: string
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ExecutionStep'
+                    description: |-
+                        Unified record of every step in a pipeline run — source, parse, gate,
+                         enricher batch, router, and per-destination uploaders.
+                         boosters[] is preserved for existing documents; new clients should prefer steps[].
         RecentPipelineRunCounts:
             type: object
             properties:
@@ -636,6 +702,16 @@ components:
                     type: string
                 displayName:
                     type: string
+                currentStreakDays:
+                    type: integer
+                    description: |-
+                        Streak aggregates — written by streak-tracker enricher rollup on every activity sync.
+                         A "streak day" is any calendar day with at least one qualifying activity.
+                         Optional; absent means not yet computed.
+                    format: int32
+                longestStreakDays:
+                    type: integer
+                    format: int32
             description: "UserProfile represents the core user identity and preferences, \n cleanly separated from billing and integrations."
 tags:
     - name: AdminGatewayService

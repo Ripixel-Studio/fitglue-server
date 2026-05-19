@@ -204,10 +204,25 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		metadata["time_markers"] = fmt.Sprintf("%d", len(timeMarkers))
 	}
 
+	paceSplits := make([]*pbactivity.PaceSplit, len(splits))
+	for i, s := range splits {
+		paceSplits[i] = &pbactivity.PaceSplit{
+			Km:      int32(i + 1),
+			Seconds: s.Pace * 60,
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		TimeMarkers: timeMarkers,
 		Metadata:    metadata,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Pace: &pbactivity.PaceSummary{
+				AvgPaceSecondsPerKm:  avgPace * 60,
+				BestSplitSecondsPerKm: bestPace * 60,
+				Splits:              paceSplits,
+			},
+		},
 	}, nil
 }
 

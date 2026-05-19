@@ -4,6 +4,7 @@ package activity
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
@@ -399,6 +400,22 @@ func (s *FirestoreStore) CountBillingEvents(ctx context.Context, userID string) 
 
 func (s *FirestoreStore) CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error) {
 	q := s.client.Collection("users").Doc(userID).Collection("billing_events").Where("period", "==", period)
+	countResult, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	total, ok := countResult["total"]
+	if !ok {
+		return 0, nil
+	}
+	if intVal, ok := total.(int64); ok {
+		return int32(intVal), nil
+	}
+	return 0, nil
+}
+
+func (s *FirestoreStore) CountBillingEventsSince(ctx context.Context, userID string, since time.Time) (int32, error) {
+	q := s.client.Collection("users").Doc(userID).Collection("billing_events").Where("created_at", ">=", since)
 	countResult, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
 	if err != nil {
 		return 0, err

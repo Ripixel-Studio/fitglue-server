@@ -62,6 +62,12 @@ type EnrichmentResult struct {
 	// provider (e.g. hybrid_race_tagger) to securely shape the execution
 	// environment without downstream plugins needing defensive logic.
 	ExcludeEnrichers []pbplugin.EnricherProviderType
+
+	// Enrichments holds the typed enricher outputs for this result.
+	// The orchestrator deep-merges non-nil sub-fields from all provider results
+	// into EnrichedActivityEvent.Enrichments. Providers that don't produce a
+	// particular sub-message leave it nil; the orchestrator skips nil fields.
+	Enrichments *pbactivity.ActivityEnrichments
 }
 
 // Provider defines the interface for an enrichment service.

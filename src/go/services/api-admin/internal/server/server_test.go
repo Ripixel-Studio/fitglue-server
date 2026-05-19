@@ -188,6 +188,12 @@ func (m *adminNopPipelineClient) ListPipelineRuns(_ context.Context, _ *pipeline
 func (m *adminNopPipelineClient) AdminListPipelineRuns(_ context.Context, _ *pipelinepb.AdminListPipelineRunsRequest, _ ...grpc.CallOption) (*pipelinepb.AdminListPipelineRunsResponse, error) {
 	return &pipelinepb.AdminListPipelineRunsResponse{}, nil
 }
+func (m *adminNopPipelineClient) ListSourceActivities(_ context.Context, _ *pipelinepb.ListSourceActivitiesRequest, _ ...grpc.CallOption) (*pipelinepb.ListSourceActivitiesResponse, error) {
+	return &pipelinepb.ListSourceActivitiesResponse{}, nil
+}
+func (m *adminNopPipelineClient) BackfillActivities(_ context.Context, _ *pipelinepb.BackfillActivitiesRequest, _ ...grpc.CallOption) (*pipelinepb.BackfillActivitiesResponse, error) {
+	return &pipelinepb.BackfillActivitiesResponse{}, nil
+}
 
 // ---- Helpers ----
 

@@ -99,6 +99,12 @@ func (m *mockPipelineServiceClient) ListPipelineRuns(ctx context.Context, in *pi
 func (m *mockPipelineServiceClient) AdminListPipelineRuns(ctx context.Context, in *pipelinepb.AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*pipelinepb.AdminListPipelineRunsResponse, error) {
 	return &pipelinepb.AdminListPipelineRunsResponse{}, nil
 }
+func (m *mockPipelineServiceClient) ListSourceActivities(ctx context.Context, in *pipelinepb.ListSourceActivitiesRequest, opts ...grpc.CallOption) (*pipelinepb.ListSourceActivitiesResponse, error) {
+	return &pipelinepb.ListSourceActivitiesResponse{}, nil
+}
+func (m *mockPipelineServiceClient) BackfillActivities(ctx context.Context, in *pipelinepb.BackfillActivitiesRequest, opts ...grpc.CallOption) (*pipelinepb.BackfillActivitiesResponse, error) {
+	return &pipelinepb.BackfillActivitiesResponse{}, nil
+}
 
 // =============================================================
 // Mock RegistryServiceClient

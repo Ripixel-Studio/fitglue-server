@@ -139,6 +139,12 @@ func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activi
 			"cadence_max":            fmt.Sprintf("%d", maxCadence),
 			"cadence_sample_count":   fmt.Sprintf("%d", len(cadences)),
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Cadence: &pbactivity.CadenceSummary{
+				AvgRpm: int32(avgCadence),
+				MaxRpm: maxCadence,
+			},
+		},
 	}, nil
 }
 

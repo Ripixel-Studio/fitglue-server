@@ -4,6 +4,7 @@ package fitglue.gateway;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
 // Shared model types
@@ -238,6 +239,17 @@ service ClientGatewayService {
       get: "/users/me/pipelines/{id}/runs/{run_id}"
     };
   }
+  rpc ListSourceActivities(ListSourceActivitiesGatewayRequest) returns (ListSourceActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/pipelines/{id}/source-activities"
+    };
+  }
+  rpc BackfillActivities(BackfillActivitiesGatewayRequest) returns (BackfillActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/pipelines/{id}/backfill"
+      body: "*"
+    };
+  }
   rpc SubmitInput(SubmitInputGatewayRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/users/me/pending-inputs/{input_id}/submit"
@@ -434,6 +446,13 @@ service ClientGatewayService {
     };
   }
 
+  // ===================== Pipeline Run Payloads =====================
+  rpc GetPipelineRunPayload(GetPipelineRunPayloadGatewayRequest) returns (GetPipelineRunPayloadGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/pipeline-runs/{run_id}/payload"
+    };
+  }
+
   // ===================== Registry (Unauthenticated, but on api-client) =====================
   rpc GetPluginRegistry(EmptyRequest) returns (fitglue.models.plugin.PluginRegistryResponse) {
     option (google.api.http) = {
@@ -573,6 +592,8 @@ message ListPipelineRunsGatewayRequest {
   string id = 1; // pipeline_id from path
   int32 limit = 2;
   string page_token = 3;
+  optional google.protobuf.Timestamp since = 4;
+  optional google.protobuf.Timestamp until = 5;
 }
 message ListPipelineRunsGatewayResponse {
   repeated fitglue.models.pipeline.PipelineRun runs = 1;
@@ -582,6 +603,35 @@ message GetPipelineRunGatewayRequest {
   string id = 1; // pipeline_id from path
   string run_id = 2;
 }
+message SourceActivityItemGateway {
+  string source_activity_id = 1;
+  string title              = 2;
+  string type               = 3;
+  google.protobuf.Timestamp start_time = 4;
+  bool   already_synced     = 5;
+}
+
+message ListSourceActivitiesGatewayRequest {
+  string id         = 1; // pipeline_id from path
+  string source     = 2;
+  string page_token = 3;
+}
+
+message ListSourceActivitiesGatewayResponse {
+  repeated SourceActivityItemGateway activities = 1;
+  string next_page_token                        = 2;
+}
+
+message BackfillActivitiesGatewayRequest {
+  string id                           = 1; // pipeline_id from path
+  string source                       = 2;
+  repeated string source_activity_ids = 3;
+}
+
+message BackfillActivitiesGatewayResponse {
+  int32 queued_count = 1;
+}
+
 message SubmitInputGatewayRequest {
   string input_id = 1;
   map<string, string> input_data = 2;
@@ -603,7 +653,11 @@ message GetActivityStatsGatewayResponse {
   int32 total_activities = 1;
   int32 total_showcases = 2;
   string last_activity_at = 3;
-  int32 uploads_this_month = 5;
+  int32 uploads_this_month = 5;   // DEPRECATED — prefer activities_this_month
+  int32 activities_this_month = 6;
+  int32 activities_this_week = 7;
+  int32 current_streak_days = 8;
+  int32 longest_streak_days = 9;
 }
 
 // Showcases
@@ -719,6 +773,25 @@ message CreateBillingPortalGatewayRequest {
 }
 message CreateBillingPortalGatewayResponse {
   string url = 1;
+}
+
+// Pipeline run payload (signed-URL access)
+enum PayloadKind {
+  PAYLOAD_KIND_UNSPECIFIED = 0;
+  PAYLOAD_KIND_ORIGINAL = 1;
+  PAYLOAD_KIND_ENRICHED = 2;
+}
+
+message GetPipelineRunPayloadGatewayRequest {
+  string run_id = 1;
+  PayloadKind which = 2;
+}
+
+message GetPipelineRunPayloadGatewayResponse {
+  string download_url = 1;              // short-lived signed GCS URL
+  int64 size_bytes = 2;
+  string content_type = 3;             // "application/json"
+  google.protobuf.Timestamp expires_at = 4;
 }
 
 // Registry

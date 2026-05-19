@@ -134,6 +134,11 @@ func (p *PowerSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 			"power_max":            fmt.Sprintf("%d", maxPower),
 			"power_sample_count":   fmt.Sprintf("%d", len(powers)),
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Power: &pbactivity.PowerSummary{
+				AvgWatts: int32(avgPower),
+			},
+		},
 	}, nil
 }
 

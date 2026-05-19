@@ -32,6 +32,12 @@ message UserProfile {
   google.protobuf.Timestamp trial_ends_at = 11;
   string email = 12;
   string display_name = 13;
+
+  // Streak aggregates — written by streak-tracker enricher rollup on every activity sync.
+  // A "streak day" is any calendar day with at least one qualifying activity.
+  // Optional; absent means not yet computed.
+  optional int32 current_streak_days = 14;
+  optional int32 longest_streak_days = 15;
 }
 
 message NotificationPreferences {

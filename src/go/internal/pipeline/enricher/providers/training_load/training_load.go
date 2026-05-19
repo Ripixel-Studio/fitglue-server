@@ -139,6 +139,12 @@ func (p *TrainingLoad) Enrich(ctx context.Context, logger *slog.Logger, activity
 			"trimp":                fmt.Sprintf("%.0f", totalTRIMP),
 			"trimp_zone":           zone,
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			TrainingLoad: &pbactivity.TrainingLoadSummary{
+				Trimp:  int32(totalTRIMP),
+				Bucket: zone,
+			},
+		},
 	}, nil
 }
 

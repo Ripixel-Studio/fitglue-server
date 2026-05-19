@@ -37,10 +37,25 @@ message PluginManifest {
   optional bool is_premium = 19;              
   optional int32 popularity_score = 20;       
 
-  optional string icon_type = 21;             
-  optional string icon_path = 22;             
+  optional string icon_type = 21;
+  optional string icon_path = 22;
   optional bool is_temporarily_unavailable = 23;
   optional bool allow_multiple_instances = 24;
+
+  // PipelineStage groups boosters in the pipeline editor UI.
+  // Only meaningful for type == PLUGIN_TYPE_ENRICHER.
+  optional PipelineStage stage = 25;
+}
+
+// PipelineStage is the display grouping for enricher boosters in the pipeline editor.
+enum PipelineStage {
+  PIPELINE_STAGE_UNSPECIFIED = 0;
+  PIPELINE_STAGE_GATE = 1;        // condition matcher, activity filter, logic gate
+  PIPELINE_STAGE_ENRICHMENT = 2;  // trackers + achievements (parkrun, PRs, goals, streaks, milestones)
+  PIPELINE_STAGE_METRICS = 3;     // computed metrics (pace, HR, power, zones, effort, training load, recovery, cadence, speed, elevation, intervals, running dynamics, calories)
+  PIPELINE_STAGE_CONTEXT_AI = 4;  // LLM + external APIs (location naming, weather, AI banner, type mapper, AI companion, AI activity type)
+  PIPELINE_STAGE_INPUT = 5;       // user input prompts (user input, manual workout entry, photo upload)
+  PIPELINE_STAGE_VIZ = 6;         // visual outputs (muscle heatmap, muscle heatmap image, route thumbnail, workout summary)
 }
 
 message Transformation {

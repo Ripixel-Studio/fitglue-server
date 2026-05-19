@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 )
@@ -23,6 +24,7 @@ type PipelineStore interface {
 	// Pipeline Runs
 	GetPipelineRun(ctx context.Context, userID, runID string) (*pipeline.PipelineRun, error)
 	FindPipelineRunByActivityId(ctx context.Context, userID, activityID string) (*pipeline.PipelineRun, error)
-	ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string) ([]*pipeline.PipelineRun, string, error)
+	FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error)
+	ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string, since, until *time.Time) ([]*pipeline.PipelineRun, string, error)
 	UpdatePipelineRun(ctx context.Context, userID, runID string, updateData map[string]interface{}) error
 }

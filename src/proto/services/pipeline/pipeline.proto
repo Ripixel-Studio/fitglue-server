@@ -3,6 +3,7 @@ syntax = "proto3";
 package fitglue.services.pipeline;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
@@ -78,6 +79,19 @@ service PipelineService {
   rpc AdminListPipelineRuns(AdminListPipelineRunsRequest) returns (AdminListPipelineRunsResponse) {
     option (google.api.http) = {
       get: "/v2/admin/pipeline-runs"
+    };
+  }
+
+  rpc ListSourceActivities(ListSourceActivitiesRequest) returns (ListSourceActivitiesResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pipelines/{pipeline_id}/source-activities"
+    };
+  }
+
+  rpc BackfillActivities(BackfillActivitiesRequest) returns (BackfillActivitiesResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/pipelines/{pipeline_id}/backfill"
+      body: "*"
     };
   }
 }
@@ -162,9 +176,42 @@ message ListPipelineRunsRequest {
   string pipeline_id = 2;
   int32 limit = 3;
   string page_token = 4;
+  optional google.protobuf.Timestamp since = 5;
+  optional google.protobuf.Timestamp until = 6;
 }
 
 message ListPipelineRunsResponse {
   repeated fitglue.models.pipeline.PipelineRun runs = 1;
   string next_page_token = 2;
+}
+
+message SourceActivityItem {
+  string source_activity_id = 1;
+  string title              = 2;
+  string type               = 3;
+  google.protobuf.Timestamp start_time = 4;
+  bool   already_synced     = 5;
+}
+
+message ListSourceActivitiesRequest {
+  string user_id     = 1;
+  string pipeline_id = 2;
+  string source      = 3;
+  string page_token  = 4;
+}
+
+message ListSourceActivitiesResponse {
+  repeated SourceActivityItem activities = 1;
+  string next_page_token                 = 2;
+}
+
+message BackfillActivitiesRequest {
+  string user_id                      = 1;
+  string pipeline_id                  = 2;
+  string source                       = 3;
+  repeated string source_activity_ids = 4;
+}
+
+message BackfillActivitiesResponse {
+  int32 queued_count = 1;
 }

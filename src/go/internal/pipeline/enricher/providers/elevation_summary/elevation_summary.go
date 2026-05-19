@@ -128,6 +128,11 @@ func (p *ElevationSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 			"elevation_max":            fmt.Sprintf("%.2f", maxAltitude),
 			"elevation_record_count":   fmt.Sprintf("%d", recordCount),
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Elevation: &pbactivity.ElevationSummary{
+				TotalGainM: gain,
+			},
+		},
 	}, nil
 }
 

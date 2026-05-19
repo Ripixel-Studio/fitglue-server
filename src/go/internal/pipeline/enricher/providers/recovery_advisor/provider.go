@@ -285,6 +285,14 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata:    resultMetadata,
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Recovery: &pbactivity.RecoverySummary{
+				SessionLoad:        int32(trimp),
+				AcuteChronicRatio:  acwr,
+				HoursToRecover:     int32(recoveryHours),
+				Alert:              consecutiveHardDays >= 3,
+			},
+		},
 	}, nil
 }
 

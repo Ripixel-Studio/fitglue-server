@@ -111,6 +111,18 @@ func ParseFitFile(data []byte) (*pbactivity.StandardizedActivity, error) {
 				if sessionMsg.TotalDistance != 0xFFFFFFFF {
 					si.totalDistance = float64(sessionMsg.TotalDistance) / 100
 				}
+				if sessionMsg.AvgHeartRate != 0xFF {
+					v := int32(sessionMsg.AvgHeartRate)
+					si.avgHeartRate = &v
+				}
+				if sessionMsg.MaxHeartRate != 0xFF {
+					v := int32(sessionMsg.MaxHeartRate)
+					si.maxHeartRate = &v
+				}
+				if sessionMsg.MinHeartRate != 0xFF {
+					v := int32(sessionMsg.MinHeartRate)
+					si.minHeartRate = &v
+				}
 				sessionInfos = append(sessionInfos, si)
 
 				// Set activity type from first session
@@ -250,6 +262,9 @@ type sessionInfo struct {
 	sport            typedef.Sport
 	subSport         typedef.SubSport
 	sportProfileName string
+	avgHeartRate     *int32
+	maxHeartRate     *int32
+	minHeartRate     *int32
 }
 
 type setInfo struct {
@@ -367,6 +382,9 @@ func buildSessions(records []*pbactivity.Record, lapInfos []lapInfo, sessionInfo
 			TotalElapsedTime: si.totalElapsedTime,
 			TotalDistance:    si.totalDistance,
 			Laps:             []*pbactivity.Lap{},
+			AvgHeartRate:     si.avgHeartRate,
+			MaxHeartRate:     si.maxHeartRate,
+			MinHeartRate:     si.minHeartRate,
 		}
 	}
 

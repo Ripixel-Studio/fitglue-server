@@ -31,6 +31,7 @@ type MockActivityStore struct {
 	CountShowcasedActivitiesFunc      func(ctx context.Context, userID string) (int32, error)
 	CountBillingEventsFunc            func(ctx context.Context, userID string) (int32, error)
 	CountBillingEventsForPeriodFunc   func(ctx context.Context, userID, period string) (int32, error)
+	CountBillingEventsSinceFunc       func(ctx context.Context, userID string, since time.Time) (int32, error)
 
 	ListShowcaseProfileEntriesFunc func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
 	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
@@ -167,6 +168,13 @@ func (m *MockActivityStore) CountBillingEvents(ctx context.Context, userID strin
 func (m *MockActivityStore) CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error) {
 	if m.CountBillingEventsForPeriodFunc != nil {
 		return m.CountBillingEventsForPeriodFunc(ctx, userID, period)
+	}
+	return 0, nil
+}
+
+func (m *MockActivityStore) CountBillingEventsSince(ctx context.Context, userID string, since time.Time) (int32, error) {
+	if m.CountBillingEventsSinceFunc != nil {
+		return m.CountBillingEventsSinceFunc(ctx, userID, since)
 	}
 	return 0, nil
 }

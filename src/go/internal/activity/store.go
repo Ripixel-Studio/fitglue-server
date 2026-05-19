@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
@@ -40,4 +41,5 @@ type ActivityStore interface {
 	CountShowcasedActivities(ctx context.Context, userID string) (int32, error)
 	CountBillingEvents(ctx context.Context, userID string) (int32, error)
 	CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error)
+	CountBillingEventsSince(ctx context.Context, userID string, since time.Time) (int32, error)
 }

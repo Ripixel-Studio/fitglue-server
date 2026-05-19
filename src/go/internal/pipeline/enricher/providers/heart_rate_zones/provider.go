@@ -152,6 +152,22 @@ func (p *HeartRateZonesProvider) Enrich(ctx context.Context, logger *slog.Logger
 		"max_hr", maxHR,
 	)
 
+	totalMinutes := int32(totalDuration.Minutes())
+	zoneBuckets := make([]*pbactivity.HeartRateZoneBucket, len(StandardZones))
+	for i, zone := range StandardZones {
+		mins := int32(zoneDurations[i].Minutes())
+		pct := 0.0
+		if totalMinutes > 0 {
+			pct = float64(mins) / float64(totalMinutes)
+		}
+		zoneBuckets[i] = &pbactivity.HeartRateZoneBucket{
+			ZoneIndex:  int32(i),
+			Name:       zone.Name,
+			Minutes:    mins,
+			Percentage: pct,
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata: map[string]string{
@@ -164,6 +180,12 @@ func (p *HeartRateZonesProvider) Enrich(ctx context.Context, logger *slog.Logger
 			"zone3_minutes":   fmt.Sprintf("%d", int(zoneDurations[3].Minutes())),
 			"zone4_minutes":   fmt.Sprintf("%d", int(zoneDurations[4].Minutes())),
 			"zone5_minutes":   fmt.Sprintf("%d", int(zoneDurations[5].Minutes())),
+		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			HeartRateZones: &pbactivity.HeartRateZonesSummary{
+				Zones:        zoneBuckets,
+				TotalMinutes: totalMinutes,
+			},
 		},
 	}, nil
 }

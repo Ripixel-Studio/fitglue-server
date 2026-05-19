@@ -128,6 +128,11 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 			"status": "success",
 			"mode":   mode,
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			AiSummary: &pbactivity.AiSummary{
+				Html: result.Description,
+			},
+		},
 	}, nil
 }
 

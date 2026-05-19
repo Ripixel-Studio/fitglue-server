@@ -5,6 +5,7 @@ package fitglue.models.events;
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "models/activity/standardized.proto";
+import "models/activity/enrichments.proto";
 import "models/activity/source.proto";
 import "models/plugin/provider.proto";
 
@@ -86,12 +87,13 @@ message EnrichedActivityEvent {
   fitglue.models.activity.ActivitySource source = 9;
   fitglue.models.activity.StandardizedActivity activity_data = 10;
   repeated string applied_enrichments = 11;
-  map<string, string> enrichment_metadata = 12;
+  map<string, string> enrichment_metadata = 12;  // operational pipeline flags for destination service
   repeated fitglue.models.plugin.DestinationType destinations = 13;
   repeated string tags = 14;
 
   optional string pipeline_execution_id = 15;
   string activity_data_uri = 16;
+  fitglue.models.activity.ActivityEnrichments enrichments = 17;
 }
 
 message MessagePublishedData {

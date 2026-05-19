@@ -132,6 +132,12 @@ func (p *EffortScore) Enrich(ctx context.Context, logger *slog.Logger, activity 
 			"score":  fmt.Sprintf("%.0f", score),
 			"label":  label,
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Effort: &pbactivity.EffortScoreSummary{
+				Score: int32(score),
+				Band:  label,
+			},
+		},
 	}, nil
 }
 

@@ -189,6 +189,11 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 			"style":           style,
 			"image_prompt":    imagePrompt,
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			AiBanner: &pbactivity.AiBanner{
+				ImageUrl: bannerURL,
+			},
+		},
 	}, nil
 }
 

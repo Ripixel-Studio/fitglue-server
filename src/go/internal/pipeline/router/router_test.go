@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -50,13 +51,17 @@ func (m *mockRouterStore) UpdatePendingInput(_ context.Context, _ string, _ *pbp
 func (m *mockRouterStore) GetPipelineRun(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
 	return nil, nil
 }
-func (m *mockRouterStore) ListPipelineRuns(_ context.Context, _, _ string, _ int32, _ string) ([]*pbpipeline.PipelineRun, string, error) {
+func (m *mockRouterStore) ListPipelineRuns(_ context.Context, _, _ string, _ int32, _ string, _, _ *time.Time) ([]*pbpipeline.PipelineRun, string, error) {
 	return nil, "", nil
 }
 func (m *mockRouterStore) UpdatePipelineRun(_ context.Context, _, _ string, _ map[string]interface{}) error {
 	return m.updateErr
 }
 func (m *mockRouterStore) FindPipelineRunByActivityId(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
+
+func (m *mockRouterStore) FindPipelineRunBySourceActivityID(_ context.Context, _, _, _ string) (*pbpipeline.PipelineRun, error) {
 	return nil, nil
 }
 

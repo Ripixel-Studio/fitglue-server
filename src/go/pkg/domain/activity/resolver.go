@@ -177,6 +177,7 @@ func PrepareForPublish(ctx context.Context, event *pbevents.EnrichedActivityEven
 		ActivityData:        nil, // Cleared - full event in GCS
 		AppliedEnrichments:  event.AppliedEnrichments,
 		EnrichmentMetadata:  event.EnrichmentMetadata,
+		Enrichments:         event.Enrichments,
 		Destinations:        event.Destinations,
 		Tags:                event.Tags,
 		PipelineExecutionId: event.PipelineExecutionId,

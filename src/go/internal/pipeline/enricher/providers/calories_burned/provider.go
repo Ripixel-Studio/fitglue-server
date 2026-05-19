@@ -157,6 +157,11 @@ func (p *CaloriesBurned) Enrich(ctx context.Context, logger *slog.Logger, activi
 			"duration_hours":  fmt.Sprintf("%.2f", durationHours),
 			"weight_kg":       fmt.Sprintf("%.0f", userWeight),
 		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			Calories: &pbactivity.CaloriesSummary{
+				Kcal: int32(calories),
+			},
+		},
 	}, nil
 }
 

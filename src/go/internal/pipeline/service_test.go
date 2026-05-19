@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -93,7 +94,16 @@ func (m *MockPipelineStore) FindPipelineRunByActivityId(ctx context.Context, use
 	return nil, nil
 }
 
-func (m *MockPipelineStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string) ([]*pipeline.PipelineRun, string, error) {
+func (m *MockPipelineStore) FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error) {
+	for _, run := range m.Runs {
+		if run.PipelineId == pipelineID && run.SourceActivityId == sourceActivityID {
+			return run, nil
+		}
+	}
+	return nil, nil
+}
+
+func (m *MockPipelineStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string, since, until *time.Time) ([]*pipeline.PipelineRun, string, error) {
 	var results []*pipeline.PipelineRun
 	for _, r := range m.Runs {
 		if pipelineID == "" || r.PipelineId == pipelineID {
@@ -158,7 +168,7 @@ func TestPipelineCRUD(t *testing.T) {
 	store := NewMockStore()
 	publisher := &MockPublisher{}
 	blobStore := &MockBlobStore{}
-	svc := NewService(store, publisher, blobStore, mockLogger{})
+	svc := NewService(store, publisher, blobStore, mockLogger{}, nil)
 	ctx := context.Background()
 
 	// Create
@@ -238,7 +248,7 @@ func TestPipelineCRUD(t *testing.T) {
 
 func TestCreatePipelineWithMultipleSources(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 	ctx := context.Background()
 
 	res, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
@@ -262,7 +272,7 @@ func TestCreatePipelineWithMultipleSources(t *testing.T) {
 
 func TestCreatePipelineRejectsDuplicateSources(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 	ctx := context.Background()
 
 	_, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
@@ -279,7 +289,7 @@ func TestCreatePipelineRejectsDuplicateSources(t *testing.T) {
 
 func TestUpdatePipelineToMultipleSources(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 	ctx := context.Background()
 
 	created, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
@@ -324,7 +334,7 @@ func TestSubmitInput(t *testing.T) {
 		},
 	}
 
-	svc := NewService(store, publisher, blobStore, mockLogger{})
+	svc := NewService(store, publisher, blobStore, mockLogger{}, nil)
 	ctx := context.Background()
 
 	// Setup pending input
@@ -377,7 +387,7 @@ func TestSubmitInput(t *testing.T) {
 
 func TestCreatePipeline_InvalidSource(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 
 	req := &pbsvc.CreatePipelineRequest{
 		UserId: "user1",
@@ -399,7 +409,7 @@ func TestCreatePipeline_InvalidSource(t *testing.T) {
 
 func TestCreatePipeline_EmptySource(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 
 	req := &pbsvc.CreatePipelineRequest{
 		UserId: "user1",
@@ -421,7 +431,7 @@ func TestCreatePipeline_EmptySource(t *testing.T) {
 
 func TestCreatePipeline_NormalizesShortSource(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 
 	req := &pbsvc.CreatePipelineRequest{
 		UserId: "user1",
@@ -447,7 +457,7 @@ func TestCreatePipeline_NormalizesShortSource(t *testing.T) {
 
 func TestUpdatePipeline_InvalidSource(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 
 	// Seed an existing pipeline
 	store.Pipelines["user1_pipe1"] = &pipeline.PipelineConfig{
@@ -476,7 +486,7 @@ func TestUpdatePipeline_InvalidSource(t *testing.T) {
 
 func TestUpdatePipeline_NormalizesSource(t *testing.T) {
 	store := NewMockStore()
-	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)
 
 	// Seed an existing pipeline
 	store.Pipelines["user1_pipe1"] = &pipeline.PipelineConfig{

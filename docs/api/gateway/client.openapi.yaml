@@ -1098,6 +1098,40 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/pipeline-runs/{runId}/payload:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Pipeline Run Payloads =====================
+            operationId: ClientGatewayService_GetPipelineRunPayload
+            parameters:
+                - name: runId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: which
+                  in: query
+                  schema:
+                    enum:
+                        - PAYLOAD_KIND_UNSPECIFIED
+                        - PAYLOAD_KIND_ORIGINAL
+                        - PAYLOAD_KIND_ENRICHED
+                    type: string
+                    format: enum
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetPipelineRunPayloadGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/pipelines:
         get:
             tags:
@@ -1213,6 +1247,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/pipelines/{id}/backfill:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_BackfillActivities
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BackfillActivitiesGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BackfillActivitiesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/pipelines/{id}/runs:
         get:
             tags:
@@ -1233,6 +1297,16 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: since
+                  in: query
+                  schema:
+                    type: string
+                    format: date-time
+                - name: until
+                  in: query
+                  schema:
+                    type: string
+                    format: date-time
             responses:
                 "200":
                     description: OK
@@ -1269,6 +1343,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/PipelineRun'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/pipelines/{id}/source-activities:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_ListSourceActivities
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: source
+                  in: query
+                  schema:
+                    type: string
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListSourceActivitiesGatewayResponse'
                 default:
                     description: Default error response
                     content:
@@ -1651,6 +1757,58 @@ paths:
                                 $ref: '#/components/schemas/Status'
 components:
     schemas:
+        ActivityEnrichments:
+            type: object
+            properties:
+                heartRate:
+                    $ref: '#/components/schemas/HeartRateSummary'
+                heartRateZones:
+                    $ref: '#/components/schemas/HeartRateZonesSummary'
+                effort:
+                    $ref: '#/components/schemas/EffortScoreSummary'
+                calories:
+                    $ref: '#/components/schemas/CaloriesSummary'
+                trainingLoad:
+                    $ref: '#/components/schemas/TrainingLoadSummary'
+                recovery:
+                    $ref: '#/components/schemas/RecoverySummary'
+                streak:
+                    $ref: '#/components/schemas/StreakSummary'
+                aiSummary:
+                    $ref: '#/components/schemas/AiSummary'
+                aiBanner:
+                    $ref: '#/components/schemas/AiBanner'
+                pace:
+                    $ref: '#/components/schemas/PaceSummary'
+                cadence:
+                    $ref: '#/components/schemas/CadenceSummary'
+                power:
+                    $ref: '#/components/schemas/PowerSummary'
+                elevation:
+                    $ref: '#/components/schemas/ElevationSummary'
+            description: |-
+                ActivityEnrichments holds typed outputs from the enricher pipeline.
+                 Each sub-message is optional — only present if the corresponding enricher
+                 was configured and ran. Replaces enrichment_metadata map<string,string>.
+        AiBanner:
+            type: object
+            properties:
+                imageUrl:
+                    type: string
+                promptHash:
+                    type: string
+                generatorVersion:
+                    type: string
+        AiSummary:
+            type: object
+            properties:
+                html:
+                    type: string
+                model:
+                    type: string
+                generatedAt:
+                    type: string
+                    format: date-time
         AppleHealthIntegration:
             type: object
             properties:
@@ -1662,12 +1820,27 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        BackfillActivitiesGatewayRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                source:
+                    type: string
+                sourceActivityIds:
+                    type: array
+                    items:
+                        type: string
+        BackfillActivitiesGatewayResponse:
+            type: object
+            properties:
+                queuedCount:
+                    type: integer
+                    format: int32
         BoosterExecution:
             type: object
             properties:
                 providerName:
-                    type: string
-                status:
                     type: string
                 durationMs:
                     type: string
@@ -1676,6 +1849,35 @@ components:
                     additionalProperties:
                         type: string
                 error:
+                    type: string
+                status:
+                    enum:
+                        - EXECUTION_STEP_STATUS_UNSPECIFIED
+                        - EXECUTION_STEP_STATUS_QUEUED
+                        - EXECUTION_STEP_STATUS_RUNNING
+                        - EXECUTION_STEP_STATUS_OK
+                        - EXECUTION_STEP_STATUS_PASS
+                        - EXECUTION_STEP_STATUS_SKIPPED
+                        - EXECUTION_STEP_STATUS_FAILED
+                        - EXECUTION_STEP_STATUS_RETRIED
+                    type: string
+                    format: enum
+        CadenceSummary:
+            type: object
+            properties:
+                avgRpm:
+                    type: integer
+                    format: int32
+                maxRpm:
+                    type: integer
+                    format: int32
+        CaloriesSummary:
+            type: object
+            properties:
+                kcal:
+                    type: integer
+                    format: int32
+                comparisonText:
                     type: string
         ConfigFieldDependency:
             type: object
@@ -1848,6 +2050,35 @@ components:
                 completedAt:
                     type: string
                     format: date-time
+        EffortFactor:
+            type: object
+            properties:
+                label:
+                    type: string
+                ratioVsBaseline:
+                    type: number
+                    format: double
+        EffortScoreSummary:
+            type: object
+            properties:
+                score:
+                    type: integer
+                    format: int32
+                band:
+                    type: string
+                factors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/EffortFactor'
+        ElevationSummary:
+            type: object
+            properties:
+                totalGainM:
+                    type: number
+                    format: double
+                totalLossM:
+                    type: number
+                    format: double
         EnricherConfig:
             type: object
             properties:
@@ -1902,6 +2133,65 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+        EntrySparkline:
+            type: object
+            properties:
+                metric:
+                    type: string
+                values:
+                    type: array
+                    items:
+                        type: number
+                        format: double
+            description: EntrySparkline is a downsampled timeseries for card-level sparklines.
+        ExecutionStep:
+            type: object
+            properties:
+                id:
+                    type: string
+                ordinal:
+                    type: integer
+                    format: int32
+                kind:
+                    enum:
+                        - EXECUTION_STEP_KIND_UNSPECIFIED
+                        - EXECUTION_STEP_KIND_SOURCE
+                        - EXECUTION_STEP_KIND_PARSE
+                        - EXECUTION_STEP_KIND_GATE
+                        - EXECUTION_STEP_KIND_ENRICHER_BATCH
+                        - EXECUTION_STEP_KIND_ROUTER
+                        - EXECUTION_STEP_KIND_DESTINATION
+                    type: string
+                    format: enum
+                displayName:
+                    type: string
+                service:
+                    type: string
+                status:
+                    enum:
+                        - EXECUTION_STEP_STATUS_UNSPECIFIED
+                        - EXECUTION_STEP_STATUS_QUEUED
+                        - EXECUTION_STEP_STATUS_RUNNING
+                        - EXECUTION_STEP_STATUS_OK
+                        - EXECUTION_STEP_STATUS_PASS
+                        - EXECUTION_STEP_STATUS_SKIPPED
+                        - EXECUTION_STEP_STATUS_FAILED
+                        - EXECUTION_STEP_STATUS_RETRIED
+                    type: string
+                    format: enum
+                offsetMs:
+                    type: string
+                durationMs:
+                    type: string
+                statusLabel:
+                    type: string
+                error:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: ExecutionStep is the unified record for a single step in a pipeline run.
         ExerciseLibraryEntry:
             type: object
             properties:
@@ -1973,6 +2263,18 @@ components:
                 uploadsThisMonth:
                     type: integer
                     format: int32
+                activitiesThisMonth:
+                    type: integer
+                    format: int32
+                activitiesThisWeek:
+                    type: integer
+                    format: int32
+                currentStreakDays:
+                    type: integer
+                    format: int32
+                longestStreakDays:
+                    type: integer
+                    format: int32
         GetBoosterDataGatewayResponse:
             type: object
             properties:
@@ -2010,6 +2312,18 @@ components:
                     type: string
                 maxSizeBytes:
                     type: string
+        GetPipelineRunPayloadGatewayResponse:
+            type: object
+            properties:
+                downloadUrl:
+                    type: string
+                sizeBytes:
+                    type: string
+                contentType:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
         GetPluginIconGatewayResponse:
             type: object
             properties:
@@ -2103,6 +2417,47 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        HeartRateSummary:
+            type: object
+            properties:
+                minBpm:
+                    type: integer
+                    format: int32
+                avgBpm:
+                    type: integer
+                    format: int32
+                maxBpm:
+                    type: integer
+                    format: int32
+                driftBpm:
+                    type: integer
+                    format: int32
+                driftWarning:
+                    type: boolean
+        HeartRateZoneBucket:
+            type: object
+            properties:
+                zoneIndex:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                minutes:
+                    type: integer
+                    format: int32
+                percentage:
+                    type: number
+                    format: double
+        HeartRateZonesSummary:
+            type: object
+            properties:
+                zones:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/HeartRateZoneBucket'
+                totalMinutes:
+                    type: integer
+                    format: int32
         HevyIntegration:
             type: object
             properties:
@@ -2236,6 +2591,18 @@ components:
                     type: string
                 isTelemetryContainerOnly:
                     type: boolean
+        LifetimeZoneSplit:
+            type: object
+            properties:
+                zones:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/HeartRateZoneBucket'
+                computedAt:
+                    type: string
+                    format: date-time
+                label:
+                    type: string
         ListActivitiesGatewayResponse:
             type: object
             properties:
@@ -2301,6 +2668,15 @@ components:
                     items:
                         $ref: '#/components/schemas/ShowcaseProfileEntry'
             description: Showcases
+        ListSourceActivitiesGatewayResponse:
+            type: object
+            properties:
+                activities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SourceActivityItemGateway'
+                nextPageToken:
+                    type: string
         ListSourcesGatewayResponse:
             type: object
             properties:
@@ -2353,6 +2729,28 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        PaceSplit:
+            type: object
+            properties:
+                km:
+                    type: integer
+                    format: int32
+                seconds:
+                    type: number
+                    format: double
+        PaceSummary:
+            type: object
+            properties:
+                avgPaceSecondsPerKm:
+                    type: number
+                    format: double
+                bestSplitSecondsPerKm:
+                    type: number
+                    format: double
+                splits:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PaceSplit'
         ParkrunIntegration:
             type: object
             properties:
@@ -2612,6 +3010,14 @@ components:
                     type: string
                 enrichedEventUri:
                     type: string
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ExecutionStep'
+                    description: |-
+                        Unified record of every step in a pipeline run — source, parse, gate,
+                         enricher batch, router, and per-destination uploaders.
+                         boosters[] is preserved for existing documents; new clients should prefer steps[].
         PluginManifest:
             type: object
             properties:
@@ -2683,6 +3089,20 @@ components:
                     type: boolean
                 allowMultipleInstances:
                     type: boolean
+                stage:
+                    enum:
+                        - PIPELINE_STAGE_UNSPECIFIED
+                        - PIPELINE_STAGE_GATE
+                        - PIPELINE_STAGE_ENRICHMENT
+                        - PIPELINE_STAGE_METRICS
+                        - PIPELINE_STAGE_CONTEXT_AI
+                        - PIPELINE_STAGE_INPUT
+                        - PIPELINE_STAGE_VIZ
+                    type: string
+                    description: |-
+                        PipelineStage groups boosters in the pipeline editor UI.
+                         Only meaningful for type == PLUGIN_TYPE_ENRICHER.
+                    format: enum
         PluginRegistryResponse:
             type: object
             properties:
@@ -2722,6 +3142,21 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        PowerSummary:
+            type: object
+            properties:
+                avgWatts:
+                    type: integer
+                    format: int32
+                normalizedPower:
+                    type: integer
+                    format: int32
+                intensityFactor:
+                    type: number
+                    format: double
+                kilojoules:
+                    type: integer
+                    format: int32
         Record:
             type: object
             properties:
@@ -2764,6 +3199,22 @@ components:
                 distance:
                     type: number
                     format: double
+        RecoverySummary:
+            type: object
+            properties:
+                sessionLoad:
+                    type: integer
+                    format: int32
+                acuteChronicRatio:
+                    type: number
+                    format: double
+                hoursToRecover:
+                    type: integer
+                    format: int32
+                alert:
+                    type: boolean
+                alertText:
+                    type: string
         RepostGatewayResponse:
             type: object
             properties:
@@ -2817,6 +3268,9 @@ components:
                     type: integer
                     format: int32
                 maxHeartRate:
+                    type: integer
+                    format: int32
+                minHeartRate:
                     type: integer
                     format: int32
         SetFCMTokenGatewayRequest:
@@ -2930,6 +3384,12 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ShowcaseBioCallout'
+                zoneSplit:
+                    allOf:
+                        - $ref: '#/components/schemas/LifetimeZoneSplit'
+                    description: Lifetime aggregates — written by a daily rollup job. Optional; absent means not yet computed.
+                streakHistory:
+                    $ref: '#/components/schemas/WeeklyStreakHistory'
         ShowcaseProfileEntry:
             type: object
             properties:
@@ -3033,6 +3493,21 @@ components:
                 totalWeightKg:
                     type: number
                     format: double
+                boosterCount:
+                    type: integer
+                    description: Reskin additions — populated on each activity sync
+                    format: int32
+                destinationCount:
+                    type: integer
+                    format: int32
+                sparkline:
+                    $ref: '#/components/schemas/EntrySparkline'
+                avgHeartRate:
+                    type: integer
+                    format: int32
+                caloriesKcal:
+                    type: integer
+                    format: int32
         ShowcaseTheme:
             type: object
             properties:
@@ -3144,10 +3619,6 @@ components:
                     type: array
                     items:
                         type: string
-                enrichmentMetadata:
-                    type: object
-                    additionalProperties:
-                        type: string
                 tags:
                     type: array
                     items:
@@ -3172,7 +3643,23 @@ components:
                     type: array
                     items:
                         type: string
+                enrichments:
+                    $ref: '#/components/schemas/ActivityEnrichments'
             description: ShowcasedActivity represents a publicly shareable activity snapshot.
+        SourceActivityItemGateway:
+            type: object
+            properties:
+                sourceActivityId:
+                    type: string
+                title:
+                    type: string
+                type:
+                    type: string
+                startTime:
+                    type: string
+                    format: date-time
+                alreadySynced:
+                    type: boolean
         SpotifyIntegration:
             type: object
             properties:
@@ -3337,6 +3824,32 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        StreakDay:
+            type: object
+            properties:
+                date:
+                    type: string
+                state:
+                    enum:
+                        - STREAK_DAY_STATE_UNSPECIFIED
+                        - STREAK_DAY_STATE_OFF
+                        - STREAK_DAY_STATE_ACTIVE
+                        - STREAK_DAY_STATE_REST
+                    type: string
+                    format: enum
+        StreakSummary:
+            type: object
+            properties:
+                currentDays:
+                    type: integer
+                    format: int32
+                longestDays:
+                    type: integer
+                    format: int32
+                calendar:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StreakDay'
         StrengthSet:
             type: object
             properties:
@@ -3470,6 +3983,16 @@ components:
                 durationSeconds:
                     type: integer
                     format: int32
+        TrainingLoadSummary:
+            type: object
+            properties:
+                trimp:
+                    type: integer
+                    format: int32
+                bucket:
+                    type: string
+                hint:
+                    type: string
         TrainingPeaksIntegration:
             type: object
             properties:
@@ -3632,6 +4155,16 @@ components:
                     type: string
                 displayName:
                     type: string
+                currentStreakDays:
+                    type: integer
+                    description: |-
+                        Streak aggregates — written by streak-tracker enricher rollup on every activity sync.
+                         A "streak day" is any calendar day with at least one qualifying activity.
+                         Optional; absent means not yet computed.
+                    format: int32
+                longestStreakDays:
+                    type: integer
+                    format: int32
             description: "UserProfile represents the core user identity and preferences, \n cleanly separated from billing and integrations."
         WahooIntegration:
             type: object
@@ -3653,6 +4186,19 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        WeeklyStreakHistory:
+            type: object
+            properties:
+                weeksTracked:
+                    type: integer
+                    format: int32
+                missedWeeks:
+                    type: integer
+                    format: int32
+                weeklyActive:
+                    type: array
+                    items:
+                        type: boolean
         WorkoutDefinition:
             type: object
             properties:

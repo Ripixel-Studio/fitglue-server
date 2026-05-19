@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
@@ -84,11 +85,11 @@ func (e *ErrorStore) GetPipelineRun(ctx context.Context, userID, runID string) (
 	}
 	return e.MockPipelineStore.GetPipelineRun(ctx, userID, runID)
 }
-func (e *ErrorStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string) ([]*pipeline.PipelineRun, string, error) {
+func (e *ErrorStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string, since, until *time.Time) ([]*pipeline.PipelineRun, string, error) {
 	if e.listPipelineRunsErr != nil {
 		return nil, "", e.listPipelineRunsErr
 	}
-	return e.MockPipelineStore.ListPipelineRuns(ctx, userID, pipelineID, limit, pageToken)
+	return e.MockPipelineStore.ListPipelineRuns(ctx, userID, pipelineID, limit, pageToken, since, until)
 }
 func (e *ErrorStore) UpdatePipelineRun(ctx context.Context, userID, runID string, data map[string]interface{}) error {
 	return e.MockPipelineStore.UpdatePipelineRun(ctx, userID, runID, data)
@@ -100,10 +101,14 @@ func (e *ErrorStore) FindPipelineRunByActivityId(ctx context.Context, userID, ac
 	return e.MockPipelineStore.FindPipelineRunByActivityId(ctx, userID, activityID)
 }
 
+func (e *ErrorStore) FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error) {
+	return e.MockPipelineStore.FindPipelineRunBySourceActivityID(ctx, userID, pipelineID, sourceActivityID)
+}
+
 // --- Validation error tests ---
 
 func TestPipeline_Validation(t *testing.T) {
-	svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+	svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 	ctx := context.Background()
 
 	t.Run("ListPipelines_missing_user_id", func(t *testing.T) {
@@ -207,7 +212,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 
 	t.Run("ListPipelines_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), listPipelinesErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.ListPipelines(ctx, &pbsvc.ListPipelinesRequest{UserId: "u1"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal, got %v", err)
@@ -216,7 +221,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 
 	t.Run("CreatePipeline_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), createPipelineErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
 			UserId: "u1",
 			Pipeline: &pipeline.PipelineConfig{
@@ -237,7 +242,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 			Destinations: []plugin.DestinationType{1},
 		}
 		es := &ErrorStore{MockPipelineStore: ms, updatePipelineErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.UpdatePipeline(ctx, &pbsvc.UpdatePipelineRequest{
 			UserId:     "u1",
 			PipelineId: "p1",
@@ -253,7 +258,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 
 	t.Run("DeletePipeline_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), deletePipelineErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.DeletePipeline(ctx, &pbsvc.DeletePipelineRequest{UserId: "u1", PipelineId: "p1"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal, got %v", err)
@@ -262,7 +267,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 
 	t.Run("ListPendingInputs_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), listPendingErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.ListPendingInputs(ctx, &pbsvc.ListPendingInputsRequest{UserId: "u1"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal, got %v", err)
@@ -271,7 +276,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 
 	t.Run("GetPipelineRun_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), getPipelineRunErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1", RunId: "r1"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal, got %v", err)
@@ -280,7 +285,7 @@ func TestPipeline_StoreErrors(t *testing.T) {
 
 	t.Run("ListPipelineRuns_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), listPipelineRunsErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.ListPipelineRuns(ctx, &pbsvc.ListPipelineRunsRequest{UserId: "u1"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal, got %v", err)
@@ -294,7 +299,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	t.Run("ListPipelines_success", func(t *testing.T) {
 		store := NewMockStore()
 		store.Pipelines["u1_p1"] = &pipeline.PipelineConfig{Id: "p1", Name: "Pipeline 1"}
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		resp, err := svc.ListPipelines(ctx, &pbsvc.ListPipelinesRequest{UserId: "u1"})
 		if err != nil || len(resp.Pipelines) != 1 {
 			t.Errorf("expected 1 pipeline, got %v, err=%v", len(resp.Pipelines), err)
@@ -304,7 +309,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	t.Run("ListPendingInputs_success", func(t *testing.T) {
 		store := NewMockStore()
 		store.PendingInputs["u1_i1"] = &pipeline.PendingInput{ActivityId: "i1"}
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		resp, err := svc.ListPendingInputs(ctx, &pbsvc.ListPendingInputsRequest{UserId: "u1"})
 		if err != nil || len(resp.Inputs) != 1 {
 			t.Errorf("expected 1 input, got %v, err=%v", len(resp.Inputs), err)
@@ -312,7 +317,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	})
 
 	t.Run("GetPipelineRun_notFound", func(t *testing.T) {
-		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1", RunId: "missing"})
 		if status.Code(err) != codes.NotFound {
 			t.Errorf("expected NotFound, got %v", err)
@@ -322,7 +327,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	t.Run("GetPipelineRun_success", func(t *testing.T) {
 		store := NewMockStore()
 		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1"}
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		resp, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1", RunId: "r1"})
 		if err != nil || resp.Id != "r1" {
 			t.Errorf("expected run r1, got %v, err=%v", resp, err)
@@ -333,7 +338,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		store := NewMockStore()
 		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1"}
 		store.Runs["u1_r2"] = &pipeline.PipelineRun{Id: "r2"}
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		resp, err := svc.ListPipelineRuns(ctx, &pbsvc.ListPipelineRunsRequest{UserId: "u1"})
 		if err != nil || len(resp.Runs) != 2 {
 			t.Errorf("expected 2 runs, got %d, err=%v", len(resp.Runs), err)
@@ -341,7 +346,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	})
 
 	t.Run("ResolvePendingInput_notFound", func(t *testing.T) {
-		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.ResolvePendingInput(ctx, &pbsvc.ResolvePendingInputRequest{UserId: "u1", PendingInputId: "missing"})
 		if status.Code(err) != codes.NotFound {
 			t.Errorf("expected NotFound, got %v", err)
@@ -354,7 +359,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 			ActivityId: "i1",
 			Status:     pipeline.PendingInput_STATUS_WAITING,
 		}
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.ResolvePendingInput(ctx, &pbsvc.ResolvePendingInputRequest{UserId: "u1", PendingInputId: "i1"})
 		if err != nil {
 			t.Errorf("expected success, got %v", err)
@@ -362,7 +367,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	})
 
 	t.Run("RepostActivity_invalidMode", func(t *testing.T) {
-		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "bad"})
 		if status.Code(err) != codes.InvalidArgument {
 			t.Errorf("expected InvalidArgument for bad mode, got %v", err)
@@ -370,7 +375,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	})
 
 	t.Run("RepostActivity_missingDestination", func(t *testing.T) {
-		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "missed-destination"})
 		if status.Code(err) != codes.InvalidArgument {
 			t.Errorf("expected InvalidArgument for missing destination, got %v", err)
@@ -378,7 +383,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	})
 
 	t.Run("RepostActivity_runNotFound", func(t *testing.T) {
-		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "missing", Mode: "full-pipeline"})
 		if status.Code(err) != codes.NotFound {
 			t.Errorf("expected NotFound, got %v", err)
@@ -388,7 +393,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	t.Run("RepostActivity_noPayloadUri", func(t *testing.T) {
 		store := NewMockStore()
 		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1"} // no OriginalPayloadUri
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
 		if status.Code(err) != codes.FailedPrecondition {
 			t.Errorf("expected FailedPrecondition, got %v", err)
@@ -398,7 +403,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 	t.Run("RepostActivity_gcsFetchError", func(t *testing.T) {
 		store := NewMockStore()
 		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1", OriginalPayloadUri: "gs://bucket/missing.json"}
-		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal for GCS fetch failure, got %v", err)
@@ -407,7 +412,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 
 	t.Run("RepostActivity_storeError", func(t *testing.T) {
 		es := &ErrorStore{MockPipelineStore: NewMockStore(), findRunByActivityErr: errors.New("db down")}
-		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{}, nil)
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
 		if status.Code(err) != codes.Internal {
 			t.Errorf("expected Internal for store error, got %v", err)
@@ -421,7 +426,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1", OriginalPayloadUri: uri}
 		pub := &MockPublisher{}
 		blob := &MockBlobStore{Blobs: map[string][]byte{uri: payloadBytes}}
-		svc := NewService(store, pub, blob, mockLogger{})
+		svc := NewService(store, pub, blob, mockLogger{}, nil)
 
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
 		if err != nil {
@@ -450,7 +455,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		store.Runs["u1_r2"] = &pipeline.PipelineRun{Id: "r2", ActivityId: "a2", OriginalPayloadUri: uri}
 		pub := &MockPublisher{}
 		blob := &MockBlobStore{Blobs: map[string][]byte{uri: []byte(`{"source":"hevy"}`)}}
-		svc := NewService(store, pub, blob, mockLogger{})
+		svc := NewService(store, pub, blob, mockLogger{}, nil)
 
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{
 			UserId: "u1", ActivityId: "a2", Mode: "missed-destination", Destination: "DESTINATION_HEVY",

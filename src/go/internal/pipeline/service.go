@@ -10,13 +10,16 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/sourceplugins"
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
+	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Service implements the pbsvc.PipelineServiceServer interface.
@@ -26,14 +29,16 @@ type Service struct {
 	publisher Publisher
 	blobStore BlobStore
 	logger    infra.Logger
+	userSvc   userpb.UserServiceClient
 }
 
-func NewService(store PipelineStore, publisher Publisher, blobStore BlobStore, logger infra.Logger) *Service {
+func NewService(store PipelineStore, publisher Publisher, blobStore BlobStore, logger infra.Logger, userSvc userpb.UserServiceClient) *Service {
 	return &Service{
 		store:     store,
 		publisher: publisher,
 		blobStore: blobStore,
 		logger:    logger,
+		userSvc:   userSvc,
 	}
 }
 
@@ -400,7 +405,16 @@ func (s *Service) ListPipelineRuns(ctx context.Context, req *pbsvc.ListPipelineR
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	runs, nextToken, err := s.store.ListPipelineRuns(ctx, req.UserId, req.PipelineId, req.Limit, req.PageToken)
+	var since, until *time.Time
+	if req.Since != nil {
+		t := req.Since.AsTime()
+		since = &t
+	}
+	if req.Until != nil {
+		t := req.Until.AsTime()
+		until = &t
+	}
+	runs, nextToken, err := s.store.ListPipelineRuns(ctx, req.UserId, req.PipelineId, req.Limit, req.PageToken, since, until)
 	if err != nil {
 		s.logger.Error(ctx, "failed to list pipeline runs", "error", err)
 		return nil, status.Error(codes.Internal, "failed to list runs")
@@ -410,4 +424,110 @@ func (s *Service) ListPipelineRuns(ctx context.Context, req *pbsvc.ListPipelineR
 		Runs:          runs,
 		NextPageToken: nextToken,
 	}, nil
+}
+
+func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourceActivitiesRequest) (*pbsvc.ListSourceActivitiesResponse, error) {
+	if req.UserId == "" || req.PipelineId == "" || req.Source == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id, pipeline_id, and source are required")
+	}
+	if s.userSvc == nil {
+		return nil, status.Error(codes.Unimplemented, "user service not available")
+	}
+
+	provider, ok := sourceplugins.ForSource(req.Source)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "source %q does not support historical sync", req.Source)
+	}
+
+	integResp, err := s.userSvc.GetIntegration(ctx, &userpb.GetIntegrationRequest{
+		UserId:   req.UserId,
+		Provider: req.Source,
+	})
+	if err != nil {
+		s.logger.Error(ctx, "failed to get integration", "error", err, "source", req.Source)
+		return nil, status.Error(codes.Internal, "failed to retrieve integration")
+	}
+
+	rawActivities, nextPageToken, err := provider.ListActivities(ctx, integResp.Integrations, req.PageToken)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list source activities", "error", err, "source", req.Source)
+		return nil, status.Error(codes.Internal, "failed to list activities from source")
+	}
+
+	items := make([]*pbsvc.SourceActivityItem, 0, len(rawActivities))
+	for _, a := range rawActivities {
+		existing, err := s.store.FindPipelineRunBySourceActivityID(ctx, req.UserId, req.PipelineId, a.ID)
+		if err != nil {
+			s.logger.Error(ctx, "dedup check failed", "error", err, "sourceActivityId", a.ID)
+		}
+		items = append(items, &pbsvc.SourceActivityItem{
+			SourceActivityId: a.ID,
+			Title:            a.Title,
+			Type:             a.Type,
+			StartTime:        timestamppb.New(a.StartTime),
+			AlreadySynced:    existing != nil,
+		})
+	}
+
+	return &pbsvc.ListSourceActivitiesResponse{
+		Activities:    items,
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+func (s *Service) BackfillActivities(ctx context.Context, req *pbsvc.BackfillActivitiesRequest) (*pbsvc.BackfillActivitiesResponse, error) {
+	if req.UserId == "" || req.PipelineId == "" || req.Source == "" || len(req.SourceActivityIds) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "user_id, pipeline_id, source, and source_activity_ids are required")
+	}
+	if s.userSvc == nil {
+		return nil, status.Error(codes.Unimplemented, "user service not available")
+	}
+
+	provider, ok := sourceplugins.ForSource(req.Source)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "source %q does not support historical sync", req.Source)
+	}
+
+	integResp, err := s.userSvc.GetIntegration(ctx, &userpb.GetIntegrationRequest{
+		UserId:   req.UserId,
+		Provider: req.Source,
+	})
+	if err != nil {
+		s.logger.Error(ctx, "failed to get integration", "error", err, "source", req.Source)
+		return nil, status.Error(codes.Internal, "failed to retrieve integration")
+	}
+
+	var queued int32
+	for _, sourceActivityID := range req.SourceActivityIds {
+		payload, err := provider.FetchActivity(ctx, integResp.Integrations, req.UserId, sourceActivityID)
+		if err != nil {
+			s.logger.Error(ctx, "failed to fetch activity for backfill", "error", err, "sourceActivityId", sourceActivityID)
+			continue
+		}
+
+		// Pre-target the pipeline so the splitter routes directly without re-matching.
+		payload.PipelineId = &req.PipelineId
+
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			s.logger.Error(ctx, "failed to marshal backfill payload", "error", err)
+			continue
+		}
+
+		ce := cloudevents.NewEvent()
+		ce.SetID(fmt.Sprintf("%d-%s", time.Now().UnixNano(), sourceActivityID))
+		ce.SetSource("com.fitglue.backfill")
+		ce.SetType("com.fitglue.cloud_event.backfill")
+		ce.SetData(cloudevents.ApplicationJSON, payloadBytes)
+
+		if _, err := s.publisher.PublishCloudEvent(ctx, shared.TopicRawActivity, ce); err != nil {
+			s.logger.Error(ctx, "failed to publish backfill event", "error", err, "sourceActivityId", sourceActivityID)
+			continue
+		}
+
+		queued++
+	}
+
+	s.logger.Info(ctx, "Backfill queued", "pipelineId", req.PipelineId, "source", req.Source, "queued", queued, "requested", len(req.SourceActivityIds))
+	return &pbsvc.BackfillActivitiesResponse{QueuedCount: queued}, nil
 }

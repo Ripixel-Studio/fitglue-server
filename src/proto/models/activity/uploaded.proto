@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "models/activity/source.proto";
 import "models/plugin/provider.proto";
 import "models/activity/standardized.proto";
+import "models/activity/enrichments.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
 
@@ -39,7 +40,7 @@ message ShowcasedActivity {
   string fit_file_uri = 10;            
 
   repeated string applied_enrichments = 11;
-  map<string, string> enrichment_metadata = 12;
+  reserved 12;  // was: map<string,string> enrichment_metadata. Replaced by typed ActivityEnrichments.
   repeated string tags = 13;
   optional string pipeline_execution_id = 14;
 
@@ -51,6 +52,7 @@ message ShowcasedActivity {
   string owner_profile_picture_url = 19;
   string owner_profile_slug = 20;
   repeated string photo_urls = 21;
+  ActivityEnrichments enrichments = 22;
 }
 
 message ShowcaseProfileEntry {
@@ -59,13 +61,26 @@ message ShowcaseProfileEntry {
   ActivityType activity_type = 3;
   ActivitySource source = 4;
   google.protobuf.Timestamp start_time = 5;
-  string route_thumbnail_url = 6;  
-  double distance_meters = 7;      
-  double duration_seconds = 8;     
+  string route_thumbnail_url = 6;
+  double distance_meters = 7;
+  double duration_seconds = 8;
 
   int32 total_sets = 9;
   int32 total_reps = 10;
   double total_weight_kg = 11;
+
+  // Reskin additions — populated on each activity sync
+  int32 booster_count = 12;
+  int32 destination_count = 13;
+  optional EntrySparkline sparkline = 14;
+  optional int32 avg_heart_rate = 15;
+  optional int32 calories_kcal = 16;
+}
+
+// EntrySparkline is a downsampled timeseries for card-level sparklines.
+message EntrySparkline {
+  string metric = 1;           // "heart_rate" | "pace" | "power" | "weight"
+  repeated double values = 2;  // ≤ 24 sample points, downsampled
 }
 
 message ShowcaseTheme {
@@ -113,4 +128,20 @@ message ShowcaseProfile {
   bool show_photo_gallery = 20;
   repeated ShowcaseLink links = 21;
   repeated ShowcaseBioCallout callouts = 22;
+
+  // Lifetime aggregates — written by a daily rollup job. Optional; absent means not yet computed.
+  optional LifetimeZoneSplit zone_split = 23;
+  optional WeeklyStreakHistory streak_history = 24;
+}
+
+message LifetimeZoneSplit {
+  repeated HeartRateZoneBucket zones = 1;   // re-uses HeartRateZoneBucket from enrichments.proto
+  google.protobuf.Timestamp computed_at = 2;
+  string label = 3;                         // "Polarized", "Pyramidal", "Threshold"
+}
+
+message WeeklyStreakHistory {
+  int32 weeks_tracked = 1;        // e.g. 26
+  int32 missed_weeks = 2;         // count of weeks with zero qualifying activities
+  repeated bool weekly_active = 3; // most-recent-last; true = had at least one activity
 }

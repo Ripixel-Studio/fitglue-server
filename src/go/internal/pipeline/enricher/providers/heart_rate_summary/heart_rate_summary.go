@@ -86,6 +86,21 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 	}
 
 	avgHR := float64(sumHR) / float64(len(heartRates))
+	avgHRInt := int32(avgHR)
+
+	// Write back to the first session so downstream enrichers and uploaders see typed HR values.
+	if len(activity.Sessions) > 0 {
+		s := activity.Sessions[0]
+		if s.AvgHeartRate == nil {
+			s.AvgHeartRate = &avgHRInt
+		}
+		if s.MaxHeartRate == nil {
+			s.MaxHeartRate = &maxHR
+		}
+		if s.MinHeartRate == nil {
+			s.MinHeartRate = &minHR
+		}
+	}
 
 	logger.Info("Heart rate summary calculated",
 		"min_hr", minHR,
@@ -140,6 +155,13 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 		sb.WriteString(fmt.Sprintf("❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR))
 	}
 
+	var driftBpm int32
+	driftWarning := false
+	if showDrift && hasDrift {
+		driftBpm = int32(drift)
+		driftWarning = drift > 5
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata: map[string]string{
@@ -148,6 +170,15 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 			"hr_avg":            fmt.Sprintf("%.0f", avgHR),
 			"hr_max":            fmt.Sprintf("%d", maxHR),
 			"hr_sample_count":   fmt.Sprintf("%d", len(heartRates)),
+		},
+		Enrichments: &pbactivity.ActivityEnrichments{
+			HeartRate: &pbactivity.HeartRateSummary{
+				MinBpm:       minHR,
+				AvgBpm:       int32(avgHR),
+				MaxBpm:       maxHR,
+				DriftBpm:     driftBpm,
+				DriftWarning: driftWarning,
+			},
 		},
 	}, nil
 }

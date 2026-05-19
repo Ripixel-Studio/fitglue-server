@@ -9,12 +9,12 @@ import "models/plugin/provider.proto";
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
 
 message PipelineRun {
-  string id = 1;                           
-  string pipeline_id = 2;                  
-  string activity_id = 3;                  
+  string id = 1;
+  string pipeline_id = 2;
+  string activity_id = 3;
 
-  string source = 4;                       
-  string source_activity_id = 5;           
+  string source = 4;
+  string source_activity_id = 5;
 
   string title = 6;
   string description = 7;
@@ -28,11 +28,16 @@ message PipelineRun {
   repeated BoosterExecution boosters = 13;
   repeated DestinationOutcome destinations = 14;
 
-  optional string status_message = 15;  
+  optional string status_message = 15;
   optional string pending_input_id = 16;
-  
-  string original_payload_uri = 22;  
-  string enriched_event_uri = 23;    
+
+  string original_payload_uri = 22;
+  string enriched_event_uri = 23;
+
+  // Unified record of every step in a pipeline run — source, parse, gate,
+  // enricher batch, router, and per-destination uploaders.
+  // boosters[] is preserved for existing documents; new clients should prefer steps[].
+  repeated ExecutionStep steps = 24;
 }
 
 enum PipelineRunStatus {
@@ -47,12 +52,49 @@ enum PipelineRunStatus {
   PIPELINE_RUN_STATUS_TIER_BLOCKED = 8; 
 }
 
+// ExecutionStep is the unified record for a single step in a pipeline run.
+message ExecutionStep {
+  string id = 1;                          // stable per-step ID for deep-linking
+  int32 ordinal = 2;                      // 1-indexed display order
+  ExecutionStepKind kind = 3;
+  string display_name = 4;               // "File Upload", "Parse FIT", "Strava Upload"
+  string service = 5;                    // e.g. "webhook · strava"
+  ExecutionStepStatus status = 6;
+  int64 offset_ms = 7;                   // ms from run start
+  int64 duration_ms = 8;
+  optional string status_label = 9;      // override pill text, e.g. "✓ 25/25"
+  optional string error = 10;
+  map<string, string> metadata = 11;
+}
+
+enum ExecutionStepKind {
+  EXECUTION_STEP_KIND_UNSPECIFIED = 0;
+  EXECUTION_STEP_KIND_SOURCE = 1;         // webhook ingestion
+  EXECUTION_STEP_KIND_PARSE = 2;          // FIT parse
+  EXECUTION_STEP_KIND_GATE = 3;           // condition matcher / activity filter
+  EXECUTION_STEP_KIND_ENRICHER_BATCH = 4; // the enricher chain as one step
+  EXECUTION_STEP_KIND_ROUTER = 5;
+  EXECUTION_STEP_KIND_DESTINATION = 6;
+}
+
+enum ExecutionStepStatus {
+  EXECUTION_STEP_STATUS_UNSPECIFIED = 0;
+  EXECUTION_STEP_STATUS_QUEUED = 1;
+  EXECUTION_STEP_STATUS_RUNNING = 2;
+  EXECUTION_STEP_STATUS_OK = 3;
+  EXECUTION_STEP_STATUS_PASS = 4;     // gate passed
+  EXECUTION_STEP_STATUS_SKIPPED = 5;
+  EXECUTION_STEP_STATUS_FAILED = 6;
+  EXECUTION_STEP_STATUS_RETRIED = 7;  // re-run via Repost*
+}
+
 message BoosterExecution {
-  string provider_name = 1;              
-  string status = 2;                     
+  string provider_name = 1;
+  reserved 2;  // was: string status (freeform). Replaced by typed ExecutionStepStatus.
   int64 duration_ms = 3;
-  map<string, string> metadata = 4;      
+  map<string, string> metadata = 4;
   optional string error = 5;
+  ExecutionStepStatus status = 6;
 }
 
 message DestinationOutcome {

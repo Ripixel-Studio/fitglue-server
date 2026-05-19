@@ -4,6 +4,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
@@ -183,7 +184,31 @@ func (s *FirestoreStore) FindPipelineRunByActivityId(ctx context.Context, userID
 	return &run, nil
 }
 
-func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string) ([]*pipeline.PipelineRun, string, error) {
+func (s *FirestoreStore) FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error) {
+	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
+		Where("pipeline_id", "==", pipelineID).
+		Where("source_activity_id", "==", sourceActivityID).
+		OrderBy("created_at", firestore.Desc).
+		Limit(1).
+		Documents(ctx)
+	defer iter.Stop()
+
+	doc, err := iter.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var run pipeline.PipelineRun
+	if err := decodeProtoMap(doc.Data(), &run); err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
+func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string, since, until *time.Time) ([]*pipeline.PipelineRun, string, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -193,6 +218,12 @@ func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID, pipelineI
 
 	if pipelineID != "" {
 		query = query.Where("pipeline_id", "==", pipelineID)
+	}
+	if since != nil {
+		query = query.Where("created_at", ">=", *since)
+	}
+	if until != nil {
+		query = query.Where("created_at", "<=", *until)
 	}
 
 	iter := query.Limit(int(limit)).Documents(ctx)

@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package fitglue.models.activity;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
+
+// ActivityEnrichments holds typed outputs from the enricher pipeline.
+// Each sub-message is optional — only present if the corresponding enricher
+// was configured and ran. Replaces enrichment_metadata map<string,string>.
+message ActivityEnrichments {
+  optional HeartRateSummary heart_rate = 1;
+  optional HeartRateZonesSummary heart_rate_zones = 2;
+  optional EffortScoreSummary effort = 3;
+  optional CaloriesSummary calories = 4;
+  optional TrainingLoadSummary training_load = 5;
+  optional RecoverySummary recovery = 6;
+  optional StreakSummary streak = 7;
+  optional AiSummary ai_summary = 8;
+  optional AiBanner ai_banner = 9;
+  optional PaceSummary pace = 10;
+  optional CadenceSummary cadence = 11;
+  optional PowerSummary power = 12;
+  optional ElevationSummary elevation = 13;
+}
+
+message HeartRateSummary {
+  int32 min_bpm = 1;
+  int32 avg_bpm = 2;
+  int32 max_bpm = 3;
+  int32 drift_bpm = 4;     // positive means HR drifted up over the session
+  bool drift_warning = 5;  // true if drift exceeds the enricher's configured threshold
+}
+
+message HeartRateZonesSummary {
+  repeated HeartRateZoneBucket zones = 1;
+  int32 total_minutes = 2;
+}
+
+message HeartRateZoneBucket {
+  int32 zone_index = 1;   // 0–5
+  string name = 2;        // "Zone 0 (Rest)", "Zone 1 (Recovery)", …
+  int32 minutes = 3;
+  double percentage = 4;
+}
+
+message EffortScoreSummary {
+  int32 score = 1;               // 0–100 relative to user's rolling history
+  string band = 2;               // "Easy", "Moderate", "Hard", "Very Hard"
+  repeated EffortFactor factors = 3;
+}
+
+message EffortFactor {
+  string label = 1;             // "HR", "Pace", "Duration", "Elevation", "Intensity"
+  double ratio_vs_baseline = 2; // e.g. 0.75, 1.21
+}
+
+message CaloriesSummary {
+  int32 kcal = 1;
+  string comparison_text = 2;  // e.g. "≈ 1.0 slice of pizza"
+}
+
+message TrainingLoadSummary {
+  int32 trimp = 1;
+  string bucket = 2;  // "Recovery", "Easy", "Moderate", "Hard", "Very Hard"
+  string hint = 3;    // short contextual copy
+}
+
+message RecoverySummary {
+  int32 session_load = 1;          // TRIMP for this session
+  double acute_chronic_ratio = 2;  // ACWR
+  int32 hours_to_recover = 3;
+  bool alert = 4;                  // true if ACWR is in the danger band (> 1.3)
+  string alert_text = 5;           // e.g. "ACWR 1.42 — load is climbing fast"
+}
+
+message StreakSummary {
+  int32 current_days = 1;
+  int32 longest_days = 2;
+  repeated StreakDay calendar = 3;  // most-recent-last; covers last N days
+}
+
+message StreakDay {
+  string date = 1;         // YYYY-MM-DD
+  StreakDayState state = 2;
+}
+
+enum StreakDayState {
+  STREAK_DAY_STATE_UNSPECIFIED = 0;
+  STREAK_DAY_STATE_OFF = 1;     // no qualifying activity
+  STREAK_DAY_STATE_ACTIVE = 2;  // active training day
+  STREAK_DAY_STATE_REST = 3;    // scheduled rest; counts toward streak
+}
+
+message AiSummary {
+  string html = 1;                              // sanitised HTML — may contain <b> and <span>
+  string model = 2;                             // e.g. "gemini-1.5-flash"
+  google.protobuf.Timestamp generated_at = 3;
+}
+
+message AiBanner {
+  string image_url = 1;        // CDN URL
+  string prompt_hash = 2;      // for cache-busting
+  string generator_version = 3;
+}
+
+message PaceSummary {
+  double avg_pace_seconds_per_km = 1;
+  double best_split_seconds_per_km = 2;
+  repeated PaceSplit splits = 3;
+}
+
+message PaceSplit {
+  int32 km = 1;
+  double seconds = 2;
+}
+
+message CadenceSummary {
+  int32 avg_rpm = 1;
+  int32 max_rpm = 2;
+}
+
+message PowerSummary {
+  int32 avg_watts = 1;
+  int32 normalized_power = 2;  // NP
+  double intensity_factor = 3; // IF
+  int32 kilojoules = 4;
+}
+
+message ElevationSummary {
+  double total_gain_m = 1;
+  double total_loss_m = 2;
+}
