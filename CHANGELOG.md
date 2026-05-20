@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.12.0](https://github.com/FitGlue/server/compare/v16.11.0...v16.12.0) (2026-05-20)
+
+
+### Features
+
+* **api-client:** add GET /pipeline-runs/:runId/payload signed-URL endpoint ([0b68d58](https://github.com/FitGlue/server/commit/0b68d585b82b7bf09d13491faa0c0e485783ef33))
+* **brutal-aurora:** proto changes, typed enrichments, min HR, stats, since/until filter ([eaa95bc](https://github.com/FitGlue/server/commit/eaa95bcbbaf10c12b2de9f1780d53c4e72f69915))
+* **pipeline:** write ExecutionStep records for enricher batch in PipelineRun ([4e3da2d](https://github.com/FitGlue/server/commit/4e3da2d4564b5dfb860a30c3d14919f3c98311f5))
+* **pipeline:** write full ExecutionStep trace (SOURCE→PARSE→GATE→ENRICHER→ROUTER) ([0c26076](https://github.com/FitGlue/server/commit/0c26076fb321727bd19c66bb4597a4d5f2b5a911))
+* **showcase:** add typed enrichment outputs to 11 enricher providers ([8f18ce4](https://github.com/FitGlue/server/commit/8f18ce421b99482d1eb3f870df0d2d7b9af08b1f))
+* **showcase:** populate ShowcaseProfileEntry aggregate fields on sync ([033969e](https://github.com/FitGlue/server/commit/033969e85e08a2450fecff121e5265f74c91b195))
+
+
+### Bug Fixes
+
+* **showcase:** persist typed ActivityEnrichments to ShowcasedActivity Firestore doc ([c0c22c1](https://github.com/FitGlue/server/commit/c0c22c1c53d12ad3fa10c646bc67eb101e288ef1))
+
 ## [16.11.0](https://github.com/FitGlue/server/compare/v16.10.0...v16.11.0) (2026-05-18)
 
 
