@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.14.0](https://github.com/FitGlue/server/compare/v16.13.0...v16.14.0) (2026-05-21)
+
+
+### Features
+
+* **ical_title:** implement TZID-aware event time parsing and add corresponding test ([9fe3297](https://github.com/FitGlue/server/commit/9fe3297cab840aab8c8da374eaded502001887e4))
+
 ## [16.13.0](https://github.com/FitGlue/server/compare/v16.12.1...v16.13.0) (2026-05-21)
 
 
