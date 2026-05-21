@@ -1,0 +1,226 @@
+package ical_title
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"strings"
+	"time"
+
+	ical "github.com/arran4/golang-ical"
+
+	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/domain/user"
+
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+)
+
+const (
+	defaultMinOverlapSeconds = 60
+	fetchTimeout             = 10 * time.Second
+)
+
+type ICalTitle struct {
+	Service    *bootstrap.Service
+	httpClient *http.Client
+}
+
+func init() {
+	providers.Register(NewICalTitle())
+}
+
+func NewICalTitle() *ICalTitle {
+	return &ICalTitle{
+		httpClient: &http.Client{Timeout: fetchTimeout},
+	}
+}
+
+func (p *ICalTitle) SetService(service *bootstrap.Service) {
+	p.Service = service
+}
+
+func (p *ICalTitle) Name() string {
+	return "ical_title"
+}
+
+func (p *ICalTitle) ProviderType() pbplugin.EnricherProviderType {
+	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ICAL_TITLE
+}
+
+func (p *ICalTitle) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	return p.enrich(ctx, logger, activity, inputs, p.httpClient)
+}
+
+func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, inputs map[string]string, client *http.Client) (*providers.EnrichmentResult, error) {
+	icalURL := strings.TrimSpace(inputs["ical_url"])
+	if icalURL == "" {
+		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "no ical_url configured",
+		}, nil
+	}
+
+	minOverlap := defaultMinOverlapSeconds
+	if v, ok := inputs["min_overlap_seconds"]; ok && v != "" {
+		if n, err := parseInt(v); err == nil && n >= 0 {
+			minOverlap = n
+		}
+	}
+
+	if activity.StartTime == nil {
+		return nil, fmt.Errorf("activity has no start time")
+	}
+	actStart := activity.StartTime.AsTime()
+	actEnd := activityEndTime(activity, actStart)
+
+	cal, err := fetchCalendar(ctx, client, icalURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching iCal: %w", err)
+	}
+
+	matches := overlappingEvents(cal, actStart, actEnd, minOverlap)
+
+	switch len(matches) {
+	case 0:
+		logger.Info("ical_title: no overlapping events found", "activity_start", actStart)
+		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "no calendar event overlaps this activity",
+		}, nil
+	case 1:
+		title := matches[0]
+		logger.Info("ical_title: matched event", "title", title)
+		return &providers.EnrichmentResult{
+			Name: title,
+		}, nil
+	default:
+		logger.Info("ical_title: multiple events overlap, skipping", "count", len(matches))
+		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: fmt.Sprintf("%d calendar events overlap this activity; cannot determine a single title", len(matches)),
+		}, nil
+	}
+}
+
+func fetchCalendar(ctx context.Context, client *http.Client, url string) (*ical.Calendar, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status %d fetching iCal", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading iCal body: %w", err)
+	}
+
+	cal, err := ical.ParseCalendar(strings.NewReader(string(body)))
+	if err != nil {
+		return nil, fmt.Errorf("parsing iCal: %w", err)
+	}
+	return cal, nil
+}
+
+// overlappingEvents returns the summaries of VEVENT entries whose time range
+// overlaps [actStart, actEnd] by at least minOverlapSeconds.
+// All-day events (DATE-only) are excluded.
+func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverlapSeconds int) []string {
+	var matches []string
+	minOverlap := time.Duration(minOverlapSeconds) * time.Second
+
+	for _, component := range cal.Components {
+		event, ok := component.(*ical.VEvent)
+		if !ok {
+			continue
+		}
+
+		dtstart := event.GetProperty(ical.ComponentPropertyDtStart)
+		dtend := event.GetProperty(ical.ComponentPropertyDtEnd)
+		if dtstart == nil {
+			continue
+		}
+
+		// Skip all-day events (VALUE=DATE, no time component)
+		if isDateOnly(dtstart) {
+			continue
+		}
+
+		evStart, err := event.GetStartAt()
+		if err != nil {
+			continue
+		}
+		evEnd, err := event.GetEndAt()
+		if err != nil {
+			// If no DTEND, treat as zero-duration point; only match exact overlap
+			evEnd = evStart
+		}
+		_ = dtend
+
+		overlap := overlapDuration(actStart, actEnd, evStart, evEnd)
+		if overlap < minOverlap {
+			continue
+		}
+
+		summary := event.GetProperty(ical.ComponentPropertySummary)
+		if summary == nil || strings.TrimSpace(summary.Value) == "" {
+			continue
+		}
+		matches = append(matches, strings.TrimSpace(summary.Value))
+	}
+	return matches
+}
+
+func overlapDuration(aStart, aEnd, bStart, bEnd time.Time) time.Duration {
+	start := aStart
+	if bStart.After(start) {
+		start = bStart
+	}
+	end := aEnd
+	if bEnd.Before(end) {
+		end = bEnd
+	}
+	if end.Before(start) {
+		return 0
+	}
+	return end.Sub(start)
+}
+
+func isDateOnly(prop *ical.IANAProperty) bool {
+	if prop == nil {
+		return false
+	}
+	for _, param := range prop.ICalParameters {
+		for _, v := range param {
+			if strings.EqualFold(v, "DATE") {
+				return true
+			}
+		}
+	}
+	// Heuristic: date-only values are exactly 8 chars (YYYYMMDD)
+	return len(strings.TrimSpace(prop.Value)) == 8
+}
+
+func activityEndTime(activity *pbactivity.StandardizedActivity, start time.Time) time.Time {
+	if len(activity.Sessions) > 0 && activity.Sessions[0].TotalElapsedTime > 0 {
+		return start.Add(time.Duration(activity.Sessions[0].TotalElapsedTime) * time.Second)
+	}
+	return start.Add(time.Hour)
+}
+
+func parseInt(s string) (int, error) {
+	var n int
+	_, err := fmt.Sscanf(s, "%d", &n)
+	return n, err
+}

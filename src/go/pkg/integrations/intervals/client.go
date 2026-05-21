@@ -23,7 +23,7 @@ func VerifyCredentials(ctx context.Context, apiKey, athleteID string) error {
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
-	req.SetBasicAuth(apiKey, "")
+	req.SetBasicAuth("API_KEY", apiKey)
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	resp, err := httpClient.Do(req)
@@ -117,7 +117,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	// Basic Auth with API key as username, no password
-	req.SetBasicAuth(c.apiKey, "")
+	req.SetBasicAuth("API_KEY", c.apiKey)
 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -224,7 +224,7 @@ func (c *Client) DownloadFITFile(ctx context.Context, activityID int64) ([]byte,
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
-	req.SetBasicAuth(c.apiKey, "")
+	req.SetBasicAuth("API_KEY", c.apiKey)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -249,7 +249,7 @@ func (c *Client) UploadFITFile(ctx context.Context, fitData []byte) (string, err
 		return "", fmt.Errorf("create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.apiKey, "")
+	req.SetBasicAuth("API_KEY", c.apiKey)
 	req.Header.Set("Content-Type", "application/octet-stream")
 
 	resp, err := c.client.Do(req)

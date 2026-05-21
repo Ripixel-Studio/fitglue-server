@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	firestorepb "cloud.google.com/go/firestore/apiv1/firestorepb"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"google.golang.org/api/iterator"
@@ -356,8 +357,8 @@ func (s *FirestoreStore) CountPipelineRunsByStatus(ctx context.Context, userID, 
 	if !ok {
 		return 0, nil
 	}
-	if intVal, ok := total.(int64); ok {
-		return int32(intVal), nil
+	if pbVal, ok := total.(*firestorepb.Value); ok {
+		return int32(pbVal.GetIntegerValue()), nil
 	}
 	return 0, nil
 }
@@ -376,8 +377,8 @@ func (s *FirestoreStore) CountShowcasedActivities(ctx context.Context, userID st
 	if !ok {
 		return 0, nil
 	}
-	if intVal, ok := total.(int64); ok {
-		return int32(intVal), nil
+	if pbVal, ok := total.(*firestorepb.Value); ok {
+		return int32(pbVal.GetIntegerValue()), nil
 	}
 	return 0, nil
 }
@@ -392,8 +393,8 @@ func (s *FirestoreStore) CountBillingEvents(ctx context.Context, userID string) 
 	if !ok {
 		return 0, nil
 	}
-	if intVal, ok := total.(int64); ok {
-		return int32(intVal), nil
+	if pbVal, ok := total.(*firestorepb.Value); ok {
+		return int32(pbVal.GetIntegerValue()), nil
 	}
 	return 0, nil
 }
@@ -408,8 +409,8 @@ func (s *FirestoreStore) CountBillingEventsForPeriod(ctx context.Context, userID
 	if !ok {
 		return 0, nil
 	}
-	if intVal, ok := total.(int64); ok {
-		return int32(intVal), nil
+	if pbVal, ok := total.(*firestorepb.Value); ok {
+		return int32(pbVal.GetIntegerValue()), nil
 	}
 	return 0, nil
 }
@@ -424,8 +425,8 @@ func (s *FirestoreStore) CountBillingEventsSince(ctx context.Context, userID str
 	if !ok {
 		return 0, nil
 	}
-	if intVal, ok := total.(int64); ok {
-		return int32(intVal), nil
+	if pbVal, ok := total.(*firestorepb.Value); ok {
+		return int32(pbVal.GetIntegerValue()), nil
 	}
 	return 0, nil
 }

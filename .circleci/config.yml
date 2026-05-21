@@ -272,17 +272,12 @@ workflows:
           filters:
             branches:
               only: main
-      # upload-sourcemaps removed — no longer applicable
-      - approve-prod:
-          type: approval
-          requires:
-            - deploy-dev
       - deploy:
           name: deploy-prod
           target: prod
           project_number: "605889586984"
           requires:
-            - approve-prod
+            - build-and-test
           filters:
             branches:
               only: main

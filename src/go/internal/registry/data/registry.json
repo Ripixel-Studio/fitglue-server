@@ -3684,6 +3684,67 @@
       "stage": 5
     },
     {
+      "id": "ical-title",
+      "type": 2,
+      "name": "Calendar Title",
+      "description": "Set the activity title from a matching event in any iCal-compatible calendar (Google Calendar, Apple Calendar, Outlook, etc.).",
+      "icon": "📅",
+      "enabled": true,
+      "requiredIntegrations": [],
+      "configSchema": [
+        {
+          "key": "ical_url",
+          "label": "iCal URL",
+          "description": "The private iCal/ICS URL for your calendar. In Google Calendar: Settings → your calendar → 'Secret address in iCal format'.",
+          "fieldType": 1,
+          "required": true,
+          "defaultValue": "",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        },
+        {
+          "key": "min_overlap_seconds",
+          "label": "Minimum Overlap (seconds)",
+          "description": "How many seconds the calendar event must overlap the activity before it is used as the title. Increase this to ignore brief overlaps with adjacent events.",
+          "fieldType": 1,
+          "required": false,
+          "defaultValue": "60",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        }
+      ],
+      "marketingDescription": "\n### Name activities from your calendar\nPaste in your calendar's private iCal URL and FitGlue will automatically set the activity title to match the event that was happening at the same time.\n\n### Works with any calendar\nGoogle Calendar, Apple iCloud Calendar, Outlook, Fastmail, Proton Calendar — any provider that exports an ICS feed. No OAuth required; just a URL.\n\n### How it works\nWhen an activity is imported, FitGlue fetches your calendar feed and looks for a single timed event that overlaps the activity window by at least the configured minimum. If exactly one event matches, its title becomes the activity name. If zero or multiple events match, the enricher skips and leaves the title unchanged.\n  ",
+      "features": [
+        "✅ Works with Google Calendar, Apple Calendar, Outlook, and any ICS-compatible provider",
+        "✅ No OAuth or account connection required — just a URL",
+        "✅ Configurable minimum overlap to avoid false matches",
+        "✅ All-day events are automatically ignored"
+      ],
+      "transformations": [
+        {
+          "field": "name",
+          "label": "Activity Title",
+          "before": "Morning Workout",
+          "after": "Spin Class at Gymbox",
+          "visualType": "text",
+          "afterHtml": ""
+        }
+      ],
+      "useCases": [
+        "Name gym sessions after the class you attended",
+        "Tag runs or rides with the event they were part of",
+        "Auto-title activities scheduled in a training plan calendar"
+      ],
+      "category": "metadata",
+      "sortOrder": 7,
+      "isPremium": false,
+      "popularityScore": 60,
+      "enricherProviderType": 43,
+      "stage": 1
+    },
+    {
       "id": "mock",
       "type": 2,
       "name": "Mock",

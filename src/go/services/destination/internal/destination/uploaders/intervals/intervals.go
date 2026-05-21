@@ -86,7 +86,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(integration.ApiKey, "")
+	req.SetBasicAuth("API_KEY", integration.ApiKey)
 	req.Header.Set("Content-Type", "application/octet-stream")
 
 	resp, err := httpClient.Do(req)
@@ -165,7 +165,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if err != nil {
 		return fmt.Errorf("failed to create GET request: %w", err)
 	}
-	getReq.SetBasicAuth(integration.ApiKey, "")
+	getReq.SetBasicAuth("API_KEY", integration.ApiKey)
 
 	getResp, err := httpClient.Do(getReq)
 	if err != nil {
@@ -230,7 +230,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if err != nil {
 		return fmt.Errorf("failed to create PUT request: %w", err)
 	}
-	putReq.SetBasicAuth(integration.ApiKey, "")
+	putReq.SetBasicAuth("API_KEY", integration.ApiKey)
 	putReq.Header.Set("Content-Type", "application/json")
 
 	putResp, err := httpClient.Do(putReq)
@@ -275,7 +275,7 @@ func (u *Uploader) updateIntervalsActivity(ctx context.Context, httpClient *http
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PUT request: %w", err)
 	}
-	putReq.SetBasicAuth(integration.ApiKey, "")
+	putReq.SetBasicAuth("API_KEY", integration.ApiKey)
 	putReq.Header.Set("Content-Type", "application/json")
 
 	putResp, err := httpClient.Do(putReq)
