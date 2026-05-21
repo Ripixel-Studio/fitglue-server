@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.12.1](https://github.com/FitGlue/server/compare/v16.12.0...v16.12.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* **pipeline:** update source handling for same-source detection and fallback configuration ([fb1d6f7](https://github.com/FitGlue/server/commit/fb1d6f7612cabe14ac2af5592a994eaf4ac73268))
+
 ## [16.12.0](https://github.com/FitGlue/server/compare/v16.11.0...v16.12.0) (2026-05-20)
 
 
