@@ -910,10 +910,10 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
-	// Same-Source Detection: When source matches a destination, signal uploaders
-	// to do a straight overwrite of title/description instead of section-based merge.
-	// The activity already exists on the platform, so we just need to update metadata.
-	sourceDestName := strings.ToLower(strings.TrimPrefix(pipeline.Source, "SOURCE_"))
+	// Same-Source Detection: When the activity's source platform matches a destination,
+	// signal uploaders to overwrite title/description instead of section-based merge.
+	// Use payload.Source (the actual webhook source) — correct for multi-source pipelines.
+	sourceDestName := strings.ToLower(strings.TrimPrefix(payload.Source.String(), "SOURCE_"))
 	for _, dest := range activeDestinations {
 		destName := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
 		if sourceDestName == destName {
@@ -954,7 +954,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	sourceConfig := pipeline.SourceConfig
 	if len(sourceConfig) == 0 {
 		// Fall back to user plugin default for this source
-		sourcePluginId := strings.ToLower(strings.TrimPrefix(pipeline.Source, "SOURCE_"))
+		sourcePluginId := strings.ToLower(strings.TrimPrefix(payload.Source.String(), "SOURCE_"))
 		if def, err := o.database.GetPluginDefault(ctx, payload.UserId, sourcePluginId); err == nil && def != nil {
 			sourceConfig = def.Config
 			logger.Info("Using user default for source config", "plugin", sourcePluginId)
@@ -1164,9 +1164,15 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 					TypedConfig:  e.TypedConfig,
 				})
 			}
+			// Prefer Sources (array) over the legacy Source field; service.go clears
+			// Source when saving, so p.Source is "" for all recently-created pipelines.
+			pipelineSource := p.Source
+			if len(p.Sources) > 0 {
+				pipelineSource = p.Sources[0]
+			}
 			return &configuredPipeline{
 				ID:                 p.Id,
-				Source:             p.Source,
+				Source:             pipelineSource,
 				Enrichers:          enrichers,
 				Destinations:       p.Destinations,
 				SourceConfig:       p.SourceConfig,
