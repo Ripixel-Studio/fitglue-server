@@ -147,7 +147,6 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 		}
 
 		dtstart := event.GetProperty(ical.ComponentPropertyDtStart)
-		dtend := event.GetProperty(ical.ComponentPropertyDtEnd)
 		if dtstart == nil {
 			continue
 		}
@@ -157,16 +156,16 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 			continue
 		}
 
-		evStart, err := event.GetStartAt()
+		evStart, err := parseEventTime(dtstart)
 		if err != nil {
 			continue
 		}
-		evEnd, err := event.GetEndAt()
-		if err != nil {
-			// If no DTEND, treat as zero-duration point; only match exact overlap
-			evEnd = evStart
+		evEnd := evStart
+		if dtend := event.GetProperty(ical.ComponentPropertyDtEnd); dtend != nil && !isDateOnly(dtend) {
+			if t, err := parseEventTime(dtend); err == nil {
+				evEnd = t
+			}
 		}
-		_ = dtend
 
 		overlap := overlapDuration(actStart, actEnd, evStart, evEnd)
 		if overlap < minOverlap {
@@ -201,8 +200,8 @@ func isDateOnly(prop *ical.IANAProperty) bool {
 	if prop == nil {
 		return false
 	}
-	for _, param := range prop.ICalParameters {
-		for _, v := range param {
+	for _, vals := range prop.ICalParameters {
+		for _, v := range vals {
 			if strings.EqualFold(v, "DATE") {
 				return true
 			}
@@ -210,6 +209,37 @@ func isDateOnly(prop *ical.IANAProperty) bool {
 	}
 	// Heuristic: date-only values are exactly 8 chars (YYYYMMDD)
 	return len(strings.TrimSpace(prop.Value)) == 8
+}
+
+// parseEventTime parses a DTSTART/DTEND property, correctly applying the TZID
+// parameter when present. Without this, the golang-ical library silently ignores
+// TZID and treats local times as UTC, causing incorrect overlap calculations for
+// events created in non-UTC timezones.
+func parseEventTime(prop *ical.IANAProperty) (time.Time, error) {
+	value := strings.TrimSpace(prop.Value)
+
+	for paramName, paramVals := range prop.ICalParameters {
+		if strings.EqualFold(paramName, "TZID") && len(paramVals) > 0 {
+			loc, err := time.LoadLocation(paramVals[0])
+			if err != nil {
+				return time.Time{}, fmt.Errorf("unknown timezone %q: %w", paramVals[0], err)
+			}
+			for _, layout := range []string{"20060102T150405", "20060102T150405Z"} {
+				if t, err := time.ParseInLocation(layout, value, loc); err == nil {
+					return t.UTC(), nil
+				}
+			}
+			return time.Time{}, fmt.Errorf("cannot parse %q with TZID %q", value, paramVals[0])
+		}
+	}
+
+	// UTC (trailing Z) or floating time
+	for _, layout := range []string{"20060102T150405Z", "20060102T150405"} {
+		if t, err := time.Parse(layout, value); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("cannot parse time %q", value)
 }
 
 func activityEndTime(activity *pbactivity.StandardizedActivity, start time.Time) time.Time {

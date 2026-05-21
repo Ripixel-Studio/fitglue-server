@@ -225,6 +225,38 @@ func TestCustomMinOverlap(t *testing.T) {
 	}
 }
 
+func TestTZIDMatch(t *testing.T) {
+	// Reproduces: Bootcamp Class 6:30–7:00 BST, activity starts 6:31 BST (5:31 UTC).
+	// Without TZID-aware parsing the event is treated as 6:30 UTC and no overlap is found.
+	icalBody := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//Google Inc//GoogleCalendarV1//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp@example.com\r\n" +
+		"DTSTART;TZID=Europe/London:20260521T063000\r\n" +
+		"DTEND;TZID=Europe/London:20260521T070000\r\n" +
+		"SUMMARY:Bootcamp Class\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+
+	srv, client := serveICal(t, icalBody)
+
+	p := NewICalTitle()
+	// Activity 5:31–6:08 UTC (= 6:31–7:08 BST), 37 minutes
+	actStart := time.Date(2026, 5, 21, 5, 31, 0, 0, time.UTC)
+	act := newTestActivity(actStart, 37*60)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Errorf("expected match for TZID-based BST event, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Bootcamp Class" {
+		t.Errorf("expected %q, got %q", "Bootcamp Class", result.Name)
+	}
+}
+
 func TestHTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
