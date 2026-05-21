@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.13.0](https://github.com/FitGlue/server/compare/v16.12.1...v16.13.0) (2026-05-21)
+
+
+### Features
+
+* **enricher:** add iCal title enricher provider for activity naming ([ae58f58](https://github.com/FitGlue/server/commit/ae58f58ea0f5e0b2810bf7bf26ea8102aba3fa01))
+
 ### [16.12.1](https://github.com/FitGlue/server/compare/v16.12.0...v16.12.1) (2026-05-21)
 
 
