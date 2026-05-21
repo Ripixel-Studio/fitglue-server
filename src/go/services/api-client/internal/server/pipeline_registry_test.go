@@ -78,6 +78,9 @@ func (m *mockPipelineServiceClient) ListPendingInputs(ctx context.Context, in *p
 func (m *mockPipelineServiceClient) ResolvePendingInput(ctx context.Context, in *pipelinepb.ResolvePendingInputRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
+func (m *mockPipelineServiceClient) CancelPipeline(ctx context.Context, in *pipelinepb.CancelPipelineRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
 func (m *mockPipelineServiceClient) RepostActivity(ctx context.Context, in *pipelinepb.RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	if m.repostActivity != nil {
 		return m.repostActivity(ctx, in, opts...)

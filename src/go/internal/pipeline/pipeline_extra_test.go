@@ -101,6 +101,10 @@ func (e *ErrorStore) FindPipelineRunByActivityId(ctx context.Context, userID, ac
 	return e.MockPipelineStore.FindPipelineRunByActivityId(ctx, userID, activityID)
 }
 
+func (e *ErrorStore) FindPipelineRunByPendingInputId(ctx context.Context, userID, pendingInputID string) (*pipeline.PipelineRun, error) {
+	return e.MockPipelineStore.FindPipelineRunByPendingInputId(ctx, userID, pendingInputID)
+}
+
 func (e *ErrorStore) FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error) {
 	return e.MockPipelineStore.FindPipelineRunBySourceActivityID(ctx, userID, pipelineID, sourceActivityID)
 }

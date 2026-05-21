@@ -184,6 +184,28 @@ func (s *FirestoreStore) FindPipelineRunByActivityId(ctx context.Context, userID
 	return &run, nil
 }
 
+func (s *FirestoreStore) FindPipelineRunByPendingInputId(ctx context.Context, userID, pendingInputID string) (*pipeline.PipelineRun, error) {
+	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
+		Where("pending_input_id", "==", pendingInputID).
+		Limit(1).
+		Documents(ctx)
+	defer iter.Stop()
+
+	doc, err := iter.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var run pipeline.PipelineRun
+	if err := decodeProtoMap(doc.Data(), &run); err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
 func (s *FirestoreStore) FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error) {
 	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
 		Where("pipeline_id", "==", pipelineID).

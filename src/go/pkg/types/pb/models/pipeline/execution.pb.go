@@ -36,6 +36,7 @@ const (
 	PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED      PipelineRunStatus = 6
 	PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED     PipelineRunStatus = 7
 	PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED PipelineRunStatus = 8
+	PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED    PipelineRunStatus = 9
 )
 
 // Enum value maps for PipelineRunStatus.
@@ -50,6 +51,7 @@ var (
 		6: "PIPELINE_RUN_STATUS_SKIPPED",
 		7: "PIPELINE_RUN_STATUS_ARCHIVED",
 		8: "PIPELINE_RUN_STATUS_TIER_BLOCKED",
+		9: "PIPELINE_RUN_STATUS_CANCELLED",
 	}
 	PipelineRunStatus_value = map[string]int32{
 		"PIPELINE_RUN_STATUS_UNSPECIFIED":  0,
@@ -61,6 +63,7 @@ var (
 		"PIPELINE_RUN_STATUS_SKIPPED":      6,
 		"PIPELINE_RUN_STATUS_ARCHIVED":     7,
 		"PIPELINE_RUN_STATUS_TIER_BLOCKED": 8,
+		"PIPELINE_RUN_STATUS_CANCELLED":    9,
 	}
 )
 
@@ -1051,7 +1054,7 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\r_outputs_jsonB\f\n" +
 	"\n" +
 	"_expire_atB\x18\n" +
-	"\x16_pipeline_execution_id*\xc4\x02\n" +
+	"\x16_pipeline_execution_id*\xe7\x02\n" +
 	"\x11PipelineRunStatus\x12#\n" +
 	"\x1fPIPELINE_RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_RUNNING\x10\x01\x12\x1e\n" +
@@ -1061,7 +1064,8 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\x1bPIPELINE_RUN_STATUS_PENDING\x10\x05\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_SKIPPED\x10\x06\x12 \n" +
 	"\x1cPIPELINE_RUN_STATUS_ARCHIVED\x10\a\x12$\n" +
-	" PIPELINE_RUN_STATUS_TIER_BLOCKED\x10\b*\x82\x02\n" +
+	" PIPELINE_RUN_STATUS_TIER_BLOCKED\x10\b\x12!\n" +
+	"\x1dPIPELINE_RUN_STATUS_CANCELLED\x10\t*\x82\x02\n" +
 	"\x11ExecutionStepKind\x12#\n" +
 	"\x1fEXECUTION_STEP_KIND_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aEXECUTION_STEP_KIND_SOURCE\x10\x01\x12\x1d\n" +

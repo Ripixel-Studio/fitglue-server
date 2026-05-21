@@ -310,6 +310,46 @@ func (s *Service) ResolvePendingInput(ctx context.Context, req *pbsvc.ResolvePen
 	return &emptypb.Empty{}, nil
 }
 
+func (s *Service) CancelPipeline(ctx context.Context, req *pbsvc.CancelPipelineRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.PendingInputId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and pending_input_id are required")
+	}
+
+	input, err := s.store.GetPendingInput(ctx, req.UserId, req.PendingInputId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get pending input")
+	}
+	if input == nil {
+		return nil, status.Error(codes.NotFound, "pending input not found")
+	}
+	if input.Status != pipeline.PendingInput_STATUS_WAITING {
+		return nil, status.Error(codes.FailedPrecondition, "input is not in WAITING state")
+	}
+
+	run, err := s.store.FindPipelineRunByPendingInputId(ctx, req.UserId, req.PendingInputId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to find pipeline run by pending input ID", "error", err, "pendingInputId", req.PendingInputId)
+		return nil, status.Error(codes.Internal, "failed to find pipeline run")
+	}
+	if run != nil {
+		updateData := map[string]interface{}{
+			"status": int32(pipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED),
+		}
+		if err := s.store.UpdatePipelineRun(ctx, req.UserId, run.Id, updateData); err != nil {
+			s.logger.Error(ctx, "failed to cancel pipeline run", "error", err, "runId", run.Id)
+			return nil, status.Error(codes.Internal, "failed to cancel pipeline run")
+		}
+	}
+
+	input.Status = pipeline.PendingInput_STATUS_COMPLETED
+	if err := s.store.UpdatePendingInput(ctx, req.UserId, input); err != nil {
+		s.logger.Error(ctx, "failed to update pending input after cancel", "error", err)
+		return nil, status.Error(codes.Internal, "failed to update pending input")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityRequest) (*emptypb.Empty, error) {
 	if req.UserId == "" || req.ActivityId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")

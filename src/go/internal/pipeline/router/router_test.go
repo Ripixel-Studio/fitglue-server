@@ -61,6 +61,10 @@ func (m *mockRouterStore) FindPipelineRunByActivityId(_ context.Context, _, _ st
 	return nil, nil
 }
 
+func (m *mockRouterStore) FindPipelineRunByPendingInputId(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
+
 func (m *mockRouterStore) FindPipelineRunBySourceActivityID(_ context.Context, _, _, _ string) (*pbpipeline.PipelineRun, error) {
 	return nil, nil
 }

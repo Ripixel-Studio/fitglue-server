@@ -94,6 +94,15 @@ func (m *MockPipelineStore) FindPipelineRunByActivityId(ctx context.Context, use
 	return nil, nil
 }
 
+func (m *MockPipelineStore) FindPipelineRunByPendingInputId(ctx context.Context, userID, pendingInputID string) (*pipeline.PipelineRun, error) {
+	for _, run := range m.Runs {
+		if run.PendingInputId != nil && *run.PendingInputId == pendingInputID {
+			return run, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *MockPipelineStore) FindPipelineRunBySourceActivityID(ctx context.Context, userID, pipelineID, sourceActivityID string) (*pipeline.PipelineRun, error) {
 	for _, run := range m.Runs {
 		if run.PipelineId == pipelineID && run.SourceActivityId == sourceActivityID {

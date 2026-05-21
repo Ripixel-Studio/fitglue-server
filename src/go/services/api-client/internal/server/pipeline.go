@@ -30,6 +30,7 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 	r.Get("/users/me/pipeline-runs/{runId}/payload", s.handleGetPipelineRunPayload)
 
 	r.Post("/users/me/pending-inputs/{inputId}/submit", s.handleSubmitInput)
+	r.Post("/users/me/pending-inputs/{inputId}/cancel", s.handleCancelPipeline)
 	r.Post("/users/me/activities/{id}/repost", s.handleRepostActivity)
 }
 
@@ -283,6 +284,27 @@ func (s *APIServer) handleBackfillActivities(w http.ResponseWriter, r *http.Requ
 	}
 
 	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleCancelPipeline(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.CancelPipelineRequest{
+		UserId:         token.UID,
+		PendingInputId: chi.URLParam(r, "inputId"),
+	}
+
+	_, err := s.pipelineSvc.CancelPipeline(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *APIServer) handleRepostActivity(w http.ResponseWriter, r *http.Request) {

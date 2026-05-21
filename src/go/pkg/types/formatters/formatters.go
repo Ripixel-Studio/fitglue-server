@@ -1447,6 +1447,8 @@ func FormatPipelineRunStatus(value pbpipeline.PipelineRunStatus) string {
 		return "Archived"
 	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED:
 		return "Tier Blocked"
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED:
+		return "Cancelled"
 	default:
 		return "Unknown"
 	}
@@ -1481,6 +1483,8 @@ func ParsePipelineRunStatus(input string) pbpipeline.PipelineRunStatus {
 		"pipeline_run_status_tier_blocked": pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
 		"tier_blocked":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
 		"tier blocked":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
+		"pipeline_run_status_cancelled":    pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED,
+		"cancelled":                        pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))

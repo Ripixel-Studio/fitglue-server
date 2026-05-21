@@ -591,6 +591,7 @@ components:
                         - PIPELINE_RUN_STATUS_SKIPPED
                         - PIPELINE_RUN_STATUS_ARCHIVED
                         - PIPELINE_RUN_STATUS_TIER_BLOCKED
+                        - PIPELINE_RUN_STATUS_CANCELLED
                     type: string
                     format: enum
                 createdAt:

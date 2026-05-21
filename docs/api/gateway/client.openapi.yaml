@@ -1002,6 +1002,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/pending-inputs/{inputId}/cancel:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_CancelPipeline
+            parameters:
+                - name: inputId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CancelPipelineGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/pending-inputs/{inputId}/submit:
         post:
             tags:
@@ -1900,6 +1927,11 @@ components:
                     type: integer
                     format: int32
                 comparisonText:
+                    type: string
+        CancelPipelineGatewayRequest:
+            type: object
+            properties:
+                inputId:
                     type: string
         ConfigFieldDependency:
             type: object
@@ -3128,6 +3160,7 @@ components:
                         - PIPELINE_RUN_STATUS_SKIPPED
                         - PIPELINE_RUN_STATUS_ARCHIVED
                         - PIPELINE_RUN_STATUS_TIER_BLOCKED
+                        - PIPELINE_RUN_STATUS_CANCELLED
                     type: string
                     format: enum
                 createdAt:

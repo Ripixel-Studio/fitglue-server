@@ -65,6 +65,10 @@ func (m *mockSplitterStore) FindPipelineRunByActivityId(_ context.Context, _, _ 
 	return nil, nil
 }
 
+func (m *mockSplitterStore) FindPipelineRunByPendingInputId(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
+
 func (m *mockSplitterStore) FindPipelineRunBySourceActivityID(_ context.Context, _, _, _ string) (*pbpipeline.PipelineRun, error) {
 	return nil, nil
 }

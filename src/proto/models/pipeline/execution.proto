@@ -49,7 +49,8 @@ enum PipelineRunStatus {
   PIPELINE_RUN_STATUS_PENDING = 5;      
   PIPELINE_RUN_STATUS_SKIPPED = 6;      
   PIPELINE_RUN_STATUS_ARCHIVED = 7;     
-  PIPELINE_RUN_STATUS_TIER_BLOCKED = 8; 
+  PIPELINE_RUN_STATUS_TIER_BLOCKED = 8;
+  PIPELINE_RUN_STATUS_CANCELLED = 9;
 }
 
 // ExecutionStep is the unified record for a single step in a pipeline run.

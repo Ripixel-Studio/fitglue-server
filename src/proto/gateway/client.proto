@@ -256,6 +256,12 @@ service ClientGatewayService {
       body: "*"
     };
   }
+  rpc CancelPipeline(CancelPipelineGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/pending-inputs/{input_id}/cancel"
+      body: "*"
+    };
+  }
   rpc RepostActivity(RepostActivityGatewayRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/users/me/activities/{id}/repost"
@@ -635,6 +641,9 @@ message BackfillActivitiesGatewayResponse {
 message SubmitInputGatewayRequest {
   string input_id = 1;
   map<string, string> input_data = 2;
+}
+message CancelPipelineGatewayRequest {
+  string input_id = 1;
 }
 message RepostActivityGatewayRequest {
   string id = 1; // activity_id from path

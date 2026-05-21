@@ -57,6 +57,12 @@ service PipelineService {
       body: "*"
     };
   }
+  rpc CancelPipeline(CancelPipelineRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/pending-inputs/{pending_input_id}/cancel"
+      body: "*"
+    };
+  }
   
   rpc RepostActivity(RepostActivityRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -153,6 +159,11 @@ message ListPendingInputsResponse {
 }
 
 message ResolvePendingInputRequest {
+  string user_id = 1;
+  string pending_input_id = 2;
+}
+
+message CancelPipelineRequest {
   string user_id = 1;
   string pending_input_id = 2;
 }
