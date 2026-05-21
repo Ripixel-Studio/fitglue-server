@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.15.0](https://github.com/FitGlue/server/compare/v16.14.0...v16.15.0) (2026-05-21)
+
+
+### Features
+
+* **pipeline:** add cancel pipeline RPC for pending-input runs ([9d44c4f](https://github.com/FitGlue/server/commit/9d44c4f13cca3a028fdcf012fccffedb27c6e86b))
+
 ## [16.14.0](https://github.com/FitGlue/server/compare/v16.13.0...v16.14.0) (2026-05-21)
 
 
