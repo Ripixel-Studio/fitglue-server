@@ -230,8 +230,9 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	// Delegate profile entry + stats management to the activity service.
 	// AddShowcaseEntry handles: GCS hydration, profile entry creation, and stats aggregation.
 	if _, err := u.activityClient.AddShowcaseEntry(ctx, &activitypb.AddShowcaseEntryRequest{
-		UserId:     payload.UserId,
-		ShowcaseId: showcaseID,
+		UserId:            payload.UserId,
+		ShowcaseId:        showcaseID,
+		RouteThumbnailUrl: payload.Metadata["asset_route_thumbnail"],
 		// destination_count is not available from ActivityPayload (no Destinations field);
 		// the Update path will set it correctly from the pipeline run.
 	}); err != nil {
@@ -336,9 +337,10 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		destCount = int32(len(pipelineRun.Destinations))
 	}
 	if _, err := u.activityClient.AddShowcaseEntry(ctx, &activitypb.AddShowcaseEntryRequest{
-		UserId:           payload.UserId,
-		ShowcaseId:       showcaseID,
-		DestinationCount: destCount,
+		UserId:            payload.UserId,
+		ShowcaseId:        showcaseID,
+		DestinationCount:  destCount,
+		RouteThumbnailUrl: payload.Metadata["asset_route_thumbnail"],
 	}); err != nil {
 		logger.Warn("Failed to update showcase profile entry via activity service", "error", err,
 			"showcase_id", showcaseID, "user_id", payload.UserId)

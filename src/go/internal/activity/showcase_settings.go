@@ -270,14 +270,14 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 
 	// Build the entry from showcase metadata
 	newEntry := &pbactivity.ShowcaseProfileEntry{
-		ShowcaseId:       req.ShowcaseId,
-		Title:            showcase.Title,
-		ActivityType:     showcase.ActivityType,
-		Source:           showcase.Source,
-		StartTime:        showcase.StartTime,
-		BoosterCount:     int32(len(showcase.AppliedEnrichments)),
-		DestinationCount: req.DestinationCount,
-		// RouteThumbnailUrl populated by route_thumbnail enricher write on activity sync
+		ShowcaseId:        req.ShowcaseId,
+		Title:             showcase.Title,
+		ActivityType:      showcase.ActivityType,
+		Source:            showcase.Source,
+		StartTime:         showcase.StartTime,
+		BoosterCount:      int32(len(showcase.AppliedEnrichments)),
+		DestinationCount:  req.DestinationCount,
+		RouteThumbnailUrl: req.RouteThumbnailUrl,
 	}
 
 	// Populate metrics from ActivityData if available
@@ -560,6 +560,11 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 		profile.TopPrs = topPRs
 	}
 
+	// Lazily backfill streak history for profiles that pre-date the feature.
+	if profile.StreakHistory == nil && req.Page == 1 {
+		go s.recomputeAndSaveProfileStats(context.Background(), profile.UserId)
+	}
+
 	return &pbsvc.GetPublicShowcaseProfileResponse{
 		Profile:     profile,
 		TotalPages:  totalPages,
@@ -592,6 +597,15 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 	profile.TotalWeightKg = 0
 	profile.LatestActivityAt = nil
 
+	// 52-week heatmap: find start of current ISO week (Monday)
+	now := time.Now().UTC()
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+	currentWeekStart := time.Date(now.Year(), now.Month(), now.Day()-weekday+1, 0, 0, 0, 0, time.UTC)
+	weeklyActive := make([]bool, 52)
+
 	for _, e := range entries {
 		profile.TotalDistanceMeters += e.DistanceMeters
 		profile.TotalDurationSeconds += e.DurationSeconds
@@ -601,6 +615,31 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 		if e.StartTime != nil && (profile.LatestActivityAt == nil || e.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
 			profile.LatestActivityAt = e.StartTime
 		}
+		// Mark the week slot active in the heatmap
+		if e.StartTime != nil {
+			t := e.StartTime.AsTime().UTC()
+			wd := int(t.Weekday())
+			if wd == 0 {
+				wd = 7
+			}
+			entryWeekStart := time.Date(t.Year(), t.Month(), t.Day()-wd+1, 0, 0, 0, 0, time.UTC)
+			weeksAgo := int(currentWeekStart.Sub(entryWeekStart).Hours() / (24 * 7))
+			if weeksAgo >= 0 && weeksAgo < 52 {
+				weeklyActive[51-weeksAgo] = true
+			}
+		}
+	}
+
+	var missedWeeks int32
+	for _, a := range weeklyActive {
+		if !a {
+			missedWeeks++
+		}
+	}
+	profile.StreakHistory = &pbactivity.WeeklyStreakHistory{
+		WeeksTracked: 52,
+		MissedWeeks:  missedWeeks,
+		WeeklyActive: weeklyActive,
 	}
 
 	if _, err := s.store.UpdateShowcasePreferences(ctx, userID, profile); err != nil {
