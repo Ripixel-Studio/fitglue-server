@@ -179,6 +179,9 @@ func (m *adminNopPipelineClient) ResolvePendingInput(_ context.Context, _ *pipel
 func (m *adminNopPipelineClient) CancelPipeline(_ context.Context, _ *pipelinepb.CancelPipelineRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
+func (m *adminNopPipelineClient) CancelPipelineRun(_ context.Context, _ *pipelinepb.CancelPipelineRunRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
 func (m *adminNopPipelineClient) RepostActivity(_ context.Context, _ *pipelinepb.RepostActivityRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }

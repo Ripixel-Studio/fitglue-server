@@ -350,6 +350,43 @@ func (s *Service) CancelPipeline(ctx context.Context, req *pbsvc.CancelPipelineR
 	return &emptypb.Empty{}, nil
 }
 
+func (s *Service) CancelPipelineRun(ctx context.Context, req *pbsvc.CancelPipelineRunRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.RunId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and run_id are required")
+	}
+
+	run, err := s.store.GetPipelineRun(ctx, req.UserId, req.RunId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get pipeline run")
+	}
+	if run == nil {
+		return nil, status.Error(codes.NotFound, "pipeline run not found")
+	}
+	if run.Status != pipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING &&
+		run.Status != pipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
+		return nil, status.Error(codes.FailedPrecondition, "pipeline run is not in a cancellable state")
+	}
+
+	updateData := map[string]interface{}{
+		"status": int32(pipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED),
+	}
+	if err := s.store.UpdatePipelineRun(ctx, req.UserId, run.Id, updateData); err != nil {
+		s.logger.Error(ctx, "failed to cancel pipeline run", "error", err, "runId", run.Id)
+		return nil, status.Error(codes.Internal, "failed to cancel pipeline run")
+	}
+
+	// Best-effort: also complete any linked pending input so the UI cleans up
+	if pendingID := run.GetPendingInputId(); pendingID != "" {
+		input, fetchErr := s.store.GetPendingInput(ctx, req.UserId, pendingID)
+		if fetchErr == nil && input != nil && input.Status == pipeline.PendingInput_STATUS_WAITING {
+			input.Status = pipeline.PendingInput_STATUS_COMPLETED
+			_ = s.store.UpdatePendingInput(ctx, req.UserId, input)
+		}
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityRequest) (*emptypb.Empty, error) {
 	if req.UserId == "" || req.ActivityId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")

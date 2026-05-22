@@ -10,6 +10,7 @@ import (
 	"time"
 
 	ical "github.com/arran4/golang-ical"
+	"github.com/teambition/rrule-go"
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -22,6 +23,9 @@ import (
 const (
 	defaultMinOverlapSeconds = 60
 	fetchTimeout             = 10 * time.Second
+	// rruleSearchBuffer is how far either side of the activity we expand recurring events.
+	// 24 h catches any event that started before or ends after the activity on the same day.
+	rruleSearchBuffer = 24 * time.Hour
 )
 
 type ICalTitle struct {
@@ -136,9 +140,12 @@ func fetchCalendar(ctx context.Context, client *http.Client, url string) (*ical.
 // overlappingEvents returns the summaries of VEVENT entries whose time range
 // overlaps [actStart, actEnd] by at least minOverlapSeconds.
 // All-day events (DATE-only) are excluded.
+// Recurring events (RRULE) are expanded to find the specific occurrence on the activity date.
 func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverlapSeconds int) []string {
 	var matches []string
 	minOverlap := time.Duration(minOverlapSeconds) * time.Second
+	searchStart := actStart.Add(-rruleSearchBuffer)
+	searchEnd := actEnd.Add(rruleSearchBuffer)
 
 	for _, component := range cal.Components {
 		event, ok := component.(*ical.VEvent)
@@ -147,12 +154,7 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 		}
 
 		dtstart := event.GetProperty(ical.ComponentPropertyDtStart)
-		if dtstart == nil {
-			continue
-		}
-
-		// Skip all-day events (VALUE=DATE, no time component)
-		if isDateOnly(dtstart) {
+		if dtstart == nil || isDateOnly(dtstart) {
 			continue
 		}
 
@@ -166,17 +168,44 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 				evEnd = t
 			}
 		}
-
-		overlap := overlapDuration(actStart, actEnd, evStart, evEnd)
-		if overlap < minOverlap {
-			continue
-		}
+		duration := evEnd.Sub(evStart)
 
 		summary := event.GetProperty(ical.ComponentPropertySummary)
 		if summary == nil || strings.TrimSpace(summary.Value) == "" {
 			continue
 		}
-		matches = append(matches, strings.TrimSpace(summary.Value))
+		title := strings.TrimSpace(summary.Value)
+
+		rruleProp := event.GetProperty(ical.ComponentPropertyRrule)
+		if rruleProp == nil {
+			// Non-recurring: check overlap directly.
+			if overlapDuration(actStart, actEnd, evStart, evEnd) >= minOverlap {
+				matches = append(matches, title)
+			}
+			continue
+		}
+
+		// Recurring event: expand occurrences within the search window and check each one.
+		option, err := rrule.StrToROption(rruleProp.Value)
+		if err != nil {
+			// Unparseable RRULE — fall back to checking the base occurrence.
+			if overlapDuration(actStart, actEnd, evStart, evEnd) >= minOverlap {
+				matches = append(matches, title)
+			}
+			continue
+		}
+		option.Dtstart = evStart
+		r, err := rrule.NewRRule(*option)
+		if err != nil {
+			continue
+		}
+		for _, occ := range r.Between(searchStart, searchEnd, true) {
+			occEnd := occ.Add(duration)
+			if overlapDuration(actStart, actEnd, occ, occEnd) >= minOverlap {
+				matches = append(matches, title)
+				break
+			}
+		}
 	}
 	return matches
 }
@@ -212,9 +241,10 @@ func isDateOnly(prop *ical.IANAProperty) bool {
 }
 
 // parseEventTime parses a DTSTART/DTEND property, correctly applying the TZID
-// parameter when present. Without this, the golang-ical library silently ignores
-// TZID and treats local times as UTC, causing incorrect overlap calculations for
-// events created in non-UTC timezones.
+// parameter when present. The returned time preserves the original Location so
+// that rrule-go can handle DST transitions correctly when expanding recurring
+// events — without this, a weekly event at "6:30 AM London" would be generated
+// at the wrong UTC offset once clocks change.
 func parseEventTime(prop *ical.IANAProperty) (time.Time, error) {
 	value := strings.TrimSpace(prop.Value)
 
@@ -226,7 +256,7 @@ func parseEventTime(prop *ical.IANAProperty) (time.Time, error) {
 			}
 			for _, layout := range []string{"20060102T150405", "20060102T150405Z"} {
 				if t, err := time.ParseInLocation(layout, value, loc); err == nil {
-					return t.UTC(), nil
+					return t, nil // keep original Location; Go time comparisons are TZ-aware
 				}
 			}
 			return time.Time{}, fmt.Errorf("cannot parse %q with TZID %q", value, paramVals[0])

@@ -257,6 +257,39 @@ func TestTZIDMatch(t *testing.T) {
 	}
 }
 
+func TestRRuleExpansion(t *testing.T) {
+	// Recurring weekly Thursday Bootcamp that started in January.
+	// The activity is on May 21, 2026 (Thursday) at 5:31 UTC (= 6:31 BST).
+	// Without RRULE expansion, DTSTART points to January and no overlap is found.
+	icalBody := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//Google Inc//GoogleCalendarV1//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-recurring@example.com\r\n" +
+		"DTSTART;TZID=Europe/London:20260115T063000\r\n" +
+		"DTEND;TZID=Europe/London:20260115T070000\r\n" +
+		"RRULE:FREQ=WEEKLY;BYDAY=TH\r\n" +
+		"SUMMARY:Bootcamp Class\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+
+	srv, client := serveICal(t, icalBody)
+
+	p := NewICalTitle()
+	actStart := time.Date(2026, 5, 21, 5, 31, 0, 0, time.UTC)
+	act := newTestActivity(actStart, 37*60)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Errorf("expected RRULE occurrence to match, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Bootcamp Class" {
+		t.Errorf("expected %q, got %q", "Bootcamp Class", result.Name)
+	}
+}
+
 func TestHTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

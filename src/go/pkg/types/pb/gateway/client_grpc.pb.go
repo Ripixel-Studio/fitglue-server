@@ -63,6 +63,7 @@ const (
 	ClientGatewayService_BackfillActivities_FullMethodName                 = "/fitglue.gateway.ClientGatewayService/BackfillActivities"
 	ClientGatewayService_SubmitInput_FullMethodName                        = "/fitglue.gateway.ClientGatewayService/SubmitInput"
 	ClientGatewayService_CancelPipeline_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/CancelPipeline"
+	ClientGatewayService_CancelPipelineRun_FullMethodName                  = "/fitglue.gateway.ClientGatewayService/CancelPipelineRun"
 	ClientGatewayService_RepostActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/RepostActivity"
 	ClientGatewayService_ListActivities_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ListActivities"
 	ClientGatewayService_GetActivity_FullMethodName                        = "/fitglue.gateway.ClientGatewayService/GetActivity"
@@ -166,6 +167,7 @@ type ClientGatewayServiceClient interface {
 	BackfillActivities(ctx context.Context, in *BackfillActivitiesGatewayRequest, opts ...grpc.CallOption) (*BackfillActivitiesGatewayResponse, error)
 	SubmitInput(ctx context.Context, in *SubmitInputGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	CancelPipeline(ctx context.Context, in *CancelPipelineGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CancelPipelineRun(ctx context.Context, in *CancelPipelineRunGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RepostActivity(ctx context.Context, in *RepostActivityGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// ===================== Activities =====================
 	ListActivities(ctx context.Context, in *ListActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListActivitiesGatewayResponse, error)
@@ -609,6 +611,16 @@ func (c *clientGatewayServiceClient) CancelPipeline(ctx context.Context, in *Can
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, ClientGatewayService_CancelPipeline_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) CancelPipelineRun(ctx context.Context, in *CancelPipelineRunGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ClientGatewayService_CancelPipelineRun_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1067,6 +1079,7 @@ type ClientGatewayServiceServer interface {
 	BackfillActivities(context.Context, *BackfillActivitiesGatewayRequest) (*BackfillActivitiesGatewayResponse, error)
 	SubmitInput(context.Context, *SubmitInputGatewayRequest) (*emptypb.Empty, error)
 	CancelPipeline(context.Context, *CancelPipelineGatewayRequest) (*emptypb.Empty, error)
+	CancelPipelineRun(context.Context, *CancelPipelineRunGatewayRequest) (*emptypb.Empty, error)
 	RepostActivity(context.Context, *RepostActivityGatewayRequest) (*emptypb.Empty, error)
 	// ===================== Activities =====================
 	ListActivities(context.Context, *ListActivitiesGatewayRequest) (*ListActivitiesGatewayResponse, error)
@@ -1242,6 +1255,9 @@ func (UnimplementedClientGatewayServiceServer) SubmitInput(context.Context, *Sub
 }
 func (UnimplementedClientGatewayServiceServer) CancelPipeline(context.Context, *CancelPipelineGatewayRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelPipeline not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) CancelPipelineRun(context.Context, *CancelPipelineRunGatewayRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelPipelineRun not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) RepostActivity(context.Context, *RepostActivityGatewayRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method RepostActivity not implemented")
@@ -2079,6 +2095,24 @@ func _ClientGatewayService_CancelPipeline_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClientGatewayServiceServer).CancelPipeline(ctx, req.(*CancelPipelineGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_CancelPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelPipelineRunGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).CancelPipelineRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_CancelPipelineRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).CancelPipelineRun(ctx, req.(*CancelPipelineRunGatewayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2947,6 +2981,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CancelPipeline",
 			Handler:    _ClientGatewayService_CancelPipeline_Handler,
+		},
+		{
+			MethodName: "CancelPipelineRun",
+			Handler:    _ClientGatewayService_CancelPipelineRun_Handler,
 		},
 		{
 			MethodName: "RepostActivity",

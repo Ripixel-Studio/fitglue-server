@@ -262,6 +262,12 @@ service ClientGatewayService {
       body: "*"
     };
   }
+  rpc CancelPipelineRun(CancelPipelineRunGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/pipeline-runs/{run_id}/cancel"
+      body: "*"
+    };
+  }
   rpc RepostActivity(RepostActivityGatewayRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/users/me/activities/{id}/repost"
@@ -644,6 +650,9 @@ message SubmitInputGatewayRequest {
 }
 message CancelPipelineGatewayRequest {
   string input_id = 1;
+}
+message CancelPipelineRunGatewayRequest {
+  string run_id = 1;
 }
 message RepostActivityGatewayRequest {
   string id = 1; // activity_id from path

@@ -30,6 +30,7 @@ const (
 	PipelineService_ListPendingInputs_FullMethodName     = "/fitglue.services.pipeline.PipelineService/ListPendingInputs"
 	PipelineService_ResolvePendingInput_FullMethodName   = "/fitglue.services.pipeline.PipelineService/ResolvePendingInput"
 	PipelineService_CancelPipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/CancelPipeline"
+	PipelineService_CancelPipelineRun_FullMethodName     = "/fitglue.services.pipeline.PipelineService/CancelPipelineRun"
 	PipelineService_RepostActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/RepostActivity"
 	PipelineService_GetPipelineRun_FullMethodName        = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
 	PipelineService_ListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
@@ -51,6 +52,7 @@ type PipelineServiceClient interface {
 	ListPendingInputs(ctx context.Context, in *ListPendingInputsRequest, opts ...grpc.CallOption) (*ListPendingInputsResponse, error)
 	ResolvePendingInput(ctx context.Context, in *ResolvePendingInputRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	CancelPipeline(ctx context.Context, in *CancelPipelineRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CancelPipelineRun(ctx context.Context, in *CancelPipelineRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RepostActivity(ctx context.Context, in *RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsRequest, opts ...grpc.CallOption) (*ListPipelineRunsResponse, error)
@@ -157,6 +159,16 @@ func (c *pipelineServiceClient) CancelPipeline(ctx context.Context, in *CancelPi
 	return out, nil
 }
 
+func (c *pipelineServiceClient) CancelPipelineRun(ctx context.Context, in *CancelPipelineRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PipelineService_CancelPipelineRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *pipelineServiceClient) RepostActivity(ctx context.Context, in *RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -230,6 +242,7 @@ type PipelineServiceServer interface {
 	ListPendingInputs(context.Context, *ListPendingInputsRequest) (*ListPendingInputsResponse, error)
 	ResolvePendingInput(context.Context, *ResolvePendingInputRequest) (*emptypb.Empty, error)
 	CancelPipeline(context.Context, *CancelPipelineRequest) (*emptypb.Empty, error)
+	CancelPipelineRun(context.Context, *CancelPipelineRunRequest) (*emptypb.Empty, error)
 	RepostActivity(context.Context, *RepostActivityRequest) (*emptypb.Empty, error)
 	GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error)
@@ -272,6 +285,9 @@ func (UnimplementedPipelineServiceServer) ResolvePendingInput(context.Context, *
 }
 func (UnimplementedPipelineServiceServer) CancelPipeline(context.Context, *CancelPipelineRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelPipeline not implemented")
+}
+func (UnimplementedPipelineServiceServer) CancelPipelineRun(context.Context, *CancelPipelineRunRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelPipelineRun not implemented")
 }
 func (UnimplementedPipelineServiceServer) RepostActivity(context.Context, *RepostActivityRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method RepostActivity not implemented")
@@ -474,6 +490,24 @@ func _PipelineService_CancelPipeline_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_CancelPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelPipelineRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).CancelPipelineRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_CancelPipelineRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).CancelPipelineRun(ctx, req.(*CancelPipelineRunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PipelineService_RepostActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RepostActivityRequest)
 	if err := dec(in); err != nil {
@@ -624,6 +658,10 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CancelPipeline",
 			Handler:    _PipelineService_CancelPipeline_Handler,
+		},
+		{
+			MethodName: "CancelPipelineRun",
+			Handler:    _PipelineService_CancelPipelineRun_Handler,
 		},
 		{
 			MethodName: "RepostActivity",

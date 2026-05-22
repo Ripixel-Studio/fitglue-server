@@ -31,6 +31,7 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 
 	r.Post("/users/me/pending-inputs/{inputId}/submit", s.handleSubmitInput)
 	r.Post("/users/me/pending-inputs/{inputId}/cancel", s.handleCancelPipeline)
+	r.Post("/users/me/pipeline-runs/{runId}/cancel", s.handleCancelPipelineRun)
 	r.Post("/users/me/activities/{id}/repost", s.handleRepostActivity)
 }
 
@@ -299,6 +300,27 @@ func (s *APIServer) handleCancelPipeline(w http.ResponseWriter, r *http.Request)
 	}
 
 	_, err := s.pipelineSvc.CancelPipeline(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleCancelPipelineRun(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.CancelPipelineRunRequest{
+		UserId: token.UID,
+		RunId:  chi.URLParam(r, "runId"),
+	}
+
+	_, err := s.pipelineSvc.CancelPipelineRun(r.Context(), req)
 	if err != nil {
 		WriteError(w, err)
 		return

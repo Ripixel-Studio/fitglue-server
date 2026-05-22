@@ -1125,6 +1125,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/pipeline-runs/{runId}/cancel:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_CancelPipelineRun
+            parameters:
+                - name: runId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CancelPipelineRunGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/pipeline-runs/{runId}/payload:
         get:
             tags:
@@ -1932,6 +1959,11 @@ components:
             type: object
             properties:
                 inputId:
+                    type: string
+        CancelPipelineRunGatewayRequest:
+            type: object
+            properties:
+                runId:
                     type: string
         ConfigFieldDependency:
             type: object
