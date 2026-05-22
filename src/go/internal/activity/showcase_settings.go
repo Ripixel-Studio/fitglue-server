@@ -545,27 +545,27 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 	if err != nil {
 		s.logger.Warn(ctx, "failed to fetch personal records for profile", "error", err)
 	} else {
-		// Filter to strength records (unit = "kg") sorted by recency, cap at 6
-		var strengthPRs []*pbactivity.ShowcaseTopPR
+		// Include both weight PRs (kg, higher = better) and time PRs (seconds, lower = better)
+		var topPRs []*pbactivity.ShowcaseTopPR
 		for _, pr := range allPRs {
-			if pr.Unit == "kg" {
-				strengthPRs = append(strengthPRs, pr)
+			if pr.Unit == "kg" || pr.Unit == "seconds" {
+				topPRs = append(topPRs, pr)
 			}
 		}
 		// Sort by achieved_at descending (most recent first)
-		for i := 0; i < len(strengthPRs)-1; i++ {
-			for j := i + 1; j < len(strengthPRs); j++ {
-				ti := strengthPRs[i].AchievedAt.AsTime()
-				tj := strengthPRs[j].AchievedAt.AsTime()
+		for i := 0; i < len(topPRs)-1; i++ {
+			for j := i + 1; j < len(topPRs); j++ {
+				ti := topPRs[i].AchievedAt.AsTime()
+				tj := topPRs[j].AchievedAt.AsTime()
 				if tj.After(ti) {
-					strengthPRs[i], strengthPRs[j] = strengthPRs[j], strengthPRs[i]
+					topPRs[i], topPRs[j] = topPRs[j], topPRs[i]
 				}
 			}
 		}
-		if len(strengthPRs) > 6 {
-			strengthPRs = strengthPRs[:6]
+		if len(topPRs) > 8 {
+			topPRs = topPRs[:8]
 		}
-		profile.TopPrs = strengthPRs
+		profile.TopPrs = topPRs
 	}
 
 	return &pbsvc.GetPublicShowcaseProfileResponse{
