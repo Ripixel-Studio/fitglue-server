@@ -292,13 +292,13 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		Metadata:    resultMetadata,
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Recovery: &pbactivity.RecoverySummary{
-				SessionLoad:            int32(trimp),
-				AcuteChronicRatio:      acwr,
-				HoursToRecover:         int32(recoveryHours),
-				Alert:                  acwr > 1.5 || consecutiveHardDays >= 3,
-				AlertText:              alertText,
-				SevenDayLoad:           int32(totalAcuteLoad),
-				TwentyEightDayAvgLoad:  int32(chronicDailyAvg),
+				SessionLoad:           int32(trimp),
+				AcuteChronicRatio:     acwr,
+				HoursToRecover:        int32(recoveryHours),
+				Alert:                 acwr > 1.5 || consecutiveHardDays >= 3,
+				AlertText:             alertText,
+				SevenDayLoad:          int32(totalAcuteLoad),
+				TwentyEightDayAvgLoad: int32(chronicDailyAvg),
 			},
 		},
 	}, nil
