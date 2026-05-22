@@ -597,15 +597,16 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 	profile.TotalWeightKg = 0
 	profile.LatestActivityAt = nil
 
-	// 52-week heatmap: find start of current ISO week (Monday)
+	// Heatmap: find current ISO week (Monday) and earliest activity week
 	now := time.Now().UTC()
 	weekday := int(now.Weekday())
 	if weekday == 0 {
 		weekday = 7
 	}
 	currentWeekStart := time.Date(now.Year(), now.Month(), now.Day()-weekday+1, 0, 0, 0, 0, time.UTC)
-	weeklyActive := make([]bool, 52)
 
+	// First pass: accumulate stats and find earliest activity
+	var earliestWeekStart *time.Time
 	for _, e := range entries {
 		profile.TotalDistanceMeters += e.DistanceMeters
 		profile.TotalDurationSeconds += e.DurationSeconds
@@ -615,18 +616,44 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 		if e.StartTime != nil && (profile.LatestActivityAt == nil || e.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
 			profile.LatestActivityAt = e.StartTime
 		}
-		// Mark the week slot active in the heatmap
 		if e.StartTime != nil {
 			t := e.StartTime.AsTime().UTC()
 			wd := int(t.Weekday())
 			if wd == 0 {
 				wd = 7
 			}
-			entryWeekStart := time.Date(t.Year(), t.Month(), t.Day()-wd+1, 0, 0, 0, 0, time.UTC)
-			weeksAgo := int(currentWeekStart.Sub(entryWeekStart).Hours() / (24 * 7))
-			if weeksAgo >= 0 && weeksAgo < 52 {
-				weeklyActive[51-weeksAgo] = true
+			ws := time.Date(t.Year(), t.Month(), t.Day()-wd+1, 0, 0, 0, 0, time.UTC)
+			if earliestWeekStart == nil || ws.Before(*earliestWeekStart) {
+				earliestWeekStart = &ws
 			}
+		}
+	}
+
+	// Number of weeks from first activity to now (minimum 1)
+	numWeeks := 1
+	if earliestWeekStart != nil {
+		numWeeks = int(currentWeekStart.Sub(*earliestWeekStart).Hours()/(24*7)) + 1
+		if numWeeks < 1 {
+			numWeeks = 1
+		}
+	}
+
+	weeklyActive := make([]bool, numWeeks)
+
+	// Second pass: mark active weeks
+	for _, e := range entries {
+		if e.StartTime == nil {
+			continue
+		}
+		t := e.StartTime.AsTime().UTC()
+		wd := int(t.Weekday())
+		if wd == 0 {
+			wd = 7
+		}
+		entryWeekStart := time.Date(t.Year(), t.Month(), t.Day()-wd+1, 0, 0, 0, 0, time.UTC)
+		weeksAgo := int(currentWeekStart.Sub(entryWeekStart).Hours() / (24 * 7))
+		if weeksAgo >= 0 && weeksAgo < numWeeks {
+			weeklyActive[numWeeks-1-weeksAgo] = true
 		}
 	}
 
@@ -637,7 +664,7 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 		}
 	}
 	profile.StreakHistory = &pbactivity.WeeklyStreakHistory{
-		WeeksTracked: 52,
+		WeeksTracked: int32(numWeeks),
 		MissedWeeks:  missedWeeks,
 		WeeklyActive: weeklyActive,
 	}
