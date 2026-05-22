@@ -2179,6 +2179,9 @@ components:
                 totalLossM:
                     type: number
                     format: double
+                maxAltitudeM:
+                    type: number
+                    format: double
         EnricherConfig:
             type: object
             properties:
@@ -2931,6 +2934,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/PaceSplit'
+                paceDropPercent:
+                    type: number
+                    format: double
         ParkrunIntegration:
             type: object
             properties:
@@ -3364,6 +3370,9 @@ components:
                 kilojoules:
                     type: integer
                     format: int32
+                maxWatts:
+                    type: integer
+                    format: int32
         Record:
             type: object
             properties:
@@ -3422,6 +3431,12 @@ components:
                     type: boolean
                 alertText:
                     type: string
+                sevenDayLoad:
+                    type: integer
+                    format: int32
+                twentyEightDayAvgLoad:
+                    type: integer
+                    format: int32
         RepostGatewayResponse:
             type: object
             properties:
