@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.19.0](https://github.com/FitGlue/server/compare/v16.18.0...v16.19.0) (2026-05-22)
+
+
+### Features
+
+* **showcase:** compute streak heatmap + wire route thumbnail URL through pipeline ([c953eac](https://github.com/FitGlue/server/commit/c953eac11f18d38e85aebd8e8dbdf707e6805dda))
+
 ## [16.18.0](https://github.com/FitGlue/server/compare/v16.17.1...v16.18.0) (2026-05-22)
 
 
