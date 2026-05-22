@@ -130,7 +130,9 @@ func (p *ElevationSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 		},
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Elevation: &pbactivity.ElevationSummary{
-				TotalGainM: gain,
+				TotalGainM:   gain,
+				TotalLossM:   loss,
+				MaxAltitudeM: maxAltitude,
 			},
 		},
 	}, nil

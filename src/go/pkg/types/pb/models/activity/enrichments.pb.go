@@ -726,14 +726,16 @@ func (x *TrainingLoadSummary) GetHint() string {
 }
 
 type RecoverySummary struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	SessionLoad       int32                  `protobuf:"varint,1,opt,name=session_load,json=sessionLoad,proto3" json:"session_load,omitempty"`                      // TRIMP for this session
-	AcuteChronicRatio float64                `protobuf:"fixed64,2,opt,name=acute_chronic_ratio,json=acuteChronicRatio,proto3" json:"acute_chronic_ratio,omitempty"` // ACWR
-	HoursToRecover    int32                  `protobuf:"varint,3,opt,name=hours_to_recover,json=hoursToRecover,proto3" json:"hours_to_recover,omitempty"`
-	Alert             bool                   `protobuf:"varint,4,opt,name=alert,proto3" json:"alert,omitempty"`                         // true if ACWR is in the danger band (> 1.3)
-	AlertText         string                 `protobuf:"bytes,5,opt,name=alert_text,json=alertText,proto3" json:"alert_text,omitempty"` // e.g. "ACWR 1.42 — load is climbing fast"
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	SessionLoad           int32                  `protobuf:"varint,1,opt,name=session_load,json=sessionLoad,proto3" json:"session_load,omitempty"`                      // TRIMP for this session
+	AcuteChronicRatio     float64                `protobuf:"fixed64,2,opt,name=acute_chronic_ratio,json=acuteChronicRatio,proto3" json:"acute_chronic_ratio,omitempty"` // ACWR
+	HoursToRecover        int32                  `protobuf:"varint,3,opt,name=hours_to_recover,json=hoursToRecover,proto3" json:"hours_to_recover,omitempty"`
+	Alert                 bool                   `protobuf:"varint,4,opt,name=alert,proto3" json:"alert,omitempty"`                                                                    // true if ACWR is in the danger band (> 1.3)
+	AlertText             string                 `protobuf:"bytes,5,opt,name=alert_text,json=alertText,proto3" json:"alert_text,omitempty"`                                            // e.g. "ACWR 1.42 — load is climbing fast"
+	SevenDayLoad          int32                  `protobuf:"varint,6,opt,name=seven_day_load,json=sevenDayLoad,proto3" json:"seven_day_load,omitempty"`                                // total TRIMP over last 7 days (including today)
+	TwentyEightDayAvgLoad int32                  `protobuf:"varint,7,opt,name=twenty_eight_day_avg_load,json=twentyEightDayAvgLoad,proto3" json:"twenty_eight_day_avg_load,omitempty"` // average daily TRIMP over last 28 days
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *RecoverySummary) Reset() {
@@ -799,6 +801,20 @@ func (x *RecoverySummary) GetAlertText() string {
 		return x.AlertText
 	}
 	return ""
+}
+
+func (x *RecoverySummary) GetSevenDayLoad() int32 {
+	if x != nil {
+		return x.SevenDayLoad
+	}
+	return 0
+}
+
+func (x *RecoverySummary) GetTwentyEightDayAvgLoad() int32 {
+	if x != nil {
+		return x.TwentyEightDayAvgLoad
+	}
+	return 0
 }
 
 type StreakSummary struct {
@@ -1038,6 +1054,7 @@ type PaceSummary struct {
 	AvgPaceSecondsPerKm   float64                `protobuf:"fixed64,1,opt,name=avg_pace_seconds_per_km,json=avgPaceSecondsPerKm,proto3" json:"avg_pace_seconds_per_km,omitempty"`
 	BestSplitSecondsPerKm float64                `protobuf:"fixed64,2,opt,name=best_split_seconds_per_km,json=bestSplitSecondsPerKm,proto3" json:"best_split_seconds_per_km,omitempty"`
 	Splits                []*PaceSplit           `protobuf:"bytes,3,rep,name=splits,proto3" json:"splits,omitempty"`
+	PaceDropPercent       float64                `protobuf:"fixed64,4,opt,name=pace_drop_percent,json=paceDropPercent,proto3" json:"pace_drop_percent,omitempty"` // % slowdown from first quarter to last quarter; 0 if not enough splits
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -1091,6 +1108,13 @@ func (x *PaceSummary) GetSplits() []*PaceSplit {
 		return x.Splits
 	}
 	return nil
+}
+
+func (x *PaceSummary) GetPaceDropPercent() float64 {
+	if x != nil {
+		return x.PaceDropPercent
+	}
+	return 0
 }
 
 type PaceSplit struct {
@@ -1201,8 +1225,9 @@ type PowerSummary struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	AvgWatts        int32                  `protobuf:"varint,1,opt,name=avg_watts,json=avgWatts,proto3" json:"avg_watts,omitempty"`
 	NormalizedPower int32                  `protobuf:"varint,2,opt,name=normalized_power,json=normalizedPower,proto3" json:"normalized_power,omitempty"`  // NP
-	IntensityFactor float64                `protobuf:"fixed64,3,opt,name=intensity_factor,json=intensityFactor,proto3" json:"intensity_factor,omitempty"` // IF
+	IntensityFactor float64                `protobuf:"fixed64,3,opt,name=intensity_factor,json=intensityFactor,proto3" json:"intensity_factor,omitempty"` // IF — only set when FTP is configured
 	Kilojoules      int32                  `protobuf:"varint,4,opt,name=kilojoules,proto3" json:"kilojoules,omitempty"`
+	MaxWatts        int32                  `protobuf:"varint,5,opt,name=max_watts,json=maxWatts,proto3" json:"max_watts,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1265,10 +1290,18 @@ func (x *PowerSummary) GetKilojoules() int32 {
 	return 0
 }
 
+func (x *PowerSummary) GetMaxWatts() int32 {
+	if x != nil {
+		return x.MaxWatts
+	}
+	return 0
+}
+
 type ElevationSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TotalGainM    float64                `protobuf:"fixed64,1,opt,name=total_gain_m,json=totalGainM,proto3" json:"total_gain_m,omitempty"`
 	TotalLossM    float64                `protobuf:"fixed64,2,opt,name=total_loss_m,json=totalLossM,proto3" json:"total_loss_m,omitempty"`
+	MaxAltitudeM  float64                `protobuf:"fixed64,3,opt,name=max_altitude_m,json=maxAltitudeM,proto3" json:"max_altitude_m,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1313,6 +1346,13 @@ func (x *ElevationSummary) GetTotalGainM() float64 {
 func (x *ElevationSummary) GetTotalLossM() float64 {
 	if x != nil {
 		return x.TotalLossM
+	}
+	return 0
+}
+
+func (x *ElevationSummary) GetMaxAltitudeM() float64 {
+	if x != nil {
+		return x.MaxAltitudeM
 	}
 	return 0
 }
@@ -2392,14 +2432,16 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\x13TrainingLoadSummary\x12\x14\n" +
 	"\x05trimp\x18\x01 \x01(\x05R\x05trimp\x12\x16\n" +
 	"\x06bucket\x18\x02 \x01(\tR\x06bucket\x12\x12\n" +
-	"\x04hint\x18\x03 \x01(\tR\x04hint\"\xc3\x01\n" +
+	"\x04hint\x18\x03 \x01(\tR\x04hint\"\xa3\x02\n" +
 	"\x0fRecoverySummary\x12!\n" +
 	"\fsession_load\x18\x01 \x01(\x05R\vsessionLoad\x12.\n" +
 	"\x13acute_chronic_ratio\x18\x02 \x01(\x01R\x11acuteChronicRatio\x12(\n" +
 	"\x10hours_to_recover\x18\x03 \x01(\x05R\x0ehoursToRecover\x12\x14\n" +
 	"\x05alert\x18\x04 \x01(\bR\x05alert\x12\x1d\n" +
 	"\n" +
-	"alert_text\x18\x05 \x01(\tR\talertText\"\x95\x01\n" +
+	"alert_text\x18\x05 \x01(\tR\talertText\x12$\n" +
+	"\x0eseven_day_load\x18\x06 \x01(\x05R\fsevenDayLoad\x128\n" +
+	"\x19twenty_eight_day_avg_load\x18\a \x01(\x05R\x15twentyEightDayAvgLoad\"\x95\x01\n" +
 	"\rStreakSummary\x12!\n" +
 	"\fcurrent_days\x18\x01 \x01(\x05R\vcurrentDays\x12!\n" +
 	"\flongest_days\x18\x02 \x01(\x05R\vlongestDays\x12>\n" +
@@ -2415,29 +2457,32 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\timage_url\x18\x01 \x01(\tR\bimageUrl\x12\x1f\n" +
 	"\vprompt_hash\x18\x02 \x01(\tR\n" +
 	"promptHash\x12+\n" +
-	"\x11generator_version\x18\x03 \x01(\tR\x10generatorVersion\"\xb9\x01\n" +
+	"\x11generator_version\x18\x03 \x01(\tR\x10generatorVersion\"\xe5\x01\n" +
 	"\vPaceSummary\x124\n" +
 	"\x17avg_pace_seconds_per_km\x18\x01 \x01(\x01R\x13avgPaceSecondsPerKm\x128\n" +
 	"\x19best_split_seconds_per_km\x18\x02 \x01(\x01R\x15bestSplitSecondsPerKm\x12:\n" +
-	"\x06splits\x18\x03 \x03(\v2\".fitglue.models.activity.PaceSplitR\x06splits\"5\n" +
+	"\x06splits\x18\x03 \x03(\v2\".fitglue.models.activity.PaceSplitR\x06splits\x12*\n" +
+	"\x11pace_drop_percent\x18\x04 \x01(\x01R\x0fpaceDropPercent\"5\n" +
 	"\tPaceSplit\x12\x0e\n" +
 	"\x02km\x18\x01 \x01(\x05R\x02km\x12\x18\n" +
 	"\aseconds\x18\x02 \x01(\x01R\aseconds\"B\n" +
 	"\x0eCadenceSummary\x12\x17\n" +
 	"\aavg_rpm\x18\x01 \x01(\x05R\x06avgRpm\x12\x17\n" +
-	"\amax_rpm\x18\x02 \x01(\x05R\x06maxRpm\"\xa1\x01\n" +
+	"\amax_rpm\x18\x02 \x01(\x05R\x06maxRpm\"\xbe\x01\n" +
 	"\fPowerSummary\x12\x1b\n" +
 	"\tavg_watts\x18\x01 \x01(\x05R\bavgWatts\x12)\n" +
 	"\x10normalized_power\x18\x02 \x01(\x05R\x0fnormalizedPower\x12)\n" +
 	"\x10intensity_factor\x18\x03 \x01(\x01R\x0fintensityFactor\x12\x1e\n" +
 	"\n" +
 	"kilojoules\x18\x04 \x01(\x05R\n" +
-	"kilojoules\"V\n" +
+	"kilojoules\x12\x1b\n" +
+	"\tmax_watts\x18\x05 \x01(\x05R\bmaxWatts\"|\n" +
 	"\x10ElevationSummary\x12 \n" +
 	"\ftotal_gain_m\x18\x01 \x01(\x01R\n" +
 	"totalGainM\x12 \n" +
 	"\ftotal_loss_m\x18\x02 \x01(\x01R\n" +
-	"totalLossM\"V\n" +
+	"totalLossM\x12$\n" +
+	"\x0emax_altitude_m\x18\x03 \x01(\x01R\fmaxAltitudeM\"V\n" +
 	"\fSpeedSummary\x12\"\n" +
 	"\ravg_speed_kmh\x18\x01 \x01(\x01R\vavgSpeedKmh\x12\"\n" +
 	"\rmax_speed_kmh\x18\x02 \x01(\x01R\vmaxSpeedKmh\"\xc8\x01\n" +

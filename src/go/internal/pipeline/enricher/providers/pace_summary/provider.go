@@ -212,6 +212,23 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		}
 	}
 
+	var paceDropPercent float64
+	if len(splits) >= 4 {
+		quarter := len(splits) / 4
+		var firstQ, lastQ float64
+		for i := 0; i < quarter; i++ {
+			firstQ += splits[i].Pace
+		}
+		for i := len(splits) - quarter; i < len(splits); i++ {
+			lastQ += splits[i].Pace
+		}
+		firstQ /= float64(quarter)
+		lastQ /= float64(quarter)
+		if lastQ > firstQ {
+			paceDropPercent = ((lastQ - firstQ) / firstQ) * 100
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		TimeMarkers: timeMarkers,
@@ -221,6 +238,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 				AvgPaceSecondsPerKm:   avgPace * 60,
 				BestSplitSecondsPerKm: bestPace * 60,
 				Splits:                paceSplits,
+				PaceDropPercent:       paceDropPercent,
 			},
 		},
 	}, nil
