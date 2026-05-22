@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.15.1](https://github.com/FitGlue/server/compare/v16.15.0...v16.15.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **pipeline:** write pending_input_id to pipeline run on PENDING transition ([86d00c5](https://github.com/FitGlue/server/commit/86d00c562cbf89ad1172b9cb5d3be983337a413f))
+
 ## [16.15.0](https://github.com/FitGlue/server/compare/v16.14.0...v16.15.0) (2026-05-21)
 
 
