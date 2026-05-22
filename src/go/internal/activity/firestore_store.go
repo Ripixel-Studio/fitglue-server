@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type FirestoreStore struct {
@@ -472,6 +473,55 @@ func (s *FirestoreStore) SetShowcaseProfileEntry(ctx context.Context, userID str
 func (s *FirestoreStore) DeleteShowcaseProfileEntry(ctx context.Context, userID, showcaseID string) error {
 	_, err := s.entryCollectionRef(userID).Doc(showcaseID).Delete(ctx)
 	return err
+}
+
+// firestorePRDoc is a minimal local struct for reading personal_records documents.
+// The user service writes these as proto-JSON, so fields use snake_case JSON keys.
+type firestorePRDoc struct {
+	RecordType    string   `json:"record_type"`
+	Value         float64  `json:"value"`
+	Unit          string   `json:"unit"`
+	AchievedAt    string   `json:"achieved_at,omitempty"`
+	PreviousValue *float64 `json:"previous_value,omitempty"`
+}
+
+func (s *FirestoreStore) ListUserPersonalRecords(ctx context.Context, userID string) ([]*pbactivity.ShowcaseTopPR, error) {
+	iter := s.client.Collection("users").Doc(userID).Collection("personal_records").Documents(ctx)
+	defer iter.Stop()
+
+	var result []*pbactivity.ShowcaseTopPR
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		b, err := json.Marshal(doc.Data())
+		if err != nil {
+			continue
+		}
+		var raw firestorePRDoc
+		if err := json.Unmarshal(b, &raw); err != nil || raw.RecordType == "" {
+			continue
+		}
+
+		pr := &pbactivity.ShowcaseTopPR{
+			RecordType:    raw.RecordType,
+			Value:         raw.Value,
+			Unit:          raw.Unit,
+			PreviousValue: raw.PreviousValue,
+		}
+		if raw.AchievedAt != "" {
+			if t, parseErr := time.Parse(time.RFC3339Nano, raw.AchievedAt); parseErr == nil {
+				pr.AchievedAt = timestamppb.New(t)
+			}
+		}
+		result = append(result, pr)
+	}
+	return result, nil
 }
 
 // Helpers

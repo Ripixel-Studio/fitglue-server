@@ -75,6 +75,9 @@ message ShowcaseProfileEntry {
   optional EntrySparkline sparkline = 14;
   optional int32 avg_heart_rate = 15;
   optional int32 calories_kcal = 16;
+
+  // PR tag displayed on profile activity cards (e.g. "★ DEADLIFT 180KG · +5KG")
+  optional string pr_label = 17;
 }
 
 // EntrySparkline is a downsampled timeseries for card-level sparklines.
@@ -132,6 +135,18 @@ message ShowcaseProfile {
   // Lifetime aggregates — written by a daily rollup job. Optional; absent means not yet computed.
   optional LifetimeZoneSplit zone_split = 23;
   optional WeeklyStreakHistory streak_history = 24;
+
+  // Top strength PRs — populated at request time from users/{userId}/personal_records/
+  repeated ShowcaseTopPR top_prs = 25;
+}
+
+// ShowcaseTopPR is a lightweight personal record for display on the profile medal wall.
+message ShowcaseTopPR {
+  string record_type = 1;                         // e.g. "bench_press_1rm"
+  double value = 2;                               // e.g. 180
+  string unit = 3;                                // "kg", "seconds", "meters"
+  optional google.protobuf.Timestamp achieved_at = 4;
+  optional double previous_value = 5;             // for computing improvement delta
 }
 
 message LifetimeZoneSplit {

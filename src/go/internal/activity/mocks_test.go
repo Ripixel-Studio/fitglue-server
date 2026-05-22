@@ -200,6 +200,10 @@ func (m *MockActivityStore) DeleteShowcaseProfileEntry(ctx context.Context, user
 	return nil
 }
 
+func (m *MockActivityStore) ListUserPersonalRecords(ctx context.Context, userID string) ([]*pbactivity.ShowcaseTopPR, error) {
+	return nil, nil
+}
+
 // MockBlobStore implements BlobStore for testing
 type MockBlobStore struct {
 	GetFunc       func(ctx context.Context, bucket, object string) ([]byte, error)

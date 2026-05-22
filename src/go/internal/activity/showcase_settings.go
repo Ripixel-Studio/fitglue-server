@@ -31,6 +31,36 @@ var _ = time.Minute
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,38}[a-z0-9]$`)
 
+// formatPRLabel builds a short display label from an enrichment PersonalRecord,
+// e.g. "★ BENCH PRESS 1RM 180KG · +5KG".
+func formatPRLabel(r *pbactivity.PersonalRecord) string {
+	label := strings.ToUpper(strings.ReplaceAll(r.RecordType, "_", " "))
+	unit := strings.ToUpper(r.Unit)
+	if unit == "SECONDS" {
+		mins := int(r.NewValue) / 60
+		secs := int(r.NewValue) % 60
+		val := fmt.Sprintf("%d:%02d", mins, secs)
+		result := fmt.Sprintf("★ %s %s", label, val)
+		if r.PreviousValue != nil && *r.PreviousValue > r.NewValue {
+			delta := *r.PreviousValue - r.NewValue
+			dm := int(delta) / 60
+			ds := int(delta) % 60
+			if dm > 0 {
+				result += fmt.Sprintf(" · −%d:%02d", dm, ds)
+			} else {
+				result += fmt.Sprintf(" · −%ds", ds)
+			}
+		}
+		return result
+	}
+	result := fmt.Sprintf("★ %s %.0f%s", label, r.NewValue, unit)
+	if r.PreviousValue != nil && r.NewValue > *r.PreviousValue {
+		delta := r.NewValue - *r.PreviousValue
+		result += fmt.Sprintf(" · +%.0f%s", delta, unit)
+	}
+	return result
+}
+
 // GetShowcaseSettings returns the user's showcase profile settings along with their showcased activities.
 func (s *Service) GetShowcaseSettings(ctx context.Context, req *pbsvc.GetShowcaseSettingsRequest) (*pbsvc.GetShowcaseSettingsResponse, error) {
 	if req.UserId == "" {
@@ -297,6 +327,12 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		}
 	}
 
+	// PR label for profile activity cards (strength activities only)
+	if hydratedEnrichments != nil && hydratedEnrichments.PersonalRecords != nil && len(hydratedEnrichments.PersonalRecords.Records) > 0 {
+		label := formatPRLabel(hydratedEnrichments.PersonalRecords.Records[0])
+		newEntry.PrLabel = &label
+	}
+
 	// Write entry to sub-collection (idempotent via MergeAll)
 	if err := s.store.SetShowcaseProfileEntry(ctx, req.UserId, newEntry); err != nil {
 		s.logger.Error(ctx, "failed to set showcase profile entry", "error", err)
@@ -502,6 +538,34 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 		} else {
 			profile.DisplayName = "FitGlue Athlete"
 		}
+	}
+
+	// Fetch personal records for the medal wall — non-fatal if unavailable
+	allPRs, err := s.store.ListUserPersonalRecords(ctx, profile.UserId)
+	if err != nil {
+		s.logger.Warn(ctx, "failed to fetch personal records for profile", "error", err)
+	} else {
+		// Filter to strength records (unit = "kg") sorted by recency, cap at 6
+		var strengthPRs []*pbactivity.ShowcaseTopPR
+		for _, pr := range allPRs {
+			if pr.Unit == "kg" {
+				strengthPRs = append(strengthPRs, pr)
+			}
+		}
+		// Sort by achieved_at descending (most recent first)
+		for i := 0; i < len(strengthPRs)-1; i++ {
+			for j := i + 1; j < len(strengthPRs); j++ {
+				ti := strengthPRs[i].AchievedAt.AsTime()
+				tj := strengthPRs[j].AchievedAt.AsTime()
+				if tj.After(ti) {
+					strengthPRs[i], strengthPRs[j] = strengthPRs[j], strengthPRs[i]
+				}
+			}
+		}
+		if len(strengthPRs) > 6 {
+			strengthPRs = strengthPRs[:6]
+		}
+		profile.TopPrs = strengthPRs
 	}
 
 	return &pbsvc.GetPublicShowcaseProfileResponse{

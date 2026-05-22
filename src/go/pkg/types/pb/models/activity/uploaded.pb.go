@@ -347,8 +347,10 @@ type ShowcaseProfileEntry struct {
 	Sparkline        *EntrySparkline `protobuf:"bytes,14,opt,name=sparkline,proto3,oneof" json:"sparkline,omitempty"`
 	AvgHeartRate     *int32          `protobuf:"varint,15,opt,name=avg_heart_rate,json=avgHeartRate,proto3,oneof" json:"avg_heart_rate,omitempty"`
 	CaloriesKcal     *int32          `protobuf:"varint,16,opt,name=calories_kcal,json=caloriesKcal,proto3,oneof" json:"calories_kcal,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// PR tag displayed on profile activity cards (e.g. "★ DEADLIFT 180KG · +5KG")
+	PrLabel       *string `protobuf:"bytes,17,opt,name=pr_label,json=prLabel,proto3,oneof" json:"pr_label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShowcaseProfileEntry) Reset() {
@@ -491,6 +493,13 @@ func (x *ShowcaseProfileEntry) GetCaloriesKcal() int32 {
 		return *x.CaloriesKcal
 	}
 	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetPrLabel() string {
+	if x != nil && x.PrLabel != nil {
+		return *x.PrLabel
+	}
+	return ""
 }
 
 // EntrySparkline is a downsampled timeseries for card-level sparklines.
@@ -737,6 +746,8 @@ type ShowcaseProfile struct {
 	// Lifetime aggregates — written by a daily rollup job. Optional; absent means not yet computed.
 	ZoneSplit     *LifetimeZoneSplit   `protobuf:"bytes,23,opt,name=zone_split,json=zoneSplit,proto3,oneof" json:"zone_split,omitempty"`
 	StreakHistory *WeeklyStreakHistory `protobuf:"bytes,24,opt,name=streak_history,json=streakHistory,proto3,oneof" json:"streak_history,omitempty"`
+	// Top strength PRs — populated at request time from users/{userId}/personal_records/
+	TopPrs        []*ShowcaseTopPR `protobuf:"bytes,25,rep,name=top_prs,json=topPrs,proto3" json:"top_prs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -939,6 +950,90 @@ func (x *ShowcaseProfile) GetStreakHistory() *WeeklyStreakHistory {
 	return nil
 }
 
+func (x *ShowcaseProfile) GetTopPrs() []*ShowcaseTopPR {
+	if x != nil {
+		return x.TopPrs
+	}
+	return nil
+}
+
+// ShowcaseTopPR is a lightweight personal record for display on the profile medal wall.
+type ShowcaseTopPR struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RecordType    string                 `protobuf:"bytes,1,opt,name=record_type,json=recordType,proto3" json:"record_type,omitempty"` // e.g. "bench_press_1rm"
+	Value         float64                `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"`                           // e.g. 180
+	Unit          string                 `protobuf:"bytes,3,opt,name=unit,proto3" json:"unit,omitempty"`                               // "kg", "seconds", "meters"
+	AchievedAt    *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=achieved_at,json=achievedAt,proto3,oneof" json:"achieved_at,omitempty"`
+	PreviousValue *float64               `protobuf:"fixed64,5,opt,name=previous_value,json=previousValue,proto3,oneof" json:"previous_value,omitempty"` // for computing improvement delta
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseTopPR) Reset() {
+	*x = ShowcaseTopPR{}
+	mi := &file_models_activity_uploaded_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseTopPR) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseTopPR) ProtoMessage() {}
+
+func (x *ShowcaseTopPR) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_uploaded_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseTopPR.ProtoReflect.Descriptor instead.
+func (*ShowcaseTopPR) Descriptor() ([]byte, []int) {
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ShowcaseTopPR) GetRecordType() string {
+	if x != nil {
+		return x.RecordType
+	}
+	return ""
+}
+
+func (x *ShowcaseTopPR) GetValue() float64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+func (x *ShowcaseTopPR) GetUnit() string {
+	if x != nil {
+		return x.Unit
+	}
+	return ""
+}
+
+func (x *ShowcaseTopPR) GetAchievedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AchievedAt
+	}
+	return nil
+}
+
+func (x *ShowcaseTopPR) GetPreviousValue() float64 {
+	if x != nil && x.PreviousValue != nil {
+		return *x.PreviousValue
+	}
+	return 0
+}
+
 type LifetimeZoneSplit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Zones         []*HeartRateZoneBucket `protobuf:"bytes,1,rep,name=zones,proto3" json:"zones,omitempty"` // re-uses HeartRateZoneBucket from enrichments.proto
@@ -950,7 +1045,7 @@ type LifetimeZoneSplit struct {
 
 func (x *LifetimeZoneSplit) Reset() {
 	*x = LifetimeZoneSplit{}
-	mi := &file_models_activity_uploaded_proto_msgTypes[8]
+	mi := &file_models_activity_uploaded_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -962,7 +1057,7 @@ func (x *LifetimeZoneSplit) String() string {
 func (*LifetimeZoneSplit) ProtoMessage() {}
 
 func (x *LifetimeZoneSplit) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_uploaded_proto_msgTypes[8]
+	mi := &file_models_activity_uploaded_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -975,7 +1070,7 @@ func (x *LifetimeZoneSplit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LifetimeZoneSplit.ProtoReflect.Descriptor instead.
 func (*LifetimeZoneSplit) Descriptor() ([]byte, []int) {
-	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{8}
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *LifetimeZoneSplit) GetZones() []*HeartRateZoneBucket {
@@ -1010,7 +1105,7 @@ type WeeklyStreakHistory struct {
 
 func (x *WeeklyStreakHistory) Reset() {
 	*x = WeeklyStreakHistory{}
-	mi := &file_models_activity_uploaded_proto_msgTypes[9]
+	mi := &file_models_activity_uploaded_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1022,7 +1117,7 @@ func (x *WeeklyStreakHistory) String() string {
 func (*WeeklyStreakHistory) ProtoMessage() {}
 
 func (x *WeeklyStreakHistory) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_uploaded_proto_msgTypes[9]
+	mi := &file_models_activity_uploaded_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1035,7 +1130,7 @@ func (x *WeeklyStreakHistory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WeeklyStreakHistory.ProtoReflect.Descriptor instead.
 func (*WeeklyStreakHistory) Descriptor() ([]byte, []int) {
-	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{9}
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *WeeklyStreakHistory) GetWeeksTracked() int32 {
@@ -1106,7 +1201,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"photo_urls\x18\x15 \x03(\tR\tphotoUrls\x12N\n" +
 	"\venrichments\x18\x16 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichmentsB\x18\n" +
-	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\xa5\x06\n" +
+	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\xd2\x06\n" +
 	"\x14ShowcaseProfileEntry\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x14\n" +
@@ -1128,11 +1223,13 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x11destination_count\x18\r \x01(\x05R\x10destinationCount\x12J\n" +
 	"\tsparkline\x18\x0e \x01(\v2'.fitglue.models.activity.EntrySparklineH\x00R\tsparkline\x88\x01\x01\x12)\n" +
 	"\x0eavg_heart_rate\x18\x0f \x01(\x05H\x01R\favgHeartRate\x88\x01\x01\x12(\n" +
-	"\rcalories_kcal\x18\x10 \x01(\x05H\x02R\fcaloriesKcal\x88\x01\x01B\f\n" +
+	"\rcalories_kcal\x18\x10 \x01(\x05H\x02R\fcaloriesKcal\x88\x01\x01\x12\x1e\n" +
+	"\bpr_label\x18\x11 \x01(\tH\x03R\aprLabel\x88\x01\x01B\f\n" +
 	"\n" +
 	"_sparklineB\x11\n" +
 	"\x0f_avg_heart_rateB\x10\n" +
-	"\x0e_calories_kcal\"@\n" +
+	"\x0e_calories_kcalB\v\n" +
+	"\t_pr_label\"@\n" +
 	"\x0eEntrySparkline\x12\x16\n" +
 	"\x06metric\x18\x01 \x01(\tR\x06metric\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\x01R\x06values\"\x9c\x01\n" +
@@ -1146,7 +1243,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x05label\x18\x01 \x01(\tR\x05label\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\"(\n" +
 	"\x12ShowcaseBioCallout\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\xcc\t\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"\x8d\n" +
+	"\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -1177,9 +1275,20 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\bcallouts\x18\x16 \x03(\v2+.fitglue.models.activity.ShowcaseBioCalloutR\bcallouts\x12N\n" +
 	"\n" +
 	"zone_split\x18\x17 \x01(\v2*.fitglue.models.activity.LifetimeZoneSplitH\x00R\tzoneSplit\x88\x01\x01\x12X\n" +
-	"\x0estreak_history\x18\x18 \x01(\v2,.fitglue.models.activity.WeeklyStreakHistoryH\x01R\rstreakHistory\x88\x01\x01B\r\n" +
+	"\x0estreak_history\x18\x18 \x01(\v2,.fitglue.models.activity.WeeklyStreakHistoryH\x01R\rstreakHistory\x88\x01\x01\x12?\n" +
+	"\atop_prs\x18\x19 \x03(\v2&.fitglue.models.activity.ShowcaseTopPRR\x06topPrsB\r\n" +
 	"\v_zone_splitB\x11\n" +
-	"\x0f_streak_history\"\xaa\x01\n" +
+	"\x0f_streak_history\"\xeb\x01\n" +
+	"\rShowcaseTopPR\x12\x1f\n" +
+	"\vrecord_type\x18\x01 \x01(\tR\n" +
+	"recordType\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value\x12\x12\n" +
+	"\x04unit\x18\x03 \x01(\tR\x04unit\x12@\n" +
+	"\vachieved_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\n" +
+	"achievedAt\x88\x01\x01\x12*\n" +
+	"\x0eprevious_value\x18\x05 \x01(\x01H\x01R\rpreviousValue\x88\x01\x01B\x0e\n" +
+	"\f_achieved_atB\x11\n" +
+	"\x0f_previous_value\"\xaa\x01\n" +
 	"\x11LifetimeZoneSplit\x12B\n" +
 	"\x05zones\x18\x01 \x03(\v2,.fitglue.models.activity.HeartRateZoneBucketR\x05zones\x12;\n" +
 	"\vcomputed_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -1202,7 +1311,7 @@ func file_models_activity_uploaded_proto_rawDescGZIP() []byte {
 	return file_models_activity_uploaded_proto_rawDescData
 }
 
-var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_models_activity_uploaded_proto_goTypes = []any{
 	(*UploadedActivityRecord)(nil), // 0: fitglue.models.activity.UploadedActivityRecord
 	(*ShowcasedActivity)(nil),      // 1: fitglue.models.activity.ShowcasedActivity
@@ -1212,48 +1321,51 @@ var file_models_activity_uploaded_proto_goTypes = []any{
 	(*ShowcaseLink)(nil),           // 5: fitglue.models.activity.ShowcaseLink
 	(*ShowcaseBioCallout)(nil),     // 6: fitglue.models.activity.ShowcaseBioCallout
 	(*ShowcaseProfile)(nil),        // 7: fitglue.models.activity.ShowcaseProfile
-	(*LifetimeZoneSplit)(nil),      // 8: fitglue.models.activity.LifetimeZoneSplit
-	(*WeeklyStreakHistory)(nil),    // 9: fitglue.models.activity.WeeklyStreakHistory
-	(ActivitySource)(0),            // 10: fitglue.models.activity.ActivitySource
-	(*timestamppb.Timestamp)(nil),  // 11: google.protobuf.Timestamp
-	(plugin.DestinationType)(0),    // 12: fitglue.models.plugin.DestinationType
-	(ActivityType)(0),              // 13: fitglue.models.activity.ActivityType
-	(*StandardizedActivity)(nil),   // 14: fitglue.models.activity.StandardizedActivity
-	(*ActivityEnrichments)(nil),    // 15: fitglue.models.activity.ActivityEnrichments
-	(*HeartRateZoneBucket)(nil),    // 16: fitglue.models.activity.HeartRateZoneBucket
+	(*ShowcaseTopPR)(nil),          // 8: fitglue.models.activity.ShowcaseTopPR
+	(*LifetimeZoneSplit)(nil),      // 9: fitglue.models.activity.LifetimeZoneSplit
+	(*WeeklyStreakHistory)(nil),    // 10: fitglue.models.activity.WeeklyStreakHistory
+	(ActivitySource)(0),            // 11: fitglue.models.activity.ActivitySource
+	(*timestamppb.Timestamp)(nil),  // 12: google.protobuf.Timestamp
+	(plugin.DestinationType)(0),    // 13: fitglue.models.plugin.DestinationType
+	(ActivityType)(0),              // 14: fitglue.models.activity.ActivityType
+	(*StandardizedActivity)(nil),   // 15: fitglue.models.activity.StandardizedActivity
+	(*ActivityEnrichments)(nil),    // 16: fitglue.models.activity.ActivityEnrichments
+	(*HeartRateZoneBucket)(nil),    // 17: fitglue.models.activity.HeartRateZoneBucket
 }
 var file_models_activity_uploaded_proto_depIdxs = []int32{
-	10, // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
-	11, // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
-	12, // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
-	11, // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
-	13, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
-	10, // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
-	11, // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	14, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
-	11, // 8: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	11, // 9: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	15, // 10: fitglue.models.activity.ShowcasedActivity.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
-	13, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
-	10, // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
-	11, // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
+	11, // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
+	12, // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
+	13, // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
+	12, // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
+	14, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
+	11, // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
+	12, // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	15, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
+	12, // 8: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	12, // 9: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	16, // 10: fitglue.models.activity.ShowcasedActivity.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
+	14, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
+	11, // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
+	12, // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
 	3,  // 14: fitglue.models.activity.ShowcaseProfileEntry.sparkline:type_name -> fitglue.models.activity.EntrySparkline
 	2,  // 15: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	11, // 16: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
-	11, // 17: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
-	11, // 18: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 16: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
+	12, // 17: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
+	12, // 18: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
 	4,  // 19: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
 	5,  // 20: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
 	6,  // 21: fitglue.models.activity.ShowcaseProfile.callouts:type_name -> fitglue.models.activity.ShowcaseBioCallout
-	8,  // 22: fitglue.models.activity.ShowcaseProfile.zone_split:type_name -> fitglue.models.activity.LifetimeZoneSplit
-	9,  // 23: fitglue.models.activity.ShowcaseProfile.streak_history:type_name -> fitglue.models.activity.WeeklyStreakHistory
-	16, // 24: fitglue.models.activity.LifetimeZoneSplit.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
-	11, // 25: fitglue.models.activity.LifetimeZoneSplit.computed_at:type_name -> google.protobuf.Timestamp
-	26, // [26:26] is the sub-list for method output_type
-	26, // [26:26] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	9,  // 22: fitglue.models.activity.ShowcaseProfile.zone_split:type_name -> fitglue.models.activity.LifetimeZoneSplit
+	10, // 23: fitglue.models.activity.ShowcaseProfile.streak_history:type_name -> fitglue.models.activity.WeeklyStreakHistory
+	8,  // 24: fitglue.models.activity.ShowcaseProfile.top_prs:type_name -> fitglue.models.activity.ShowcaseTopPR
+	12, // 25: fitglue.models.activity.ShowcaseTopPR.achieved_at:type_name -> google.protobuf.Timestamp
+	17, // 26: fitglue.models.activity.LifetimeZoneSplit.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
+	12, // 27: fitglue.models.activity.LifetimeZoneSplit.computed_at:type_name -> google.protobuf.Timestamp
+	28, // [28:28] is the sub-list for method output_type
+	28, // [28:28] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_uploaded_proto_init() }
@@ -1267,13 +1379,14 @@ func file_models_activity_uploaded_proto_init() {
 	file_models_activity_uploaded_proto_msgTypes[1].OneofWrappers = []any{}
 	file_models_activity_uploaded_proto_msgTypes[2].OneofWrappers = []any{}
 	file_models_activity_uploaded_proto_msgTypes[7].OneofWrappers = []any{}
+	file_models_activity_uploaded_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_uploaded_proto_rawDesc), len(file_models_activity_uploaded_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

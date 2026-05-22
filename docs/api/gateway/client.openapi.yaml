@@ -3609,6 +3609,11 @@ components:
                     description: Lifetime aggregates — written by a daily rollup job. Optional; absent means not yet computed.
                 streakHistory:
                     $ref: '#/components/schemas/WeeklyStreakHistory'
+                topPrs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseTopPR'
+                    description: Top strength PRs — populated at request time from users/{userId}/personal_records/
         ShowcaseProfileEntry:
             type: object
             properties:
@@ -3727,6 +3732,9 @@ components:
                 caloriesKcal:
                     type: integer
                     format: int32
+                prLabel:
+                    type: string
+                    description: PR tag displayed on profile activity cards (e.g. "★ DEADLIFT 180KG · +5KG")
         ShowcaseTheme:
             type: object
             properties:
@@ -3738,6 +3746,23 @@ components:
                     type: string
                 cardStyle:
                     type: string
+        ShowcaseTopPR:
+            type: object
+            properties:
+                recordType:
+                    type: string
+                value:
+                    type: number
+                    format: double
+                unit:
+                    type: string
+                achievedAt:
+                    type: string
+                    format: date-time
+                previousValue:
+                    type: number
+                    format: double
+            description: ShowcaseTopPR is a lightweight personal record for display on the profile medal wall.
         ShowcasedActivity:
             type: object
             properties:

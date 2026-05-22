@@ -36,6 +36,9 @@ type ActivityStore interface {
 	SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
 	DeleteShowcaseProfileEntry(ctx context.Context, userID, showcaseID string) error
 
+	// Personal Records (read-only from users/{userId}/personal_records/ for public profile display)
+	ListUserPersonalRecords(ctx context.Context, userID string) ([]*pbactivity.ShowcaseTopPR, error)
+
 	// Activity Stats
 	CountPipelineRunsByStatus(ctx context.Context, userID, status string) (int32, error)
 	CountShowcasedActivities(ctx context.Context, userID string) (int32, error)
