@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.17.0](https://github.com/FitGlue/server/compare/v16.16.0...v16.17.0) (2026-05-22)
+
+
+### Features
+
+* **showcase:** add strength PRs and PR labels to profile and entries ([e639217](https://github.com/FitGlue/server/commit/e639217dd4c1d7c0ffe9718d506b1218eb075287))
+
+
+### Bug Fixes
+
+* **showcase:** include time-based PRs in profile medal wall ([9c12fc1](https://github.com/FitGlue/server/commit/9c12fc15cec26ea668efc6157449778f21bdce81))
+
 ## [16.16.0](https://github.com/FitGlue/server/compare/v16.15.1...v16.16.0) (2026-05-22)
 
 
