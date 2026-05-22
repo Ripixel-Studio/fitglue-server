@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.17.1](https://github.com/FitGlue/server/compare/v16.17.0...v16.17.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **showcase:** hydrate enrichments from GCS blob at read time ([7e13906](https://github.com/FitGlue/server/commit/7e13906fad529aead328863e497e56412ca503a7))
+
 ## [16.17.0](https://github.com/FitGlue/server/compare/v16.16.0...v16.17.0) (2026-05-22)
 
 
