@@ -28,16 +28,21 @@ func (s *Service) GetShowcase(ctx context.Context, req *pbsvc.GetShowcaseRequest
 		return nil, status.Error(codes.NotFound, "showcase not found")
 	}
 
-	// Fetch data from GCS if unloaded
+	// Fetch data from GCS if unloaded.
 	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish),
-	// so we unmarshal it as such and extract just the ActivityData field.
-	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
+	// so we unmarshal it and extract both ActivityData and Enrichments in one read.
+	if showcase.ActivityDataUri != "" && (showcase.ActivityData == nil || showcase.Enrichments == nil) {
 		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
 		if err == nil && len(data) > 0 {
 			var fullEvent pbevents.EnrichedActivityEvent
 			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
 			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
-				showcase.ActivityData = fullEvent.ActivityData
+				if showcase.ActivityData == nil {
+					showcase.ActivityData = fullEvent.ActivityData
+				}
+				if showcase.Enrichments == nil {
+					showcase.Enrichments = fullEvent.Enrichments
+				}
 			}
 		}
 	}
@@ -231,16 +236,21 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 		}
 	}
 
-	// Fetch data from GCS if unloaded
+	// Fetch data from GCS if unloaded.
 	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish),
-	// so we unmarshal it as such and extract just the ActivityData field.
-	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
+	// so we unmarshal it and extract both ActivityData and Enrichments in one read.
+	if showcase.ActivityDataUri != "" && (showcase.ActivityData == nil || showcase.Enrichments == nil) {
 		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
 		if err == nil && len(data) > 0 {
 			var fullEvent pbevents.EnrichedActivityEvent
 			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
 			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
-				showcase.ActivityData = fullEvent.ActivityData
+				if showcase.ActivityData == nil {
+					showcase.ActivityData = fullEvent.ActivityData
+				}
+				if showcase.Enrichments == nil {
+					showcase.Enrichments = fullEvent.Enrichments
+				}
 			} else {
 				s.logger.Warn(ctx, "Failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
 			}

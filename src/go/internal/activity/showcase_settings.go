@@ -265,16 +265,8 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		}
 	}
 
-	// Persist typed enrichments into the ShowcasedActivity document so the public
-	// showcase API can return them without a GCS round-trip.
-	if hydratedEnrichments != nil && showcase.Enrichments == nil {
-		showcase.Enrichments = hydratedEnrichments
-		if _, err := s.store.UpdateShowcase(ctx, req.UserId, showcase); err != nil {
-			s.logger.Warn(ctx, "failed to persist enrichments to showcase doc", "error", err,
-				"showcase_id", req.ShowcaseId)
-			// Non-fatal: profile entry will still be written correctly.
-		}
-	}
+	// Enrichments are hydrated at read time from the GCS blob in GetPublicShowcase/GetShowcase;
+	// no need to persist them separately to Firestore.
 
 	// Build the entry from showcase metadata
 	newEntry := &pbactivity.ShowcaseProfileEntry{
