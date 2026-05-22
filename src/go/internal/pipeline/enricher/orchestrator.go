@@ -483,6 +483,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
 					buildPendingInputStatusMessage(waitErr),
 					providerExecutions)
+				// Write pending_input_id so the UI can offer a cancel button
+				if err := o.database.UpdatePipelineRun(ctx, payload.UserId, pipelineExecutionID, map[string]interface{}{
+					"pending_input_id": waitErr.ActivityID,
+				}); err != nil {
+					logger.Warn("Failed to link pending_input_id to pipeline run", "error", err)
+				}
 				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr, activityId)
 			}
 
