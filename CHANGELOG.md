@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.20.0](https://github.com/FitGlue/server/compare/v16.19.0...v16.20.0) (2026-05-22)
+
+
+### Features
+
+* **showcase:** heatmap covers full history since first activity ([a102609](https://github.com/FitGlue/server/commit/a102609b3d03cfa2a76df21a80f364a148800588))
+
 ## [16.19.0](https://github.com/FitGlue/server/compare/v16.18.0...v16.19.0) (2026-05-22)
 
 
