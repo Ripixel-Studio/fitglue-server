@@ -328,9 +328,9 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 
 	// HR zone minutes for lifetime zone split aggregation on the profile page.
 	if hydratedEnrichments != nil && hydratedEnrichments.HeartRateZones != nil {
-		zoneMinutes := make([]int32, 5)
+		zoneMinutes := make([]int32, 6)
 		for _, z := range hydratedEnrichments.HeartRateZones.GetZones() {
-			if z.ZoneIndex >= 0 && z.ZoneIndex < 5 {
+			if z.ZoneIndex >= 0 && z.ZoneIndex < 6 {
 				zoneMinutes[z.ZoneIndex] = z.Minutes
 			}
 		}
@@ -682,10 +682,10 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 	}
 
 	// Aggregate HR zone minutes across all entries and compute LifetimeZoneSplit.
-	zoneMinutesTotal := make([]int32, 5)
+	zoneMinutesTotal := make([]int32, 6)
 	for _, e := range entries {
 		for i, mins := range e.HrZoneMinutes {
-			if i < 5 {
+			if i < 6 {
 				zoneMinutesTotal[i] += mins
 			}
 		}
@@ -695,8 +695,8 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 		totalZoneMins += m
 	}
 	if totalZoneMins > 0 {
-		zoneNames := []string{"Zone 0 (Rest)", "Zone 1 (Recovery)", "Zone 2 (Endurance)", "Zone 3 (Tempo)", "Zone 4 (Threshold)"}
-		zoneBuckets := make([]*pbactivity.HeartRateZoneBucket, 0, 5)
+		zoneNames := []string{"Zone 0 (Rest)", "Zone 1 (Recovery)", "Zone 2 (Endurance)", "Zone 3 (Tempo)", "Zone 4 (Threshold)", "Zone 5 (VO2 Max)"}
+		zoneBuckets := make([]*pbactivity.HeartRateZoneBucket, 0, 6)
 		for i, mins := range zoneMinutesTotal {
 			pct := float64(mins) / float64(totalZoneMins) * 100
 			zoneBuckets = append(zoneBuckets, &pbactivity.HeartRateZoneBucket{
@@ -706,14 +706,14 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 				Percentage: pct,
 			})
 		}
-		// Label based on distribution: Polarized (≥70% in Z0+Z1), Threshold (≥30% in Z3+Z4), else Pyramidal.
+		// Label based on distribution: Polarized (≥70% in Z0+Z1), Threshold (≥30% in Z3–Z5), else Pyramidal.
 		z01Pct := float64(zoneMinutesTotal[0]+zoneMinutesTotal[1]) / float64(totalZoneMins) * 100
-		z34Pct := float64(zoneMinutesTotal[3]+zoneMinutesTotal[4]) / float64(totalZoneMins) * 100
+		z345Pct := float64(zoneMinutesTotal[3]+zoneMinutesTotal[4]+zoneMinutesTotal[5]) / float64(totalZoneMins) * 100
 		label := "Pyramidal"
 		switch {
 		case z01Pct >= 70:
 			label = "Polarized"
-		case z34Pct >= 30:
+		case z345Pct >= 30:
 			label = "Threshold"
 		}
 		profile.ZoneSplit = &pbactivity.LifetimeZoneSplit{

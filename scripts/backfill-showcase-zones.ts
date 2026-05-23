@@ -40,20 +40,20 @@ const db = admin.firestore();
 const gcs = new Storage();
 
 interface HrZoneBucket {
-    zone_index: number;
+    zoneIndex?: number;
     name: string;
-    minutes: number;
-    percentage: number;
+    minutes?: number;
+    percentage?: number;
 }
 
 interface HeartRateZonesSummary {
     zones?: HrZoneBucket[];
-    total_minutes?: number;
+    totalMinutes?: number;
 }
 
 interface GCSBlob {
     enrichments?: {
-        heart_rate_zones?: HeartRateZonesSummary;
+        heartRateZones?: HeartRateZonesSummary;
     };
 }
 
@@ -84,6 +84,7 @@ function buildZoneSplit(zoneMinutes: number[]): {
         'Zone 2 (Endurance)',
         'Zone 3 (Tempo)',
         'Zone 4 (Threshold)',
+        'Zone 5 (VO2 Max)',
     ];
     const zones = zoneMinutes.map((mins, i) => ({
         zone_index: i,
@@ -92,10 +93,10 @@ function buildZoneSplit(zoneMinutes: number[]): {
         percentage: total > 0 ? (mins / total) * 100 : 0,
     }));
     const z01Pct = total > 0 ? ((zoneMinutes[0] + zoneMinutes[1]) / total) * 100 : 0;
-    const z34Pct = total > 0 ? ((zoneMinutes[3] + zoneMinutes[4]) / total) * 100 : 0;
+    const z345Pct = total > 0 ? ((zoneMinutes[3] + zoneMinutes[4] + zoneMinutes[5]) / total) * 100 : 0;
     let label = 'Pyramidal';
     if (z01Pct >= 70) label = 'Polarized';
-    else if (z34Pct >= 30) label = 'Threshold';
+    else if (z345Pct >= 30) label = 'Threshold';
     return { zones, computed_at: new Date().toISOString(), label };
 }
 
@@ -105,7 +106,7 @@ async function backfillUser(userId: string): Promise<{ entries: number; withZone
 
     let processed = 0;
     let withZones = 0;
-    const profileZoneMinutes = [0, 0, 0, 0, 0];
+    const profileZoneMinutes = [0, 0, 0, 0, 0, 0];
 
     for (const entryDoc of entriesSnap.docs) {
         const entry = entryDoc.data();
@@ -115,7 +116,7 @@ async function backfillUser(userId: string): Promise<{ entries: number; withZone
 
         // If already has zone data, aggregate and skip the GCS fetch.
         if (Array.isArray(entry.hr_zone_minutes) && entry.hr_zone_minutes.some((m: number) => m > 0)) {
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 6; i++) {
                 profileZoneMinutes[i] += (entry.hr_zone_minutes[i] ?? 0);
             }
             withZones++;
@@ -130,19 +131,20 @@ async function backfillUser(userId: string): Promise<{ entries: number; withZone
         if (!uri) continue;
 
         const blob = await downloadBlob(uri);
-        if (!blob?.enrichments?.heart_rate_zones?.zones?.length) continue;
+        if (!blob?.enrichments?.heartRateZones?.zones?.length) continue;
 
-        const zoneMinutes = [0, 0, 0, 0, 0];
-        for (const z of blob.enrichments.heart_rate_zones.zones) {
-            if (z.zone_index >= 0 && z.zone_index < 5) {
-                zoneMinutes[z.zone_index] = z.minutes;
+        const zoneMinutes = [0, 0, 0, 0, 0, 0];
+        for (const z of blob.enrichments.heartRateZones.zones) {
+            const idx = z.zoneIndex ?? 0;
+            if (idx >= 0 && idx < 6) {
+                zoneMinutes[idx] = z.minutes ?? 0;
             }
         }
 
         if (zoneMinutes.every(m => m === 0)) continue;
 
         withZones++;
-        for (let i = 0; i < 5; i++) profileZoneMinutes[i] += zoneMinutes[i];
+        for (let i = 0; i < 6; i++) profileZoneMinutes[i] += zoneMinutes[i];
 
         if (!DRY_RUN) {
             await entriesRef.doc(showcaseId).update({ hr_zone_minutes: zoneMinutes });
