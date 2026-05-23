@@ -98,6 +98,14 @@ func (p *Weather) Enrich(ctx context.Context, logger *slog.Logger, activity *pba
 	resp, err := http.Get(url)
 	if err != nil {
 		logger.Error("Failed to fetch weather data", "error", err)
+		if doNotRetry {
+			return &providers.EnrichmentResult{
+				Metadata: map[string]string{
+					"weather_status": "skipped",
+					"status_detail":  "Weather API request failed (lag exhausted)",
+				},
+			}, nil
+		}
 		return nil, &providers.RetryableError{Err: fmt.Errorf("weather API request failed: %w", err)}
 	}
 	defer resp.Body.Close()
@@ -105,7 +113,17 @@ func (p *Weather) Enrich(ctx context.Context, logger *slog.Logger, activity *pba
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		logger.Error("Weather API returned non-200 status", "status", resp.StatusCode, "body", string(body))
-		return nil, &providers.RetryableError{Err: fmt.Errorf("weather API returned status %d", resp.StatusCode)}
+		// Only retry on transient server/rate-limit errors; client errors (e.g. 400 for recent dates) are permanent
+		isTransient := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500
+		if isTransient && !doNotRetry {
+			return nil, &providers.RetryableError{Err: fmt.Errorf("weather API returned status %d", resp.StatusCode)}
+		}
+		return &providers.EnrichmentResult{
+			Metadata: map[string]string{
+				"weather_status": "skipped",
+				"status_detail":  fmt.Sprintf("Weather API returned status %d", resp.StatusCode),
+			},
+		}, nil
 	}
 
 	// Parse response
