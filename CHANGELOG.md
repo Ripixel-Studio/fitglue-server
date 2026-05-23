@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.21.0](https://github.com/FitGlue/server/compare/v16.20.0...v16.21.0) (2026-05-23)
+
+
+### Features
+
+* **showcase:** compute lifetime HR zone split from activity data ([e7c86e0](https://github.com/FitGlue/server/commit/e7c86e0a3dc8695a1e31bf6ccaa61f7db5f33482))
+
+
+### Bug Fixes
+
+* **enricher:** weather enricher retries on non-transient errors ([bbb7054](https://github.com/FitGlue/server/commit/bbb7054e2437df80c96c8ca53dba985e05c08ca6))
+
 ## [16.20.0](https://github.com/FitGlue/server/compare/v16.19.0...v16.20.0) (2026-05-22)
 
 
