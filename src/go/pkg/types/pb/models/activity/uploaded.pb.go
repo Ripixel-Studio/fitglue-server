@@ -348,7 +348,10 @@ type ShowcaseProfileEntry struct {
 	AvgHeartRate     *int32          `protobuf:"varint,15,opt,name=avg_heart_rate,json=avgHeartRate,proto3,oneof" json:"avg_heart_rate,omitempty"`
 	CaloriesKcal     *int32          `protobuf:"varint,16,opt,name=calories_kcal,json=caloriesKcal,proto3,oneof" json:"calories_kcal,omitempty"`
 	// PR tag displayed on profile activity cards (e.g. "★ DEADLIFT 180KG · +5KG")
-	PrLabel       *string `protobuf:"bytes,17,opt,name=pr_label,json=prLabel,proto3,oneof" json:"pr_label,omitempty"`
+	PrLabel *string `protobuf:"bytes,17,opt,name=pr_label,json=prLabel,proto3,oneof" json:"pr_label,omitempty"`
+	// HR zone minutes per bucket (index 0–4), used to aggregate LifetimeZoneSplit on the profile.
+	// Populated at entry creation time from the HR zones enrichment; absent means no zone data.
+	HrZoneMinutes []int32 `protobuf:"varint,18,rep,packed,name=hr_zone_minutes,json=hrZoneMinutes,proto3" json:"hr_zone_minutes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -500,6 +503,13 @@ func (x *ShowcaseProfileEntry) GetPrLabel() string {
 		return *x.PrLabel
 	}
 	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetHrZoneMinutes() []int32 {
+	if x != nil {
+		return x.HrZoneMinutes
+	}
+	return nil
 }
 
 // EntrySparkline is a downsampled timeseries for card-level sparklines.
@@ -1201,7 +1211,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"photo_urls\x18\x15 \x03(\tR\tphotoUrls\x12N\n" +
 	"\venrichments\x18\x16 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichmentsB\x18\n" +
-	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\xd2\x06\n" +
+	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\xfa\x06\n" +
 	"\x14ShowcaseProfileEntry\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x14\n" +
@@ -1224,7 +1234,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\tsparkline\x18\x0e \x01(\v2'.fitglue.models.activity.EntrySparklineH\x00R\tsparkline\x88\x01\x01\x12)\n" +
 	"\x0eavg_heart_rate\x18\x0f \x01(\x05H\x01R\favgHeartRate\x88\x01\x01\x12(\n" +
 	"\rcalories_kcal\x18\x10 \x01(\x05H\x02R\fcaloriesKcal\x88\x01\x01\x12\x1e\n" +
-	"\bpr_label\x18\x11 \x01(\tH\x03R\aprLabel\x88\x01\x01B\f\n" +
+	"\bpr_label\x18\x11 \x01(\tH\x03R\aprLabel\x88\x01\x01\x12&\n" +
+	"\x0fhr_zone_minutes\x18\x12 \x03(\x05R\rhrZoneMinutesB\f\n" +
 	"\n" +
 	"_sparklineB\x11\n" +
 	"\x0f_avg_heart_rateB\x10\n" +

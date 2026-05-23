@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -323,6 +324,17 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 	if hydratedEnrichments != nil && hydratedEnrichments.PersonalRecords != nil && len(hydratedEnrichments.PersonalRecords.Records) > 0 {
 		label := formatPRLabel(hydratedEnrichments.PersonalRecords.Records[0])
 		newEntry.PrLabel = &label
+	}
+
+	// HR zone minutes for lifetime zone split aggregation on the profile page.
+	if hydratedEnrichments != nil && hydratedEnrichments.HeartRateZones != nil {
+		zoneMinutes := make([]int32, 5)
+		for _, z := range hydratedEnrichments.HeartRateZones.GetZones() {
+			if z.ZoneIndex >= 0 && z.ZoneIndex < 5 {
+				zoneMinutes[z.ZoneIndex] = z.Minutes
+			}
+		}
+		newEntry.HrZoneMinutes = zoneMinutes
 	}
 
 	// Write entry to sub-collection (idempotent via MergeAll)
@@ -667,6 +679,48 @@ func (s *Service) recomputeAndSaveProfileStats(ctx context.Context, userID strin
 		WeeksTracked: int32(numWeeks),
 		MissedWeeks:  missedWeeks,
 		WeeklyActive: weeklyActive,
+	}
+
+	// Aggregate HR zone minutes across all entries and compute LifetimeZoneSplit.
+	zoneMinutesTotal := make([]int32, 5)
+	for _, e := range entries {
+		for i, mins := range e.HrZoneMinutes {
+			if i < 5 {
+				zoneMinutesTotal[i] += mins
+			}
+		}
+	}
+	totalZoneMins := int32(0)
+	for _, m := range zoneMinutesTotal {
+		totalZoneMins += m
+	}
+	if totalZoneMins > 0 {
+		zoneNames := []string{"Zone 0 (Rest)", "Zone 1 (Recovery)", "Zone 2 (Endurance)", "Zone 3 (Tempo)", "Zone 4 (Threshold)"}
+		zoneBuckets := make([]*pbactivity.HeartRateZoneBucket, 0, 5)
+		for i, mins := range zoneMinutesTotal {
+			pct := float64(mins) / float64(totalZoneMins) * 100
+			zoneBuckets = append(zoneBuckets, &pbactivity.HeartRateZoneBucket{
+				ZoneIndex:  int32(i),
+				Name:       zoneNames[i],
+				Minutes:    mins,
+				Percentage: pct,
+			})
+		}
+		// Label based on distribution: Polarized (≥70% in Z0+Z1), Threshold (≥30% in Z3+Z4), else Pyramidal.
+		z01Pct := float64(zoneMinutesTotal[0]+zoneMinutesTotal[1]) / float64(totalZoneMins) * 100
+		z34Pct := float64(zoneMinutesTotal[3]+zoneMinutesTotal[4]) / float64(totalZoneMins) * 100
+		label := "Pyramidal"
+		switch {
+		case z01Pct >= 70:
+			label = "Polarized"
+		case z34Pct >= 30:
+			label = "Threshold"
+		}
+		profile.ZoneSplit = &pbactivity.LifetimeZoneSplit{
+			Zones:      zoneBuckets,
+			ComputedAt: timestamppb.Now(),
+			Label:      label,
+		}
 	}
 
 	if _, err := s.store.UpdateShowcasePreferences(ctx, userID, profile); err != nil {
