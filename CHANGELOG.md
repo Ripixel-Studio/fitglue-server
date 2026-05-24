@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.22.0](https://github.com/FitGlue/server/compare/v16.21.2...v16.22.0) (2026-05-24)
+
+
+### Features
+
+* **pipeline:** auto-resolve parkrun pending inputs via Cloud Scheduler ([09fb0dc](https://github.com/FitGlue/server/commit/09fb0dce46b364eb8145af03476d7b2716806f9e))
+
 ### [16.21.2](https://github.com/FitGlue/server/compare/v16.21.1...v16.21.2) (2026-05-24)
 
 
