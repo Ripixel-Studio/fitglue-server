@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.21.2](https://github.com/FitGlue/server/compare/v16.21.1...v16.21.2) (2026-05-24)
+
+
+### Bug Fixes
+
+* **showcase:** correct zone count to 6 and fix camelCase GCS blob field names ([34ede19](https://github.com/FitGlue/server/commit/34ede193b64f3e99aba23113b1c499a9ade2ad53))
+
 ### [16.21.1](https://github.com/FitGlue/server/compare/v16.21.0...v16.21.1) (2026-05-23)
 
 ## [16.21.0](https://github.com/FitGlue/server/compare/v16.20.0...v16.21.0) (2026-05-23)
