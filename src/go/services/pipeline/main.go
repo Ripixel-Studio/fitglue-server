@@ -20,6 +20,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher"
 	"github.com/fitglue/server/src/go/internal/pipeline/router"
 	"github.com/fitglue/server/src/go/internal/pipeline/splitter"
+	infradb "github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
@@ -74,6 +75,9 @@ func main() {
 	defer userConn.Close()
 	userClient := userpb.NewUserServiceClient(userConn)
 
+	// Full database adapter (for cross-user queries used by the parkrun checker)
+	db := infradb.NewFirestoreAdapter(fsClient)
+
 	// 1. gRPC Service (CRUD) — serves on the same port as HTTP (required for Cloud Run single-port)
 	svc := pipeline.NewService(store, pubClient, blobStore, logger, userClient)
 
@@ -88,9 +92,12 @@ func main() {
 	routerSvc := router.NewRouter(store, pubClient, blobStore, bucketName, logger)
 
 	mux := http.NewServeMux()
+	parkrunChecker := pipeline.NewParkrunChecker(db, svc, logger)
+
 	mux.HandleFunc("/pubsub/raw", handlePubSubPush(logger, splitterSvc.SplitByPipeline))
 	mux.HandleFunc("/pubsub/run", enricher.EnrichActivityHTTP)
 	mux.HandleFunc("/pubsub/enriched", handlePubSubPush(logger, routerSvc.RouteActivity))
+	mux.HandleFunc("/pubsub/parkrun-check", parkrunChecker.HandleCheck)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
