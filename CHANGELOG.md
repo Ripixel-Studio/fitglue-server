@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.1](https://github.com/FitGlue/server/compare/v16.23.0...v16.23.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **showcase:** populate calories comparisonText, add photo_urls to profile entries, improve PR sorting ([c72dbe6](https://github.com/FitGlue/server/commit/c72dbe68fa71a3fc0c84f7c68f5dddf405a97e5e))
+
 ## [16.23.0](https://github.com/FitGlue/server/compare/v16.22.0...v16.23.0) (2026-05-26)
 
 
