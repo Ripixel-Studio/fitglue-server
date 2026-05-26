@@ -9,8 +9,8 @@ import (
 	"cloud.google.com/go/pubsub"
 	gcstorage "cloud.google.com/go/storage"
 	"github.com/fitglue/server/src/go/internal/infra"
-	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
+	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	"github.com/fitglue/server/src/go/services/api-client/internal/server"
 
