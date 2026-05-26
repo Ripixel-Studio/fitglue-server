@@ -1597,6 +1597,12 @@ func mergeEnrichments(dst, src *pbactivity.ActivityEnrichments) *pbactivity.Acti
 	if src.Elevation != nil {
 		dst.Elevation = src.Elevation
 	}
+	if src.PersonalRecords != nil {
+		dst.PersonalRecords = src.PersonalRecords
+	}
+	if src.MuscleHeatmap != nil {
+		dst.MuscleHeatmap = src.MuscleHeatmap
+	}
 	return dst
 }
 
