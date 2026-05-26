@@ -3760,6 +3760,11 @@ components:
                     description: |-
                         HR zone minutes per bucket (index 0–4), used to aggregate LifetimeZoneSplit on the profile.
                          Populated at entry creation time from the HR zones enrichment; absent means no zone data.
+                photoUrls:
+                    type: array
+                    items:
+                        type: string
+                    description: Photo URLs for activities with attached images; populated from ShowcasedActivity.photo_urls.
         ShowcaseTheme:
             type: object
             properties:

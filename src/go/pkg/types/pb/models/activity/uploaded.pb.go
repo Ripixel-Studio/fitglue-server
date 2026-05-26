@@ -352,6 +352,8 @@ type ShowcaseProfileEntry struct {
 	// HR zone minutes per bucket (index 0–4), used to aggregate LifetimeZoneSplit on the profile.
 	// Populated at entry creation time from the HR zones enrichment; absent means no zone data.
 	HrZoneMinutes []int32 `protobuf:"varint,18,rep,packed,name=hr_zone_minutes,json=hrZoneMinutes,proto3" json:"hr_zone_minutes,omitempty"`
+	// Photo URLs for activities with attached images; populated from ShowcasedActivity.photo_urls.
+	PhotoUrls     []string `protobuf:"bytes,19,rep,name=photo_urls,json=photoUrls,proto3" json:"photo_urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -508,6 +510,13 @@ func (x *ShowcaseProfileEntry) GetPrLabel() string {
 func (x *ShowcaseProfileEntry) GetHrZoneMinutes() []int32 {
 	if x != nil {
 		return x.HrZoneMinutes
+	}
+	return nil
+}
+
+func (x *ShowcaseProfileEntry) GetPhotoUrls() []string {
+	if x != nil {
+		return x.PhotoUrls
 	}
 	return nil
 }
@@ -1211,7 +1220,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"photo_urls\x18\x15 \x03(\tR\tphotoUrls\x12N\n" +
 	"\venrichments\x18\x16 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichmentsB\x18\n" +
-	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\xfa\x06\n" +
+	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\x99\a\n" +
 	"\x14ShowcaseProfileEntry\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x14\n" +
@@ -1235,7 +1244,9 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x0eavg_heart_rate\x18\x0f \x01(\x05H\x01R\favgHeartRate\x88\x01\x01\x12(\n" +
 	"\rcalories_kcal\x18\x10 \x01(\x05H\x02R\fcaloriesKcal\x88\x01\x01\x12\x1e\n" +
 	"\bpr_label\x18\x11 \x01(\tH\x03R\aprLabel\x88\x01\x01\x12&\n" +
-	"\x0fhr_zone_minutes\x18\x12 \x03(\x05R\rhrZoneMinutesB\f\n" +
+	"\x0fhr_zone_minutes\x18\x12 \x03(\x05R\rhrZoneMinutes\x12\x1d\n" +
+	"\n" +
+	"photo_urls\x18\x13 \x03(\tR\tphotoUrlsB\f\n" +
 	"\n" +
 	"_sparklineB\x11\n" +
 	"\x0f_avg_heart_rateB\x10\n" +

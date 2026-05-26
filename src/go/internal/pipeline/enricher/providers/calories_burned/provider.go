@@ -136,9 +136,11 @@ func (p *CaloriesBurned) Enrich(ctx context.Context, logger *slog.Logger, activi
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("🔥 Calories: %.0f kcal", calories))
 
+	var comparisonText string
 	if funMode && calories > 50 {
 		equiv := getFoodEquivalent(calories)
-		sb.WriteString(fmt.Sprintf(" ≈ %.1f %s %s", calories/equiv.Calories, equiv.Name, equiv.Emoji))
+		comparisonText = fmt.Sprintf("≈ %.1f %s %s", calories/equiv.Calories, equiv.Name, equiv.Emoji)
+		sb.WriteString(" " + comparisonText)
 	}
 
 	logger.Info("Calories calculated",
@@ -159,7 +161,8 @@ func (p *CaloriesBurned) Enrich(ctx context.Context, logger *slog.Logger, activi
 		},
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Calories: &pbactivity.CaloriesSummary{
-				Kcal: int32(calories),
+				Kcal:           int32(calories),
+				ComparisonText: comparisonText,
 			},
 		},
 	}, nil

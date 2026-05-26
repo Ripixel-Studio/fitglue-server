@@ -82,6 +82,9 @@ message ShowcaseProfileEntry {
   // HR zone minutes per bucket (index 0–4), used to aggregate LifetimeZoneSplit on the profile.
   // Populated at entry creation time from the HR zones enrichment; absent means no zone data.
   repeated int32 hr_zone_minutes = 18;
+
+  // Photo URLs for activities with attached images; populated from ShowcasedActivity.photo_urls.
+  repeated string photo_urls = 19;
 }
 
 // EntrySparkline is a downsampled timeseries for card-level sparklines.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -279,6 +280,7 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		BoosterCount:      int32(len(showcase.AppliedEnrichments)),
 		DestinationCount:  req.DestinationCount,
 		RouteThumbnailUrl: req.RouteThumbnailUrl,
+		PhotoUrls:         showcase.PhotoUrls,
 	}
 
 	// Populate metrics from ActivityData if available
@@ -549,27 +551,31 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 	if err != nil {
 		s.logger.Warn(ctx, "failed to fetch personal records for profile", "error", err)
 	} else {
-		// Include both weight PRs (kg, higher = better) and time PRs (seconds, lower = better)
-		var topPRs []*pbactivity.ShowcaseTopPR
+		// Separate into time PRs (lower = better) and weight PRs (higher = better).
+		var timePRs, weightPRs []*pbactivity.ShowcaseTopPR
 		for _, pr := range allPRs {
-			if pr.Unit == "kg" || pr.Unit == "seconds" {
-				topPRs = append(topPRs, pr)
+			switch pr.Unit {
+			case "seconds":
+				timePRs = append(timePRs, pr)
+			case "kg":
+				weightPRs = append(weightPRs, pr)
 			}
 		}
-		// Sort by achieved_at descending (most recent first)
-		for i := 0; i < len(topPRs)-1; i++ {
-			for j := i + 1; j < len(topPRs); j++ {
-				ti := topPRs[i].AchievedAt.AsTime()
-				tj := topPRs[j].AchievedAt.AsTime()
-				if tj.After(ti) {
-					topPRs[i], topPRs[j] = topPRs[j], topPRs[i]
-				}
-			}
+		// Time PRs: most recent first (up to 3)
+		sort.Slice(timePRs, func(i, j int) bool {
+			return timePRs[j].AchievedAt.AsTime().Before(timePRs[i].AchievedAt.AsTime())
+		})
+		if len(timePRs) > 3 {
+			timePRs = timePRs[:3]
 		}
-		if len(topPRs) > 8 {
-			topPRs = topPRs[:8]
+		// Weight PRs: heaviest first (up to 5)
+		sort.Slice(weightPRs, func(i, j int) bool {
+			return weightPRs[i].Value > weightPRs[j].Value
+		})
+		if len(weightPRs) > 5 {
+			weightPRs = weightPRs[:5]
 		}
-		profile.TopPrs = topPRs
+		profile.TopPrs = append(timePRs, weightPRs...)
 	}
 
 	// Lazily backfill streak history for profiles that pre-date the feature.
