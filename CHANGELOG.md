@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.4](https://github.com/FitGlue/server/compare/v16.23.3...v16.23.4) (2026-05-26)
+
+
+### Bug Fixes
+
+* **muscle-heatmap:** strip equipment suffixes before exercise lookup ([5961ffc](https://github.com/FitGlue/server/commit/5961ffc826e5745225799ff04c7054a6a9a281dc))
+
 ### [16.23.3](https://github.com/FitGlue/server/compare/v16.23.2...v16.23.3) (2026-05-26)
 
 
