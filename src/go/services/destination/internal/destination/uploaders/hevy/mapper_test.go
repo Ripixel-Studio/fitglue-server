@@ -43,8 +43,19 @@ func TestGetCardioExerciseName(t *testing.T) {
 		{pbactivity.ActivityType_ACTIVITY_TYPE_SWIM, "Swimming"},
 		{pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING, "Weightlifting"},
 		{pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED, "Other Cardio"},
-		{pbactivity.ActivityType_ACTIVITY_TYPE_HIKE, "Other Cardio"},
-		{pbactivity.ActivityType_ACTIVITY_TYPE_YOGA, "Other Cardio"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_HIKE, "Hiking"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_YOGA, "Yoga"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_PILATES, "Pilates"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT, "CrossFit"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING, "HIIT"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN, "Trail Running"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN, "Running (Treadmill)"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE, "Cycling (Stationary)"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_ROWING, "Rowing"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD, "Snowboarding"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS, "Tennis"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER, "Football (Soccer)"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING, "Rock Climbing"},
 	}
 
 	for _, tc := range tests {

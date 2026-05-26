@@ -70,6 +70,52 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 		equip = "none"
 	}
 
+	// Duration-only exercises (pure cardio activities tracked only by time, no distance component).
+	// These are fallback cardio exercises where only elapsed time is meaningful.
+	durationOnlyPatterns := []string{
+		"other cardio",
+		"crossfit",
+		"hiit",
+		"yoga",
+		"pilates",
+		"weightlifting",
+		"alpine skiing",
+		"skiing",
+		"cross country skiing",
+		"snowboarding",
+		"snowshoeing",
+		"ice skating",
+		"roller skiing",
+		"inline skating",
+		"skateboarding",
+		"tennis",
+		"badminton",
+		"racquetball",
+		"squash",
+		"pickleball",
+		"table tennis",
+		"football",
+		"soccer",
+		"golf",
+		"rock climbing",
+		"hiking",
+		"kayaking",
+		"canoeing",
+		"stand up paddle",
+		"surfing",
+		"windsurfing",
+		"kitesurfing",
+		"mountain biking",
+		"trail running",
+		"stair stepper",
+		"elliptical",
+	}
+	for _, pattern := range durationOnlyPatterns {
+		if strings.Contains(normalized, pattern) {
+			return ExerciseTypeConfig{ExerciseType: "duration", MuscleGroup: "full_body", EquipmentCategory: "none"}
+		}
+	}
+
 	// Distance + Duration exercises (pure cardio stations with no weight component).
 	// These exercises track distance covered and time taken.
 	distanceDurationPatterns := []string{

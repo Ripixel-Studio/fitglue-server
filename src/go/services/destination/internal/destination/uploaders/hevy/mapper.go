@@ -363,16 +363,130 @@ func mapCardioActivityToExercise(ctx context.Context, activityName, description 
 
 func getCardioExerciseName(activityType pbactivity.ActivityType) string {
 	switch activityType {
+	// Running variants
 	case pbactivity.ActivityType_ACTIVITY_TYPE_RUN:
 		return "Running (Outdoor)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:
+		return "Trail Running"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:
+		return "Running (Treadmill)"
+
+	// Walking / hiking
 	case pbactivity.ActivityType_ACTIVITY_TYPE_WALK:
 		return "Walking"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIKE:
+		return "Hiking"
+
+	// Cycling variants
 	case pbactivity.ActivityType_ACTIVITY_TYPE_RIDE:
 		return "Cycling (Outdoor)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:
+		return "Cycling (Outdoor)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE:
+		return "Mountain Biking"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE:
+		return "Cycling (Stationary)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE:
+		return "Cycling (Outdoor)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE:
+		return "Mountain Biking"
+
+	// Swimming / water sports
 	case pbactivity.ActivityType_ACTIVITY_TYPE_SWIM:
 		return "Swimming"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROWING:
+		return "Rowing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW:
+		return "Rowing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING:
+		return "Kayaking"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_CANOEING:
+		return "Canoeing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING:
+		return "Stand Up Paddle Boarding"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SURFING:
+		return "Surfing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WINDSURF:
+		return "Windsurfing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_KITESURF:
+		return "Kitesurfing"
+
+	// Strength / gym
 	case pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
 		return "Weightlifting"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT:
+		return "Weightlifting"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT:
+		return "CrossFit"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
+		return "HIIT"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL:
+		return "Elliptical"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER:
+		return "Stair Stepper"
+
+	// Mind-body / flexibility
+	case pbactivity.ActivityType_ACTIVITY_TYPE_YOGA:
+		return "Yoga"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_PILATES:
+		return "Pilates"
+
+	// Winter sports
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI:
+		return "Alpine Skiing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI:
+		return "Skiing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI:
+		return "Cross Country Skiing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD:
+		return "Snowboarding"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SNOWSHOE:
+		return "Snowshoeing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE:
+		return "Ice Skating"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROLLER_SKI:
+		return "Roller Skiing"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE:
+		return "Inline Skating"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SKATEBOARD:
+		return "Skateboarding"
+
+	// Racket sports
+	case pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS:
+		return "Tennis"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_BADMINTON:
+		return "Badminton"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RACQUETBALL:
+		return "Racquetball"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SQUASH:
+		return "Squash"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_PICKLEBALL:
+		return "Pickleball"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS:
+		return "Table Tennis"
+
+	// Team / field sports
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER:
+		return "Football (Soccer)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_GOLF:
+		return "Golf"
+
+	// Climbing
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING:
+		return "Rock Climbing"
+
+	// Handcycle / wheelchair / velomobile
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HANDCYCLE:
+		return "Cycling (Stationary)"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WHEELCHAIR:
+		return "Other Cardio"
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VELOMOBILE:
+		return "Cycling (Outdoor)"
+
+	// Sailing
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SAIL:
+		return "Other Cardio"
+
 	default:
 		return "Other Cardio"
 	}
