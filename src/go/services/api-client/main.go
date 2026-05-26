@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
 	gcstorage "cloud.google.com/go/storage"
 	"github.com/fitglue/server/src/go/internal/infra"
