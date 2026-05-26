@@ -2887,6 +2887,8 @@ components:
                     type: boolean
                 notifyPipelineFailure:
                     type: boolean
+                notifyConnectionAction:
+                    type: boolean
         OAuthConnectResponse:
             type: object
             properties:

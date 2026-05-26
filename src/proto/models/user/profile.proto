@@ -44,6 +44,7 @@ message NotificationPreferences {
   bool notify_pending_input = 1;
   bool notify_pipeline_success = 2;
   bool notify_pipeline_failure = 3;
+  bool notify_connection_action = 4;
 }
 
 enum UserTier {

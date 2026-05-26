@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
 	gcstorage "cloud.google.com/go/storage"
 	"github.com/fitglue/server/src/go/internal/infra"
 	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
 	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	"github.com/fitglue/server/src/go/services/api-client/internal/server"
 
@@ -100,7 +102,7 @@ func main() {
 	defer pubsubClient.Close()
 	publisher := &infraps.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
-	// Setup Firestore Client for API key storage
+	// Setup Firestore Client for API key storage and FCM token cleanup
 	firestoreClient, err := app.Firestore(ctx)
 	if err != nil {
 		logger.Error(ctx, "Failed to initialize Firestore client", "error", err)
@@ -108,6 +110,13 @@ func main() {
 	}
 	defer firestoreClient.Close()
 	apiKeyStore := server.NewFirestoreApiKeyStore(firestoreClient)
+
+	// Setup FCM for connection action push notifications
+	fcmAdapter, err := notifications.NewFCMAdapter(ctx, app, firestoreClient, logger)
+	if err != nil {
+		// Non-fatal: notifications will be disabled but service continues
+		logger.Warn(ctx, "Failed to initialize FCM adapter (push notifications disabled)", "error", err)
+	}
 
 	// Setup GCS client for signed payload download URLs
 	gcsClient, err := gcstorage.NewClient(ctx)
@@ -125,6 +134,7 @@ func main() {
 		publisher,
 		apiKeyStore,
 		gcsSigner,
+		fcmAdapter,
 		userClient,
 		billingClient,
 		pipelineClient,

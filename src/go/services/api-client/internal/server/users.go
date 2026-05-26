@@ -296,9 +296,10 @@ func (s *APIServer) handleUpdateNotificationPrefs(w http.ResponseWriter, r *http
 			return
 		}
 		current = &pbuser.NotificationPreferences{
-			NotifyPendingInput:    true,
-			NotifyPipelineSuccess: true,
-			NotifyPipelineFailure: true,
+			NotifyPendingInput:     true,
+			NotifyPipelineSuccess:  true,
+			NotifyPipelineFailure:  true,
+			NotifyConnectionAction: true,
 		}
 	}
 
@@ -326,13 +327,19 @@ func (s *APIServer) handleUpdateNotificationPrefs(w http.ResponseWriter, r *http
 			merged.NotifyPipelineFailure = b
 		}
 	}
+	if v, ok := partial["notifyConnectionAction"]; ok {
+		if b, ok := v.(bool); ok {
+			merged.NotifyConnectionAction = b
+		}
+	}
 
 	var req userpb.UpdateNotificationPrefsRequest
 	req.UserId = token.UID
 	req.Prefs = &pbuser.NotificationPreferences{
-		NotifyPendingInput:    merged.NotifyPendingInput,
-		NotifyPipelineSuccess: merged.NotifyPipelineSuccess,
-		NotifyPipelineFailure: merged.NotifyPipelineFailure,
+		NotifyPendingInput:     merged.NotifyPendingInput,
+		NotifyPipelineSuccess:  merged.NotifyPipelineSuccess,
+		NotifyPipelineFailure:  merged.NotifyPipelineFailure,
+		NotifyConnectionAction: merged.NotifyConnectionAction,
 	}
 
 	res, err := s.userService.UpdateNotificationPrefs(r.Context(), &req)

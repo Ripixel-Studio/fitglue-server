@@ -666,9 +666,10 @@ func (s *FirestoreStore) CreateUser(ctx context.Context, userID string) (*pbuser
 		PreventedSyncCount: 0,
 		AccessEnabled:      false, // Waitlisted until admin enables
 		NotificationPreferences: &pbuser.NotificationPreferences{
-			NotifyPendingInput:    true,
-			NotifyPipelineSuccess: true,
-			NotifyPipelineFailure: true,
+			NotifyPendingInput:     true,
+			NotifyPipelineSuccess:  true,
+			NotifyPipelineFailure:  true,
+			NotifyConnectionAction: true,
 		},
 		TrialEndsAt: timestamppb.New(trialEndsAt),
 		FcmTokens:   []string{},
