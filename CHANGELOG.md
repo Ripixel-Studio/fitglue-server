@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.23.0](https://github.com/FitGlue/server/compare/v16.22.0...v16.23.0) (2026-05-26)
+
+
+### Features
+
+* **hevy:** expand activity type mapping and fix other-cardio duration ([d4a4289](https://github.com/FitGlue/server/commit/d4a4289f9c5deee0d414c727205617a91b02d61f))
+* **notifications:** add CONNECTION_ACTION push notifications ([71f0a05](https://github.com/FitGlue/server/commit/71f0a057fc9fdf48aee33f5f3d43506b5b2d5112))
+
+
+### Bug Fixes
+
+* **enrichers:** fix HR file enricher not applying heart rate ([150acd0](https://github.com/FitGlue/server/commit/150acd0016f294071321c54f1272369a5fa581f5))
+* **hevy:** surface bounceback failures that were silently swallowed ([f04a51f](https://github.com/FitGlue/server/commit/f04a51f688264d05bb7dc1da0d64096fbaa26f4b))
+* **notifications:** remove unused firestore import in api-client main ([8c0ab02](https://github.com/FitGlue/server/commit/8c0ab022c0e5b3d9ea486a29c6931cf9c946e2b5))
+* **notifications:** update route coverage test for new NewAPIServer signature ([a628a01](https://github.com/FitGlue/server/commit/a628a01f2485bdc5ef4e312e9bc48b9868b2f125))
+
 ## [16.22.0](https://github.com/FitGlue/server/compare/v16.21.2...v16.22.0) (2026-05-24)
 
 
