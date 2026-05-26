@@ -66,7 +66,10 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		return "", fmt.Errorf("failed to create Hevy workout: %w", err)
 	}
 
-	if workoutID != "" {
+	if workoutID == "" {
+		// Hevy returned success but no workout ID — log so we can diagnose bounceback failures.
+		logger.WarnContext(ctx, "Hevy Create returned empty workoutID; bounceback record not stored")
+	} else {
 		uploadRecord := &pbactivity.UploadedActivityRecord{
 			Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, workoutID),
 			UserId:        payload.UserId,
@@ -77,7 +80,9 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			DestinationId: workoutID,
 			UploadedAt:    timestamppb.Now(),
 		}
-		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
+		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
+			logger.WarnContext(ctx, "Failed to store Hevy bounceback record; webhook may re-trigger", "workout_id", workoutID, "error", err)
+		}
 	}
 
 	return workoutID, nil
@@ -324,7 +329,9 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		DestinationId: workoutID,
 		UploadedAt:    timestamppb.Now(),
 	}
-	_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
+	if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
+		logger.WarnContext(ctx, "Failed to store Hevy bounceback record on update; webhook may re-trigger", "workout_id", workoutID, "error", err)
+	}
 
 	return nil
 }
