@@ -143,9 +143,13 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		}
 	}
 
-	// Same-source dedup: if this activity was already processed, return cached result
+	// Same-source dedup: if this activity was already processed, return cached result.
+	// Only use cache if structured enrichments were also cached — if last_result_enrichments
+	// is absent (written by older code), fall through and run fresh so the showcase GCS blob
+	// gets proper typed enrichment data.
 	externalId := inputs["external_id"]
-	if externalId != "" && lastExternalId == externalId && cachedDescription != "" {
+	enrichmentsJSON, hasEnrichments := data["last_result_enrichments"].(string)
+	if externalId != "" && lastExternalId == externalId && cachedDescription != "" && hasEnrichments && enrichmentsJSON != "" {
 		logger.Info("recovery_advisor: returning cached result for same-source activity",
 			"external_id", externalId)
 		if cachedMetadata == nil {
@@ -156,12 +160,9 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 			Description: cachedDescription,
 			Metadata:    cachedMetadata,
 		}
-		// Restore structured enrichments from cached protojson
-		if enrichmentsJSON, ok := data["last_result_enrichments"].(string); ok && enrichmentsJSON != "" {
-			var enrichments pbactivity.ActivityEnrichments
-			if err := protojson.Unmarshal([]byte(enrichmentsJSON), &enrichments); err == nil {
-				result.Enrichments = &enrichments
-			}
+		var enrichments pbactivity.ActivityEnrichments
+		if err := protojson.Unmarshal([]byte(enrichmentsJSON), &enrichments); err == nil {
+			result.Enrichments = &enrichments
 		}
 		return result, nil
 	}

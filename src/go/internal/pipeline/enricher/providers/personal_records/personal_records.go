@@ -62,41 +62,47 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err == nil && data != nil {
 			if storedExtId, ok := data["last_external_id"].(string); ok && storedExtId == externalId {
-				cachedDesc := ""
-				if v, ok := data["last_result_description"].(string); ok {
-					cachedDesc = v
-				}
-				cachedName := ""
-				if v, ok := data["last_result_name"].(string); ok {
-					cachedName = v
-				}
-				cachedMetadata := map[string]string{}
-				if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
-					for k, val := range v {
-						if s, ok := val.(string); ok {
-							cachedMetadata[k] = s
+				// Only use cache if structured enrichments were also cached.
+				// If last_result_enrichments is absent (written by older code), fall through
+				// and run fresh so the showcase GCS blob gets proper typed enrichment data.
+				enrichmentsJSON, hasEnrichments := data["last_result_enrichments"].(string)
+				if !hasEnrichments || enrichmentsJSON == "" {
+					logger.Info("personal_records: cache hit but no enrichments stored — running fresh",
+						"external_id", externalId)
+				} else {
+					cachedDesc := ""
+					if v, ok := data["last_result_description"].(string); ok {
+						cachedDesc = v
+					}
+					cachedName := ""
+					if v, ok := data["last_result_name"].(string); ok {
+						cachedName = v
+					}
+					cachedMetadata := map[string]string{}
+					if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+						for k, val := range v {
+							if s, ok := val.(string); ok {
+								cachedMetadata[k] = s
+							}
 						}
 					}
-				}
-				cachedMetadata["dedup"] = "true"
+					cachedMetadata["dedup"] = "true"
 
-				logger.Info("personal_records: returning cached result for same-source activity",
-					"external_id", externalId)
-				result := &providers.EnrichmentResult{
-					Description: cachedDesc,
-					Metadata:    cachedMetadata,
-				}
-				if cachedName != "" {
-					result.Name = cachedName
-				}
-				// Restore structured enrichments from cached protojson
-				if enrichmentsJSON, ok := data["last_result_enrichments"].(string); ok && enrichmentsJSON != "" {
+					logger.Info("personal_records: returning cached result for same-source activity",
+						"external_id", externalId)
+					result := &providers.EnrichmentResult{
+						Description: cachedDesc,
+						Metadata:    cachedMetadata,
+					}
+					if cachedName != "" {
+						result.Name = cachedName
+					}
 					var enrichments pbactivity.ActivityEnrichments
 					if err := protojson.Unmarshal([]byte(enrichmentsJSON), &enrichments); err == nil {
 						result.Enrichments = &enrichments
 					}
+					return result, nil
 				}
-				return result, nil
 			}
 		}
 	}
