@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.6](https://github.com/FitGlue/server/compare/v16.23.5...v16.23.6) (2026-05-26)
+
+
+### Bug Fixes
+
+* **enricher:** merge PersonalRecords and MuscleHeatmap into activity enrichments ([7c8b888](https://github.com/FitGlue/server/commit/7c8b88866ed4bc7d13e68574619a361b6ed54628))
+
 ### [16.23.5](https://github.com/FitGlue/server/compare/v16.23.4...v16.23.5) (2026-05-26)
 
 
