@@ -45,12 +45,14 @@ func (s *Service) ParseFitFile(ctx context.Context, req *pbsvc.ParseFitFileReque
 	}
 
 	// Create activity payload
+	execID := uuid.NewString()
 	payload := &pbevents.ActivityPayload{
 		Source:               pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
 		UserId:               req.UserId,
 		Timestamp:            timestamppb.Now(),
 		StandardizedActivity: activity,
 		IsResume:             false,
+		PipelineExecutionId:  &execID,
 	}
 
 	if req.PipelineId != "" {

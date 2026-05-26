@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/google/uuid"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -223,10 +224,15 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 
 	fwCtx.Logger.Info("Starting enrichment", "timestamp", rawEvent.Timestamp, "source", rawEvent.Source)
 
-	// Extract pipeline_execution_id from payload or use current execution ID
+	// Extract pipeline_execution_id from payload; generate a fresh UUID if absent.
+	// Falling back to fwCtx.ExecutionID is unsafe: it is a timestamp-based ID shared
+	// across concurrent enricher invocations, causing GCS blob path collisions that
+	// corrupt the showcase enrichment data of an unrelated activity.
 	pipelineExecID := rawEvent.PipelineExecutionId
 	if pipelineExecID == nil || *pipelineExecID == "" {
-		pipelineExecID = &fwCtx.ExecutionID
+		newID := uuid.NewString()
+		pipelineExecID = &newID
+		fwCtx.Logger.Warn("pipeline_execution_id missing from payload, generated fallback", "fallback_id", newID)
 	}
 
 	// Initialize Orchestrator

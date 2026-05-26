@@ -100,8 +100,14 @@ func (s *Splitter) SplitByPipeline(ctx context.Context, e cloudevents.Event) err
 	return nil
 }
 
-// passThrough publishes the payload directly to pipeline-activity topic without modification
+// passThrough publishes the payload directly to pipeline-activity topic.
+// It ensures PipelineExecutionId is set so the enricher gets a unique GCS path.
 func (s *Splitter) passThrough(ctx context.Context, payload *pbevents.ActivityPayload) error {
+	if payload.PipelineExecutionId == nil || *payload.PipelineExecutionId == "" {
+		id := uuid.NewString()
+		payload.PipelineExecutionId = &id
+		s.logger.Warn(ctx, "PipelineExecutionId missing in pass-through, generated fallback", "fallback_id", id)
+	}
 	if err := s.publishToPipelineActivity(ctx, payload); err != nil {
 		return fmt.Errorf("pass-through publish: %w", err)
 	}
