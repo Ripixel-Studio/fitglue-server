@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.2](https://github.com/FitGlue/server/compare/v16.23.1...v16.23.2) (2026-05-26)
+
+
+### Bug Fixes
+
+* **showcase:** restrict medal wall weight PRs to 1RM only, exclude volume records ([e75ea15](https://github.com/FitGlue/server/commit/e75ea159497bfe2c6e8619581e2ce46372851b25))
+
 ### [16.23.1](https://github.com/FitGlue/server/compare/v16.23.0...v16.23.1) (2026-05-26)
 
 
