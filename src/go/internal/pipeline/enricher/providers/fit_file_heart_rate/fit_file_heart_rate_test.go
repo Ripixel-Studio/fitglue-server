@@ -70,6 +70,9 @@ func TestFitFileHR_SkipsIfExistingHRData(t *testing.T) {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
+	if !result.Skipped {
+		t.Error("Expected result.Skipped=true so orchestrator treats this as a skip, not a success")
+	}
 	if result.Metadata["hr_source"] != "skipped" {
 		t.Errorf("Expected hr_source=skipped, got %s", result.Metadata["hr_source"])
 	}

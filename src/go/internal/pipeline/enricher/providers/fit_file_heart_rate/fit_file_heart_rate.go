@@ -58,6 +58,8 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 	if !forceOverwrite && hasExistingHeartRateData(activity) {
 		logger.Info("Skipping FIT file HR enrichment: activity already has heartrate data and force=false")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "Activity already has heartrate data",
 			Metadata: map[string]string{
 				"hr_source":     "skipped",
 				"status_detail": "Activity already has heartrate data",
@@ -82,6 +84,20 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 				Metadata: map[string]string{
 					"hr_source":     "pending",
 					"status_detail": "Waiting for FIT file upload",
+				},
+			}, nil
+		}
+		if pending.Status == pbpipeline.PendingInput_STATUS_COMPLETED {
+			// The user has already uploaded the FIT file. EnrichResume handles applying the data
+			// in resume mode. If Enrich is called directly (e.g., pipeline re-run) after the input
+			// is already completed, skip gracefully rather than prompting for the file again.
+			logger.Info("fit-file-hr: pending input already completed, skipping re-request")
+			return &providers.EnrichmentResult{
+				Skipped:    true,
+				SkipReason: "FIT file already uploaded; data applied via EnrichResume",
+				Metadata: map[string]string{
+					"hr_source":     "skipped",
+					"status_detail": "Pending input already completed",
 				},
 			}, nil
 		}
