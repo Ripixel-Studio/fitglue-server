@@ -16,6 +16,7 @@ import (
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // RecoveryAdvisor calculates training load and suggests recovery time.
@@ -151,10 +152,18 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 			cachedMetadata = map[string]string{}
 		}
 		cachedMetadata["dedup"] = "true"
-		return &providers.EnrichmentResult{
+		result := &providers.EnrichmentResult{
 			Description: cachedDescription,
 			Metadata:    cachedMetadata,
-		}, nil
+		}
+		// Restore structured enrichments from cached protojson
+		if enrichmentsJSON, ok := data["last_result_enrichments"].(string); ok && enrichmentsJSON != "" {
+			var enrichments pbactivity.ActivityEnrichments
+			if err := protojson.Unmarshal([]byte(enrichmentsJSON), &enrichments); err == nil {
+				result.Enrichments = &enrichments
+			}
+		}
+		return result, nil
 	}
 
 	// Compute acute (7-day) and chronic (28-day) loads from stored data
@@ -265,6 +274,23 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		"consecutive_hard_days": fmt.Sprintf("%d", consecutiveHardDays),
 	}
 
+	alertText := ""
+	if acwr > 0 {
+		alertText = fmt.Sprintf("ACWR %.2f — %s", acwr, acwrLabel)
+	}
+
+	resultEnrichments := &pbactivity.ActivityEnrichments{
+		Recovery: &pbactivity.RecoverySummary{
+			SessionLoad:           int32(trimp),
+			AcuteChronicRatio:     acwr,
+			HoursToRecover:        int32(recoveryHours),
+			Alert:                 acwr > 1.5 || consecutiveHardDays >= 3,
+			AlertText:             alertText,
+			SevenDayLoad:          int32(totalAcuteLoad),
+			TwentyEightDayAvgLoad: int32(chronicDailyAvg),
+		},
+	}
+
 	// Persist today's load + cached result for same-source dedup
 	if p.Service != nil && p.Service.DB != nil {
 		metadataMap := make(map[string]interface{})
@@ -277,30 +303,19 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 			"last_result_description": sb.String(),
 			"last_result_metadata":    metadataMap,
 		}
+		// Cache structured enrichments so dedup hits restore full typed data
+		if b, err := protojson.Marshal(resultEnrichments); err == nil {
+			updateData["last_result_enrichments"] = string(b)
+		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
 			logger.Warn("Failed to save recovery data", "error", err)
 		}
 	}
 
-	alertText := ""
-	if acwr > 0 {
-		alertText = fmt.Sprintf("ACWR %.2f — %s", acwr, acwrLabel)
-	}
-
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata:    resultMetadata,
-		Enrichments: &pbactivity.ActivityEnrichments{
-			Recovery: &pbactivity.RecoverySummary{
-				SessionLoad:           int32(trimp),
-				AcuteChronicRatio:     acwr,
-				HoursToRecover:        int32(recoveryHours),
-				Alert:                 acwr > 1.5 || consecutiveHardDays >= 3,
-				AlertText:             alertText,
-				SevenDayLoad:          int32(totalAcuteLoad),
-				TwentyEightDayAvgLoad: int32(chronicDailyAvg),
-			},
-		},
+		Enrichments: resultEnrichments,
 	}, nil
 }
 

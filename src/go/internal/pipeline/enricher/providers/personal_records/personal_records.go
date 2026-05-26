@@ -15,6 +15,7 @@ import (
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -87,6 +88,13 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 				}
 				if cachedName != "" {
 					result.Name = cachedName
+				}
+				// Restore structured enrichments from cached protojson
+				if enrichmentsJSON, ok := data["last_result_enrichments"].(string); ok && enrichmentsJSON != "" {
+					var enrichments pbactivity.ActivityEnrichments
+					if err := protojson.Unmarshal([]byte(enrichmentsJSON), &enrichments); err == nil {
+						result.Enrichments = &enrichments
+					}
 				}
 				return result, nil
 			}
@@ -213,6 +221,12 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 			"last_result_description": result.Description,
 			"last_result_name":        result.Name,
 			"last_result_metadata":    metadataMap,
+		}
+		// Cache structured enrichments so dedup hits restore full typed data
+		if result.Enrichments != nil {
+			if b, err := protojson.Marshal(result.Enrichments); err == nil {
+				cacheData["last_result_enrichments"] = string(b)
+			}
 		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, "personal_records_cache", cacheData); err != nil {
 			logger.Warn("personal_records: failed to cache dedup result", "error", err)
