@@ -761,6 +761,15 @@ func buildIndexes() {
 	}
 }
 
+// stripEquipmentSuffix removes parenthetical equipment modifiers from exercise names.
+// e.g. "Bench Press (Barbell)" → "Bench Press", "Chest Fly (Machine)" → "Chest Fly"
+func stripEquipmentSuffix(name string) string {
+	if idx := strings.Index(name, "("); idx > 0 {
+		return strings.TrimSpace(name[:idx])
+	}
+	return name
+}
+
 // LookupExercise attempts to find a matching exercise for the given name
 func LookupExercise(name string) LookupResult {
 	if name == "" {
@@ -790,13 +799,36 @@ func LookupExercise(name string) LookupResult {
 		}
 	}
 
-	// 4. Fuzzy match with Levenshtein distance (90% threshold)
+	// 4. Strip equipment modifiers (e.g. "Bench Press (Barbell)" → "Bench Press") and retry.
+	// Only do this when the full name didn't already match — parentheticals like
+	// "Overhead Press (Dumbbell)" may themselves be registered aliases.
+	stripped := stripEquipmentSuffix(name)
+	if stripped != name {
+		strippedNorm := normalize(stripped)
+		if ex, ok := normalizedDB[strippedNorm]; ok {
+			return resultFromMapping(ex, 0.95)
+		}
+		if ex, ok := aliasMap[strippedNorm]; ok {
+			return resultFromMapping(ex, 0.95)
+		}
+		expandedStripped := expandAbbreviations(strippedNorm)
+		if expandedStripped != strippedNorm {
+			if ex, ok := normalizedDB[expandedStripped]; ok {
+				return resultFromMapping(ex, 0.90)
+			}
+			if ex, ok := aliasMap[expandedStripped]; ok {
+				return resultFromMapping(ex, 0.90)
+			}
+		}
+	}
+
+	// 5. Fuzzy match with Levenshtein distance (90% threshold)
 	bestMatch, confidence := fuzzyMatch(normalized)
 	if bestMatch != nil && confidence >= 0.90 {
 		return resultFromMapping(bestMatch, confidence)
 	}
 
-	// 5. No match found
+	// 6. No match found
 	return LookupResult{
 		Matched:   false,
 		Primary:   pbactivity.MuscleGroup_MUSCLE_GROUP_OTHER,
