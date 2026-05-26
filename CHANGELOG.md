@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.3](https://github.com/FitGlue/server/compare/v16.23.2...v16.23.3) (2026-05-26)
+
+
+### Bug Fixes
+
+* **enrichers:** restore typed enrichments from dedup cache ([8301b9e](https://github.com/FitGlue/server/commit/8301b9e6ccba3a826d1bf8665f44649193184adb))
+
 ### [16.23.2](https://github.com/FitGlue/server/compare/v16.23.1...v16.23.2) (2026-05-26)
 
 
