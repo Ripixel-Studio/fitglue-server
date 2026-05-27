@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.24.0](https://github.com/FitGlue/server/compare/v16.23.9...v16.24.0) (2026-05-27)
+
+
+### Features
+
+* **connections:** add connection-scoped historical activity import ([122e199](https://github.com/FitGlue/server/commit/122e1998d1a75613726fd048184953c66ce90f95))
+
 ### [16.23.9](https://github.com/FitGlue/server/compare/v16.23.8...v16.23.9) (2026-05-27)
 
 
