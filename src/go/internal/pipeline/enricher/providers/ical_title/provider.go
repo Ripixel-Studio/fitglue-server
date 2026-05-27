@@ -60,8 +60,16 @@ func (p *ICalTitle) Enrich(ctx context.Context, logger *slog.Logger, activity *p
 }
 
 func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, inputs map[string]string, client *http.Client) (*providers.EnrichmentResult, error) {
-	icalURL := strings.TrimSpace(inputs["ical_url"])
-	if icalURL == "" {
+	// Respect titles that came from the source file itself; don't override with a calendar title.
+	if activity.Name != "" && activity.Source == pbactivity.ActivitySource_SOURCE_FILE_UPLOAD {
+		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "file-upload title already set; not overriding",
+		}, nil
+	}
+
+	urls := collectCalendarURLs(inputs)
+	if len(urls) == 0 {
 		return &providers.EnrichmentResult{
 			Skipped:    true,
 			SkipReason: "no ical_url configured",
@@ -81,33 +89,58 @@ func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *p
 	actStart := activity.StartTime.AsTime()
 	actEnd := activityEndTime(activity, actStart)
 
-	cal, err := fetchCalendar(ctx, client, icalURL)
-	if err != nil {
-		return nil, fmt.Errorf("fetching iCal: %w", err)
+	// Try each calendar in priority order; first single-match wins.
+	var firstFetchErr error
+	for i, url := range urls {
+		cal, err := fetchCalendar(ctx, client, url)
+		if err != nil {
+			if firstFetchErr == nil {
+				firstFetchErr = err
+			}
+			logger.Warn("ical_title: failed to fetch calendar", "url_index", i+1, "error", err)
+			continue
+		}
+
+		matches := overlappingEvents(cal, actStart, actEnd, minOverlap)
+
+		switch len(matches) {
+		case 0:
+			logger.Info("ical_title: no match on calendar", "url_index", i+1, "activity_start", actStart)
+			// Try next calendar in priority order.
+		case 1:
+			title := matches[0]
+			logger.Info("ical_title: matched event", "url_index", i+1, "title", title)
+			return &providers.EnrichmentResult{Name: title}, nil
+		default:
+			// Multiple matches are ambiguous — stop and skip rather than guessing.
+			logger.Info("ical_title: multiple events overlap on calendar, skipping", "url_index", i+1, "count", len(matches))
+			return &providers.EnrichmentResult{
+				Skipped:    true,
+				SkipReason: fmt.Sprintf("%d calendar events overlap this activity; cannot determine a single title", len(matches)),
+			}, nil
+		}
 	}
 
-	matches := overlappingEvents(cal, actStart, actEnd, minOverlap)
-
-	switch len(matches) {
-	case 0:
-		logger.Info("ical_title: no overlapping events found", "activity_start", actStart)
-		return &providers.EnrichmentResult{
-			Skipped:    true,
-			SkipReason: "no calendar event overlaps this activity",
-		}, nil
-	case 1:
-		title := matches[0]
-		logger.Info("ical_title: matched event", "title", title)
-		return &providers.EnrichmentResult{
-			Name: title,
-		}, nil
-	default:
-		logger.Info("ical_title: multiple events overlap, skipping", "count", len(matches))
-		return &providers.EnrichmentResult{
-			Skipped:    true,
-			SkipReason: fmt.Sprintf("%d calendar events overlap this activity; cannot determine a single title", len(matches)),
-		}, nil
+	logger.Info("ical_title: no overlapping events found in any calendar", "activity_start", actStart)
+	if firstFetchErr != nil {
+		return nil, firstFetchErr
 	}
+	return &providers.EnrichmentResult{
+		Skipped:    true,
+		SkipReason: "no calendar event overlaps this activity",
+	}, nil
+}
+
+// collectCalendarURLs returns iCal feed URLs from inputs in priority order.
+// Reads ical_url (primary), then ical_url_2 and ical_url_3.
+func collectCalendarURLs(inputs map[string]string) []string {
+	var urls []string
+	for _, key := range []string{"ical_url", "ical_url_2", "ical_url_3"} {
+		if u := strings.TrimSpace(inputs[key]); u != "" {
+			urls = append(urls, u)
+		}
+	}
+	return urls
 }
 
 func fetchCalendar(ctx context.Context, client *http.Client, url string) (*ical.Calendar, error) {
@@ -140,7 +173,7 @@ func fetchCalendar(ctx context.Context, client *http.Client, url string) (*ical.
 // overlappingEvents returns the summaries of VEVENT entries whose time range
 // overlaps [actStart, actEnd] by at least minOverlapSeconds.
 // All-day events (DATE-only) are excluded.
-// Recurring events (RRULE) are expanded to find the specific occurrence on the activity date.
+// Recurring events (RRULE) are expanded; EXDATE-excluded occurrences are skipped.
 func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverlapSeconds int) []string {
 	var matches []string
 	minOverlap := time.Duration(minOverlapSeconds) * time.Second
@@ -185,7 +218,9 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 			continue
 		}
 
-		// Recurring event: expand occurrences within the search window and check each one.
+		// Recurring event: collect EXDATE exclusions, then expand and check each occurrence.
+		exdates := parseExdates(event)
+
 		option, err := rrule.StrToROption(rruleProp.Value)
 		if err != nil {
 			// Unparseable RRULE — fall back to checking the base occurrence.
@@ -200,6 +235,9 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 			continue
 		}
 		for _, occ := range r.Between(searchStart, searchEnd, true) {
+			if isExdated(occ, exdates) {
+				continue
+			}
 			occEnd := occ.Add(duration)
 			if overlapDuration(actStart, actEnd, occ, occEnd) >= minOverlap {
 				matches = append(matches, title)
@@ -208,6 +246,40 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 		}
 	}
 	return matches
+}
+
+// parseExdates collects all excluded datetime occurrences from an event's EXDATE properties.
+// EXDATE values may be comma-separated within a single property, or spread across multiple
+// EXDATE lines (both forms are valid per RFC 5545).
+func parseExdates(event *ical.VEvent) map[time.Time]struct{} {
+	excluded := make(map[time.Time]struct{})
+	for _, prop := range event.Properties {
+		if !strings.EqualFold(prop.IANAToken, "EXDATE") {
+			continue
+		}
+		// Value may be a comma-separated list of datetime strings sharing the same TZID.
+		for _, dateStr := range strings.Split(prop.Value, ",") {
+			dateStr = strings.TrimSpace(dateStr)
+			if dateStr == "" {
+				continue
+			}
+			// Reuse parseEventTime with a copy of the property set to this single date.
+			tmp := prop
+			tmp.Value = dateStr
+			if t, err := parseEventTime(&tmp); err == nil {
+				// Truncate to minute so EXDATE at e.g. T063000Z matches occurrence at T063000Z
+				// even when there is sub-minute clock skew in the ICS feed.
+				excluded[t.UTC().Truncate(time.Minute)] = struct{}{}
+			}
+		}
+	}
+	return excluded
+}
+
+// isExdated reports whether an occurrence is excluded by an EXDATE.
+func isExdated(occ time.Time, exdates map[time.Time]struct{}) bool {
+	_, excluded := exdates[occ.UTC().Truncate(time.Minute)]
+	return excluded
 }
 
 func overlapDuration(aStart, aEnd, bStart, bEnd time.Time) time.Duration {

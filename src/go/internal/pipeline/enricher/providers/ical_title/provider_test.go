@@ -303,3 +303,172 @@ func TestHTTPError(t *testing.T) {
 		t.Error("expected error on HTTP 500")
 	}
 }
+
+// --- File-upload title protection ---
+
+func TestFileUploadTitleNotOverridden(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	evStart := now.Add(-30 * time.Minute)
+	evEnd := now.Add(30 * time.Minute)
+
+	srv, client := serveICal(t, icalFixture("Calendar Event", evStart, evEnd))
+
+	p := NewICalTitle()
+	act := newTestActivity(now, 1800)
+	act.Source = pbactivity.ActivitySource_SOURCE_FILE_UPLOAD
+	act.Name = "My FIT File Title"
+
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Skipped {
+		t.Error("expected Skipped when activity is a file upload with an existing name")
+	}
+}
+
+func TestFileUploadWithNoNameGetsCalendarTitle(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	evStart := now.Add(-30 * time.Minute)
+	evEnd := now.Add(30 * time.Minute)
+
+	srv, client := serveICal(t, icalFixture("Calendar Event", evStart, evEnd))
+
+	p := NewICalTitle()
+	act := newTestActivity(now, 1800)
+	act.Source = pbactivity.ActivitySource_SOURCE_FILE_UPLOAD
+	act.Name = "" // no name in the file
+
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Errorf("expected match for file-upload with no name, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Calendar Event" {
+		t.Errorf("expected %q, got %q", "Calendar Event", result.Name)
+	}
+}
+
+// --- Multi-calendar priority ---
+
+func TestSecondCalendarUsedWhenPrimaryHasNoMatch(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	evStart := now.Add(-30 * time.Minute)
+	evEnd := now.Add(30 * time.Minute)
+
+	// Primary calendar has an event AFTER the activity — no overlap.
+	primary := icalFixture("Primary Event", now.Add(2*time.Hour), now.Add(3*time.Hour))
+	// Secondary calendar has a matching event.
+	secondary := icalFixture("Secondary Event", evStart, evEnd)
+
+	srv1, client := serveICal(t, primary)
+	srv2, _ := serveICal(t, secondary)
+
+	p := NewICalTitle()
+	act := newTestActivity(now, 1800)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{
+		"ical_url":   srv1.URL,
+		"ical_url_2": srv2.URL,
+	}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Errorf("expected match from secondary calendar, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Secondary Event" {
+		t.Errorf("expected %q, got %q", "Secondary Event", result.Name)
+	}
+}
+
+func TestPrimaryCalendarWinsOverSecondary(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	evStart := now.Add(-30 * time.Minute)
+	evEnd := now.Add(30 * time.Minute)
+
+	// Both calendars have exactly-one matching event.
+	srv1, client := serveICal(t, icalFixture("Primary Event", evStart, evEnd))
+	srv2, _ := serveICal(t, icalFixture("Secondary Event", evStart, evEnd))
+
+	p := NewICalTitle()
+	act := newTestActivity(now, 1800)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{
+		"ical_url":   srv1.URL,
+		"ical_url_2": srv2.URL,
+	}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Errorf("expected match, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Primary Event" {
+		t.Errorf("expected primary calendar to win, got %q", result.Name)
+	}
+}
+
+// --- EXDATE: deleted recurring event occurrences ---
+
+func TestExdateSkipsDeletedOccurrence(t *testing.T) {
+	// Weekly Thursday bootcamp, but the occurrence on 2026-05-21 was deleted via EXDATE.
+	// The activity is on 2026-05-21 — it should NOT match.
+	icalBody := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//test//test//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-exdate@example.com\r\n" +
+		"DTSTART;TZID=Europe/London:20260115T063000\r\n" +
+		"DTEND;TZID=Europe/London:20260115T070000\r\n" +
+		"RRULE:FREQ=WEEKLY;BYDAY=TH\r\n" +
+		"EXDATE;TZID=Europe/London:20260521T063000\r\n" +
+		"SUMMARY:Bootcamp Class\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+
+	srv, client := serveICal(t, icalBody)
+
+	p := NewICalTitle()
+	actStart := time.Date(2026, 5, 21, 5, 31, 0, 0, time.UTC) // 6:31 BST
+	act := newTestActivity(actStart, 37*60)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Skipped {
+		t.Errorf("expected Skipped for EXDATE-deleted occurrence, got title %q", result.Name)
+	}
+}
+
+func TestExdateDoesNotBlockOtherOccurrences(t *testing.T) {
+	// Same weekly bootcamp; 2026-05-21 is deleted but 2026-05-28 is not.
+	icalBody := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//test//test//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-exdate2@example.com\r\n" +
+		"DTSTART;TZID=Europe/London:20260115T063000\r\n" +
+		"DTEND;TZID=Europe/London:20260115T070000\r\n" +
+		"RRULE:FREQ=WEEKLY;BYDAY=TH\r\n" +
+		"EXDATE;TZID=Europe/London:20260521T063000\r\n" +
+		"SUMMARY:Bootcamp Class\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+
+	srv, client := serveICal(t, icalBody)
+
+	p := NewICalTitle()
+	actStart := time.Date(2026, 5, 28, 5, 31, 0, 0, time.UTC) // 6:31 BST, next Thursday
+	act := newTestActivity(actStart, 37*60)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Errorf("expected match for non-deleted occurrence on 2026-05-28, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Bootcamp Class" {
+		t.Errorf("expected %q, got %q", "Bootcamp Class", result.Name)
+	}
+}

@@ -297,6 +297,23 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		return fmt.Errorf("failed to marshal update body: %w", err)
 	}
 
+	// Store the bounceback record BEFORE calling Hevy so the record exists by the
+	// time Hevy fires the webhook back. The workoutID is already known at this point
+	// (from pipelineRun or isSameSource), so we can safely pre-write it.
+	uploadRecord := &pbactivity.UploadedActivityRecord{
+		Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, workoutID),
+		UserId:        payload.UserId,
+		Source:        payload.Source,
+		ExternalId:    payload.StandardizedActivity.GetExternalId(),
+		StartTime:     payload.Timestamp,
+		Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
+		DestinationId: workoutID,
+		UploadedAt:    timestamppb.Now(),
+	}
+	if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
+		logger.WarnContext(ctx, "Failed to pre-store Hevy bounceback record; webhook may re-trigger", "workout_id", workoutID, "error", err)
+	}
+
 	putURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)
 	putReq, err := http.NewRequestWithContext(ctx, "PUT", putURL, bytes.NewReader(bodyJSON))
 	if err != nil {
@@ -314,23 +331,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if putResp.StatusCode >= 400 {
 		err := httputil.WrapResponseError(putResp, "Hevy PUT failed")
 		return err
-	}
-
-	if !isSameSource {
-	}
-
-	uploadRecord := &pbactivity.UploadedActivityRecord{
-		Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, workoutID),
-		UserId:        payload.UserId,
-		Source:        payload.Source,
-		ExternalId:    payload.StandardizedActivity.GetExternalId(),
-		StartTime:     payload.Timestamp,
-		Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
-		DestinationId: workoutID,
-		UploadedAt:    timestamppb.Now(),
-	}
-	if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-		logger.WarnContext(ctx, "Failed to store Hevy bounceback record on update; webhook may re-trigger", "workout_id", workoutID, "error", err)
 	}
 
 	return nil

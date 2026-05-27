@@ -3694,10 +3694,32 @@
       "configSchema": [
         {
           "key": "ical_url",
-          "label": "iCal URL",
-          "description": "The private iCal/ICS URL for your calendar. In Google Calendar: Settings → your calendar → 'Secret address in iCal format'.",
+          "label": "iCal URL (Primary)",
+          "description": "The private iCal/ICS URL for your primary calendar. In Google Calendar: Settings → your calendar → 'Secret address in iCal format'. Checked first; if a single event matches, its title is used.",
           "fieldType": 1,
           "required": true,
+          "defaultValue": "",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        },
+        {
+          "key": "ical_url_2",
+          "label": "iCal URL (Secondary)",
+          "description": "Optional second calendar URL. Checked only when the primary calendar has no matching event. Lower priority than the primary URL.",
+          "fieldType": 1,
+          "required": false,
+          "defaultValue": "",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        },
+        {
+          "key": "ical_url_3",
+          "label": "iCal URL (Tertiary)",
+          "description": "Optional third calendar URL. Checked only when both the primary and secondary calendars have no matching event. Lowest priority.",
+          "fieldType": 1,
+          "required": false,
           "defaultValue": "",
           "options": [],
           "keyOptions": [],
