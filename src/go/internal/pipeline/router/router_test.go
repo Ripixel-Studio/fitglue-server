@@ -69,6 +69,10 @@ func (m *mockRouterStore) FindPipelineRunBySourceActivityID(_ context.Context, _
 	return nil, nil
 }
 
+func (m *mockRouterStore) FindAnyPipelineRunBySourceActivityID(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
+
 var _ pipeline.PipelineStore = (*mockRouterStore)(nil)
 
 type mockRouterPublisher struct {

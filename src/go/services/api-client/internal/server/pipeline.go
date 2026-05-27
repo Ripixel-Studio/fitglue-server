@@ -27,6 +27,9 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 	r.Get("/users/me/pipelines/{id}/source-activities", s.handleListSourceActivities)
 	r.Post("/users/me/pipelines/{id}/backfill", s.handleBackfillActivities)
 
+	r.Get("/users/me/connections/{provider}/activities", s.handleListConnectionActivities)
+	r.Post("/users/me/connections/{provider}/backfill", s.handleBackfillConnectionActivities)
+
 	r.Get("/users/me/pipeline-runs/{runId}/payload", s.handleGetPipelineRunPayload)
 
 	r.Post("/users/me/pending-inputs/{inputId}/submit", s.handleSubmitInput)
@@ -411,4 +414,77 @@ func (s *APIServer) handleGetPipelineRunPayload(w http.ResponseWriter, r *http.R
 		"content_type": "application/json",
 		"expires_at":   timestamppb.New(expiresAt),
 	})
+}
+
+// providerToSource maps a connection provider ID (e.g. "strava") to the source
+// enum string expected by the pipeline service (e.g. "SOURCE_STRAVA").
+var providerToSource = map[string]string{
+	"strava":    "SOURCE_STRAVA",
+	"hevy":      "SOURCE_HEVY",
+	"fitbit":    "SOURCE_FITBIT",
+	"intervals": "SOURCE_INTERVALS",
+}
+
+func (s *APIServer) handleListConnectionActivities(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	provider := chi.URLParam(r, "provider")
+	source, ok := providerToSource[provider]
+	if !ok {
+		WriteError(w, statusError(http.StatusBadRequest, "provider does not support historical activity import"))
+		return
+	}
+
+	req := &pipelinepb.ListSourceActivitiesRequest{
+		UserId:    token.UID,
+		Source:    source,
+		PageToken: r.URL.Query().Get("page_token"),
+	}
+
+	res, err := s.pipelineSvc.ListSourceActivities(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleBackfillConnectionActivities(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	provider := chi.URLParam(r, "provider")
+	source, ok := providerToSource[provider]
+	if !ok {
+		WriteError(w, statusError(http.StatusBadRequest, "provider does not support historical activity import"))
+		return
+	}
+
+	var body backfillRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	req := &pipelinepb.BackfillActivitiesRequest{
+		UserId:            token.UID,
+		Source:            source,
+		SourceActivityIds: body.SourceActivityIds,
+	}
+
+	res, err := s.pipelineSvc.BackfillActivities(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
 }

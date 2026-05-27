@@ -230,6 +230,29 @@ func (s *FirestoreStore) FindPipelineRunBySourceActivityID(ctx context.Context, 
 	return &run, nil
 }
 
+func (s *FirestoreStore) FindAnyPipelineRunBySourceActivityID(ctx context.Context, userID, sourceActivityID string) (*pipeline.PipelineRun, error) {
+	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
+		Where("source_activity_id", "==", sourceActivityID).
+		OrderBy("created_at", firestore.Desc).
+		Limit(1).
+		Documents(ctx)
+	defer iter.Stop()
+
+	doc, err := iter.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var run pipeline.PipelineRun
+	if err := decodeProtoMap(doc.Data(), &run); err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
 func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string, since, until *time.Time) ([]*pipeline.PipelineRun, string, error) {
 	if limit <= 0 {
 		limit = 50

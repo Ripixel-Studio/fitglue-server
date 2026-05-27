@@ -112,6 +112,15 @@ func (m *MockPipelineStore) FindPipelineRunBySourceActivityID(ctx context.Contex
 	return nil, nil
 }
 
+func (m *MockPipelineStore) FindAnyPipelineRunBySourceActivityID(ctx context.Context, userID, sourceActivityID string) (*pipeline.PipelineRun, error) {
+	for _, run := range m.Runs {
+		if run.SourceActivityId == sourceActivityID {
+			return run, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *MockPipelineStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string, since, until *time.Time) ([]*pipeline.PipelineRun, string, error) {
 	var results []*pipeline.PipelineRun
 	for _, r := range m.Runs {

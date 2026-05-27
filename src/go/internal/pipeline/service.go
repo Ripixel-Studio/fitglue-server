@@ -504,8 +504,8 @@ func (s *Service) ListPipelineRuns(ctx context.Context, req *pbsvc.ListPipelineR
 }
 
 func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourceActivitiesRequest) (*pbsvc.ListSourceActivitiesResponse, error) {
-	if req.UserId == "" || req.PipelineId == "" || req.Source == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id, pipeline_id, and source are required")
+	if req.UserId == "" || req.Source == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and source are required")
 	}
 	if s.userSvc == nil {
 		return nil, status.Error(codes.Unimplemented, "user service not available")
@@ -533,7 +533,12 @@ func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourc
 
 	items := make([]*pbsvc.SourceActivityItem, 0, len(rawActivities))
 	for _, a := range rawActivities {
-		existing, err := s.store.FindPipelineRunBySourceActivityID(ctx, req.UserId, req.PipelineId, a.ID)
+		var existing interface{}
+		if req.PipelineId != "" {
+			existing, err = s.store.FindPipelineRunBySourceActivityID(ctx, req.UserId, req.PipelineId, a.ID)
+		} else {
+			existing, err = s.store.FindAnyPipelineRunBySourceActivityID(ctx, req.UserId, a.ID)
+		}
 		if err != nil {
 			s.logger.Error(ctx, "dedup check failed", "error", err, "sourceActivityId", a.ID)
 		}
@@ -553,8 +558,8 @@ func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourc
 }
 
 func (s *Service) BackfillActivities(ctx context.Context, req *pbsvc.BackfillActivitiesRequest) (*pbsvc.BackfillActivitiesResponse, error) {
-	if req.UserId == "" || req.PipelineId == "" || req.Source == "" || len(req.SourceActivityIds) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id, pipeline_id, source, and source_activity_ids are required")
+	if req.UserId == "" || req.Source == "" || len(req.SourceActivityIds) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "user_id, source, and source_activity_ids are required")
 	}
 	if s.userSvc == nil {
 		return nil, status.Error(codes.Unimplemented, "user service not available")
@@ -583,7 +588,11 @@ func (s *Service) BackfillActivities(ctx context.Context, req *pbsvc.BackfillAct
 		}
 
 		// Pre-target the pipeline so the splitter routes directly without re-matching.
-		payload.PipelineId = &req.PipelineId
+		// When pipeline_id is empty (connection-scoped backfill), let the splitter route
+		// to all matching pipelines for this user/source combination.
+		if req.PipelineId != "" {
+			payload.PipelineId = &req.PipelineId
+		}
 
 		payloadBytes, err := json.Marshal(payload)
 		if err != nil {
@@ -605,6 +614,6 @@ func (s *Service) BackfillActivities(ctx context.Context, req *pbsvc.BackfillAct
 		queued++
 	}
 
-	s.logger.Info(ctx, "Backfill queued", "pipelineId", req.PipelineId, "source", req.Source, "queued", queued, "requested", len(req.SourceActivityIds))
+	s.logger.Info(ctx, "Backfill queued", "pipelineId", req.PipelineId, "source", req.Source, "queued", queued, "requested", len(req.SourceActivityIds), "connection_scoped", req.PipelineId == "")
 	return &pbsvc.BackfillActivitiesResponse{QueuedCount: queued}, nil
 }

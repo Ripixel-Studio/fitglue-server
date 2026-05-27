@@ -109,6 +109,10 @@ func (e *ErrorStore) FindPipelineRunBySourceActivityID(ctx context.Context, user
 	return e.MockPipelineStore.FindPipelineRunBySourceActivityID(ctx, userID, pipelineID, sourceActivityID)
 }
 
+func (e *ErrorStore) FindAnyPipelineRunBySourceActivityID(ctx context.Context, userID, sourceActivityID string) (*pipeline.PipelineRun, error) {
+	return e.MockPipelineStore.FindAnyPipelineRunBySourceActivityID(ctx, userID, sourceActivityID)
+}
+
 // --- Validation error tests ---
 
 func TestPipeline_Validation(t *testing.T) {

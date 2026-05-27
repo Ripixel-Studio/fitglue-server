@@ -672,6 +672,64 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/connections/{provider}/activities:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_ListConnectionActivities
+            parameters:
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: page_token
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListSourceActivitiesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/connections/{provider}/backfill:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_BackfillConnectionActivities
+            parameters:
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BackfillConnectionActivitiesGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BackfillActivitiesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/counters:
         get:
             tags:
@@ -1903,6 +1961,13 @@ components:
                     type: string
                 source:
                     type: string
+                sourceActivityIds:
+                    type: array
+                    items:
+                        type: string
+        BackfillConnectionActivitiesGatewayRequest:
+            type: object
+            properties:
                 sourceActivityIds:
                     type: array
                     items:
