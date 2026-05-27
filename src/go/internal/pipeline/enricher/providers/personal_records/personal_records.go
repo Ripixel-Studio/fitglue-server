@@ -495,6 +495,19 @@ func (p *PersonalRecordsProvider) checkAndUpdateRecord(ctx context.Context, user
 	}
 
 	if !isNewPR {
+		// If the existing record was set by this same activity (Pub/Sub duplicate / repost),
+		// reconstruct the result so the enricher output is idempotent across deliveries.
+		if existingRecord != nil && existingRecord.ActivityId == activity.ExternalId {
+			displayMessage := p.formatPRMessage(recordType, existingRecord.Value, existingRecord.PreviousValue, existingRecord.Improvement, existingRecord.Unit, lowerIsBetter)
+			return &NewPRResult{
+				RecordType:     recordType,
+				NewValue:       existingRecord.Value,
+				PreviousValue:  existingRecord.PreviousValue,
+				Improvement:    existingRecord.Improvement,
+				Unit:           existingRecord.Unit,
+				DisplayMessage: displayMessage,
+			}, nil
+		}
 		return nil, nil
 	}
 
@@ -508,13 +521,19 @@ func (p *PersonalRecordsProvider) checkAndUpdateRecord(ctx context.Context, user
 		improvement = &imp
 	}
 
+	// Use the activity's actual start time for AchievedAt, not processing time.
+	achievedAt := timestamppb.Now()
+	if len(activity.Sessions) > 0 && activity.Sessions[0].StartTime != nil {
+		achievedAt = activity.Sessions[0].StartTime
+	}
+
 	// Create new record
 	newRecord := &pbuser.PersonalRecord{
 		RecordType:   recordType,
 		Value:        newValue,
 		Unit:         unit,
 		ActivityId:   activity.ExternalId,
-		AchievedAt:   timestamppb.Now(),
+		AchievedAt:   achievedAt,
 		ActivityType: activity.Type,
 	}
 	if previousValue != nil {
