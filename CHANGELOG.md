@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.24.1](https://github.com/FitGlue/server/compare/v16.24.0...v16.24.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **infra:** add USER_SERVICE_URL env var to pipeline service ([d845b52](https://github.com/FitGlue/server/commit/d845b525f69c3923c1285ceddb28d1ed759b4eef))
+* **infra:** use URL pattern for USER_SERVICE_URL in pipeline service ([93e5fb9](https://github.com/FitGlue/server/commit/93e5fb9497cbe7a1cf9547a0d47d273816381308))
+
 ## [16.24.0](https://github.com/FitGlue/server/compare/v16.23.9...v16.24.0) (2026-05-27)
 
 
