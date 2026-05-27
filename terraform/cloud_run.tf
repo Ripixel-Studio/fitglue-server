@@ -928,6 +928,14 @@ resource "google_cloud_run_v2_service_iam_member" "pipeline_to_destination" {
   member   = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
 }
 
+# Pipeline invokes User (GetIntegration for historical sync)
+resource "google_cloud_run_v2_service_iam_member" "pipeline_to_user" {
+  name     = google_cloud_run_v2_service.backend["user"].name
+  location = google_cloud_run_v2_service.backend["user"].location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
+}
+
 # Destination invokes User (GetProfile, ListIntegrations)
 resource "google_cloud_run_v2_service_iam_member" "destination_to_user" {
   name     = google_cloud_run_v2_service.backend["user"].name
