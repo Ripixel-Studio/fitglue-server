@@ -109,7 +109,7 @@ resource "google_cloud_run_v2_service" "backend" {
         for_each = each.key == "pipeline" ? [1] : []
         content {
           name  = "USER_SERVICE_URL"
-          value = google_cloud_run_v2_service.backend["user"].uri
+          value = "https://user-${data.google_project.project.number}.${var.region}.run.app"
         }
       }
 
