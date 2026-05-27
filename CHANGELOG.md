@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.7](https://github.com/FitGlue/server/compare/v16.23.6...v16.23.7) (2026-05-27)
+
+
+### Bug Fixes
+
+* **pipeline:** prevent GCS path collisions causing showcase data cross-contamination ([5106af1](https://github.com/FitGlue/server/commit/5106af186ed2f354553b603d499551737aa758df))
+
 ### [16.23.6](https://github.com/FitGlue/server/compare/v16.23.5...v16.23.6) (2026-05-26)
 
 
