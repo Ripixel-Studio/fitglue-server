@@ -683,7 +683,7 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: page_token
+                - name: pageToken
                   in: query
                   schema:
                     type: string
@@ -1965,19 +1965,21 @@ components:
                     type: array
                     items:
                         type: string
-        BackfillConnectionActivitiesGatewayRequest:
-            type: object
-            properties:
-                sourceActivityIds:
-                    type: array
-                    items:
-                        type: string
         BackfillActivitiesGatewayResponse:
             type: object
             properties:
                 queuedCount:
                     type: integer
                     format: int32
+        BackfillConnectionActivitiesGatewayRequest:
+            type: object
+            properties:
+                provider:
+                    type: string
+                sourceActivityIds:
+                    type: array
+                    items:
+                        type: string
         BoosterExecution:
             type: object
             properties:

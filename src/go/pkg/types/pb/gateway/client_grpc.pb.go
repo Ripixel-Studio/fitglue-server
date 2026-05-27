@@ -33,6 +33,8 @@ const (
 	ClientGatewayService_DeleteIntegration_FullMethodName                  = "/fitglue.gateway.ClientGatewayService/DeleteIntegration"
 	ClientGatewayService_OAuthConnect_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/OAuthConnect"
 	ClientGatewayService_ConnectionAction_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/ConnectionAction"
+	ClientGatewayService_ListConnectionActivities_FullMethodName           = "/fitglue.gateway.ClientGatewayService/ListConnectionActivities"
+	ClientGatewayService_BackfillConnectionActivities_FullMethodName       = "/fitglue.gateway.ClientGatewayService/BackfillConnectionActivities"
 	ClientGatewayService_GetNotificationPrefs_FullMethodName               = "/fitglue.gateway.ClientGatewayService/GetNotificationPrefs"
 	ClientGatewayService_UpdateNotificationPrefs_FullMethodName            = "/fitglue.gateway.ClientGatewayService/UpdateNotificationPrefs"
 	ClientGatewayService_ListCounters_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/ListCounters"
@@ -128,6 +130,8 @@ type ClientGatewayServiceClient interface {
 	OAuthConnect(ctx context.Context, in *ProviderRequest, opts ...grpc.CallOption) (*OAuthConnectResponse, error)
 	// ===================== Connection Actions =====================
 	ConnectionAction(ctx context.Context, in *ConnectionActionGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListConnectionActivities(ctx context.Context, in *ListConnectionActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListSourceActivitiesGatewayResponse, error)
+	BackfillConnectionActivities(ctx context.Context, in *BackfillConnectionActivitiesGatewayRequest, opts ...grpc.CallOption) (*BackfillActivitiesGatewayResponse, error)
 	// ===================== Notification Preferences =====================
 	GetNotificationPrefs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*user.NotificationPreferences, error)
 	UpdateNotificationPrefs(ctx context.Context, in *user.NotificationPreferences, opts ...grpc.CallOption) (*user.NotificationPreferences, error)
@@ -311,6 +315,26 @@ func (c *clientGatewayServiceClient) ConnectionAction(ctx context.Context, in *C
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, ClientGatewayService_ConnectionAction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) ListConnectionActivities(ctx context.Context, in *ListConnectionActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListSourceActivitiesGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSourceActivitiesGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_ListConnectionActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) BackfillConnectionActivities(ctx context.Context, in *BackfillConnectionActivitiesGatewayRequest, opts ...grpc.CallOption) (*BackfillActivitiesGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BackfillActivitiesGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_BackfillConnectionActivities_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1040,6 +1064,8 @@ type ClientGatewayServiceServer interface {
 	OAuthConnect(context.Context, *ProviderRequest) (*OAuthConnectResponse, error)
 	// ===================== Connection Actions =====================
 	ConnectionAction(context.Context, *ConnectionActionGatewayRequest) (*emptypb.Empty, error)
+	ListConnectionActivities(context.Context, *ListConnectionActivitiesGatewayRequest) (*ListSourceActivitiesGatewayResponse, error)
+	BackfillConnectionActivities(context.Context, *BackfillConnectionActivitiesGatewayRequest) (*BackfillActivitiesGatewayResponse, error)
 	// ===================== Notification Preferences =====================
 	GetNotificationPrefs(context.Context, *EmptyRequest) (*user.NotificationPreferences, error)
 	UpdateNotificationPrefs(context.Context, *user.NotificationPreferences) (*user.NotificationPreferences, error)
@@ -1165,6 +1191,12 @@ func (UnimplementedClientGatewayServiceServer) OAuthConnect(context.Context, *Pr
 }
 func (UnimplementedClientGatewayServiceServer) ConnectionAction(context.Context, *ConnectionActionGatewayRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConnectionAction not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) ListConnectionActivities(context.Context, *ListConnectionActivitiesGatewayRequest) (*ListSourceActivitiesGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListConnectionActivities not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) BackfillConnectionActivities(context.Context, *BackfillConnectionActivitiesGatewayRequest) (*BackfillActivitiesGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BackfillConnectionActivities not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) GetNotificationPrefs(context.Context, *EmptyRequest) (*user.NotificationPreferences, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetNotificationPrefs not implemented")
@@ -1555,6 +1587,42 @@ func _ClientGatewayService_ConnectionAction_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClientGatewayServiceServer).ConnectionAction(ctx, req.(*ConnectionActionGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_ListConnectionActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConnectionActivitiesGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).ListConnectionActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_ListConnectionActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).ListConnectionActivities(ctx, req.(*ListConnectionActivitiesGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_BackfillConnectionActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BackfillConnectionActivitiesGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).BackfillConnectionActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_BackfillConnectionActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).BackfillConnectionActivities(ctx, req.(*BackfillConnectionActivitiesGatewayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2861,6 +2929,14 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConnectionAction",
 			Handler:    _ClientGatewayService_ConnectionAction_Handler,
+		},
+		{
+			MethodName: "ListConnectionActivities",
+			Handler:    _ClientGatewayService_ListConnectionActivities_Handler,
+		},
+		{
+			MethodName: "BackfillConnectionActivities",
+			Handler:    _ClientGatewayService_BackfillConnectionActivities_Handler,
 		},
 		{
 			MethodName: "GetNotificationPrefs",

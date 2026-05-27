@@ -81,6 +81,17 @@ service ClientGatewayService {
       body: "*"
     };
   }
+  rpc ListConnectionActivities(ListConnectionActivitiesGatewayRequest) returns (ListSourceActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/connections/{provider}/activities"
+    };
+  }
+  rpc BackfillConnectionActivities(BackfillConnectionActivitiesGatewayRequest) returns (BackfillActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/connections/{provider}/backfill"
+      body: "*"
+    };
+  }
 
   // ===================== Notification Preferences =====================
   rpc GetNotificationPrefs(EmptyRequest) returns (fitglue.models.user.NotificationPreferences) {
@@ -642,6 +653,16 @@ message BackfillActivitiesGatewayRequest {
 
 message BackfillActivitiesGatewayResponse {
   int32 queued_count = 1;
+}
+
+message ListConnectionActivitiesGatewayRequest {
+  string provider   = 1; // from path
+  string page_token = 2;
+}
+
+message BackfillConnectionActivitiesGatewayRequest {
+  string provider                     = 1; // from path
+  repeated string source_activity_ids = 2;
 }
 
 message SubmitInputGatewayRequest {
