@@ -15,7 +15,6 @@ import (
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -57,52 +56,19 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 
 	// Same-source dedup: check if this activity was already processed
 	externalId := inputs["external_id"]
+	// Same-source dedup: if we've already processed this external_id, skip re-computation.
+	// We intentionally never return cached typed enrichments (personalRecords) — doing so
+	// caused showcase GCS blobs to receive PR data from a different activity when two
+	// pipeline runs shared an external_id (e.g. Pub/Sub duplicate delivery). Always
+	// running fresh is safe: a re-run for the same activity finds no new PRs because
+	// Firestore already holds the record from the first run.
 	if externalId != "" && p.Service != nil && p.Service.DB != nil {
 		boosterId := "personal_records_cache"
 		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err == nil && data != nil {
 			if storedExtId, ok := data["last_external_id"].(string); ok && storedExtId == externalId {
-				// Only use cache if structured enrichments were also cached.
-				// If last_result_enrichments is absent (written by older code), fall through
-				// and run fresh so the showcase GCS blob gets proper typed enrichment data.
-				enrichmentsJSON, hasEnrichments := data["last_result_enrichments"].(string)
-				if !hasEnrichments || enrichmentsJSON == "" {
-					logger.Info("personal_records: cache hit but no enrichments stored — running fresh",
-						"external_id", externalId)
-				} else {
-					cachedDesc := ""
-					if v, ok := data["last_result_description"].(string); ok {
-						cachedDesc = v
-					}
-					cachedName := ""
-					if v, ok := data["last_result_name"].(string); ok {
-						cachedName = v
-					}
-					cachedMetadata := map[string]string{}
-					if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
-						for k, val := range v {
-							if s, ok := val.(string); ok {
-								cachedMetadata[k] = s
-							}
-						}
-					}
-					cachedMetadata["dedup"] = "true"
-
-					logger.Info("personal_records: returning cached result for same-source activity",
-						"external_id", externalId)
-					result := &providers.EnrichmentResult{
-						Description: cachedDesc,
-						Metadata:    cachedMetadata,
-					}
-					if cachedName != "" {
-						result.Name = cachedName
-					}
-					var enrichments pbactivity.ActivityEnrichments
-					if err := protojson.Unmarshal([]byte(enrichmentsJSON), &enrichments); err == nil {
-						result.Enrichments = &enrichments
-					}
-					return result, nil
-				}
+				logger.Info("personal_records: cache hit — running fresh (typed enrichments never cached)",
+					"external_id", externalId)
 			}
 		}
 	}
@@ -216,7 +182,9 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 		"activity_type", activity.Type.String(),
 	)
 
-	// Cache result for same-source dedup
+	// Cache result for same-source dedup (metadata only — intentionally not caching
+	// typed enrichments to prevent showcase contamination when duplicate activities
+	// share an external_id across pipeline runs).
 	if externalId != "" && p.Service != nil && p.Service.DB != nil {
 		metadataMap := make(map[string]interface{})
 		for k, v := range result.Metadata {
@@ -227,12 +195,6 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 			"last_result_description": result.Description,
 			"last_result_name":        result.Name,
 			"last_result_metadata":    metadataMap,
-		}
-		// Cache structured enrichments so dedup hits restore full typed data
-		if result.Enrichments != nil {
-			if b, err := protojson.Marshal(result.Enrichments); err == nil {
-				cacheData["last_result_enrichments"] = string(b)
-			}
 		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, "personal_records_cache", cacheData); err != nil {
 			logger.Warn("personal_records: failed to cache dedup result", "error", err)
