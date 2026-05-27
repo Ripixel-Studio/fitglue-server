@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.8](https://github.com/FitGlue/server/compare/v16.23.7...v16.23.8) (2026-05-27)
+
+
+### Bug Fixes
+
+* **pipeline:** stop caching typed PR enrichments to prevent showcase contamination ([a6fca83](https://github.com/FitGlue/server/commit/a6fca83f3d77aac2b09fd9c31b15a61e03a7c9c2))
+
 ### [16.23.7](https://github.com/FitGlue/server/compare/v16.23.6...v16.23.7) (2026-05-27)
 
 
