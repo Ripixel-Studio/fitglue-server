@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.24.2](https://github.com/FitGlue/server/compare/v16.24.1...v16.24.2) (2026-05-27)
+
+
+### Bug Fixes
+
+* **enricher:** ensure idempotent output for duplicate Pub/Sub activities and use actual start time for AchievedAt ([346710a](https://github.com/FitGlue/server/commit/346710a1ac4794f942cb35ed9d111c0d1215183a))
+* **infra:** grant pipeline service invoker permission on user service ([94dfd1a](https://github.com/FitGlue/server/commit/94dfd1ab715ae9f240377a549326898838c85779))
+
 ### [16.24.1](https://github.com/FitGlue/server/compare/v16.24.0...v16.24.1) (2026-05-27)
 
 
