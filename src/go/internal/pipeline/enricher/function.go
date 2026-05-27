@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
-	"github.com/google/uuid"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	"github.com/google/uuid"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
