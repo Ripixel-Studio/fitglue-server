@@ -105,6 +105,13 @@ resource "google_cloud_run_v2_service" "backend" {
           value = "https://assets.${var.domain_name}"
         }
       }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "USER_SERVICE_URL"
+          value = google_cloud_run_v2_service.backend["user"].uri
+        }
+      }
 
       # ── User service env vars ──
       dynamic "env" {
