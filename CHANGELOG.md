@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.23.9](https://github.com/FitGlue/server/compare/v16.23.8...v16.23.9) (2026-05-27)
+
+
+### Bug Fixes
+
+* **ical): fix file-upload title, EXDATE exclusions, and multi-calendar support; fix(hevy:** prevent update race by storing record before PUT ([7c14b9a](https://github.com/FitGlue/server/commit/7c14b9abf6894cca859af413982f505f948e881a))
+
 ### [16.23.8](https://github.com/FitGlue/server/compare/v16.23.7...v16.23.8) (2026-05-27)
 
 
