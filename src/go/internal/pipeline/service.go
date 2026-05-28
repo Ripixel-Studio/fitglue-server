@@ -10,6 +10,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	"github.com/fitglue/server/src/go/pkg/sourceplugins"
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
@@ -594,17 +595,12 @@ func (s *Service) BackfillActivities(ctx context.Context, req *pbsvc.BackfillAct
 			payload.PipelineId = &req.PipelineId
 		}
 
-		payloadBytes, err := json.Marshal(payload)
+		ce, err := infrapubsub.NewCloudEvent("com.fitglue.backfill", "com.fitglue.cloud_event.backfill", payload)
 		if err != nil {
-			s.logger.Error(ctx, "failed to marshal backfill payload", "error", err)
+			s.logger.Error(ctx, "failed to build backfill cloud event", "error", err)
 			continue
 		}
-
-		ce := cloudevents.NewEvent()
 		ce.SetID(fmt.Sprintf("%d-%s", time.Now().UnixNano(), sourceActivityID))
-		ce.SetSource("com.fitglue.backfill")
-		ce.SetType("com.fitglue.cloud_event.backfill")
-		ce.SetData(cloudevents.ApplicationJSON, payloadBytes)
 
 		if _, err := s.publisher.PublishCloudEvent(ctx, shared.TopicRawActivity, ce); err != nil {
 			s.logger.Error(ctx, "failed to publish backfill event", "error", err, "sourceActivityId", sourceActivityID)
