@@ -81,23 +81,56 @@ func (p *EffortScore) Enrich(ctx context.Context, logger *slog.Logger, activity 
 
 	// 2. Fetch rolling history from booster_data
 	var history []activitySnapshot
+	var lastExternalId string
+	var cachedDescription string
+	var cachedMetadata map[string]string
+
 	if p.Service != nil && p.Service.DB != nil {
 		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterID)
 		if err != nil {
 			logger.Warn("effort_score: failed to fetch history", "error", err)
 		} else if data != nil {
 			history = parseHistory(data)
+			if v, ok := data["last_external_id"].(string); ok {
+				lastExternalId = v
+			}
+			if v, ok := data["last_result_description"].(string); ok {
+				cachedDescription = v
+			}
+			if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+				cachedMetadata = make(map[string]string)
+				for k, val := range v {
+					if s, ok := val.(string); ok {
+						cachedMetadata[k] = s
+					}
+				}
+			}
 		}
 	}
 
 	logger.Debug("effort_score: history loaded", "count", len(history))
 
+	// Same-source dedup: return cached result without re-appending to history
+	externalId := inputs["external_id"]
+	if externalId != "" && lastExternalId == externalId && cachedDescription != "" {
+		logger.Info("effort_score: returning cached result for same-source activity",
+			"external_id", externalId)
+		if cachedMetadata == nil {
+			cachedMetadata = map[string]string{}
+		}
+		cachedMetadata["dedup"] = "true"
+		return &providers.EnrichmentResult{
+			Description: cachedDescription,
+			Metadata:    cachedMetadata,
+		}, nil
+	}
+
 	// 3. Check minimum history
 	if len(history) < minHistory {
 		logger.Debug("effort_score: insufficient history, skipping", "count", len(history))
 
-		// Still persist the current activity to build history
-		p.persistHistory(ctx, logger, user.UserId, history, current)
+		// Still persist the current activity to build history (no dedup fields — nothing to cache yet)
+		p.persistHistory(ctx, logger, user.UserId, history, current, nil)
 
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
@@ -119,19 +152,29 @@ func (p *EffortScore) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		"label", label,
 	)
 
-	// 6. Persist updated history
-	p.persistHistory(ctx, logger, user.UserId, history, current)
-
-	// 7. Build output (Rule G52 multi-line bullet format)
+	// 6. Build output before persisting so we can cache the description for dedup
 	description := buildDescription(score, label, factors)
+
+	resultMetadata := map[string]string{
+		"status": "success",
+		"score":  fmt.Sprintf("%.0f", score),
+		"label":  label,
+	}
+	metadataMap := make(map[string]interface{})
+	for k, v := range resultMetadata {
+		metadataMap[k] = v
+	}
+
+	// 7. Persist updated history + dedup fields
+	p.persistHistory(ctx, logger, user.UserId, history, current, map[string]interface{}{
+		"last_external_id":        externalId,
+		"last_result_description": description,
+		"last_result_metadata":    metadataMap,
+	})
 
 	return &providers.EnrichmentResult{
 		Description: description,
-		Metadata: map[string]string{
-			"status": "success",
-			"score":  fmt.Sprintf("%.0f", score),
-			"label":  label,
-		},
+		Metadata:    resultMetadata,
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Effort: &pbactivity.EffortScoreSummary{
 				Score: int32(score),
@@ -178,8 +221,13 @@ func extractMetrics(activity *pbactivity.StandardizedActivity) activitySnapshot 
 		}
 	}
 
+	activityDate := time.Now().Format("2006-01-02")
+	if activity.StartTime != nil {
+		activityDate = activity.StartTime.AsTime().Format("2006-01-02")
+	}
+
 	snap := activitySnapshot{
-		Date:     time.Now().Format("2006-01-02"),
+		Date:     activityDate,
 		Duration: durationMinutes,
 		ElevGain: elevGain,
 	}
@@ -423,7 +471,8 @@ func buildDescription(score float64, label string, factors []factorDetail) strin
 }
 
 // persistHistory saves the updated activity history to booster_data.
-func (p *EffortScore) persistHistory(ctx context.Context, logger *slog.Logger, userID string, history []activitySnapshot, current activitySnapshot) {
+// extraFields is merged into the saved document (used for dedup fields when a score was computed).
+func (p *EffortScore) persistHistory(ctx context.Context, logger *slog.Logger, userID string, history []activitySnapshot, current activitySnapshot, extraFields map[string]interface{}) {
 	if p.Service == nil || p.Service.DB == nil {
 		return
 	}
@@ -449,6 +498,9 @@ func (p *EffortScore) persistHistory(ctx context.Context, logger *slog.Logger, u
 
 	updateData := map[string]interface{}{
 		historyKey: historyData,
+	}
+	for k, v := range extraFields {
+		updateData[k] = v
 	}
 
 	if err := p.Service.DB.SetBoosterData(ctx, userID, boosterID, updateData); err != nil {

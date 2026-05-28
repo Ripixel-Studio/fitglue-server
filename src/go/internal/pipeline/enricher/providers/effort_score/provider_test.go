@@ -302,6 +302,49 @@ func TestComputeEffortScore_HarderEffort(t *testing.T) {
 	}
 }
 
+func TestEffortScore_SameSourceDedup(t *testing.T) {
+	historyEntries := makeHistoryData(5, 140, 5.0, 30, 50, 60)
+
+	var saveCount int
+	mockDB := &mocks.MockDatabase{
+		GetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"activities":              historyEntries,
+				"last_external_id":        "activity-abc",
+				"last_result_description": "💥 Effort Score: 50/100 (Moderate)\n• ➡️ Typical effort",
+				"last_result_metadata": map[string]interface{}{
+					"status": "success",
+					"score":  "50",
+					"label":  "Moderate",
+				},
+			}, nil
+		},
+		SetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+			saveCount++
+			return nil
+		},
+	}
+
+	provider := NewEffortScore()
+	provider.Service = &bootstrap.Service{DB: mockDB}
+
+	activity := makeActivity(30, 140, 3.33, 100)
+	u := &user.Record{UserProfile: &pbuser.UserProfile{UserId: "test-user"}}
+	inputs := map[string]string{"external_id": "activity-abc"}
+
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, u, inputs, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+
+	if result.Metadata["dedup"] != "true" {
+		t.Error("Expected dedup=true for same-source activity")
+	}
+	if saveCount != 0 {
+		t.Errorf("Expected no Firestore writes on dedup, got %d", saveCount)
+	}
+}
+
 func TestComputeEffortScore_EasierEffort(t *testing.T) {
 	// Activity easier than averages
 	current := activitySnapshot{
