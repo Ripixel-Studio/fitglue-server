@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.25.0](https://github.com/FitGlue/server/compare/v16.24.3...v16.25.0) (2026-05-28)
+
+
+### Features
+
+* **showcase:** add created_at to ShowcaseProfileEntry proto ([2010524](https://github.com/FitGlue/server/commit/20105248e417573bff137427c62f2d58dd4c64da))
+
+
+### Bug Fixes
+
+* **api-admin:** check admin status via Firestore isAdmin field ([37d146d](https://github.com/FitGlue/server/commit/37d146d705799cd8dca139b29d66cb43255e9a1b))
+* **effort-score:** add same-source dedup to avoid re-enriching same activity ([1b39664](https://github.com/FitGlue/server/commit/1b39664f832539539424029800a29fd442daf8b4))
+* **goal-tracker:** use activity start time for period bucketing ([6c64441](https://github.com/FitGlue/server/commit/6c644413d78bd6b9a2d89dc5dd46ae853c44ce14))
+
 ### [16.24.3](https://github.com/FitGlue/server/compare/v16.24.2...v16.24.3) (2026-05-28)
 
 
