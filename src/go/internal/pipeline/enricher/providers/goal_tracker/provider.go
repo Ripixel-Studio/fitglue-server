@@ -61,12 +61,20 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		target = 100 // Default 100km goal
 	}
 
+	// Determine which period this activity belongs to using its own start time,
+	// not processing time. This ensures backdated uploads count toward the correct period.
+	activityTime := time.Now()
+	if activity.StartTime != nil {
+		activityTime = activity.StartTime.AsTime()
+	}
+	activityPeriod := getPeriodKey(period, activityTime)
+	isCurrentPeriod := activityPeriod == getPeriodKey(period, time.Now())
+
 	// Get current metric value from this activity
 	activityValue := getMetricValue(activity, metric)
 
 	// Fetch accumulated progress from booster_data
 	var accumulatedProgress float64
-	var currentPeriod string
 	boosterId := fmt.Sprintf("goal_tracker_%s_%s", period, metric)
 
 	var lastExternalId string
@@ -78,13 +86,10 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		if err != nil {
 			logger.Warn("Failed to fetch goal progress", "error", err)
 		} else if data != nil {
-			// Check if data is from current period
-			if storedPeriod, ok := data["period_key"].(string); ok {
-				currentPeriod = getPeriodKey(period)
-				if storedPeriod == currentPeriod {
-					accumulatedProgress = providers.ToFloat64(data["accumulated"])
-				}
-				// If period changed, reset (new week/month/year)
+			// Only load accumulated if the stored period matches this activity's period.
+			// A mismatch means either a new period started (reset) or the activity is backdated.
+			if storedPeriod, ok := data["period_key"].(string); ok && storedPeriod == activityPeriod {
+				accumulatedProgress = providers.ToFloat64(data["accumulated"])
 			}
 			if v, ok := data["last_external_id"].(string); ok {
 				lastExternalId = v
@@ -125,9 +130,15 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		percentage = 100
 	}
 
+	// Days remaining is only meaningful for the current period
+	daysRemaining := 0
+	if isCurrentPeriod {
+		daysRemaining = getDaysRemaining(period, activityTime)
+	}
+
 	// Build output
 	var sb strings.Builder
-	periodLabel := getPeriodLabel(period)
+	periodLabel := getPeriodLabel(period, activityTime)
 	metricLabel := getMetricLabel(metric)
 
 	// Progress bar
@@ -137,10 +148,10 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	sb.WriteString(fmt.Sprintf("• %s %.1f/%.0f %s\n", progressBar, newTotal, target, metricLabel))
 	sb.WriteString(fmt.Sprintf("• ➕ This activity: +%.1f %s", activityValue, metricLabel))
 
-	// Show remaining if not complete
-	if newTotal < target {
+	if !isCurrentPeriod {
+		sb.WriteString("\n• 📅 Past activity — counted toward original period")
+	} else if newTotal < target {
 		remaining := target - newTotal
-		daysRemaining := getDaysRemaining(period)
 		if daysRemaining > 0 {
 			neededPerDay := remaining / float64(daysRemaining)
 			sb.WriteString(fmt.Sprintf("\n• 💡 Need %.1f %s/day to hit goal", neededPerDay, metricLabel))
@@ -156,6 +167,7 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		"accumulated", newTotal,
 		"target", target,
 		"percentage", percentage,
+		"is_current_period", isCurrentPeriod,
 	)
 
 	resultMetadata := map[string]string{
@@ -166,18 +178,16 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		"goal_metric":      metric,
 	}
 
-	// Persist updated progress + cached result for same-source dedup
-	if p.Service != nil && p.Service.DB != nil && activityValue > 0 {
-		if currentPeriod == "" {
-			currentPeriod = getPeriodKey(period)
-		}
+	// Only persist state for current-period activities. Saving a backdated activity's period key
+	// would overwrite the stored data for the current period, wiping progress for current-period activities.
+	if p.Service != nil && p.Service.DB != nil && activityValue > 0 && isCurrentPeriod {
 		metadataMap := make(map[string]interface{})
 		for k, v := range resultMetadata {
 			metadataMap[k] = v
 		}
 		updateData := map[string]interface{}{
 			"accumulated":             newTotal,
-			"period_key":              currentPeriod,
+			"period_key":              activityPeriod,
 			"last_external_id":        externalId,
 			"last_result_description": sb.String(),
 			"last_result_metadata":    metadataMap,
@@ -194,12 +204,12 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 			GoalTracker: &pbactivity.GoalTrackerSummary{
 				Goals: []*pbactivity.GoalEntry{
 					{
-						Label:         fmt.Sprintf("%s · %.0f %s", getPeriodLabel(period), target, getMetricLabel(metric)),
+						Label:         fmt.Sprintf("%s · %.0f %s", getPeriodLabel(period, activityTime), target, getMetricLabel(metric)),
 						Current:       newTotal,
 						Target:        target,
 						Unit:          getMetricLabel(metric),
 						OnPace:        newTotal >= target,
-						DaysRemaining: int32(getDaysRemaining(period)),
+						DaysRemaining: int32(daysRemaining),
 					},
 				},
 			},
@@ -229,29 +239,27 @@ func getMetricValue(activity *pbactivity.StandardizedActivity, metric string) fl
 	return total
 }
 
-func getPeriodLabel(period string) string {
-	now := time.Now()
+func getPeriodLabel(period string, t time.Time) string {
 	switch period {
 	case "week":
 		return "Weekly"
 	case "year":
-		return fmt.Sprintf("%d", now.Year())
+		return fmt.Sprintf("%d", t.Year())
 	default:
-		return now.Format("January")
+		return t.Format("January")
 	}
 }
 
-// getPeriodKey returns a unique key for the current period to track resets
-func getPeriodKey(period string) string {
-	now := time.Now()
+// getPeriodKey returns a unique key for the given time's period to track resets
+func getPeriodKey(period string, t time.Time) string {
 	switch period {
 	case "week":
-		year, week := now.ISOWeek()
+		year, week := t.ISOWeek()
 		return fmt.Sprintf("%d-W%02d", year, week)
 	case "year":
-		return fmt.Sprintf("%d", now.Year())
+		return fmt.Sprintf("%d", t.Year())
 	default: // month
-		return now.Format("2006-01")
+		return t.Format("2006-01")
 	}
 }
 
@@ -268,16 +276,15 @@ func getMetricLabel(metric string) string {
 	}
 }
 
-func getDaysRemaining(period string) int {
-	now := time.Now()
+func getDaysRemaining(period string, t time.Time) int {
 	switch period {
 	case "week":
-		return 7 - int(now.Weekday())
+		return 7 - int(t.Weekday())
 	case "year":
-		endOfYear := time.Date(now.Year(), 12, 31, 0, 0, 0, 0, now.Location())
-		return int(endOfYear.Sub(now).Hours() / 24)
+		endOfYear := time.Date(t.Year(), 12, 31, 0, 0, 0, 0, t.Location())
+		return int(endOfYear.Sub(t).Hours() / 24)
 	default: // month
-		endOfMonth := time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, now.Location())
-		return endOfMonth.Day() - now.Day()
+		endOfMonth := time.Date(t.Year(), t.Month()+1, 0, 0, 0, 0, 0, t.Location())
+		return endOfMonth.Day() - t.Day()
 	}
 }

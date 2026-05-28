@@ -3,6 +3,7 @@ package goal_tracker
 import (
 	"strings"
 	"testing"
+	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 )
@@ -69,6 +70,7 @@ func TestGetMetricValueEmpty(t *testing.T) {
 }
 
 func TestGetPeriodLabel(t *testing.T) {
+	now := time.Now()
 	tests := []struct {
 		period string
 		want   string
@@ -80,7 +82,7 @@ func TestGetPeriodLabel(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := getPeriodLabel(tt.period)
+		got := getPeriodLabel(tt.period, now)
 		if tt.want != "" && got != tt.want {
 			t.Errorf("getPeriodLabel(%q) = %q, want %q", tt.period, got, tt.want)
 		}
@@ -91,27 +93,40 @@ func TestGetPeriodLabel(t *testing.T) {
 }
 
 func TestGetPeriodKey(t *testing.T) {
+	now := time.Now()
 	tests := []string{"week", "year", "month", ""}
 	for _, period := range tests {
-		key := getPeriodKey(period)
+		key := getPeriodKey(period, now)
 		if key == "" {
 			t.Errorf("getPeriodKey(%q) returned empty string", period)
 		}
 	}
 
-	weekKey := getPeriodKey("week")
+	weekKey := getPeriodKey("week", now)
 	if !strings.Contains(weekKey, "W") {
 		t.Errorf("week key should contain 'W', got %q", weekKey)
 	}
 
-	yearKey := getPeriodKey("year")
+	yearKey := getPeriodKey("year", now)
 	if len(yearKey) != 4 {
 		t.Errorf("year key should be 4 digits, got %q", yearKey)
 	}
 
-	monthKey := getPeriodKey("month")
+	monthKey := getPeriodKey("month", now)
 	if !strings.Contains(monthKey, "-") {
 		t.Errorf("month key should contain '-', got %q", monthKey)
+	}
+}
+
+func TestGetPeriodKeyPastActivity(t *testing.T) {
+	now := time.Now()
+	lastMonth := now.AddDate(0, -1, 0)
+
+	nowKey := getPeriodKey("month", now)
+	pastKey := getPeriodKey("month", lastMonth)
+
+	if nowKey == pastKey {
+		t.Errorf("current and past month should produce different keys, both got %q", nowKey)
 	}
 }
 
@@ -137,9 +152,10 @@ func TestGetMetricLabel(t *testing.T) {
 }
 
 func TestGetDaysRemaining(t *testing.T) {
+	now := time.Now()
 	tests := []string{"week", "year", "month", ""}
 	for _, period := range tests {
-		days := getDaysRemaining(period)
+		days := getDaysRemaining(period, now)
 		if days < 0 {
 			t.Errorf("getDaysRemaining(%q) = %d, want >= 0", period, days)
 		}
