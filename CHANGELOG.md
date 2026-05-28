@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.24.3](https://github.com/FitGlue/server/compare/v16.24.2...v16.24.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* **api:** read pageToken (camelCase) for connection activities pagination ([3dfbdbe](https://github.com/FitGlue/server/commit/3dfbdbe851f152c4f5351467f3fc63b5bd53f013))
+
 ### [16.24.2](https://github.com/FitGlue/server/compare/v16.24.1...v16.24.2) (2026-05-27)
 
 
