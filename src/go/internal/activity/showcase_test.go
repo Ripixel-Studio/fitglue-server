@@ -38,7 +38,6 @@ func TestShowcaseOffloading(t *testing.T) {
 		UserId: "u1",
 		Showcase: &pbactivity.ShowcasedActivity{
 			ShowcaseId: "s1",
-			UserId:     "u1",
 			ActivityData: &pbactivity.StandardizedActivity{
 				Name: "Massive Workout Data",
 			},

@@ -30,12 +30,12 @@ func (m *mockUserServiceClient) GetIntegration(ctx context.Context, in *userpb.G
 }
 
 func TestProvider_ID(t *testing.T) {
-	p := github.NewProvider()
+	p := github.NewProvider("")
 	assert.Equal(t, "github", p.ID())
 }
 
 func TestProvider_VerifySubscription(t *testing.T) {
-	p := github.NewProvider()
+	p := github.NewProvider("")
 	req := httptest.NewRequest(http.MethodGet, "/webhook/github", nil)
 	w := httptest.NewRecorder()
 
@@ -45,7 +45,7 @@ func TestProvider_VerifySubscription(t *testing.T) {
 }
 
 func TestProvider_ParseEvent(t *testing.T) {
-	p := github.NewProvider()
+	p := github.NewProvider("")
 
 	t.Run("ignore non-push event", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/webhook/github", bytes.NewBufferString(`{}`))
@@ -159,7 +159,7 @@ func TestProvider_ParseEvent(t *testing.T) {
 }
 
 func TestFetchActivity(t *testing.T) {
-	provider := github.NewProvider()
+	provider := github.NewProvider("")
 
 	t.Run("valid payload", func(t *testing.T) {
 		userSvc := &mockUserServiceClient{}
