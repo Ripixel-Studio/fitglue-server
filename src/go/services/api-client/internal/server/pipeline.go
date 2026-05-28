@@ -442,7 +442,7 @@ func (s *APIServer) handleListConnectionActivities(w http.ResponseWriter, r *htt
 	req := &pipelinepb.ListSourceActivitiesRequest{
 		UserId:    token.UID,
 		Source:    source,
-		PageToken: r.URL.Query().Get("page_token"),
+		PageToken: r.URL.Query().Get("pageToken"),
 	}
 
 	res, err := s.pipelineSvc.ListSourceActivities(r.Context(), req)
