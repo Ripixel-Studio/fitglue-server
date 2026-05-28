@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.25.2](https://github.com/FitGlue/server/compare/v16.25.1...v16.25.2) (2026-05-28)
+
+
+### Bug Fixes
+
+* **pipeline:** fix nil interface trap in AlreadySynced dedup check ([438a0ea](https://github.com/FitGlue/server/commit/438a0eaa19fe664b8479a9f51f390148ecf5970b))
+
 ### [16.25.1](https://github.com/FitGlue/server/compare/v16.25.0...v16.25.1) (2026-05-28)
 
 
