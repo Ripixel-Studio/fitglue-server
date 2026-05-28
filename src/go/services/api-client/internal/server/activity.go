@@ -418,6 +418,13 @@ func (s *APIServer) handleUpdateShowcaseSettings(w http.ResponseWriter, r *http.
 		return
 	}
 
+	for _, link := range settings.Links {
+		if link.Url != "" && !strings.HasPrefix(link.Url, "https://") && !strings.HasPrefix(link.Url, "http://") {
+			WriteError(w, statusError(http.StatusBadRequest, "link URLs must start with http:// or https://"))
+			return
+		}
+	}
+
 	var reqBody activitypb.UpdateShowcaseSettingsRequest
 	reqBody.Settings = &settings
 	reqBody.UserId = token.UID

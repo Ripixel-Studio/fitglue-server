@@ -114,7 +114,7 @@ func (s *APIServer) handleHevyEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *APIServer) registerBillingRoutes(r chi.Router) {
-	r.Post("/billing", s.handleBillingEvent)
+	r.With(RawBodyMiddleware).Post("/billing", s.handleBillingEvent)
 }
 
 func (s *APIServer) handleBillingEvent(w http.ResponseWriter, r *http.Request) {

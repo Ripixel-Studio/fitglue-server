@@ -128,7 +128,6 @@ type ShowcasedActivity struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	ShowcaseId             string                 `protobuf:"bytes,1,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
 	ActivityId             string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
-	UserId                 string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Title                  string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	Description            string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
 	ActivityType           ActivityType           `protobuf:"varint,6,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
@@ -191,13 +190,6 @@ func (x *ShowcasedActivity) GetShowcaseId() string {
 func (x *ShowcasedActivity) GetActivityId() string {
 	if x != nil {
 		return x.ActivityId
-	}
-	return ""
-}
-
-func (x *ShowcasedActivity) GetUserId() string {
-	if x != nil {
-		return x.UserId
 	}
 	return ""
 }
@@ -1197,13 +1189,12 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\vdestination\x18\x06 \x01(\x0e2&.fitglue.models.plugin.DestinationTypeR\vdestination\x12%\n" +
 	"\x0edestination_id\x18\a \x01(\tR\rdestinationId\x12;\n" +
 	"\vuploaded_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"uploadedAt\"\xaa\b\n" +
+	"uploadedAt\"\xa0\b\n" +
 	"\x11ShowcasedActivity\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x1f\n" +
 	"\vactivity_id\x18\x02 \x01(\tR\n" +
-	"activityId\x12\x17\n" +
-	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x14\n" +
+	"activityId\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12J\n" +
 	"\ractivity_type\x18\x06 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12?\n" +
@@ -1228,7 +1219,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"photo_urls\x18\x15 \x03(\tR\tphotoUrls\x12N\n" +
 	"\venrichments\x18\x16 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichmentsB\x18\n" +
-	"\x16_pipeline_execution_idJ\x04\b\f\x10\r\"\xd4\a\n" +
+	"\x16_pipeline_execution_idJ\x04\b\x03\x10\x04J\x04\b\f\x10\rR\auser_id\"\xd4\a\n" +
 	"\x14ShowcaseProfileEntry\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x14\n" +

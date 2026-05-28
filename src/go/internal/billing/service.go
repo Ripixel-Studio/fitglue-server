@@ -4,12 +4,14 @@ package billing
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 	"time"
 
 	"github.com/fitglue/server/src/go/internal/infra"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	"github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/webhook"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -138,6 +140,10 @@ func (s *Service) StartTrial(ctx context.Context, req *pbsvc.StartTrialRequest) 
 		return nil, status.Error(codes.FailedPrecondition, "user is already a paid athlete")
 	}
 
+	if trialEndsAt != nil {
+		return nil, status.Error(codes.FailedPrecondition, "user has already used a trial")
+	}
+
 	now := time.Now()
 	newTrialEnd := now.Add(30 * 24 * time.Hour)
 
@@ -201,6 +207,11 @@ func (s *Service) CreateBillingPortalSession(ctx context.Context, req *pbsvc.Cre
 		returnURL = "https://app.fitglue.tech/settings"
 	}
 
+	allowedOrigins := []string{"https://fitglue.tech", "https://app.fitglue.tech", "https://dev.fitglue.tech"}
+	if !isAllowedURL(returnURL, allowedOrigins) {
+		return nil, status.Errorf(codes.InvalidArgument, "return_url host is not permitted")
+	}
+
 	session, err := s.stripeClient.CreateBillingPortalSession(ctx, sub.StripeCustomerId, returnURL)
 	if err != nil {
 		s.logger.Error(ctx, "failed to create billing portal session", "error", err)
@@ -217,10 +228,9 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 	// But in Stripe's case, signature verification requires the raw body.
 	// Our API gateway will pass the raw payload here.
 
-	var event stripe.Event
-	if err := json.Unmarshal(req.Payload, &event); err != nil {
-		s.logger.Error(ctx, "failed to unmarshal stripe event", "error", err)
-		return nil, status.Error(codes.InvalidArgument, "invalid payload")
+	event, err := webhook.ConstructEvent(req.Payload, req.Signature, s.webhookSecret)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid stripe signature: %v", err)
 	}
 
 	switch event.Type {
@@ -276,4 +286,22 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+// isAllowedURL returns true if u parses successfully and its host appears in allowed.
+func isAllowedURL(u string, allowed []string) bool {
+	parsed, err := url.Parse(u)
+	if err != nil {
+		return false
+	}
+	for _, a := range allowed {
+		base, err := url.Parse(a)
+		if err != nil {
+			continue
+		}
+		if parsed.Host == base.Host {
+			return true
+		}
+	}
+	return false
 }

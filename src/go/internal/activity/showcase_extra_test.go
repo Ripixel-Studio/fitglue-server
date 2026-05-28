@@ -149,8 +149,8 @@ func TestGetPublicShowcase(t *testing.T) {
 
 	t.Run("StoreError", func(t *testing.T) {
 		store := &MockActivityStore{}
-		store.GetPublicShowcaseFunc = func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
-			return nil, errors.New("db error")
+		store.GetPublicShowcaseFunc = func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error) {
+			return nil, "", errors.New("db error")
 		}
 		svc := newTestService(store, &MockBlobStore{})
 		_, err := svc.GetPublicShowcase(ctx, &pbsvc.GetPublicShowcaseRequest{ShowcaseId: "s1"})
@@ -159,8 +159,8 @@ func TestGetPublicShowcase(t *testing.T) {
 
 	t.Run("NotFound", func(t *testing.T) {
 		store := &MockActivityStore{}
-		store.GetPublicShowcaseFunc = func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
-			return nil, nil
+		store.GetPublicShowcaseFunc = func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error) {
+			return nil, "", nil
 		}
 		svc := newTestService(store, &MockBlobStore{})
 		_, err := svc.GetPublicShowcase(ctx, &pbsvc.GetPublicShowcaseRequest{ShowcaseId: "s1"})
@@ -170,8 +170,8 @@ func TestGetPublicShowcase(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		showcase := &pbactivity.ShowcasedActivity{ShowcaseId: "s1"}
 		store := &MockActivityStore{}
-		store.GetPublicShowcaseFunc = func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
-			return showcase, nil
+		store.GetPublicShowcaseFunc = func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error) {
+			return showcase, "", nil
 		}
 		svc := newTestService(store, &MockBlobStore{})
 		result, err := svc.GetPublicShowcase(ctx, &pbsvc.GetPublicShowcaseRequest{ShowcaseId: "s1"})

@@ -66,20 +66,20 @@ func (s *Service) ListShowcases(ctx context.Context, req *pbsvc.ListShowcasesReq
 	}, nil
 }
 
-func (s *Service) offloadShowcaseData(ctx context.Context, showcase *pbactivity.ShowcasedActivity) error {
+func (s *Service) offloadShowcaseData(ctx context.Context, userID string, showcase *pbactivity.ShowcasedActivity) error {
 	if showcase.ActivityData != nil {
 		// Wrap in EnrichedActivityEvent so readers (GetShowcase / GetPublicShowcase)
 		// can unmarshal the blob as a full EnrichedActivityEvent and extract ActivityData.
 		wrapper := &pbevents.EnrichedActivityEvent{
 			ActivityData: showcase.ActivityData,
-			UserId:       showcase.UserId,
+			UserId:       userID,
 		}
 		data, err := protojson.Marshal(wrapper)
 		if err != nil {
 			return err
 		}
 
-		fileName := fmt.Sprintf("showcase_data/%s/%s_data.json", showcase.UserId, showcase.ShowcaseId)
+		fileName := fmt.Sprintf("showcase_data/%s/%s_data.json", userID, showcase.ShowcaseId)
 		if err := s.blobStore.Write(ctx, s.bucketName, fileName, data); err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (s *Service) CreateShowcase(ctx context.Context, req *pbsvc.CreateShowcaseR
 		return nil, status.Error(codes.InvalidArgument, "user_id and showcase data are required")
 	}
 
-	if err := s.offloadShowcaseData(ctx, req.Showcase); err != nil {
+	if err := s.offloadShowcaseData(ctx, req.UserId, req.Showcase); err != nil {
 		s.logger.Error(ctx, "failed to offload showcase data to GCS", "error", err)
 		return nil, status.Error(codes.Internal, "failed to process showcase data")
 	}
@@ -114,7 +114,7 @@ func (s *Service) UpdateShowcase(ctx context.Context, req *pbsvc.UpdateShowcaseR
 		return nil, status.Error(codes.InvalidArgument, "user_id, showcase_id, and showcase data are required")
 	}
 
-	if err := s.offloadShowcaseData(ctx, req.Showcase); err != nil {
+	if err := s.offloadShowcaseData(ctx, req.UserId, req.Showcase); err != nil {
 		s.logger.Error(ctx, "failed to offload showcase data to GCS", "error", err)
 		return nil, status.Error(codes.Internal, "failed to process showcase data")
 	}
@@ -214,7 +214,7 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 		return nil, status.Error(codes.InvalidArgument, "showcase_id is required")
 	}
 
-	showcase, err := s.store.GetPublicShowcase(ctx, req.ShowcaseId)
+	showcase, ownerUserID, err := s.store.GetPublicShowcase(ctx, req.ShowcaseId)
 	if err != nil {
 		s.logger.Error(ctx, "failed to get public showcase", "error", err)
 		return nil, status.Error(codes.Internal, "failed to read public showcase")
@@ -224,7 +224,7 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 	}
 
 	// Hydrate owner metadata from showcase profile
-	if profile, err := s.store.GetShowcasePreferences(ctx, showcase.UserId); err == nil && profile != nil {
+	if profile, err := s.store.GetShowcasePreferences(ctx, ownerUserID); err == nil && profile != nil {
 		if profile.DisplayName != "" {
 			showcase.OwnerDisplayName = profile.DisplayName
 		}

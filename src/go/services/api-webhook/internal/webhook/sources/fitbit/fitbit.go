@@ -22,8 +22,11 @@ type Provider struct {
 	clientSecret string
 }
 
-func NewProvider(verifyCode, clientSecret string) *Provider {
-	return &Provider{verifyCode: verifyCode, clientSecret: clientSecret}
+func NewProvider(verifyCode, clientSecret string) (*Provider, error) {
+	if clientSecret == "" {
+		return nil, fmt.Errorf("fitbit: FITBIT_OAUTH_CLIENT_SECRET must be set")
+	}
+	return &Provider{verifyCode: verifyCode, clientSecret: clientSecret}, nil
 }
 
 func (p *Provider) ID() string {
@@ -58,19 +61,17 @@ func (p *Provider) ParseEvent(r *http.Request) ([]*webhook.WebhookEvent, error) 
 	}
 
 	// Verify X-Fitbit-Signature HMAC-SHA1
-	if p.clientSecret != "" {
-		sig := r.Header.Get("X-Fitbit-Signature")
-		if sig == "" {
-			return nil, fmt.Errorf("missing X-Fitbit-Signature header")
-		}
+	sig := r.Header.Get("X-Fitbit-Signature")
+	if sig == "" {
+		return nil, fmt.Errorf("missing X-Fitbit-Signature header")
+	}
 
-		mac := hmac.New(sha1.New, []byte(p.clientSecret+"&"))
-		mac.Write(body)
-		expected := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	mac := hmac.New(sha1.New, []byte(p.clientSecret+"&"))
+	mac.Write(body)
+	expected := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
-		if !hmac.Equal([]byte(sig), []byte(expected)) {
-			return nil, fmt.Errorf("invalid X-Fitbit-Signature")
-		}
+	if !hmac.Equal([]byte(sig), []byte(expected)) {
+		return nil, fmt.Errorf("invalid X-Fitbit-Signature")
 	}
 
 	var payload fitbitWebhookPayload

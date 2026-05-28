@@ -257,7 +257,7 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		s.logger.Error(ctx, "failed to verify showcase ownership", "error", err)
 		return nil, status.Error(codes.Internal, "failed to verify showcase")
 	}
-	if showcase == nil || showcase.UserId != req.UserId {
+	if showcase == nil {
 		return nil, status.Error(codes.NotFound, "showcase activity not found or does not belong to user")
 	}
 

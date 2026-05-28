@@ -26,9 +26,10 @@ message UploadedActivityRecord {
 
 // ShowcasedActivity represents a publicly shareable activity snapshot.
 message ShowcasedActivity {
-  string showcase_id = 1;              
-  string activity_id = 2;              
-  string user_id = 3;                  
+  string showcase_id = 1;
+  string activity_id = 2;
+  reserved 3;
+  reserved "user_id";
 
   string title = 4;
   string description = 5;

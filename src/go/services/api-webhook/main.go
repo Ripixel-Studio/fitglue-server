@@ -139,10 +139,16 @@ func main() {
 
 	fitbitToken := os.Getenv("FITBIT_SUBSCRIBER_VERIFICATION_TOKEN")
 	fitbitClientSecret := os.Getenv("FITBIT_OAUTH_CLIENT_SECRET")
-	processor.Register(fitbit.NewProvider(fitbitToken, fitbitClientSecret))
+	fitbitProvider, err := fitbit.NewProvider(fitbitToken, fitbitClientSecret)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize Fitbit provider", "error", err)
+		os.Exit(1)
+	}
+	processor.Register(fitbitProvider)
 	processor.Register(hevy.NewProvider())
 	processor.Register(oura.NewProvider())
-	processor.Register(github.NewProvider())
+	githubSecret := os.Getenv("GITHUB_WEBHOOK_SECRET")
+	processor.Register(github.NewProvider(githubSecret))
 	processor.Register(wahoo.NewProvider())
 	processor.Register(polar.NewProvider())
 	processor.Register(mobile.NewProvider())

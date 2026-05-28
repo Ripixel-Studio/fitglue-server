@@ -24,7 +24,7 @@ type ActivityStore interface {
 	GetShowcasePreferences(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error)
 	UpdateShowcasePreferences(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error)
 	PatchShowcaseProfile(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error)
-	GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error)
+	GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error)
 
 	// Showcase Settings & Profile
 	UpdateShowcaseSlug(ctx context.Context, userID, slug string) error

@@ -19,6 +19,9 @@ type Provider struct {
 }
 
 func NewProvider(verifyToken string) *Provider {
+	if verifyToken == "" {
+		panic("STRAVA_WEBHOOK_VERIFY_TOKEN must be set")
+	}
 	return &Provider{verifyToken: verifyToken}
 }
 
@@ -35,7 +38,7 @@ func (p *Provider) VerifySubscription(w http.ResponseWriter, r *http.Request) {
 	if mode == "subscribe" && token == p.verifyToken {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"hub.challenge":"%s"}`, challenge)
+		json.NewEncoder(w).Encode(map[string]string{"hub.challenge": challenge})
 		return
 	}
 

@@ -110,6 +110,10 @@ func (s *APIServer) handleUpdateProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// SEC-01: Prevent privilege escalation — callers must never be able to
+	// self-promote to admin by including is_admin in the request body.
+	profileReq.IsAdmin = false
+
 	var reqBody userpb.UpdateProfileRequest
 	reqBody.Profile = &profileReq
 	reqBody.UserId = token.UID
@@ -162,6 +166,18 @@ func (s *APIServer) handleGetIntegration(w http.ResponseWriter, r *http.Request)
 func (s *APIServer) handleSetIntegration(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)
 	provider := chi.URLParam(r, "provider")
+
+	// SEC-06: Allowlist valid providers to prevent arbitrary Firestore field writes
+	// via a crafted provider name in the URL path.
+	validProviders := map[string]bool{
+		"strava": true, "fitbit": true, "hevy": true, "oura": true,
+		"polar": true, "wahoo": true, "spotify": true, "github": true,
+		"intervals": true, "trainingpeaks": true,
+	}
+	if !validProviders[provider] {
+		WriteError(w, statusError(http.StatusBadRequest, "unsupported provider"))
+		return
+	}
 
 	// Parse the request body into a generic struct for the integration data
 	var bodyMap map[string]interface{}

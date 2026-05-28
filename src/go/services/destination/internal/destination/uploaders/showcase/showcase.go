@@ -193,7 +193,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	showcasedActivity := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          showcaseID,
 		ActivityId:          payload.GetActivityId(),
-		UserId:              payload.UserId,
 		Title:               activityName,
 		Description:         payload.Metadata["description"],
 		ActivityType:        activityType,
@@ -302,7 +301,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	showcasedActivity := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          showcaseID,
 		ActivityId:          payload.GetActivityId(),
-		UserId:              payload.UserId,
 		Title:               activityName,
 		Description:         payload.Metadata["description"],
 		ActivityType:        activityType,

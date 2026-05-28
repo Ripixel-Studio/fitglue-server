@@ -41,7 +41,7 @@ func TestVerifySubscription(t *testing.T) {
 		provider.VerifySubscription(rec, req)
 
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, `{"hub.challenge":"12345"}`, rec.Body.String())
+		assert.Equal(t, "{\"hub.challenge\":\"12345\"}\n", rec.Body.String())
 	})
 
 	t.Run("invalid token", func(t *testing.T) {

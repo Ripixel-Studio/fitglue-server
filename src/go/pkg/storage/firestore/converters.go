@@ -927,7 +927,6 @@ func ShowcasedActivityToFirestore(s *pbactivity.ShowcasedActivity) map[string]in
 	m := map[string]interface{}{
 		"showcase_id":         s.ShowcaseId,
 		"activity_id":         s.ActivityId,
-		"user_id":             s.UserId,
 		"title":               s.Title,
 		"description":         s.Description,
 		"activity_type":       int32(s.ActivityType),
@@ -973,7 +972,6 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 	s := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          getString(m, "showcase_id"),
 		ActivityId:          getString(m, "activity_id"),
-		UserId:              getString(m, "user_id"),
 		Title:               getString(m, "title"),
 		Description:         getString(m, "description"),
 		FitFileUri:          getString(m, "fit_file_uri"),

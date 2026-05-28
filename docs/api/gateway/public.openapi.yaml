@@ -1231,8 +1231,6 @@ components:
                     type: string
                 activityId:
                     type: string
-                userId:
-                    type: string
                 title:
                     type: string
                 description:

@@ -27,15 +27,12 @@ func webURL() string {
 	return strings.TrimRight(url, "/") + "/app"
 }
 
-// apiURL returns the base API URL for OAuth callbacks, falling back to the request host.
-func apiURL(r *http.Request) string {
+// apiURL returns the base API URL for OAuth callbacks.
+// API_URL must be set; falling back to the request Host header is unsafe (Host header injection).
+func apiURL() string {
 	url := os.Getenv("API_URL")
 	if url == "" {
-		scheme := "http"
-		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-			scheme = "https"
-		}
-		url = scheme + "://" + r.Host
+		panic("API_URL environment variable must be set")
 	}
 	return strings.TrimRight(url, "/")
 }
@@ -70,7 +67,7 @@ func (s *APIServer) handleOAuthConnect(w http.ResponseWriter, r *http.Request) {
 
 	stateArg := base64.URLEncoding.EncodeToString(stateJSON) + "." + signature
 
-	redirectURI := apiURL(r) + "/api/v2/oauth/" + provider + "/callback"
+	redirectURI := apiURL() + "/api/v2/oauth/" + provider + "/callback"
 
 	authURL, _ := url.Parse(config.AuthURL)
 	q := authURL.Query()
@@ -139,6 +136,12 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	ts, _ := strconv.ParseInt(stateData["ts"], 10, 64)
+	if time.Now().Unix()-ts > 600 {
+		http.Redirect(w, r, webURL()+"/connections?error=state_token_expired", http.StatusFound)
+		return
+	}
+
 	userID := stateData["uid"]
 	if userID == "" {
 		http.Redirect(w, r, webURL()+"/connections?error=missing_uid", http.StatusFound)
@@ -146,7 +149,7 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Exchange code for tokens
-	redirectURI := apiURL(r) + "/api/v2/oauth/" + provider + "/callback"
+	redirectURI := apiURL() + "/api/v2/oauth/" + provider + "/callback"
 	data := url.Values{}
 	data.Set("client_id", config.ClientID)
 	data.Set("client_secret", config.ClientSecret)

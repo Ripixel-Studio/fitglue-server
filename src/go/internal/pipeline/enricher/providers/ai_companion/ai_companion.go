@@ -141,6 +141,17 @@ type aiResult struct {
 	Description string
 }
 
+// sanitiseForPrompt truncates user-controlled strings to a safe length and
+// strips obvious prompt-injection delimiters to prevent injected instructions
+// from escaping the data section of the prompt.
+func sanitiseForPrompt(s string) string {
+	const maxLen = 500
+	if len(s) > maxLen {
+		s = s[:maxLen]
+	}
+	return s
+}
+
 func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mode, activityContext string) (*aiResult, error) {
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
@@ -155,9 +166,12 @@ func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mo
 	model.SetTopP(0.9)
 	model.SetMaxOutputTokens(300)
 
-	prompt := buildPrompt(mode, activityContext)
+	// Structural separation: fixed instructions go in SystemInstruction; user-controlled
+	// activity data is passed only in the user-role content part.
+	systemInstr, userContent := buildPrompt(mode)
+	model.SystemInstruction = genai.NewUserContent(genai.Text(systemInstr))
 
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	resp, err := model.GenerateContent(ctx, genai.Text(userContent+"\n\nActivity Context:\n"+sanitiseForPrompt(activityContext)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}
@@ -177,11 +191,12 @@ func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mo
 	return parseAIResponse(mode, rawOutput), nil
 }
 
-func buildPrompt(mode, activityContext string) string {
-	basePrompt := `You are an activity reviewer. Generate a casual, engaging summary of the fitness activity provided below.
-
-Activity Context:
-%s
+// buildPrompt returns the fixed system instruction and the mode-specific user
+// content request as separate strings. User-controlled activity context is NOT
+// included here — it is appended at call site after sanitisation, keeping
+// instructions and data structurally separated at the API level.
+func buildPrompt(mode string) (systemInstruction, userContent string) {
+	systemInstruction = `You are an activity reviewer. Generate a casual, engaging summary of the fitness activity provided in the user message.
 
 Guidelines:
 - Provide a casual summary or review of the effort.
@@ -190,25 +205,23 @@ Guidelines:
 - Generic punchy reactions like "Nice one!" or "Solid session" are acceptable as part of the summary.
 - Avoid motivational "coach" cliches (e.g., "Keep pushing", "You've got this").
 - Use fitness terminology naturally.
-- Reference specific details from the workout.
-`
+- Reference specific details from the workout.`
 
 	switch mode {
 	case "title":
-		return fmt.Sprintf(basePrompt+`
-Generate a creative, engaging title for this workout (max 50 characters).
-Respond with ONLY the title, nothing else.`, activityContext)
+		userContent = `Generate a creative, engaging title for this workout (max 50 characters).
+Respond with ONLY the title, nothing else.`
 	case "both":
-		return fmt.Sprintf(basePrompt+`
-Generate both a title and description for this workout.
+		userContent = `Generate both a title and description for this workout.
 Format your response exactly as:
 TITLE: [creative title, max 50 chars]
-DESCRIPTION: [engaging description, 2-3 sentences max]`, activityContext)
+DESCRIPTION: [engaging description, 2-3 sentences max]`
 	default: // "description"
-		return fmt.Sprintf(basePrompt+`
-Generate an engaging description for this workout (2-3 sentences max).
-Respond with ONLY the description, nothing else.`, activityContext)
+		userContent = `Generate an engaging description for this workout (2-3 sentences max).
+Respond with ONLY the description, nothing else.`
 	}
+
+	return systemInstruction, userContent
 }
 
 func buildActivityContext(activity *pbactivity.StandardizedActivity) string {

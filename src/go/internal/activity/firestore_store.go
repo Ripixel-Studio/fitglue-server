@@ -173,6 +173,9 @@ func (s *FirestoreStore) CreateShowcase(ctx context.Context, userID string, show
 	if err != nil {
 		return nil, err
 	}
+	// user_id is no longer a proto field (removed for security) but is still required
+	// as a Firestore index field for user-scoped queries.
+	data["user_id"] = userID
 	_, err = s.client.Collection("showcased_activities").Doc(showcase.ShowcaseId).Set(ctx, data)
 	return showcase, err
 }
@@ -181,6 +184,9 @@ func (s *FirestoreStore) UpdateShowcase(ctx context.Context, userID string, show
 	if err != nil {
 		return nil, err
 	}
+	// user_id is no longer a proto field (removed for security) but is still required
+	// as a Firestore index field for user-scoped queries.
+	data["user_id"] = userID
 	_, err = s.client.Collection("showcased_activities").Doc(showcase.ShowcaseId).Set(ctx, data)
 	return showcase, err
 }
@@ -223,19 +229,21 @@ func (s *FirestoreStore) PatchShowcaseProfile(ctx context.Context, userID string
 	return s.GetShowcasePreferences(ctx, userID)
 }
 
-func (s *FirestoreStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
+func (s *FirestoreStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error) {
 	doc, err := s.client.Collection("showcased_activities").Doc(showcaseID).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return nil, nil
+			return nil, "", nil
 		}
-		return nil, err
+		return nil, "", err
 	}
+	data := doc.Data()
 	var act pbactivity.ShowcasedActivity
-	if err := decodeProtoMap(doc.Data(), &act); err != nil {
-		return nil, err
+	if err := decodeProtoMap(data, &act); err != nil {
+		return nil, "", err
 	}
-	return &act, nil
+	ownerUserID, _ := data["user_id"].(string)
+	return &act, ownerUserID, nil
 }
 func (s *FirestoreStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {
 	doc, err := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").Doc(runID).Get(ctx)

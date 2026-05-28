@@ -34,6 +34,9 @@ func (p *Provider) ID() string {
 // Intervals does not use a challenge-response handshake — users register
 // the URL directly in their account settings.
 func (p *Provider) VerifySubscription(w http.ResponseWriter, r *http.Request) {
+	// TODO(SEC-03): needs per-user webhook secret storage to verify Intervals.icu HMAC signatures.
+	// Until then, early rejection relies on ResolveUserByIntegration in the processor
+	// failing for any ProviderUID that maps to no known FitGlue user.
 	w.WriteHeader(http.StatusOK)
 }
 

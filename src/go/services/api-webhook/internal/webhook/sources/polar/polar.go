@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
@@ -29,6 +31,9 @@ func (p *Provider) ID() string {
 
 // VerifySubscription handles Polar webhook verification
 func (p *Provider) VerifySubscription(w http.ResponseWriter, r *http.Request) {
+	// TODO(SEC-03): needs per-user webhook secret storage to verify Polar webhook signatures.
+	// Until then, early rejection relies on ResolveUserByIntegration in the processor
+	// failing for any ProviderUID that maps to no known FitGlue user.
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -191,6 +196,13 @@ func (p *Provider) FetchActivity(ctx context.Context, userSvc userpb.UserService
 
 	if exerciseURL == "" {
 		return nil, fmt.Errorf("no exercise url found to fetch")
+	}
+
+	// SEC-09: Validate that the exercise URL resolves to the expected Polar host before
+	// issuing the request, preventing SSRF via a tampered API response.
+	parsed, err := url.Parse(exerciseURL)
+	if err != nil || !strings.HasSuffix(parsed.Hostname(), "polaraccesslink.com") {
+		return nil, fmt.Errorf("polar: exercise URL has unexpected host: %s", exerciseURL)
 	}
 
 	reqEx, err := http.NewRequestWithContext(ctx, http.MethodGet, exerciseURL, nil)

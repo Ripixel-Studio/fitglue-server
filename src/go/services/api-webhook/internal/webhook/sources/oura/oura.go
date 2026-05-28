@@ -31,6 +31,9 @@ func (p *Provider) ID() string {
 func (p *Provider) VerifySubscription(w http.ResponseWriter, r *http.Request) {
 	// Oura might pass an x-oura-signature or verification_token.
 	// For standard API webhook endpoints, just acknowledging 200 OK
+	// TODO(SEC-03): needs per-user webhook secret storage to verify X-Oura-Signature HMAC.
+	// Until then, early rejection relies on ResolveUserByIntegration in the processor
+	// failing for any ProviderUID that maps to no known FitGlue user.
 	w.WriteHeader(http.StatusOK)
 }
 

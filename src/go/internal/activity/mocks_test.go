@@ -22,7 +22,7 @@ type MockActivityStore struct {
 
 	GetShowcasePreferencesFunc    func(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error)
 	UpdateShowcasePreferencesFunc func(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error)
-	GetPublicShowcaseFunc         func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error)
+	GetPublicShowcaseFunc         func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error)
 
 	UpdateShowcaseSlugFunc            func(ctx context.Context, userID, slug string) error
 	GetShowcaseProfileBySlugFunc      func(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
@@ -116,11 +116,11 @@ func (m *MockActivityStore) PatchShowcaseProfile(ctx context.Context, userID str
 	return nil, nil
 }
 
-func (m *MockActivityStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
+func (m *MockActivityStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error) {
 	if m.GetPublicShowcaseFunc != nil {
 		return m.GetPublicShowcaseFunc(ctx, showcaseID)
 	}
-	return nil, nil
+	return nil, "", nil
 }
 
 func (m *MockActivityStore) UpdateShowcaseSlug(ctx context.Context, userID, slug string) error {
