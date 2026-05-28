@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.25.1](https://github.com/FitGlue/server/compare/v16.25.0...v16.25.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **ical-title:** allow calendar override of auto-generated file-upload names ([253d92b](https://github.com/FitGlue/server/commit/253d92b1ac4f65d88cd7253771317cfe34948275))
+
 ## [16.25.0](https://github.com/FitGlue/server/compare/v16.24.3...v16.25.0) (2026-05-28)
 
 
