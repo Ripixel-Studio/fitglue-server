@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.25.4](https://github.com/FitGlue/server/compare/v16.25.3...v16.25.4) (2026-05-28)
+
+
+### Bug Fixes
+
+* **pipeline:** use protojson for backfill cloud events ([dcb94ba](https://github.com/FitGlue/server/commit/dcb94ba5b67ba003b38ef59d6c4efca2ac716175))
+
 ### [16.25.3](https://github.com/FitGlue/server/compare/v16.25.2...v16.25.3) (2026-05-28)
 
 
