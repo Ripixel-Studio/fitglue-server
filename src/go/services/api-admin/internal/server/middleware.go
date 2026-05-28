@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"firebase.google.com/go/v4/auth"
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,7 +41,9 @@ func AuthMiddleware(authClient *auth.Client) func(http.Handler) http.Handler {
 }
 
 // AdminMiddleware wraps AuthMiddleware and verifies the user is an admin.
-func AdminMiddleware(authClient *auth.Client) func(http.Handler) http.Handler {
+// Admin status is checked against the Firestore profile (isAdmin field) rather
+// than a Firebase custom claim, since Firestore is the authoritative source.
+func AdminMiddleware(authClient *auth.Client, fsClient *firestore.Client) func(http.Handler) http.Handler {
 	authMw := AuthMiddleware(authClient)
 	return func(next http.Handler) http.Handler {
 		return authMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +58,12 @@ func AdminMiddleware(authClient *auth.Client) func(http.Handler) http.Handler {
 				return
 			}
 
-			isAdmin, _ := token.Claims["admin"].(bool)
+			doc, err := fsClient.Collection("users").Doc(token.UID).Get(r.Context())
+			if err != nil {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			isAdmin, _ := doc.Data()["isAdmin"].(bool)
 			if !isAdmin {
 				http.Error(w, "forbidden", http.StatusForbidden)
 				return

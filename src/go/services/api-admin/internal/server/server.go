@@ -70,7 +70,7 @@ func (s *APIServer) setupRoutes() {
 
 	// API Admin block (Admin Auth / API routing)
 	s.router.Route("/api/admin", func(r chi.Router) {
-		r.Use(AdminMiddleware(s.authClient))
+		r.Use(AdminMiddleware(s.authClient, s.firestoreClient))
 		s.registerAdminRoutes(r)
 	})
 }
