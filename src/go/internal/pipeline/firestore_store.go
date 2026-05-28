@@ -233,7 +233,6 @@ func (s *FirestoreStore) FindPipelineRunBySourceActivityID(ctx context.Context, 
 func (s *FirestoreStore) FindAnyPipelineRunBySourceActivityID(ctx context.Context, userID, sourceActivityID string) (*pipeline.PipelineRun, error) {
 	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
 		Where("source_activity_id", "==", sourceActivityID).
-		OrderBy("created_at", firestore.Desc).
 		Limit(1).
 		Documents(ctx)
 	defer iter.Stop()

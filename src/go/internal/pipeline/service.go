@@ -533,11 +533,11 @@ func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourc
 
 	items := make([]*pbsvc.SourceActivityItem, 0, len(rawActivities))
 	for _, a := range rawActivities {
-		var existing interface{}
+		var existingRun *pipeline.PipelineRun
 		if req.PipelineId != "" {
-			existing, err = s.store.FindPipelineRunBySourceActivityID(ctx, req.UserId, req.PipelineId, a.ID)
+			existingRun, err = s.store.FindPipelineRunBySourceActivityID(ctx, req.UserId, req.PipelineId, a.ID)
 		} else {
-			existing, err = s.store.FindAnyPipelineRunBySourceActivityID(ctx, req.UserId, a.ID)
+			existingRun, err = s.store.FindAnyPipelineRunBySourceActivityID(ctx, req.UserId, a.ID)
 		}
 		if err != nil {
 			s.logger.Error(ctx, "dedup check failed", "error", err, "sourceActivityId", a.ID)
@@ -547,7 +547,7 @@ func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourc
 			Title:            a.Title,
 			Type:             a.Type,
 			StartTime:        timestamppb.New(a.StartTime),
-			AlreadySynced:    existing != nil,
+			AlreadySynced:    existingRun != nil,
 		})
 	}
 
