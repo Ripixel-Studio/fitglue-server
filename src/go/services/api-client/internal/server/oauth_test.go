@@ -77,6 +77,7 @@ func TestHandleOAuthConnect_ValidProvider(t *testing.T) {
 	if provider == "" {
 		t.Skip("no oauth providers configured")
 	}
+	t.Setenv("API_URL", "http://localhost:8080")
 	s := buildTestServer(&mockUserServiceClient{}, &mockPublisher{})
 	r := withToken(
 		withOAuthProvider(httptest.NewRequest(http.MethodPost, "/", nil), provider),

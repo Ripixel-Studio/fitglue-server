@@ -2,6 +2,10 @@ package billing
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"testing"
 	"time"
 
@@ -10,6 +14,14 @@ import (
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	"github.com/stripe/stripe-go/v76"
 )
+
+// stripeTestSignature computes a Stripe-Signature header value for unit tests.
+func stripeTestSignature(payload []byte, secret string) string {
+	ts := fmt.Sprintf("%d", time.Now().Unix())
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(ts + "." + string(payload)))
+	return fmt.Sprintf("t=%s,v1=%s", ts, hex.EncodeToString(mac.Sum(nil)))
+}
 
 type mockLogger struct{}
 
@@ -284,6 +296,7 @@ func TestHandleWebhookEvent(t *testing.T) {
 	// 1. checkout.session.completed
 	sessionPayload := `{
 		"type": "checkout.session.completed",
+		"api_version": "2023-10-16",
 		"data": {
 			"object": {
 				"id": "cs_test_123",
@@ -299,7 +312,10 @@ func TestHandleWebhookEvent(t *testing.T) {
 	// Create mock user before webhook
 	store.Users["user1"] = &MockUser{Tier: pbuser.UserTier_USER_TIER_HOBBYIST}
 
-	_, err := svc.HandleWebhookEvent(ctx, &pbsvc.HandleWebhookEventRequest{Payload: []byte(sessionPayload)})
+	_, err := svc.HandleWebhookEvent(ctx, &pbsvc.HandleWebhookEventRequest{
+		Payload:   []byte(sessionPayload),
+		Signature: stripeTestSignature([]byte(sessionPayload), "whsec_123"),
+	})
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -315,6 +331,7 @@ func TestHandleWebhookEvent(t *testing.T) {
 	stripeClient.Subs["sub_123"] = &stripe.Subscription{ID: "sub_123", Status: stripe.SubscriptionStatusCanceled, Customer: &stripe.Customer{ID: "cus_123"}}
 	delPayload := `{
 		"type": "customer.subscription.deleted",
+		"api_version": "2023-10-16",
 		"data": {
 			"object": {
 				"id": "sub_123",
@@ -324,7 +341,10 @@ func TestHandleWebhookEvent(t *testing.T) {
 		}
 	}`
 
-	_, err2 := svc.HandleWebhookEvent(ctx, &pbsvc.HandleWebhookEventRequest{Payload: []byte(delPayload)})
+	_, err2 := svc.HandleWebhookEvent(ctx, &pbsvc.HandleWebhookEventRequest{
+		Payload:   []byte(delPayload),
+		Signature: stripeTestSignature([]byte(delPayload), "whsec_123"),
+	})
 	if err2 != nil {
 		t.Fatalf("unexpected err: %v", err2)
 	}
