@@ -202,7 +202,7 @@ func ParseFitFile(data []byte) (*pbactivity.StandardizedActivity, error) {
 
 	// Generate activity name if not set
 	if activityName == "" {
-		activityName = generateActivityName(activityType, startTime)
+		activityName = GenerateActivityName(activityType, startTime)
 	}
 
 	activity := &pbactivity.StandardizedActivity{
@@ -783,8 +783,9 @@ func mapFitSportToActivityType(sport typedef.Sport, subSport typedef.SubSport) p
 	}
 }
 
-// generateActivityName creates a default activity name based on type and time
-func generateActivityName(activityType pbactivity.ActivityType, startTime time.Time) string {
+// GenerateActivityName creates a default activity name based on type and time.
+// Exported so enrichers can detect whether a name was auto-generated vs. explicitly set.
+func GenerateActivityName(activityType pbactivity.ActivityType, startTime time.Time) string {
 	hour := startTime.Hour()
 	var timeOfDay string
 	switch {

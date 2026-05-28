@@ -14,6 +14,7 @@ import (
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/domain/fit_parser"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
@@ -60,12 +61,22 @@ func (p *ICalTitle) Enrich(ctx context.Context, logger *slog.Logger, activity *p
 }
 
 func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, inputs map[string]string, client *http.Client) (*providers.EnrichmentResult, error) {
-	// Respect titles that came from the source file itself; don't override with a calendar title.
+	if activity.StartTime == nil {
+		return nil, fmt.Errorf("activity has no start time")
+	}
+
+	// Respect titles that were explicitly set — either embedded in the source file or provided by
+	// the user at upload time. Auto-generated fallback names (e.g. "Morning Run") are NOT considered
+	// explicitly set, so the calendar enricher is still allowed to override them.
 	if activity.Name != "" && activity.Source == pbactivity.ActivitySource_SOURCE_FILE_UPLOAD {
-		return &providers.EnrichmentResult{
-			Skipped:    true,
-			SkipReason: "file-upload title already set; not overriding",
-		}, nil
+		autoName := fit_parser.GenerateActivityName(activity.Type, activity.StartTime.AsTime())
+		if activity.Name != autoName {
+			return &providers.EnrichmentResult{
+				Skipped:    true,
+				SkipReason: "file-upload title already set; not overriding",
+			}, nil
+		}
+		// Name matches the auto-generated fallback — fall through and let the calendar match override it.
 	}
 
 	urls := collectCalendarURLs(inputs)
@@ -81,10 +92,6 @@ func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *p
 		if n, err := parseInt(v); err == nil && n >= 0 {
 			minOverlap = n
 		}
-	}
-
-	if activity.StartTime == nil {
-		return nil, fmt.Errorf("activity has no start time")
 	}
 	actStart := activity.StartTime.AsTime()
 	actEnd := activityEndTime(activity, actStart)

@@ -219,9 +219,9 @@ func TestGenerateActivityName(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		result := generateActivityName(tc.activityType, tc.startTime)
+		result := GenerateActivityName(tc.activityType, tc.startTime)
 		if result != tc.expected {
-			t.Errorf("generateActivityName(%v, %v) = %q, want %q",
+			t.Errorf("GenerateActivityName(%v, %v) = %q, want %q",
 				tc.activityType, tc.startTime, result, tc.expected)
 		}
 	}
