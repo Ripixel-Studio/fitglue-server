@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.25.3](https://github.com/FitGlue/server/compare/v16.25.2...v16.25.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* **tests:** update billing and OAuth tests for webhook signature verification and API_URL requirement ([4e7e42f](https://github.com/FitGlue/server/commit/4e7e42f3f421255a81b108a3fe596b794fa5f700))
+* **tests:** update tests for removed ShowcasedActivity.UserId field and updated github.NewProvider signature ([064b42b](https://github.com/FitGlue/server/commit/064b42bd13a57a2b6c8a2fee0ac295081be35f6e))
+
 ### [16.25.2](https://github.com/FitGlue/server/compare/v16.25.1...v16.25.2) (2026-05-28)
 
 
