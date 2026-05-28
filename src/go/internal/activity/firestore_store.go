@@ -163,6 +163,7 @@ func (s *FirestoreStore) ListShowcases(ctx context.Context, userID string) ([]*p
 			ActivityType: act.ActivityType,
 			Source:       act.Source,
 			StartTime:    act.StartTime,
+			CreatedAt:    act.CreatedAt,
 		})
 	}
 	return showcases, nil

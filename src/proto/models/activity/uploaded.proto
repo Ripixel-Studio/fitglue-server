@@ -85,6 +85,8 @@ message ShowcaseProfileEntry {
 
   // Photo URLs for activities with attached images; populated from ShowcasedActivity.photo_urls.
   repeated string photo_urls = 19;
+
+  google.protobuf.Timestamp created_at = 20;
 }
 
 // EntrySparkline is a downsampled timeseries for card-level sparklines.

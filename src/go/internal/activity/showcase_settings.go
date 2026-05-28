@@ -97,12 +97,21 @@ func (s *Service) GetShowcaseSettings(ctx context.Context, req *pbsvc.GetShowcas
 
 	var activities []*pbsvc.ShowcaseActivityEntry
 	for _, sc := range showcases {
+		var startTime, createdAt string
+		if sc.StartTime != nil {
+			startTime = sc.StartTime.AsTime().UTC().Format(time.RFC3339)
+		}
+		if sc.CreatedAt != nil {
+			createdAt = sc.CreatedAt.AsTime().UTC().Format(time.RFC3339)
+		}
 		activities = append(activities, &pbsvc.ShowcaseActivityEntry{
 			ShowcaseId:   sc.ShowcaseId,
 			Title:        sc.Title,
 			ActivityType: sc.ActivityType.String(),
 			Source:       sc.Source.String(),
 			InProfile:    profileEntryIDs[sc.ShowcaseId],
+			StartTime:    startTime,
+			CreatedAt:    createdAt,
 		})
 	}
 
