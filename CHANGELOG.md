@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.25.5](https://github.com/FitGlue/server/compare/v16.25.4...v16.25.5) (2026-05-29)
+
+
+### Bug Fixes
+
+* **ical-title:** reset SportProfileName to auto-generated on blank upload title ([dd5591b](https://github.com/FitGlue/server/commit/dd5591b879136e97445442fba23da437fc604b95))
+
 ### [16.25.4](https://github.com/FitGlue/server/compare/v16.25.3...v16.25.4) (2026-05-28)
 
 
