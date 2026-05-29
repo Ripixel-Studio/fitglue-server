@@ -39,6 +39,12 @@ func (s *Service) ParseFitFile(ctx context.Context, req *pbsvc.ParseFitFileReque
 	activity.ExternalId = externalId
 	if req.Title != "" {
 		activity.Name = req.Title
+	} else if activity.StartTime != nil {
+		// No title provided at upload time — reset to the auto-generated fallback so that
+		// the iCal title enricher (which detects auto-generated names by value-comparison)
+		// is allowed to override it. Any SportProfileName from the FIT file is not treated
+		// as an explicit user title when the upload form was left blank.
+		activity.Name = fit_parser.GenerateActivityName(activity.Type, activity.StartTime.AsTime())
 	}
 	if req.Description != "" {
 		activity.Description = req.Description
