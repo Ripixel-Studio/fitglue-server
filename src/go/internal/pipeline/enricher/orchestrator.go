@@ -1251,6 +1251,7 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		pi.SourceDisplayName = act.Name
 		pi.SourceActivityType = act.Type.String()
 		pi.SourceStartTime = act.StartTime
+		pi.SourceActivitySource = act.Source.String()
 	}
 	if err := o.database.CreatePendingInput(ctx, payload.UserId, pi); err != nil {
 		logger.Warn("Failed to create pending input (might already exist)", "error", err)

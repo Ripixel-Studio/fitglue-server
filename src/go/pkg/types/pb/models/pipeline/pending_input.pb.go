@@ -146,11 +146,12 @@ type PendingInput struct {
 	ProviderMetadata           map[string]string      `protobuf:"bytes,16,rep,name=provider_metadata,json=providerMetadata,proto3" json:"provider_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// Display metadata about the source activity (populated when the pending input is created).
 	// Used by the web UI to identify which activity a pending input relates to.
-	SourceDisplayName  string                 `protobuf:"bytes,18,opt,name=source_display_name,json=sourceDisplayName,proto3" json:"source_display_name,omitempty"`
-	SourceActivityType string                 `protobuf:"bytes,19,opt,name=source_activity_type,json=sourceActivityType,proto3" json:"source_activity_type,omitempty"`
-	SourceStartTime    *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=source_start_time,json=sourceStartTime,proto3" json:"source_start_time,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	SourceDisplayName    string                 `protobuf:"bytes,18,opt,name=source_display_name,json=sourceDisplayName,proto3" json:"source_display_name,omitempty"`
+	SourceActivityType   string                 `protobuf:"bytes,19,opt,name=source_activity_type,json=sourceActivityType,proto3" json:"source_activity_type,omitempty"`
+	SourceStartTime      *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=source_start_time,json=sourceStartTime,proto3" json:"source_start_time,omitempty"`
+	SourceActivitySource string                 `protobuf:"bytes,21,opt,name=source_activity_source,json=sourceActivitySource,proto3" json:"source_activity_source,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *PendingInput) Reset() {
@@ -316,11 +317,18 @@ func (x *PendingInput) GetSourceStartTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *PendingInput) GetSourceActivitySource() string {
+	if x != nil {
+		return x.SourceActivitySource
+	}
+	return ""
+}
+
 var File_models_pipeline_pending_input_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_pending_input_proto_rawDesc = "" +
 	"\n" +
-	"#models/pipeline/pending_input.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\"\x81\n" +
+	"#models/pipeline/pending_input.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb7\n" +
 	"\n" +
 	"\fPendingInput\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
@@ -347,7 +355,8 @@ const file_models_pipeline_pending_input_proto_rawDesc = "" +
 	"\x11provider_metadata\x18\x10 \x03(\v2;.fitglue.models.pipeline.PendingInput.ProviderMetadataEntryR\x10providerMetadata\x12.\n" +
 	"\x13source_display_name\x18\x12 \x01(\tR\x11sourceDisplayName\x120\n" +
 	"\x14source_activity_type\x18\x13 \x01(\tR\x12sourceActivityType\x12F\n" +
-	"\x11source_start_time\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\x0fsourceStartTime\x1a<\n" +
+	"\x11source_start_time\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\x0fsourceStartTime\x124\n" +
+	"\x16source_activity_source\x18\x15 \x01(\tR\x14sourceActivitySource\x1a<\n" +
 	"\x0eInputDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +

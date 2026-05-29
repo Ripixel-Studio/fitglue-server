@@ -40,6 +40,7 @@ message PendingInput {
   string source_display_name = 18;
   string source_activity_type = 19;
   google.protobuf.Timestamp source_start_time = 20;
+  string source_activity_source = 21;
 }
 
 enum ParkrunResultsState {
