@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.26.0](https://github.com/FitGlue/server/compare/v16.25.5...v16.26.0) (2026-05-29)
+
+
+### Features
+
+* **pending-input:** store activity source for display in pending input ([9f9b7a5](https://github.com/FitGlue/server/commit/9f9b7a5e591495d0424d34ab3957bd2b6558a281))
+
 ### [16.25.5](https://github.com/FitGlue/server/compare/v16.25.4...v16.25.5) (2026-05-29)
 
 
