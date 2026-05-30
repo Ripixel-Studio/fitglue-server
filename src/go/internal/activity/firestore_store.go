@@ -533,6 +533,115 @@ func (s *FirestoreStore) ListUserPersonalRecords(ctx context.Context, userID str
 	return result, nil
 }
 
+func (s *FirestoreStore) GetRoundup(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error) {
+	id := slug + "-" + periodKey
+	doc, err := s.client.Collection("showcased_roundups").Doc(id).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var r pbactivity.ShowcaseRoundup
+	if err := decodeProtoMap(doc.Data(), &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+func (s *FirestoreStore) SetRoundup(ctx context.Context, roundup *pbactivity.ShowcaseRoundup) error {
+	id := roundup.Slug + "-" + roundup.PeriodKey
+	data, err := encodeProtoMap(roundup)
+	if err != nil {
+		return err
+	}
+	_, err = s.client.Collection("showcased_roundups").Doc(id).Set(ctx, data)
+	return err
+}
+
+func (s *FirestoreStore) ListRecentRoundups(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error) {
+	if limit <= 0 {
+		limit = 3
+	}
+	iter := s.client.Collection("showcased_roundups").
+		Where("slug", "==", slug).
+		OrderBy("period_start", firestore.Desc).
+		Limit(limit).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var results []*pbactivity.ShowcaseRoundup
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var r pbactivity.ShowcaseRoundup
+		if err := decodeProtoMap(doc.Data(), &r); err != nil {
+			return nil, err
+		}
+		results = append(results, &r)
+	}
+	return results, nil
+}
+
+func (s *FirestoreStore) ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error) {
+	iter := s.entryCollectionRef(userID).
+		Where("start_time", ">=", from).
+		Where("start_time", "<", to).
+		OrderBy("start_time", firestore.Desc).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var entries []*pbactivity.ShowcaseProfileEntry
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var entry pbactivity.ShowcaseProfileEntry
+		if err := decodeProtoMap(doc.Data(), &entry); err != nil {
+			return nil, err
+		}
+		entries = append(entries, &entry)
+	}
+	return entries, nil
+}
+
+// ListAllShowcaseUserIDs returns all user IDs that have a showcase profile, via the slug index.
+func (s *FirestoreStore) ListAllShowcaseUserIDs(ctx context.Context) ([]string, error) {
+	iter := s.client.Collection("showcase_slugs").Documents(ctx)
+	defer iter.Stop()
+
+	seen := make(map[string]struct{})
+	var userIDs []string
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		data := doc.Data()
+		userID, _ := data["user_id"].(string)
+		if userID == "" {
+			continue
+		}
+		if _, ok := seen[userID]; !ok {
+			seen[userID] = struct{}{}
+			userIDs = append(userIDs, userID)
+		}
+	}
+	return userIDs, nil
+}
+
 // Helpers
 func encodeProtoMap(msg protoreflect.ProtoMessage) (map[string]interface{}, error) {
 	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(msg)

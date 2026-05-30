@@ -28,6 +28,8 @@ const (
 	PublicGatewayService_ListSources_FullMethodName              = "/fitglue.gateway.PublicGatewayService/ListSources"
 	PublicGatewayService_GetPublicShowcase_FullMethodName        = "/fitglue.gateway.PublicGatewayService/GetPublicShowcase"
 	PublicGatewayService_GetPublicShowcaseProfile_FullMethodName = "/fitglue.gateway.PublicGatewayService/GetPublicShowcaseProfile"
+	PublicGatewayService_GetPublicRoundup_FullMethodName         = "/fitglue.gateway.PublicGatewayService/GetPublicRoundup"
+	PublicGatewayService_GetRecentPublicRoundups_FullMethodName  = "/fitglue.gateway.PublicGatewayService/GetRecentPublicRoundups"
 )
 
 // PublicGatewayServiceClient is the client API for PublicGatewayService service.
@@ -49,6 +51,8 @@ type PublicGatewayServiceClient interface {
 	// ===================== Public Showcase =====================
 	GetPublicShowcase(ctx context.Context, in *GetPublicShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
 	GetPublicShowcaseProfile(ctx context.Context, in *GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*GetPublicShowcaseProfileResponse, error)
+	GetPublicRoundup(ctx context.Context, in *GetPublicRoundupGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
+	GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsGatewayRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsGatewayResponse, error)
 }
 
 type publicGatewayServiceClient struct {
@@ -129,6 +133,26 @@ func (c *publicGatewayServiceClient) GetPublicShowcaseProfile(ctx context.Contex
 	return out, nil
 }
 
+func (c *publicGatewayServiceClient) GetPublicRoundup(ctx context.Context, in *GetPublicRoundupGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseRoundup)
+	err := c.cc.Invoke(ctx, PublicGatewayService_GetPublicRoundup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *publicGatewayServiceClient) GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsGatewayRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRecentPublicRoundupsGatewayResponse)
+	err := c.cc.Invoke(ctx, PublicGatewayService_GetRecentPublicRoundups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PublicGatewayServiceServer is the server API for PublicGatewayService service.
 // All implementations must embed UnimplementedPublicGatewayServiceServer
 // for forward compatibility.
@@ -148,6 +172,8 @@ type PublicGatewayServiceServer interface {
 	// ===================== Public Showcase =====================
 	GetPublicShowcase(context.Context, *GetPublicShowcaseRequest) (*activity.ShowcasedActivity, error)
 	GetPublicShowcaseProfile(context.Context, *GetPublicShowcaseProfileRequest) (*GetPublicShowcaseProfileResponse, error)
+	GetPublicRoundup(context.Context, *GetPublicRoundupGatewayRequest) (*activity.ShowcaseRoundup, error)
+	GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsGatewayRequest) (*GetRecentPublicRoundupsGatewayResponse, error)
 	mustEmbedUnimplementedPublicGatewayServiceServer()
 }
 
@@ -178,6 +204,12 @@ func (UnimplementedPublicGatewayServiceServer) GetPublicShowcase(context.Context
 }
 func (UnimplementedPublicGatewayServiceServer) GetPublicShowcaseProfile(context.Context, *GetPublicShowcaseProfileRequest) (*GetPublicShowcaseProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPublicShowcaseProfile not implemented")
+}
+func (UnimplementedPublicGatewayServiceServer) GetPublicRoundup(context.Context, *GetPublicRoundupGatewayRequest) (*activity.ShowcaseRoundup, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPublicRoundup not implemented")
+}
+func (UnimplementedPublicGatewayServiceServer) GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsGatewayRequest) (*GetRecentPublicRoundupsGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRecentPublicRoundups not implemented")
 }
 func (UnimplementedPublicGatewayServiceServer) mustEmbedUnimplementedPublicGatewayServiceServer() {}
 func (UnimplementedPublicGatewayServiceServer) testEmbeddedByValue()                              {}
@@ -326,6 +358,42 @@ func _PublicGatewayService_GetPublicShowcaseProfile_Handler(srv interface{}, ctx
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PublicGatewayService_GetPublicRoundup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPublicRoundupGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicGatewayServiceServer).GetPublicRoundup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PublicGatewayService_GetPublicRoundup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicGatewayServiceServer).GetPublicRoundup(ctx, req.(*GetPublicRoundupGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PublicGatewayService_GetRecentPublicRoundups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRecentPublicRoundupsGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicGatewayServiceServer).GetRecentPublicRoundups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PublicGatewayService_GetRecentPublicRoundups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicGatewayServiceServer).GetRecentPublicRoundups(ctx, req.(*GetRecentPublicRoundupsGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PublicGatewayService_ServiceDesc is the grpc.ServiceDesc for PublicGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -360,6 +428,14 @@ var PublicGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPublicShowcaseProfile",
 			Handler:    _PublicGatewayService_GetPublicShowcaseProfile_Handler,
+		},
+		{
+			MethodName: "GetPublicRoundup",
+			Handler:    _PublicGatewayService_GetPublicRoundup_Handler,
+		},
+		{
+			MethodName: "GetRecentPublicRoundups",
+			Handler:    _PublicGatewayService_GetRecentPublicRoundups_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

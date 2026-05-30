@@ -386,6 +386,12 @@ service ClientGatewayService {
       body: "*"
     };
   }
+  rpc UpdateRoundupSettings(UpdateRoundupSettingsGatewayRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      put: "/users/me/showcase-management/roundup-settings"
+      body: "*"
+    };
+  }
   rpc GetActivityPhotoUploadUrl(GetActivityPhotoUploadUrlGatewayRequest) returns (GetActivityPhotoUploadUrlGatewayResponse) {
     option (google.api.http) = {
       post: "/users/me/activity-photos/upload-url"
@@ -733,6 +739,9 @@ message UpdateShowcaseSettingsGatewayRequest {
 }
 message UpdateShowcaseSlugGatewayRequest {
   string slug = 1;
+}
+message UpdateRoundupSettingsGatewayRequest {
+  fitglue.models.activity.RoundupSettings settings = 1;
 }
 message UpdateShowcaseSlugGatewayResponse {
   string slug = 1;

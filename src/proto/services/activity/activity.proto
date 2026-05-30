@@ -6,6 +6,7 @@ import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
+import "models/activity/roundup.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/services/activity";
 
@@ -137,6 +138,23 @@ service ActivityService {
     option (google.api.http) = {
       post: "/v2/users/{user_id}/activity-photos/upload-url"
       body: "*"
+    };
+  }
+
+  rpc GetPublicRoundup(GetPublicRoundupRequest) returns (fitglue.models.activity.ShowcaseRoundup) {
+    option (google.api.http) = {
+      get: "/v2/public/showcase/{slug}/roundup/{period_key}"
+    };
+  }
+  rpc GetRecentPublicRoundups(GetRecentPublicRoundupsRequest) returns (GetRecentPublicRoundupsResponse) {
+    option (google.api.http) = {
+      get: "/v2/public/showcase/{slug}/roundups/recent"
+    };
+  }
+  rpc UpdateRoundupSettings(UpdateRoundupSettingsRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      put: "/v2/users/{user_id}/showcase-management/roundup-settings"
+      body: "settings"
     };
   }
 }
@@ -326,4 +344,23 @@ message GetActivityStatsResponse {
   int32 activities_this_week = 7;
   int32 current_streak_days = 8;
   int32 longest_streak_days = 9;
+}
+
+message GetPublicRoundupRequest {
+  string slug = 1;
+  string period_key = 2;
+}
+
+message GetRecentPublicRoundupsRequest {
+  string slug = 1;
+  int32 limit = 2;
+}
+
+message GetRecentPublicRoundupsResponse {
+  repeated fitglue.models.activity.ShowcaseRoundup roundups = 1;
+}
+
+message UpdateRoundupSettingsRequest {
+  string user_id = 1;
+  fitglue.models.activity.RoundupSettings settings = 2;
 }

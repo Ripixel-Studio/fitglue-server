@@ -446,11 +446,159 @@ func (x *GetPublicShowcaseProfileResponse) GetCurrentPage() int32 {
 	return 0
 }
 
+type GetPublicRoundupGatewayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	PeriodKey     string                 `protobuf:"bytes,2,opt,name=period_key,json=periodKey,proto3" json:"period_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPublicRoundupGatewayRequest) Reset() {
+	*x = GetPublicRoundupGatewayRequest{}
+	mi := &file_gateway_public_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPublicRoundupGatewayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPublicRoundupGatewayRequest) ProtoMessage() {}
+
+func (x *GetPublicRoundupGatewayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_public_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPublicRoundupGatewayRequest.ProtoReflect.Descriptor instead.
+func (*GetPublicRoundupGatewayRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_public_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetPublicRoundupGatewayRequest) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *GetPublicRoundupGatewayRequest) GetPeriodKey() string {
+	if x != nil {
+		return x.PeriodKey
+	}
+	return ""
+}
+
+type GetRecentPublicRoundupsGatewayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRecentPublicRoundupsGatewayRequest) Reset() {
+	*x = GetRecentPublicRoundupsGatewayRequest{}
+	mi := &file_gateway_public_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRecentPublicRoundupsGatewayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRecentPublicRoundupsGatewayRequest) ProtoMessage() {}
+
+func (x *GetRecentPublicRoundupsGatewayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_public_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRecentPublicRoundupsGatewayRequest.ProtoReflect.Descriptor instead.
+func (*GetRecentPublicRoundupsGatewayRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_public_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetRecentPublicRoundupsGatewayRequest) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *GetRecentPublicRoundupsGatewayRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type GetRecentPublicRoundupsGatewayResponse struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Roundups      []*activity.ShowcaseRoundup `protobuf:"bytes,1,rep,name=roundups,proto3" json:"roundups,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRecentPublicRoundupsGatewayResponse) Reset() {
+	*x = GetRecentPublicRoundupsGatewayResponse{}
+	mi := &file_gateway_public_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRecentPublicRoundupsGatewayResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRecentPublicRoundupsGatewayResponse) ProtoMessage() {}
+
+func (x *GetRecentPublicRoundupsGatewayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_public_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRecentPublicRoundupsGatewayResponse.ProtoReflect.Descriptor instead.
+func (*GetRecentPublicRoundupsGatewayResponse) Descriptor() ([]byte, []int) {
+	return file_gateway_public_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetRecentPublicRoundupsGatewayResponse) GetRoundups() []*activity.ShowcaseRoundup {
+	if x != nil {
+		return x.Roundups
+	}
+	return nil
+}
+
 var File_gateway_public_proto protoreflect.FileDescriptor
 
 const file_gateway_public_proto_rawDesc = "" +
 	"\n" +
-	"\x14gateway/public.proto\x12\x0ffitglue.gateway\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/plugin/manifest.proto\x1a\x1emodels/activity/uploaded.proto\"\x14\n" +
+	"\x14gateway/public.proto\x12\x0ffitglue.gateway\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/plugin/manifest.proto\x1a\x1emodels/activity/uploaded.proto\x1a\x1dmodels/activity/roundup.proto\"\x14\n" +
 	"\x12PublicEmptyRequest\"6\n" +
 	"\x18ListPluginsPublicRequest\x12\x1a\n" +
 	"\bcategory\x18\x01 \x01(\tR\bcategory\"\\\n" +
@@ -474,7 +622,17 @@ const file_gateway_public_proto_rawDesc = "" +
 	"\tshowcases\x18\x02 \x03(\v2*.fitglue.models.activity.ShowcasedActivityR\tshowcases\x12\x1f\n" +
 	"\vtotal_pages\x18\x03 \x01(\x05R\n" +
 	"totalPages\x12!\n" +
-	"\fcurrent_page\x18\x04 \x01(\x05R\vcurrentPage2\xb9\a\n" +
+	"\fcurrent_page\x18\x04 \x01(\x05R\vcurrentPage\"S\n" +
+	"\x1eGetPublicRoundupGatewayRequest\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x1d\n" +
+	"\n" +
+	"period_key\x18\x02 \x01(\tR\tperiodKey\"Q\n" +
+	"%GetRecentPublicRoundupsGatewayRequest\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"n\n" +
+	"&GetRecentPublicRoundupsGatewayResponse\x12D\n" +
+	"\broundups\x18\x01 \x03(\v2(.fitglue.models.activity.ShowcaseRoundupR\broundups2\x8f\n" +
+	"\n" +
 	"\x14PublicGatewayService\x12z\n" +
 	"\x11GetPluginRegistry\x12#.fitglue.gateway.PublicEmptyRequest\x1a-.fitglue.models.plugin.PluginRegistryResponse\"\x11\x82\xd3\xe4\x93\x02\v\x12\t/registry\x12\x7f\n" +
 	"\vListPlugins\x12).fitglue.gateway.ListPluginsPublicRequest\x1a*.fitglue.gateway.ListPluginsPublicResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/registry/plugins\x12{\n" +
@@ -482,7 +640,9 @@ const file_gateway_public_proto_rawDesc = "" +
 	"\x0eListCategories\x12#.fitglue.gateway.PublicEmptyRequest\x1a-.fitglue.gateway.ListCategoriesPublicResponse\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/registry/categories\x12y\n" +
 	"\vListSources\x12#.fitglue.gateway.PublicEmptyRequest\x1a*.fitglue.gateway.ListSourcesPublicResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/registry/sources\x12\x82\x01\n" +
 	"\x11GetPublicShowcase\x12).fitglue.gateway.GetPublicShowcaseRequest\x1a*.fitglue.models.activity.ShowcasedActivity\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/showcase/{id}\x12\xa1\x01\n" +
-	"\x18GetPublicShowcaseProfile\x120.fitglue.gateway.GetPublicShowcaseProfileRequest\x1a1.fitglue.gateway.GetPublicShowcaseProfileResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/showcase/profile/{slug}B7Z5github.com/fitglue/server/src/go/pkg/types/pb/gatewayb\x06proto3"
+	"\x18GetPublicShowcaseProfile\x120.fitglue.gateway.GetPublicShowcaseProfileRequest\x1a1.fitglue.gateway.GetPublicShowcaseProfileResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/showcase/profile/{slug}\x12\x9c\x01\n" +
+	"\x10GetPublicRoundup\x12/.fitglue.gateway.GetPublicRoundupGatewayRequest\x1a(.fitglue.models.activity.ShowcaseRoundup\"-\x82\xd3\xe4\x93\x02'\x12%/showcase/{slug}/roundup/{period_key}\x12\xb4\x01\n" +
+	"\x17GetRecentPublicRoundups\x126.fitglue.gateway.GetRecentPublicRoundupsGatewayRequest\x1a7.fitglue.gateway.GetRecentPublicRoundupsGatewayResponse\"(\x82\xd3\xe4\x93\x02\"\x12 /showcase/{slug}/roundups/recentB7Z5github.com/fitglue/server/src/go/pkg/types/pb/gatewayb\x06proto3"
 
 var (
 	file_gateway_public_proto_rawDescOnce sync.Once
@@ -496,46 +656,55 @@ func file_gateway_public_proto_rawDescGZIP() []byte {
 	return file_gateway_public_proto_rawDescData
 }
 
-var file_gateway_public_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_gateway_public_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_gateway_public_proto_goTypes = []any{
-	(*PublicEmptyRequest)(nil),               // 0: fitglue.gateway.PublicEmptyRequest
-	(*ListPluginsPublicRequest)(nil),         // 1: fitglue.gateway.ListPluginsPublicRequest
-	(*ListPluginsPublicResponse)(nil),        // 2: fitglue.gateway.ListPluginsPublicResponse
-	(*GetPluginPublicRequest)(nil),           // 3: fitglue.gateway.GetPluginPublicRequest
-	(*ListCategoriesPublicResponse)(nil),     // 4: fitglue.gateway.ListCategoriesPublicResponse
-	(*ListSourcesPublicResponse)(nil),        // 5: fitglue.gateway.ListSourcesPublicResponse
-	(*GetPublicShowcaseRequest)(nil),         // 6: fitglue.gateway.GetPublicShowcaseRequest
-	(*GetPublicShowcaseProfileRequest)(nil),  // 7: fitglue.gateway.GetPublicShowcaseProfileRequest
-	(*GetPublicShowcaseProfileResponse)(nil), // 8: fitglue.gateway.GetPublicShowcaseProfileResponse
-	(*plugin.PluginManifest)(nil),            // 9: fitglue.models.plugin.PluginManifest
-	(*activity.ShowcaseProfile)(nil),         // 10: fitglue.models.activity.ShowcaseProfile
-	(*activity.ShowcasedActivity)(nil),       // 11: fitglue.models.activity.ShowcasedActivity
-	(*plugin.PluginRegistryResponse)(nil),    // 12: fitglue.models.plugin.PluginRegistryResponse
+	(*PublicEmptyRequest)(nil),                     // 0: fitglue.gateway.PublicEmptyRequest
+	(*ListPluginsPublicRequest)(nil),               // 1: fitglue.gateway.ListPluginsPublicRequest
+	(*ListPluginsPublicResponse)(nil),              // 2: fitglue.gateway.ListPluginsPublicResponse
+	(*GetPluginPublicRequest)(nil),                 // 3: fitglue.gateway.GetPluginPublicRequest
+	(*ListCategoriesPublicResponse)(nil),           // 4: fitglue.gateway.ListCategoriesPublicResponse
+	(*ListSourcesPublicResponse)(nil),              // 5: fitglue.gateway.ListSourcesPublicResponse
+	(*GetPublicShowcaseRequest)(nil),               // 6: fitglue.gateway.GetPublicShowcaseRequest
+	(*GetPublicShowcaseProfileRequest)(nil),        // 7: fitglue.gateway.GetPublicShowcaseProfileRequest
+	(*GetPublicShowcaseProfileResponse)(nil),       // 8: fitglue.gateway.GetPublicShowcaseProfileResponse
+	(*GetPublicRoundupGatewayRequest)(nil),         // 9: fitglue.gateway.GetPublicRoundupGatewayRequest
+	(*GetRecentPublicRoundupsGatewayRequest)(nil),  // 10: fitglue.gateway.GetRecentPublicRoundupsGatewayRequest
+	(*GetRecentPublicRoundupsGatewayResponse)(nil), // 11: fitglue.gateway.GetRecentPublicRoundupsGatewayResponse
+	(*plugin.PluginManifest)(nil),                  // 12: fitglue.models.plugin.PluginManifest
+	(*activity.ShowcaseProfile)(nil),               // 13: fitglue.models.activity.ShowcaseProfile
+	(*activity.ShowcasedActivity)(nil),             // 14: fitglue.models.activity.ShowcasedActivity
+	(*activity.ShowcaseRoundup)(nil),               // 15: fitglue.models.activity.ShowcaseRoundup
+	(*plugin.PluginRegistryResponse)(nil),          // 16: fitglue.models.plugin.PluginRegistryResponse
 }
 var file_gateway_public_proto_depIdxs = []int32{
-	9,  // 0: fitglue.gateway.ListPluginsPublicResponse.plugins:type_name -> fitglue.models.plugin.PluginManifest
-	9,  // 1: fitglue.gateway.ListSourcesPublicResponse.sources:type_name -> fitglue.models.plugin.PluginManifest
-	10, // 2: fitglue.gateway.GetPublicShowcaseProfileResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
-	11, // 3: fitglue.gateway.GetPublicShowcaseProfileResponse.showcases:type_name -> fitglue.models.activity.ShowcasedActivity
-	0,  // 4: fitglue.gateway.PublicGatewayService.GetPluginRegistry:input_type -> fitglue.gateway.PublicEmptyRequest
-	1,  // 5: fitglue.gateway.PublicGatewayService.ListPlugins:input_type -> fitglue.gateway.ListPluginsPublicRequest
-	3,  // 6: fitglue.gateway.PublicGatewayService.GetPlugin:input_type -> fitglue.gateway.GetPluginPublicRequest
-	0,  // 7: fitglue.gateway.PublicGatewayService.ListCategories:input_type -> fitglue.gateway.PublicEmptyRequest
-	0,  // 8: fitglue.gateway.PublicGatewayService.ListSources:input_type -> fitglue.gateway.PublicEmptyRequest
-	6,  // 9: fitglue.gateway.PublicGatewayService.GetPublicShowcase:input_type -> fitglue.gateway.GetPublicShowcaseRequest
-	7,  // 10: fitglue.gateway.PublicGatewayService.GetPublicShowcaseProfile:input_type -> fitglue.gateway.GetPublicShowcaseProfileRequest
-	12, // 11: fitglue.gateway.PublicGatewayService.GetPluginRegistry:output_type -> fitglue.models.plugin.PluginRegistryResponse
-	2,  // 12: fitglue.gateway.PublicGatewayService.ListPlugins:output_type -> fitglue.gateway.ListPluginsPublicResponse
-	9,  // 13: fitglue.gateway.PublicGatewayService.GetPlugin:output_type -> fitglue.models.plugin.PluginManifest
-	4,  // 14: fitglue.gateway.PublicGatewayService.ListCategories:output_type -> fitglue.gateway.ListCategoriesPublicResponse
-	5,  // 15: fitglue.gateway.PublicGatewayService.ListSources:output_type -> fitglue.gateway.ListSourcesPublicResponse
-	11, // 16: fitglue.gateway.PublicGatewayService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	8,  // 17: fitglue.gateway.PublicGatewayService.GetPublicShowcaseProfile:output_type -> fitglue.gateway.GetPublicShowcaseProfileResponse
-	11, // [11:18] is the sub-list for method output_type
-	4,  // [4:11] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	12, // 0: fitglue.gateway.ListPluginsPublicResponse.plugins:type_name -> fitglue.models.plugin.PluginManifest
+	12, // 1: fitglue.gateway.ListSourcesPublicResponse.sources:type_name -> fitglue.models.plugin.PluginManifest
+	13, // 2: fitglue.gateway.GetPublicShowcaseProfileResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
+	14, // 3: fitglue.gateway.GetPublicShowcaseProfileResponse.showcases:type_name -> fitglue.models.activity.ShowcasedActivity
+	15, // 4: fitglue.gateway.GetRecentPublicRoundupsGatewayResponse.roundups:type_name -> fitglue.models.activity.ShowcaseRoundup
+	0,  // 5: fitglue.gateway.PublicGatewayService.GetPluginRegistry:input_type -> fitglue.gateway.PublicEmptyRequest
+	1,  // 6: fitglue.gateway.PublicGatewayService.ListPlugins:input_type -> fitglue.gateway.ListPluginsPublicRequest
+	3,  // 7: fitglue.gateway.PublicGatewayService.GetPlugin:input_type -> fitglue.gateway.GetPluginPublicRequest
+	0,  // 8: fitglue.gateway.PublicGatewayService.ListCategories:input_type -> fitglue.gateway.PublicEmptyRequest
+	0,  // 9: fitglue.gateway.PublicGatewayService.ListSources:input_type -> fitglue.gateway.PublicEmptyRequest
+	6,  // 10: fitglue.gateway.PublicGatewayService.GetPublicShowcase:input_type -> fitglue.gateway.GetPublicShowcaseRequest
+	7,  // 11: fitglue.gateway.PublicGatewayService.GetPublicShowcaseProfile:input_type -> fitglue.gateway.GetPublicShowcaseProfileRequest
+	9,  // 12: fitglue.gateway.PublicGatewayService.GetPublicRoundup:input_type -> fitglue.gateway.GetPublicRoundupGatewayRequest
+	10, // 13: fitglue.gateway.PublicGatewayService.GetRecentPublicRoundups:input_type -> fitglue.gateway.GetRecentPublicRoundupsGatewayRequest
+	16, // 14: fitglue.gateway.PublicGatewayService.GetPluginRegistry:output_type -> fitglue.models.plugin.PluginRegistryResponse
+	2,  // 15: fitglue.gateway.PublicGatewayService.ListPlugins:output_type -> fitglue.gateway.ListPluginsPublicResponse
+	12, // 16: fitglue.gateway.PublicGatewayService.GetPlugin:output_type -> fitglue.models.plugin.PluginManifest
+	4,  // 17: fitglue.gateway.PublicGatewayService.ListCategories:output_type -> fitglue.gateway.ListCategoriesPublicResponse
+	5,  // 18: fitglue.gateway.PublicGatewayService.ListSources:output_type -> fitglue.gateway.ListSourcesPublicResponse
+	14, // 19: fitglue.gateway.PublicGatewayService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	8,  // 20: fitglue.gateway.PublicGatewayService.GetPublicShowcaseProfile:output_type -> fitglue.gateway.GetPublicShowcaseProfileResponse
+	15, // 21: fitglue.gateway.PublicGatewayService.GetPublicRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
+	11, // 22: fitglue.gateway.PublicGatewayService.GetRecentPublicRoundups:output_type -> fitglue.gateway.GetRecentPublicRoundupsGatewayResponse
+	14, // [14:23] is the sub-list for method output_type
+	5,  // [5:14] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_gateway_public_proto_init() }
@@ -549,7 +718,7 @@ func file_gateway_public_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gateway_public_proto_rawDesc), len(file_gateway_public_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

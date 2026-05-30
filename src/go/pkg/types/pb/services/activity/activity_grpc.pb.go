@@ -44,6 +44,9 @@ const (
 	ActivityService_RemoveShowcaseEntry_FullMethodName                = "/fitglue.services.activity.ActivityService/RemoveShowcaseEntry"
 	ActivityService_GetShowcaseProfilePictureUploadUrl_FullMethodName = "/fitglue.services.activity.ActivityService/GetShowcaseProfilePictureUploadUrl"
 	ActivityService_GetActivityPhotoUploadUrl_FullMethodName          = "/fitglue.services.activity.ActivityService/GetActivityPhotoUploadUrl"
+	ActivityService_GetPublicRoundup_FullMethodName                   = "/fitglue.services.activity.ActivityService/GetPublicRoundup"
+	ActivityService_GetRecentPublicRoundups_FullMethodName            = "/fitglue.services.activity.ActivityService/GetRecentPublicRoundups"
+	ActivityService_UpdateRoundupSettings_FullMethodName              = "/fitglue.services.activity.ActivityService/UpdateRoundupSettings"
 )
 
 // ActivityServiceClient is the client API for ActivityService service.
@@ -74,6 +77,9 @@ type ActivityServiceClient interface {
 	RemoveShowcaseEntry(ctx context.Context, in *RemoveShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*GetShowcaseProfilePictureUploadUrlResponse, error)
 	GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlResponse, error)
+	GetPublicRoundup(ctx context.Context, in *GetPublicRoundupRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
+	GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsResponse, error)
+	UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
 }
 
 type activityServiceClient struct {
@@ -314,6 +320,36 @@ func (c *activityServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, i
 	return out, nil
 }
 
+func (c *activityServiceClient) GetPublicRoundup(ctx context.Context, in *GetPublicRoundupRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseRoundup)
+	err := c.cc.Invoke(ctx, ActivityService_GetPublicRoundup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRecentPublicRoundupsResponse)
+	err := c.cc.Invoke(ctx, ActivityService_GetRecentPublicRoundups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseProfile)
+	err := c.cc.Invoke(ctx, ActivityService_UpdateRoundupSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActivityServiceServer is the server API for ActivityService service.
 // All implementations must embed UnimplementedActivityServiceServer
 // for forward compatibility.
@@ -342,6 +378,9 @@ type ActivityServiceServer interface {
 	RemoveShowcaseEntry(context.Context, *RemoveShowcaseEntryRequest) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(context.Context, *GetShowcaseProfilePictureUploadUrlRequest) (*GetShowcaseProfilePictureUploadUrlResponse, error)
 	GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlRequest) (*GetActivityPhotoUploadUrlResponse, error)
+	GetPublicRoundup(context.Context, *GetPublicRoundupRequest) (*activity.ShowcaseRoundup, error)
+	GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsRequest) (*GetRecentPublicRoundupsResponse, error)
+	UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsRequest) (*activity.ShowcaseProfile, error)
 	mustEmbedUnimplementedActivityServiceServer()
 }
 
@@ -420,6 +459,15 @@ func (UnimplementedActivityServiceServer) GetShowcaseProfilePictureUploadUrl(con
 }
 func (UnimplementedActivityServiceServer) GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlRequest) (*GetActivityPhotoUploadUrlResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActivityPhotoUploadUrl not implemented")
+}
+func (UnimplementedActivityServiceServer) GetPublicRoundup(context.Context, *GetPublicRoundupRequest) (*activity.ShowcaseRoundup, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPublicRoundup not implemented")
+}
+func (UnimplementedActivityServiceServer) GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsRequest) (*GetRecentPublicRoundupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRecentPublicRoundups not implemented")
+}
+func (UnimplementedActivityServiceServer) UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsRequest) (*activity.ShowcaseProfile, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRoundupSettings not implemented")
 }
 func (UnimplementedActivityServiceServer) mustEmbedUnimplementedActivityServiceServer() {}
 func (UnimplementedActivityServiceServer) testEmbeddedByValue()                         {}
@@ -856,6 +904,60 @@ func _ActivityService_GetActivityPhotoUploadUrl_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActivityService_GetPublicRoundup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPublicRoundupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetPublicRoundup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetPublicRoundup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetPublicRoundup(ctx, req.(*GetPublicRoundupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetRecentPublicRoundups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRecentPublicRoundupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetRecentPublicRoundups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetRecentPublicRoundups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetRecentPublicRoundups(ctx, req.(*GetRecentPublicRoundupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_UpdateRoundupSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRoundupSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).UpdateRoundupSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_UpdateRoundupSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).UpdateRoundupSettings(ctx, req.(*UpdateRoundupSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActivityService_ServiceDesc is the grpc.ServiceDesc for ActivityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -954,6 +1056,18 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActivityPhotoUploadUrl",
 			Handler:    _ActivityService_GetActivityPhotoUploadUrl_Handler,
+		},
+		{
+			MethodName: "GetPublicRoundup",
+			Handler:    _ActivityService_GetPublicRoundup_Handler,
+		},
+		{
+			MethodName: "GetRecentPublicRoundups",
+			Handler:    _ActivityService_GetRecentPublicRoundups_Handler,
+		},
+		{
+			MethodName: "UpdateRoundupSettings",
+			Handler:    _ActivityService_UpdateRoundupSettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

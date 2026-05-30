@@ -10,6 +10,61 @@
 #   - Pending inputs past AutoDeadline are marked COMPLETED by the handler itself,
 #     so they stop appearing in future runs.
 
+# Roundup generation jobs — fire at period boundaries.
+resource "google_cloud_scheduler_job" "weekly_roundup_generator" {
+  name        = "weekly-roundup-generator"
+  description = "Triggers showcase roundup generation for the week that just ended"
+  project     = var.project_id
+  region      = var.region
+  schedule    = "0 6 * * 1"
+  time_zone   = "UTC"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.roundup_trigger.id
+    data       = base64encode("{"period_type":"week"}")
+  }
+
+  retry_config {
+    retry_count = 1
+  }
+}
+
+resource "google_cloud_scheduler_job" "monthly_roundup_generator" {
+  name        = "monthly-roundup-generator"
+  description = "Triggers showcase roundup generation for the month that just ended"
+  project     = var.project_id
+  region      = var.region
+  schedule    = "0 6 1 * *"
+  time_zone   = "UTC"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.roundup_trigger.id
+    data       = base64encode("{"period_type":"month"}")
+  }
+
+  retry_config {
+    retry_count = 1
+  }
+}
+
+resource "google_cloud_scheduler_job" "yearly_roundup_generator" {
+  name        = "yearly-roundup-generator"
+  description = "Triggers showcase roundup generation for the year that just ended"
+  project     = var.project_id
+  region      = var.region
+  schedule    = "0 6 1 1 *"
+  time_zone   = "UTC"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.roundup_trigger.id
+    data       = base64encode("{"period_type":"year"}")
+  }
+
+  retry_config {
+    retry_count = 1
+  }
+}
+
 resource "google_cloud_scheduler_job" "parkrun_results_check" {
   name        = "parkrun-results-check"
   description = "Polls parkrun for auto-resolution of waiting pending inputs"

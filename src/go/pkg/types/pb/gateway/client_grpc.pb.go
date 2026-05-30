@@ -85,6 +85,7 @@ const (
 	ClientGatewayService_AddShowcaseEntry_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/AddShowcaseEntry"
 	ClientGatewayService_RemoveShowcaseEntry_FullMethodName                = "/fitglue.gateway.ClientGatewayService/RemoveShowcaseEntry"
 	ClientGatewayService_GetShowcaseProfilePictureUploadUrl_FullMethodName = "/fitglue.gateway.ClientGatewayService/GetShowcaseProfilePictureUploadUrl"
+	ClientGatewayService_UpdateRoundupSettings_FullMethodName              = "/fitglue.gateway.ClientGatewayService/UpdateRoundupSettings"
 	ClientGatewayService_GetActivityPhotoUploadUrl_FullMethodName          = "/fitglue.gateway.ClientGatewayService/GetActivityPhotoUploadUrl"
 	ClientGatewayService_ExportData_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/ExportData"
 	ClientGatewayService_ParseFitFile_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/ParseFitFile"
@@ -194,6 +195,7 @@ type ClientGatewayServiceClient interface {
 	AddShowcaseEntry(ctx context.Context, in *ShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RemoveShowcaseEntry(ctx context.Context, in *ShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *GetPictureUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetPictureUploadUrlGatewayResponse, error)
+	UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
 	GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlGatewayResponse, error)
 	// ===================== Data Export =====================
 	ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error)
@@ -841,6 +843,16 @@ func (c *clientGatewayServiceClient) GetShowcaseProfilePictureUploadUrl(ctx cont
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseProfile)
+	err := c.cc.Invoke(ctx, ClientGatewayService_UpdateRoundupSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlGatewayResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetActivityPhotoUploadUrlGatewayResponse)
@@ -1128,6 +1140,7 @@ type ClientGatewayServiceServer interface {
 	AddShowcaseEntry(context.Context, *ShowcaseEntryRequest) (*emptypb.Empty, error)
 	RemoveShowcaseEntry(context.Context, *ShowcaseEntryRequest) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(context.Context, *GetPictureUploadUrlGatewayRequest) (*GetPictureUploadUrlGatewayResponse, error)
+	UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsGatewayRequest) (*activity.ShowcaseProfile, error)
 	GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlGatewayRequest) (*GetActivityPhotoUploadUrlGatewayResponse, error)
 	// ===================== Data Export =====================
 	ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error)
@@ -1347,6 +1360,9 @@ func (UnimplementedClientGatewayServiceServer) RemoveShowcaseEntry(context.Conte
 }
 func (UnimplementedClientGatewayServiceServer) GetShowcaseProfilePictureUploadUrl(context.Context, *GetPictureUploadUrlGatewayRequest) (*GetPictureUploadUrlGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetShowcaseProfilePictureUploadUrl not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsGatewayRequest) (*activity.ShowcaseProfile, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRoundupSettings not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlGatewayRequest) (*GetActivityPhotoUploadUrlGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActivityPhotoUploadUrl not implemented")
@@ -2527,6 +2543,24 @@ func _ClientGatewayService_GetShowcaseProfilePictureUploadUrl_Handler(srv interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_UpdateRoundupSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRoundupSettingsGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).UpdateRoundupSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_UpdateRoundupSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).UpdateRoundupSettings(ctx, req.(*UpdateRoundupSettingsGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_GetActivityPhotoUploadUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetActivityPhotoUploadUrlGatewayRequest)
 	if err := dec(in); err != nil {
@@ -3137,6 +3171,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetShowcaseProfilePictureUploadUrl",
 			Handler:    _ClientGatewayService_GetShowcaseProfilePictureUploadUrl_Handler,
+		},
+		{
+			MethodName: "UpdateRoundupSettings",
+			Handler:    _ClientGatewayService_UpdateRoundupSettings_Handler,
 		},
 		{
 			MethodName: "GetActivityPhotoUploadUrl",

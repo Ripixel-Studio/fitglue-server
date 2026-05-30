@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package fitglue.models.activity;
+
+import "google/protobuf/timestamp.proto";
+import "models/activity/source.proto";
+import "models/activity/uploaded.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
+
+enum RoundupPeriodType {
+  ROUNDUP_PERIOD_TYPE_UNSPECIFIED = 0;
+  ROUNDUP_PERIOD_TYPE_WEEK = 1;
+  ROUNDUP_PERIOD_TYPE_MONTH = 2;
+  ROUNDUP_PERIOD_TYPE_YEAR = 3;
+}
+
+message RoundupActivityTypeBreakdown {
+  ActivityType activity_type = 1;
+  int32 activity_count = 2;
+  double total_distance_meters = 3;
+  double total_duration_seconds = 4;
+  double total_weight_kg = 5;
+  int32 total_sets = 6;
+  int32 total_reps = 7;
+}
+
+// ShowcaseRoundup is a period-aggregated training summary stored as a public snapshot.
+message ShowcaseRoundup {
+  string roundup_id = 1;
+  string slug = 2;
+  string user_id = 3;
+  RoundupPeriodType period_type = 4;
+  string period_key = 5;
+  google.protobuf.Timestamp period_start = 6;
+  google.protobuf.Timestamp period_end = 7;
+  google.protobuf.Timestamp generated_at = 8;
+  int32 total_activities = 9;
+  double total_duration_seconds = 10;
+  double total_distance_meters = 11;
+  double total_elevation_gain_meters = 12;
+  int32 total_calories_kcal = 13;
+  repeated RoundupActivityTypeBreakdown activity_type_breakdowns = 14;
+  repeated int32 hr_zone_minutes = 15;
+  repeated ShowcaseTopPR prs_achieved = 16;
+  repeated ActivitySource sources = 17;
+  int32 effort_easy_count = 18;
+  int32 effort_moderate_count = 19;
+  int32 effort_hard_count = 20;
+  string owner_display_name = 21;
+  string owner_profile_picture_url = 22;
+  string owner_profile_slug = 23;
+}

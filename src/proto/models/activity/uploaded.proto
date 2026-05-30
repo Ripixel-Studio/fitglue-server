@@ -148,6 +148,16 @@ message ShowcaseProfile {
 
   // Top strength PRs — populated at request time from users/{userId}/personal_records/
   repeated ShowcaseTopPR top_prs = 25;
+
+  optional RoundupSettings roundup_settings = 26;
+}
+
+// RoundupSettings controls auto-generation of showcase roundup pages.
+// Athlete-tier only; all fields default to false.
+message RoundupSettings {
+  bool enabled_weekly = 1;
+  bool enabled_monthly = 2;
+  bool enabled_yearly = 3;
 }
 
 // ShowcaseTopPR is a lightweight personal record for display on the profile medal wall.

@@ -1731,6 +1731,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/roundup-settings:
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateRoundupSettings
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateRoundupSettingsGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/showcases:
         get:
             tags:
@@ -3527,6 +3551,18 @@ components:
                 destination:
                     type: string
             description: Repost Variants
+        RoundupSettings:
+            type: object
+            properties:
+                enabledWeekly:
+                    type: boolean
+                enabledMonthly:
+                    type: boolean
+                enabledYearly:
+                    type: boolean
+            description: |-
+                RoundupSettings controls auto-generation of showcase roundup pages.
+                 Athlete-tier only; all fields default to false.
         RunningDynamicsSummary:
             type: object
             properties:
@@ -3704,6 +3740,8 @@ components:
                     items:
                         $ref: '#/components/schemas/ShowcaseTopPR'
                     description: Top strength PRs — populated at request time from users/{userId}/personal_records/
+                roundupSettings:
+                    $ref: '#/components/schemas/RoundupSettings'
         ShowcaseProfileEntry:
             type: object
             properties:
@@ -4441,6 +4479,11 @@ components:
                 profile:
                     $ref: '#/components/schemas/UserProfile'
             description: User
+        UpdateRoundupSettingsGatewayRequest:
+            type: object
+            properties:
+                settings:
+                    $ref: '#/components/schemas/RoundupSettings'
         UpdateShowcaseGatewayRequest:
             type: object
             properties:

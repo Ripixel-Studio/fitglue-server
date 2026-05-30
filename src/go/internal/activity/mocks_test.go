@@ -204,6 +204,26 @@ func (m *MockActivityStore) ListUserPersonalRecords(ctx context.Context, userID 
 	return nil, nil
 }
 
+func (m *MockActivityStore) GetRoundup(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error) {
+	return nil, nil
+}
+
+func (m *MockActivityStore) SetRoundup(ctx context.Context, roundup *pbactivity.ShowcaseRoundup) error {
+	return nil
+}
+
+func (m *MockActivityStore) ListRecentRoundups(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error) {
+	return nil, nil
+}
+
+func (m *MockActivityStore) ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error) {
+	return nil, nil
+}
+
+func (m *MockActivityStore) ListAllShowcaseUserIDs(ctx context.Context) ([]string, error) {
+	return nil, nil
+}
+
 // MockBlobStore implements BlobStore for testing
 type MockBlobStore struct {
 	GetFunc       func(ctx context.Context, bucket, object string) ([]byte, error)

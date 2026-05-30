@@ -145,6 +145,16 @@ func (m *mockActivityServiceClient) GetActivityStats(ctx context.Context, in *ac
 	return &activitypb.GetActivityStatsResponse{}, nil
 }
 
+func (m *mockActivityServiceClient) GetPublicRoundup(ctx context.Context, in *activitypb.GetPublicRoundupRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseRoundup, error) {
+	return &pbactivity.ShowcaseRoundup{}, nil
+}
+func (m *mockActivityServiceClient) GetRecentPublicRoundups(ctx context.Context, in *activitypb.GetRecentPublicRoundupsRequest, opts ...grpc.CallOption) (*activitypb.GetRecentPublicRoundupsResponse, error) {
+	return &activitypb.GetRecentPublicRoundupsResponse{}, nil
+}
+func (m *mockActivityServiceClient) UpdateRoundupSettings(ctx context.Context, in *activitypb.UpdateRoundupSettingsRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseProfile, error) {
+	return &pbactivity.ShowcaseProfile{}, nil
+}
+
 // =============================================================
 // Mock BillingServiceClient
 // =============================================================

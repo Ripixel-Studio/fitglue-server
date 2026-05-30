@@ -154,3 +154,32 @@ resource "google_pubsub_subscription" "pipeline_run_sub" {
     maximum_backoff = "600s"
   }
 }
+
+# Roundup trigger — Cloud Scheduler publishes here to kick off roundup generation.
+resource "google_pubsub_topic" "roundup_trigger" {
+  name    = "topic-roundup-trigger"
+  project = var.project_id
+
+  message_retention_duration = "7200s"
+}
+
+resource "google_pubsub_subscription" "roundup_trigger_sub" {
+  name    = "sub-roundup-trigger"
+  topic   = google_pubsub_topic.roundup_trigger.name
+  project = var.project_id
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["activity"].uri}/pubsub/roundup"
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["activity"].email
+    }
+  }
+
+  ack_deadline_seconds       = 600
+  message_retention_duration = "7200s"
+
+  retry_policy {
+    minimum_backoff = "60s"
+    maximum_backoff = "600s"
+  }
+}
