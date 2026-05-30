@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.29.0](https://github.com/FitGlue/server/compare/v16.28.0...v16.29.0) (2026-05-30)
+
+
+### Features
+
+* **showcase:** add roundup pages — weekly/monthly/yearly training summaries ([fc28cf6](https://github.com/FitGlue/server/commit/fc28cf64175c09820e43b635d26fe0e8b35649a5))
+
+
+### Bug Fixes
+
+* **terraform:** escape JSON in scheduler.tf base64encode calls ([9b78f2c](https://github.com/FitGlue/server/commit/9b78f2c1f76bc000de98dcbabefce6ccb7bc4a86))
+
 ## [16.28.0](https://github.com/FitGlue/server/compare/v16.27.0...v16.28.0) (2026-05-30)
 
 
