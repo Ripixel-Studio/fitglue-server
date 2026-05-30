@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.27.0](https://github.com/FitGlue/server/compare/v16.26.0...v16.27.0) (2026-05-30)
+
+
+### Features
+
+* **enricher:** add temperature summary enricher ([7dc4c16](https://github.com/FitGlue/server/commit/7dc4c162e63205658131ba32d8a52b43afd70112))
+
 ## [16.26.0](https://github.com/FitGlue/server/compare/v16.25.5...v16.26.0) (2026-05-29)
 
 
