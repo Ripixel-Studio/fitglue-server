@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.28.0](https://github.com/FitGlue/server/compare/v16.27.0...v16.28.0) (2026-05-30)
+
+
+### Features
+
+* **activities:** expose id and pipeline_run_status in list response ([b7e7032](https://github.com/FitGlue/server/commit/b7e7032d7451d20c1aca0d2752c2205b90fb0fa4))
+
+
+### Bug Fixes
+
+* **hevy:** close bounceback race condition on new workout creation ([a87fc02](https://github.com/FitGlue/server/commit/a87fc02f181c32da5826b0bcc019b6cb1243ad9b))
+
 ## [16.27.0](https://github.com/FitGlue/server/compare/v16.26.0...v16.27.0) (2026-05-30)
 
 
