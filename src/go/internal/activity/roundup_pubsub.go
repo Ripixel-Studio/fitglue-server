@@ -12,7 +12,9 @@ import (
 )
 
 type roundupTriggerMessage struct {
-	PeriodType string `json:"period_type"`
+	PeriodType  string `json:"period_type"`
+	PeriodStart string `json:"period_start,omitempty"` // optional: YYYY-MM-DD, overrides computed start
+	PeriodEnd   string `json:"period_end,omitempty"`   // optional: YYYY-MM-DD, overrides computed end
 }
 
 // HandleRoundupTrigger is the HTTP handler for /pubsub/roundup.
@@ -51,6 +53,20 @@ func (s *Service) HandleRoundupTrigger(w http.ResponseWriter, r *http.Request) {
 	}
 
 	periodStart, periodEnd := RoundupPeriodBounds(periodType, time.Now().UTC())
+	if trigger.PeriodStart != "" {
+		if t, err := time.Parse("2006-01-02", trigger.PeriodStart); err == nil {
+			periodStart = t.UTC()
+		} else {
+			s.logger.Warn(ctx, "roundup trigger: invalid period_start, using computed", "value", trigger.PeriodStart)
+		}
+	}
+	if trigger.PeriodEnd != "" {
+		if t, err := time.Parse("2006-01-02", trigger.PeriodEnd); err == nil {
+			periodEnd = t.UTC()
+		} else {
+			s.logger.Warn(ctx, "roundup trigger: invalid period_end, using computed", "value", trigger.PeriodEnd)
+		}
+	}
 	userIDs, err := s.store.ListAllShowcaseUserIDs(ctx)
 	if err != nil {
 		s.logger.Error(ctx, "roundup trigger: failed to list users", "error", err)
