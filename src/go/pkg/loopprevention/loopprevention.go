@@ -52,12 +52,15 @@ type UploadedActivityStore interface {
 // The check works by:
 // 1. Getting the destination that corresponds to the webhook source (e.g., SOURCE_HEVY -> DESTINATION_HEVY)
 // 2. Looking up if we have a record of uploading to that destination with this external ID
+// 3. If startTimeUnix > 0, also checking for a pending pre-record (handles the Create race
+//    condition where Hevy fires the webhook before we've written the real record ID)
 func IsBounceback(
 	ctx context.Context,
 	store UploadedActivityStore,
 	userId string,
 	source pbactivity.ActivitySource,
 	externalId string,
+	startTimeUnix int64,
 ) (bool, error) {
 	correspondingDest := GetCorrespondingDestination(source)
 	if correspondingDest == pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
@@ -65,15 +68,31 @@ func IsBounceback(
 		return false, nil
 	}
 
-	// When a webhook arrives from Hevy with hevy_workout_123, we look for
-	// a record stored as DESTINATION_HEVY:hevy_workout_123
+	// Primary check: when a webhook arrives from Hevy with hevy_workout_123 we look
+	// for a record stored as DESTINATION_HEVY:hevy_workout_123
 	record, err := store.GetUploadedActivity(ctx, userId, correspondingDest, externalId)
 	if err != nil {
-		// Log error but don't block processing - fail open
 		return false, fmt.Errorf("failed to check uploaded activity: %w", err)
 	}
+	if record != nil {
+		return true, nil
+	}
 
-	return record != nil, nil
+	// Secondary check: pending pre-record written before the destination POST (Create
+	// race condition — the real Hevy workout ID isn't known until after the response,
+	// but Hevy may fire the webhook before we write the real record).
+	if startTimeUnix > 0 {
+		pendingId := fmt.Sprintf("pending:%d", startTimeUnix)
+		pendingRecord, pendingErr := store.GetUploadedActivity(ctx, userId, correspondingDest, pendingId)
+		if pendingErr != nil {
+			return false, fmt.Errorf("failed to check pending uploaded activity: %w", pendingErr)
+		}
+		if pendingRecord != nil {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // BuildUploadedActivityID creates a composite ID for an uploaded activity record.

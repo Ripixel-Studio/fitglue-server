@@ -3,6 +3,7 @@ package loopprevention
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
@@ -45,7 +46,7 @@ func TestIsBounceback_SourceWithNoDestination(t *testing.T) {
 	// SOURCE_PARKRUN_RESULTS is not in the SourceToDestinationMap
 	store := newMockStore(nil)
 	isBounceback, err := IsBounceback(context.Background(), store, "user1",
-		pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS, "any_id")
+		pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS, "any_id", 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,7 +59,7 @@ func TestIsBounceback_NotABounceback(t *testing.T) {
 	// Hevy source but no record of uploading this activity
 	store := newMockStore(nil)
 	isBounceback, err := IsBounceback(context.Background(), store, "user1",
-		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_999")
+		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_999", 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -75,7 +76,7 @@ func TestIsBounceback_IsBounceback(t *testing.T) {
 	}
 	store := newMockStore(record)
 	isBounceback, err := IsBounceback(context.Background(), store, "user1",
-		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_123")
+		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_123", 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestIsBounceback_StoreError(t *testing.T) {
 	store := newMockStore(nil)
 	store.err = errors.New("firestore unavailable")
 	isBounceback, err := IsBounceback(context.Background(), store, "user1",
-		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_456")
+		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_456", 0)
 	if err == nil {
 		t.Error("expected error when store fails")
 	}
@@ -105,11 +106,51 @@ func TestIsBounceback_StravaBBounceback(t *testing.T) {
 	}
 	store := newMockStore(record)
 	isBounceback, err := IsBounceback(context.Background(), store, "user1",
-		pbactivity.ActivitySource_SOURCE_STRAVA, "strava_act_42")
+		pbactivity.ActivitySource_SOURCE_STRAVA, "strava_act_42", 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !isBounceback {
 		t.Error("expected true for bounceback from Strava")
+	}
+}
+
+func TestIsBounceback_PendingPreRecord(t *testing.T) {
+	// Simulates the Create race condition: the pending record exists (startTime-keyed)
+	// but the real Hevy workout ID hasn't been written yet.
+	const startTimeUnix = int64(1748599314)
+	pendingId := fmt.Sprintf("pending:%d", startTimeUnix)
+	record := &pbactivity.UploadedActivityRecord{
+		Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
+		DestinationId: pendingId,
+	}
+	store := newMockStore(record)
+	// ExternalId is the (not yet known) Hevy workout ID — not in the store
+	isBounceback, err := IsBounceback(context.Background(), store, "user1",
+		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_unknown", startTimeUnix)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !isBounceback {
+		t.Error("expected true: pending pre-record should catch the race condition")
+	}
+}
+
+func TestIsBounceback_PendingPreRecord_ZeroStartTime(t *testing.T) {
+	// startTimeUnix=0 disables the secondary pending check — no false positives.
+	const startTimeUnix = int64(1748599314)
+	pendingId := fmt.Sprintf("pending:%d", startTimeUnix)
+	record := &pbactivity.UploadedActivityRecord{
+		Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
+		DestinationId: pendingId,
+	}
+	store := newMockStore(record)
+	isBounceback, err := IsBounceback(context.Background(), store, "user1",
+		pbactivity.ActivitySource_SOURCE_HEVY, "hevy_workout_unknown", 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if isBounceback {
+		t.Error("expected false: secondary check should be skipped when startTimeUnix=0")
 	}
 }

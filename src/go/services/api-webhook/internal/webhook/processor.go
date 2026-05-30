@@ -129,7 +129,11 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 
 		// 3. Bounceback check — skip if this activity was uploaded by us
 		if activityPayload.StandardizedActivity != nil {
-			isBounceback, bbErr := loopprevention.IsBounceback(r.Context(), p.db, internalUserID, activityPayload.Source, activityPayload.StandardizedActivity.GetExternalId())
+			startTimeUnix := int64(0)
+			if ts := activityPayload.Timestamp; ts != nil {
+				startTimeUnix = ts.AsTime().Unix()
+			}
+			isBounceback, bbErr := loopprevention.IsBounceback(r.Context(), p.db, internalUserID, activityPayload.Source, activityPayload.StandardizedActivity.GetExternalId(), startTimeUnix)
 			if bbErr != nil {
 				p.logger.Warn(r.Context(), "Bounceback check failed, proceeding", "provider", evt.Provider, "error", bbErr)
 			} else if isBounceback {

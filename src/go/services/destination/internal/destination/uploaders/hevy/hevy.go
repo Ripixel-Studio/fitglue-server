@@ -61,6 +61,26 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		return "", fmt.Errorf("failed to map activity to Hevy format: %w", err)
 	}
 
+	// Pre-store a pending bounceback record BEFORE calling Hevy so that the
+	// IsBounceback check succeeds even if Hevy fires the webhook before we receive
+	// the workout ID back. Keyed by startTime because the real Hevy ID is unknown yet.
+	if payload.Timestamp != nil {
+		pendingId := fmt.Sprintf("pending:%d", payload.Timestamp.AsTime().Unix())
+		preRecord := &pbactivity.UploadedActivityRecord{
+			Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, pendingId),
+			UserId:        payload.UserId,
+			Source:        payload.Source,
+			ExternalId:    payload.StandardizedActivity.GetExternalId(),
+			StartTime:     payload.Timestamp,
+			Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
+			DestinationId: pendingId,
+			UploadedAt:    timestamppb.Now(),
+		}
+		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, preRecord); err != nil {
+			logger.WarnContext(ctx, "Failed to pre-store Hevy pending bounceback record; webhook may re-trigger", "error", err)
+		}
+	}
+
 	workoutID, err := u.createHevyWorkout(ctx, apiKey, workout, logger)
 	if err != nil {
 		return "", fmt.Errorf("failed to create Hevy workout: %w", err)
