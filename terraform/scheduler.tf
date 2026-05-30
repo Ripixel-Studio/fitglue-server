@@ -21,7 +21,7 @@ resource "google_cloud_scheduler_job" "weekly_roundup_generator" {
 
   pubsub_target {
     topic_name = google_pubsub_topic.roundup_trigger.id
-    data       = base64encode("{"period_type":"week"}")
+    data       = base64encode(jsonencode({ period_type = "week" }))
   }
 
   retry_config {
@@ -39,7 +39,7 @@ resource "google_cloud_scheduler_job" "monthly_roundup_generator" {
 
   pubsub_target {
     topic_name = google_pubsub_topic.roundup_trigger.id
-    data       = base64encode("{"period_type":"month"}")
+    data       = base64encode(jsonencode({ period_type = "month" }))
   }
 
   retry_config {
@@ -57,7 +57,7 @@ resource "google_cloud_scheduler_job" "yearly_roundup_generator" {
 
   pubsub_target {
     topic_name = google_pubsub_topic.roundup_trigger.id
-    data       = base64encode("{"period_type":"year"}")
+    data       = base64encode(jsonencode({ period_type = "year" }))
   }
 
   retry_config {
