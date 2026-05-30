@@ -50,10 +50,10 @@ type UploadedActivityStore interface {
 // our own upload. Returns true if we have a record of uploading this activity.
 //
 // The check works by:
-// 1. Getting the destination that corresponds to the webhook source (e.g., SOURCE_HEVY -> DESTINATION_HEVY)
-// 2. Looking up if we have a record of uploading to that destination with this external ID
-// 3. If startTimeUnix > 0, also checking for a pending pre-record (handles the Create race
-//    condition where Hevy fires the webhook before we've written the real record ID)
+//  1. Getting the destination that corresponds to the webhook source (e.g., SOURCE_HEVY -> DESTINATION_HEVY)
+//  2. Looking up if we have a record of uploading to that destination with this external ID
+//  3. If startTimeUnix > 0, also checking for a pending pre-record (handles the Create race
+//     condition where Hevy fires the webhook before we've written the real record ID)
 func IsBounceback(
 	ctx context.Context,
 	store UploadedActivityStore,
