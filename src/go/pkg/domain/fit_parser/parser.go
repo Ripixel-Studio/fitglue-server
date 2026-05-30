@@ -649,6 +649,12 @@ func parseRecord(msg *proto.Message) *pbactivity.Record {
 		record.Distance = recordMsg.DistanceScaled()
 	}
 
+	// Temperature — FIT sint8, invalid sentinel is 0x7F (127)
+	if recordMsg.Temperature != 0x7F {
+		temp := int32(recordMsg.Temperature)
+		record.Temperature = &temp
+	}
+
 	return record
 }
 

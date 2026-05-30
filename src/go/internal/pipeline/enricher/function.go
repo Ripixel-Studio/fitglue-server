@@ -71,6 +71,7 @@ import (
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/speed_summary"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/spotify_tracks"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/streak_tracker"
+	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/temperature_summary"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/training_load"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/type_mapper"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/user_input"

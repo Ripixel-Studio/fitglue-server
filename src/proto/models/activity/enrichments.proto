@@ -34,6 +34,7 @@ message ActivityEnrichments {
   optional SpotifyTracksSummary spotify = 22;
   optional IntervalsSummary intervals = 23;
   optional MuscleHeatmapSummary muscle_heatmap = 24;
+  optional TemperatureSummary temperature = 25;
 }
 
 message HeartRateSummary {
@@ -241,6 +242,12 @@ message IntervalSegment {
 message IntervalsSummary {
   repeated IntervalSegment segments = 1;
   string workout_name = 2;      // e.g. "4×400m" if structured workout
+}
+
+message TemperatureSummary {
+  int32 min_c = 1;
+  int32 avg_c = 2;
+  int32 max_c = 3;
 }
 
 message MuscleHeatmapSummary {

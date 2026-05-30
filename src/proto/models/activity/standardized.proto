@@ -84,8 +84,9 @@ message Record {
   optional int32 ground_contact_time = 9;   
   optional int32 vertical_oscillation = 10; 
   optional int32 vertical_ratio = 11;       
-  optional double step_length = 12;         
+  optional double step_length = 12;
   double distance = 13;                     // Cumulative distance in meters from activity start
+  optional int32 temperature = 14;          // Ambient temperature in °C (from device sensor)
 }
 
 message StrengthSet {

@@ -797,6 +797,8 @@ func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 		return "Ai Activity Type"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ICAL_TITLE:
 		return "Ical Title"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY:
+		return "Temperature Summary"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -938,6 +940,9 @@ func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 		"enricher_provider_ical_title":           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ICAL_TITLE,
 		"ical_title":                             pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ICAL_TITLE,
 		"ical title":                             pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ICAL_TITLE,
+		"enricher_provider_temperature_summary":  pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY,
+		"temperature_summary":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY,
+		"temperature summary":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY,
 		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}

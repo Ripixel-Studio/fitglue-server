@@ -667,7 +667,8 @@ type Record struct {
 	VerticalOscillation *int32                 `protobuf:"varint,10,opt,name=vertical_oscillation,json=verticalOscillation,proto3,oneof" json:"vertical_oscillation,omitempty"`
 	VerticalRatio       *int32                 `protobuf:"varint,11,opt,name=vertical_ratio,json=verticalRatio,proto3,oneof" json:"vertical_ratio,omitempty"`
 	StepLength          *float64               `protobuf:"fixed64,12,opt,name=step_length,json=stepLength,proto3,oneof" json:"step_length,omitempty"`
-	Distance            float64                `protobuf:"fixed64,13,opt,name=distance,proto3" json:"distance,omitempty"` // Cumulative distance in meters from activity start
+	Distance            float64                `protobuf:"fixed64,13,opt,name=distance,proto3" json:"distance,omitempty"`            // Cumulative distance in meters from activity start
+	Temperature         *int32                 `protobuf:"varint,14,opt,name=temperature,proto3,oneof" json:"temperature,omitempty"` // Ambient temperature in °C (from device sensor)
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -789,6 +790,13 @@ func (x *Record) GetStepLength() float64 {
 func (x *Record) GetDistance() float64 {
 	if x != nil {
 		return x.Distance
+	}
+	return 0
+}
+
+func (x *Record) GetTemperature() int32 {
+	if x != nil && x.Temperature != nil {
+		return *x.Temperature
 	}
 	return 0
 }
@@ -1117,7 +1125,7 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\arecords\x18\x04 \x03(\v2\x1f.fitglue.models.activity.RecordR\arecords\x12#\n" +
 	"\rexercise_name\x18\x05 \x01(\tR\fexerciseName\x12\x1c\n" +
 	"\tintensity\x18\x06 \x01(\tR\tintensity\x12=\n" +
-	"\x1bis_telemetry_container_only\x18\a \x01(\bR\x18isTelemetryContainerOnly\"\xba\x04\n" +
+	"\x1bis_telemetry_container_only\x18\a \x01(\bR\x18isTelemetryContainerOnly\"\xf1\x04\n" +
 	"\x06Record\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x1d\n" +
 	"\n" +
@@ -1134,11 +1142,13 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\x0evertical_ratio\x18\v \x01(\x05H\x02R\rverticalRatio\x88\x01\x01\x12$\n" +
 	"\vstep_length\x18\f \x01(\x01H\x03R\n" +
 	"stepLength\x88\x01\x01\x12\x1a\n" +
-	"\bdistance\x18\r \x01(\x01R\bdistanceB\x16\n" +
+	"\bdistance\x18\r \x01(\x01R\bdistance\x12%\n" +
+	"\vtemperature\x18\x0e \x01(\x05H\x04R\vtemperature\x88\x01\x01B\x16\n" +
 	"\x14_ground_contact_timeB\x17\n" +
 	"\x15_vertical_oscillationB\x11\n" +
 	"\x0f_vertical_ratioB\x0e\n" +
-	"\f_step_length\"\xfa\x03\n" +
+	"\f_step_lengthB\x0e\n" +
+	"\f_temperature\"\xfa\x03\n" +
 	"\vStrengthSet\x12#\n" +
 	"\rexercise_name\x18\x01 \x01(\tR\fexerciseName\x12\x12\n" +
 	"\x04reps\x18\x02 \x01(\x05R\x04reps\x12\x1b\n" +

@@ -349,6 +349,7 @@ components:
                         - ENRICHER_PROVIDER_MANUAL_WORKOUT_ENTRY
                         - ENRICHER_PROVIDER_AI_ACTIVITY_TYPE
                         - ENRICHER_PROVIDER_ICAL_TITLE
+                        - ENRICHER_PROVIDER_TEMPERATURE_SUMMARY
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum

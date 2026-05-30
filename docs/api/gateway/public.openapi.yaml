@@ -221,6 +221,8 @@ components:
                     $ref: '#/components/schemas/IntervalsSummary'
                 muscleHeatmap:
                     $ref: '#/components/schemas/MuscleHeatmapSummary'
+                temperature:
+                    $ref: '#/components/schemas/TemperatureSummary'
             description: |-
                 ActivityEnrichments holds typed outputs from the enricher pipeline.
                  Each sub-message is optional — only present if the corresponding enricher
@@ -908,6 +910,9 @@ components:
                 distance:
                     type: number
                     format: double
+                temperature:
+                    type: integer
+                    format: int32
         RecoverySummary:
             type: object
             properties:
@@ -1606,6 +1611,18 @@ components:
                     format: double
                 setType:
                     type: string
+        TemperatureSummary:
+            type: object
+            properties:
+                minC:
+                    type: integer
+                    format: int32
+                avgC:
+                    type: integer
+                    format: int32
+                maxC:
+                    type: integer
+                    format: int32
         TimeMarker:
             type: object
             properties:
