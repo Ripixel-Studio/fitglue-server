@@ -140,6 +140,8 @@ type StandardizedActivity struct {
 	TimeMarkers       []*TimeMarker          `protobuf:"bytes,11,rep,name=time_markers,json=timeMarkers,proto3" json:"time_markers,omitempty"`
 	Workout           *WorkoutDefinition     `protobuf:"bytes,12,opt,name=workout,proto3,oneof" json:"workout,omitempty"`
 	HybridRaceSummary *HybridRaceSummary     `protobuf:"bytes,13,opt,name=hybrid_race_summary,json=hybridRaceSummary,proto3,oneof" json:"hybrid_race_summary,omitempty"`
+	Id                string                 `protobuf:"bytes,14,opt,name=id,proto3" json:"id,omitempty"`
+	PipelineRunStatus string                 `protobuf:"bytes,15,opt,name=pipeline_run_status,json=pipelineRunStatus,proto3" json:"pipeline_run_status,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -263,6 +265,20 @@ func (x *StandardizedActivity) GetHybridRaceSummary() *HybridRaceSummary {
 		return x.HybridRaceSummary
 	}
 	return nil
+}
+
+func (x *StandardizedActivity) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *StandardizedActivity) GetPipelineRunStatus() string {
+	if x != nil {
+		return x.PipelineRunStatus
+	}
+	return ""
 }
 
 type HybridRaceSummary struct {
@@ -1065,7 +1081,7 @@ var File_models_activity_standardized_proto protoreflect.FileDescriptor
 
 const file_models_activity_standardized_proto_rawDesc = "" +
 	"\n" +
-	"\"models/activity/standardized.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\xbd\x05\n" +
+	"\"models/activity/standardized.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\xfd\x05\n" +
 	"\x14StandardizedActivity\x12?\n" +
 	"\x06source\x18\x01 \x01(\x0e2'.fitglue.models.activity.ActivitySourceR\x06source\x12\x1f\n" +
 	"\vexternal_id\x18\x02 \x01(\tR\n" +
@@ -1082,7 +1098,9 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	" \x01(\tR\x05notes\x12F\n" +
 	"\ftime_markers\x18\v \x03(\v2#.fitglue.models.activity.TimeMarkerR\vtimeMarkers\x12I\n" +
 	"\aworkout\x18\f \x01(\v2*.fitglue.models.activity.WorkoutDefinitionH\x00R\aworkout\x88\x01\x01\x12_\n" +
-	"\x13hybrid_race_summary\x18\r \x01(\v2*.fitglue.models.activity.HybridRaceSummaryH\x01R\x11hybridRaceSummary\x88\x01\x01B\n" +
+	"\x13hybrid_race_summary\x18\r \x01(\v2*.fitglue.models.activity.HybridRaceSummaryH\x01R\x11hybridRaceSummary\x88\x01\x01\x12\x0e\n" +
+	"\x02id\x18\x0e \x01(\tR\x02id\x12.\n" +
+	"\x13pipeline_run_status\x18\x0f \x01(\tR\x11pipelineRunStatusB\n" +
 	"\n" +
 	"\b_workoutB\x16\n" +
 	"\x14_hybrid_race_summary\"[\n" +

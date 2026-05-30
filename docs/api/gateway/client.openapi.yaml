@@ -4165,6 +4165,10 @@ components:
                     $ref: '#/components/schemas/WorkoutDefinition'
                 hybridRaceSummary:
                     $ref: '#/components/schemas/HybridRaceSummary'
+                id:
+                    type: string
+                pipelineRunStatus:
+                    type: string
         Status:
             type: object
             properties:

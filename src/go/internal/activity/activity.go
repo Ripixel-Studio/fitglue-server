@@ -138,12 +138,14 @@ func (s *Service) ListActivities(ctx context.Context, req *pbsvc.ListActivitiesR
 		}
 
 		activities = append(activities, &pbactivity.StandardizedActivity{
-			Source:     sourceEnum,
-			ExternalId: run.ActivityId,
-			UserId:     req.UserId,
-			StartTime:  run.StartTime,
-			Name:       run.Title,
-			Type:       run.Type,
+			Id:                run.Id,
+			PipelineRunStatus: run.Status.String(),
+			Source:            sourceEnum,
+			ExternalId:        run.ActivityId,
+			UserId:            req.UserId,
+			StartTime:         run.StartTime,
+			Name:              run.Title,
+			Type:              run.Type,
 		})
 	}
 

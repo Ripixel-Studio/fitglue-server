@@ -25,6 +25,9 @@ message StandardizedActivity {
   repeated TimeMarker time_markers = 11;
   optional WorkoutDefinition workout = 12;
   optional HybridRaceSummary hybrid_race_summary = 13;
+
+  string id = 14;
+  string pipeline_run_status = 15;
 }
 
 message HybridRaceSummary {
