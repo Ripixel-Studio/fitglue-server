@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.30.0](https://github.com/FitGlue/server/compare/v16.29.0...v16.30.0) (2026-05-31)
+
+
+### Features
+
+* **roundup:** support period_start/period_end overrides in trigger message ([c45213b](https://github.com/FitGlue/server/commit/c45213b2f4011d1e0079359c234d96b6991675fb))
+
 ## [16.29.0](https://github.com/FitGlue/server/compare/v16.28.0...v16.29.0) (2026-05-30)
 
 
