@@ -113,6 +113,13 @@ resource "google_cloud_run_v2_service" "backend" {
           value = "https://user-${data.google_project.project.number}.${var.region}.run.app"
         }
       }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "PARKRUN_FETCHER_URL"
+          value = google_cloud_run_v2_service.parkrun_fetcher.uri
+        }
+      }
 
       # ── User service env vars ──
       dynamic "env" {
@@ -965,4 +972,40 @@ resource "google_cloud_run_v2_service_iam_member" "pubsub_self_invoke" {
   location = google_cloud_run_v2_service.backend[each.key].location
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.cloud_run_sa[each.key].email}"
+}
+
+# ── Parkrun Fetcher ──
+# Standalone Playwright-based service that fetches Parkrun result pages,
+# bypassing the AWS WAF that blocks direct HTTP requests.
+resource "google_cloud_run_v2_service" "parkrun_fetcher" {
+  name                = "parkrun-fetcher"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
+
+  template {
+    service_account = google_service_account.cloud_run_sa["pipeline"].email
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/parkrun-fetcher:${var.image_tag}"
+      resources {
+        limits = {
+          cpu    = "1000m"
+          memory = "2Gi"
+        }
+      }
+    }
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 3
+    }
+    timeout = "60s"
+  }
+}
+
+# Pipeline SA can invoke the parkrun-fetcher
+resource "google_cloud_run_v2_service_iam_member" "pipeline_to_parkrun_fetcher" {
+  name     = google_cloud_run_v2_service.parkrun_fetcher.name
+  location = google_cloud_run_v2_service.parkrun_fetcher.location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
 }

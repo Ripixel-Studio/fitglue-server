@@ -161,6 +161,22 @@ jobs:
               docker tag "$IMAGE" "$CACHE_IMAGE"
               docker push "$CACHE_IMAGE"
             done
+
+            # Build parkrun-fetcher (TypeScript/Playwright — separate Dockerfile)
+            FETCHER_IMAGE="$REGISTRY/parkrun-fetcher:$TAG"
+            FETCHER_HASH=$(find src/typescript/parkrun-fetcher -type f | sort | xargs sha256sum | sha256sum | cut -c1-12)
+            FETCHER_CACHE_IMAGE="$REGISTRY/parkrun-fetcher:cache-$FETCHER_HASH"
+            if docker pull "$FETCHER_CACHE_IMAGE" 2>/dev/null; then
+              echo "✓ parkrun-fetcher unchanged (cache-$FETCHER_HASH) — skipping build"
+              docker tag "$FETCHER_CACHE_IMAGE" "$FETCHER_IMAGE"
+              docker push "$FETCHER_IMAGE"
+            else
+              echo "→ Building parkrun-fetcher (cache-$FETCHER_HASH)..."
+              docker build -t "$FETCHER_IMAGE" src/typescript/parkrun-fetcher
+              docker push "$FETCHER_IMAGE"
+              docker tag "$FETCHER_IMAGE" "$FETCHER_CACHE_IMAGE"
+              docker push "$FETCHER_CACHE_IMAGE"
+            fi
       - run:
           name: Deploy Infrastructure (Terraform)
           command: |
