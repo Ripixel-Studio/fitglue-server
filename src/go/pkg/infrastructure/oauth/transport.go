@@ -12,6 +12,7 @@ import (
 
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	fitglueerrors "github.com/fitglue/server/src/go/pkg/errors"
 )
 
 // Transport is an http.RoundTripper that authenticates all requests
@@ -78,7 +79,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		// Force Refresh
 		token, err = t.Source.ForceRefresh(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("oauth: force refresh failed: %w", err)
+			return nil, fitglueerrors.ErrIntegrationAuthFailed.WithCause(fmt.Errorf("oauth force refresh failed: %w", err))
 		}
 
 		// Update Header and reset body for replay

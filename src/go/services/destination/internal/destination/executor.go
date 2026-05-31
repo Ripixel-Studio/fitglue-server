@@ -4,6 +4,7 @@ package destination
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/destination"
 	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
+	fitglueerrors "github.com/fitglue/server/src/go/pkg/errors"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
@@ -288,6 +290,10 @@ destinations:
 
 		if uploadErr != nil {
 			e.logger.Error(ctx, "Destination uploader failed", "destination", destEnum.String(), "error", uploadErr)
+			var fgErr *fitglueerrors.FitGlueError
+			if errors.As(uploadErr, &fgErr) && fgErr.Code == fitglueerrors.CodeIntegrationAuthFailed {
+				e.sendConnectionActionNotification(ctx, payload.UserId, destEnum)
+			}
 			if pipelineRunId != "" {
 				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger)
 			}
@@ -329,5 +335,35 @@ func (e *UploadExecutor) writeFailureForTargetedDestinations(ctx context.Context
 			continue
 		}
 		destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
+	}
+}
+
+// sendConnectionActionNotification alerts the user that a destination's OAuth connection
+// has expired and needs to be re-authorised. The notification deep-links to the connection
+// detail page for the affected destination.
+func (e *UploadExecutor) sendConnectionActionNotification(ctx context.Context, userID string, dest pbplugin.DestinationType) {
+	if e.notifications == nil {
+		return
+	}
+	user, err := e.db.GetUser(ctx, userID)
+	if err != nil || user == nil || len(user.FcmTokens) == 0 {
+		return
+	}
+	prefs := user.NotificationPreferences
+	if prefs != nil && !prefs.NotifyConnectionAction {
+		return
+	}
+	// Derive the connection route ID from the destination enum: DESTINATION_STRAVA → "strava"
+	sourceID := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
+	destName := destination.FormatDestinationName(dest)
+	data := map[string]string{
+		"type":     "CONNECTION_ACTION",
+		"user_id":  userID,
+		"sourceId": sourceID,
+	}
+	title := fmt.Sprintf("Reconnect %s", destName)
+	body := fmt.Sprintf("Your %s connection needs to be re-authorised.", destName)
+	if err := e.notifications.SendPushNotification(ctx, userID, title, body, user.FcmTokens, data); err != nil {
+		e.logger.Warn(ctx, "Failed to send connection action notification", "error", err, "user_id", userID, "destination", dest.String())
 	}
 }

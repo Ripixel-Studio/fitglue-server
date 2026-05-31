@@ -1208,8 +1208,12 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 				Status:             pbpipeline.ExecutionStatus_STATUS_WAITING,
 			}, nil
 		case pbpipeline.PendingInput_STATUS_WAITING:
-			logger.Info("Pending input already waiting - skipping duplicate creation",
+			// Still WAITING — user hasn't acted yet. Re-send the notification in case it was
+			// missed on the first delivery (e.g. FCM was temporarily unavailable). The browser
+			// deduplicates via the notification tag so this won't spam the user.
+			logger.Info("Pending input already waiting - skipping duplicate creation, re-sending notification",
 				"activity_id", waitErr.ActivityID)
+			o.sendPendingInputNotification(ctx, logger, payload.UserId, waitErr.ActivityID)
 			return &ProcessResult{
 				Events:             []*pbevents.EnrichedActivityEvent{},
 				ProviderExecutions: allExecs,
@@ -1257,33 +1261,38 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		logger.Warn("Failed to create pending input (might already exist)", "error", err)
 	}
 
-	// Trigger Push Notification
-	if o.notifications != nil {
-		user, err := o.database.GetUser(ctx, payload.UserId)
-		if err == nil && user != nil && len(user.FcmTokens) > 0 {
-			// Check notification preferences (default to true if not set)
-			prefs := user.NotificationPreferences
-			shouldNotify := prefs == nil || prefs.NotifyPendingInput
-			if shouldNotify {
-				title := "Action Required: FitGlue"
-				body := "An activity needs more information to be processed."
-				data := map[string]string{
-					"activity_id": waitErr.ActivityID,
-					"user_id":     payload.UserId,
-					"type":        "PENDING_INPUT",
-				}
-				if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
-					logger.Error("Failed to send push notification", "error", err, "user_id", payload.UserId)
-				}
-			}
-		}
-	}
+	o.sendPendingInputNotification(ctx, logger, payload.UserId, waitErr.ActivityID)
 
 	return &ProcessResult{
 		Events:             []*pbevents.EnrichedActivityEvent{},
 		ProviderExecutions: allExecs,
 		Status:             pbpipeline.ExecutionStatus_STATUS_WAITING,
 	}, nil
+}
+
+// sendPendingInputNotification sends a push notification for a pending input that needs user action.
+// Safe to call on retries — the browser deduplicates via the notification tag.
+func (o *Orchestrator) sendPendingInputNotification(ctx context.Context, logger *slog.Logger, userID, activityID string) {
+	if o.notifications == nil {
+		logger.Warn("Notification service unavailable — PENDING_INPUT notification not sent", "user_id", userID)
+		return
+	}
+	user, err := o.database.GetUser(ctx, userID)
+	if err != nil || user == nil || len(user.FcmTokens) == 0 {
+		return
+	}
+	prefs := user.NotificationPreferences
+	if prefs != nil && !prefs.NotifyPendingInput {
+		return
+	}
+	data := map[string]string{
+		"activity_id": activityID,
+		"user_id":     userID,
+		"type":        "PENDING_INPUT",
+	}
+	if err := o.notifications.SendPushNotification(ctx, userID, "Action Required: FitGlue", "An activity needs more information to be processed.", user.FcmTokens, data); err != nil {
+		logger.Error("Failed to send pending input notification", "error", err, "user_id", userID)
+	}
 }
 
 // createInitialPipelineRun creates a minimal PipelineRun document with RUNNING status
