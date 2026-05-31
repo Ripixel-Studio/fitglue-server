@@ -14,6 +14,8 @@ import (
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/notificationpub"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 
 	fit "github.com/fitglue/server/src/go/pkg/domain/file_generators"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
@@ -50,17 +52,17 @@ type Orchestrator struct {
 	bucketName      string
 	providersByName map[string]providers.Provider
 	providersByType map[pbplugin.EnricherProviderType]providers.Provider
-	notifications   shared.NotificationService
+	publisher       shared.Publisher
 }
 
-func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string, notifications shared.NotificationService) *Orchestrator {
+func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string, publisher shared.Publisher) *Orchestrator {
 	return &Orchestrator{
 		database:        db,
 		storage:         storage,
 		bucketName:      bucketName,
 		providersByName: make(map[string]providers.Provider),
 		providersByType: make(map[pbplugin.EnricherProviderType]providers.Provider),
-		notifications:   notifications,
+		publisher:       publisher,
 	}
 }
 
@@ -504,27 +506,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				fmt.Sprintf("Enricher failed: %s - %v", provider.Name(), err),
 				providerExecutions)
 
-			// Send push notification on pipeline failure
-			if o.notifications != nil {
-				user, fetchErr := o.database.GetUser(ctx, payload.UserId)
-				if fetchErr == nil && user != nil && len(user.FcmTokens) > 0 {
-					// Check notification preferences (default to true if not set)
-					prefs := user.NotificationPreferences
-					shouldNotify := prefs == nil || prefs.NotifyPipelineFailure
-					if shouldNotify {
-						title := fmt.Sprintf("Activity Failed: %s", currentActivity.Name)
-						body := fmt.Sprintf("Enricher '%s' encountered an error", provider.Name())
-						data := map[string]string{
-							"type":        "PIPELINE_FAILED",
-							"activity_id": activityId,
-							"user_id":     payload.UserId,
-						}
-						if notifyErr := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); notifyErr != nil {
-							logger.Warn("Failed to send failure notification", "error", notifyErr, "user_id", payload.UserId)
-						}
-					}
-				}
-			}
+			// Enqueue pipeline failure notification
+			o.enqueuePipelineFailureNotification(logger, ctx, payload.UserId, activityId, currentActivity.Name, provider.Name())
 
 			// Fail pipeline
 			return &ProcessResult{
@@ -1270,28 +1253,39 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 	}, nil
 }
 
-// sendPendingInputNotification sends a push notification for a pending input that needs user action.
+// sendPendingInputNotification enqueues a PENDING_INPUT notification.
 // Safe to call on retries — the browser deduplicates via the notification tag.
 func (o *Orchestrator) sendPendingInputNotification(ctx context.Context, logger *slog.Logger, userID, activityID string) {
-	if o.notifications == nil {
-		logger.Warn("Notification service unavailable — PENDING_INPUT notification not sent", "user_id", userID)
+	if o.publisher == nil {
+		logger.Warn("Publisher unavailable — PENDING_INPUT notification not sent", "user_id", userID)
 		return
 	}
-	user, err := o.database.GetUser(ctx, userID)
-	if err != nil || user == nil || len(user.FcmTokens) == 0 {
+	req := &pbnotification.NotificationRequest{
+		UserId: userID,
+		Type:   pbnotification.NotificationType_NOTIFICATION_TYPE_PENDING_INPUT,
+		Title:  "Action Required: FitGlue",
+		Body:   "An activity needs more information to be processed.",
+		Data:   map[string]string{"activity_id": activityID},
+	}
+	if err := notificationpub.Enqueue(ctx, o.publisher, req); err != nil {
+		logger.Error("Failed to enqueue pending input notification", "error", err, "user_id", userID)
+	}
+}
+
+// enqueuePipelineFailureNotification enqueues a PIPELINE_FAILURE notification from the enricher.
+func (o *Orchestrator) enqueuePipelineFailureNotification(logger *slog.Logger, ctx context.Context, userID, activityID, activityName, providerName string) {
+	if o.publisher == nil {
 		return
 	}
-	prefs := user.NotificationPreferences
-	if prefs != nil && !prefs.NotifyPendingInput {
-		return
+	req := &pbnotification.NotificationRequest{
+		UserId: userID,
+		Type:   pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE,
+		Title:  fmt.Sprintf("Activity Failed: %s", activityName),
+		Body:   fmt.Sprintf("Enricher '%s' encountered an error", providerName),
+		Data:   map[string]string{"activity_id": activityID},
 	}
-	data := map[string]string{
-		"activity_id": activityID,
-		"user_id":     userID,
-		"type":        "PENDING_INPUT",
-	}
-	if err := o.notifications.SendPushNotification(ctx, userID, "Action Required: FitGlue", "An activity needs more information to be processed.", user.FcmTokens, data); err != nil {
-		logger.Error("Failed to send pending input notification", "error", err, "user_id", userID)
+	if err := notificationpub.Enqueue(ctx, o.publisher, req); err != nil {
+		logger.Warn("Failed to enqueue pipeline failure notification", "error", err, "user_id", userID)
 	}
 }
 

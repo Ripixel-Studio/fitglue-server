@@ -11,16 +11,15 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
+
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
-
-	firebase "firebase.google.com/go/v4"
-	"firebase.google.com/go/v4/auth"
-	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
 )
 
 // Config holds standard configuration for all services
@@ -31,12 +30,11 @@ type Config struct {
 
 // Service holds initialized dependencies
 type Service struct {
-	DB            shared.Database
-	Store         shared.BlobStore
-	Pub           shared.Publisher
-	Notifications shared.NotificationService
-	Auth          *auth.Client
-	Config        *Config
+	DB     shared.Database
+	Store  shared.BlobStore
+	Pub    shared.Publisher
+	Auth   *auth.Client
+	Config *Config
 }
 
 // LoadConfig reads configuration from environment variables
@@ -130,11 +128,6 @@ func NewService(ctx context.Context) (*Service, error) {
 		return nil, fmt.Errorf("firebase app init: %w", err)
 	}
 
-	fcmAdapter, err := notifications.NewFCMAdapter(ctx, fbApp, fsClient, logger)
-	if err != nil {
-		logger.Warn(ctx, "FCM initialization failed (notifications will be disabled)", "error", err)
-	}
-
 	// Firebase Auth (for user display name lookup)
 	authClient, err := fbApp.Auth(ctx)
 	if err != nil {
@@ -174,11 +167,11 @@ func NewService(ctx context.Context) (*Service, error) {
 	}
 
 	return &Service{
-		DB:            database.NewFirestoreAdapter(fsClient),
-		Pub:           pubAdapter,
-		Store:         &infrastorage.StorageAdapter{Client: gcsClient},
-		Notifications: fcmAdapter,
-		Auth:          authClient,
-		Config:        cfg,
+		DB:    database.NewFirestoreAdapter(fsClient),
+		Pub:   pubAdapter,
+		Store: &infrastorage.StorageAdapter{Client: gcsClient},
+
+		Auth:   authClient,
+		Config: cfg,
 	}, nil
 }

@@ -2975,16 +2975,32 @@ components:
         NotificationPreferences:
             type: object
             properties:
-                notifyPendingInput:
-                    type: boolean
-                notifyPipelineSuccess:
-                    type: boolean
-                notifyPipelineFailure:
-                    type: boolean
-                notifyConnectionAction:
-                    type: boolean
-                notifyShowcaseRoundup:
-                    type: boolean
+                pendingInput:
+                    $ref: '#/components/schemas/NotificationTypePreference'
+                pipelineSuccess:
+                    $ref: '#/components/schemas/NotificationTypePreference'
+                pipelineFailure:
+                    $ref: '#/components/schemas/NotificationTypePreference'
+                connectionAction:
+                    $ref: '#/components/schemas/NotificationTypePreference'
+                showcaseRoundup:
+                    $ref: '#/components/schemas/NotificationTypePreference'
+        NotificationTypePreference:
+            type: object
+            properties:
+                channels:
+                    type: array
+                    items:
+                        enum:
+                            - NOTIFICATION_CHANNEL_UNSPECIFIED
+                            - NOTIFICATION_CHANNEL_PUSH
+                            - NOTIFICATION_CHANNEL_EMAIL
+                        type: string
+                        format: enum
+            description: |-
+                NotificationTypePreference holds which channels are active for one notification type.
+                 An empty channels list means the notification type is disabled entirely.
+                 A nil/absent preference means "use the default" which is [PUSH].
         OAuthConnectResponse:
             type: object
             properties:

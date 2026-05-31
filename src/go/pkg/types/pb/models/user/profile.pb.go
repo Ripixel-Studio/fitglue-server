@@ -23,6 +23,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type NotificationChannel int32
+
+const (
+	NotificationChannel_NOTIFICATION_CHANNEL_UNSPECIFIED NotificationChannel = 0
+	NotificationChannel_NOTIFICATION_CHANNEL_PUSH        NotificationChannel = 1
+	NotificationChannel_NOTIFICATION_CHANNEL_EMAIL       NotificationChannel = 2
+)
+
+// Enum value maps for NotificationChannel.
+var (
+	NotificationChannel_name = map[int32]string{
+		0: "NOTIFICATION_CHANNEL_UNSPECIFIED",
+		1: "NOTIFICATION_CHANNEL_PUSH",
+		2: "NOTIFICATION_CHANNEL_EMAIL",
+	}
+	NotificationChannel_value = map[string]int32{
+		"NOTIFICATION_CHANNEL_UNSPECIFIED": 0,
+		"NOTIFICATION_CHANNEL_PUSH":        1,
+		"NOTIFICATION_CHANNEL_EMAIL":       2,
+	}
+)
+
+func (x NotificationChannel) Enum() *NotificationChannel {
+	p := new(NotificationChannel)
+	*p = x
+	return p
+}
+
+func (x NotificationChannel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NotificationChannel) Descriptor() protoreflect.EnumDescriptor {
+	return file_models_user_profile_proto_enumTypes[0].Descriptor()
+}
+
+func (NotificationChannel) Type() protoreflect.EnumType {
+	return &file_models_user_profile_proto_enumTypes[0]
+}
+
+func (x NotificationChannel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NotificationChannel.Descriptor instead.
+func (NotificationChannel) EnumDescriptor() ([]byte, []int) {
+	return file_models_user_profile_proto_rawDescGZIP(), []int{0}
+}
+
 type UserTier int32
 
 const (
@@ -56,11 +105,11 @@ func (x UserTier) String() string {
 }
 
 func (UserTier) Descriptor() protoreflect.EnumDescriptor {
-	return file_models_user_profile_proto_enumTypes[0].Descriptor()
+	return file_models_user_profile_proto_enumTypes[1].Descriptor()
 }
 
 func (UserTier) Type() protoreflect.EnumType {
-	return &file_models_user_profile_proto_enumTypes[0]
+	return &file_models_user_profile_proto_enumTypes[1]
 }
 
 func (x UserTier) Number() protoreflect.EnumNumber {
@@ -69,7 +118,7 @@ func (x UserTier) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use UserTier.Descriptor instead.
 func (UserTier) EnumDescriptor() ([]byte, []int) {
-	return file_models_user_profile_proto_rawDescGZIP(), []int{0}
+	return file_models_user_profile_proto_rawDescGZIP(), []int{1}
 }
 
 // UserProfile represents the core user identity and preferences,
@@ -236,20 +285,67 @@ func (x *UserProfile) GetLongestStreakDays() int32 {
 	return 0
 }
 
+// NotificationTypePreference holds which channels are active for one notification type.
+// An empty channels list means the notification type is disabled entirely.
+// A nil/absent preference means "use the default" which is [PUSH].
+type NotificationTypePreference struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Channels      []NotificationChannel  `protobuf:"varint,1,rep,packed,name=channels,proto3,enum=fitglue.models.user.NotificationChannel" json:"channels,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationTypePreference) Reset() {
+	*x = NotificationTypePreference{}
+	mi := &file_models_user_profile_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationTypePreference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationTypePreference) ProtoMessage() {}
+
+func (x *NotificationTypePreference) ProtoReflect() protoreflect.Message {
+	mi := &file_models_user_profile_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationTypePreference.ProtoReflect.Descriptor instead.
+func (*NotificationTypePreference) Descriptor() ([]byte, []int) {
+	return file_models_user_profile_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *NotificationTypePreference) GetChannels() []NotificationChannel {
+	if x != nil {
+		return x.Channels
+	}
+	return nil
+}
+
 type NotificationPreferences struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	NotifyPendingInput     bool                   `protobuf:"varint,1,opt,name=notify_pending_input,json=notifyPendingInput,proto3" json:"notify_pending_input,omitempty"`
-	NotifyPipelineSuccess  bool                   `protobuf:"varint,2,opt,name=notify_pipeline_success,json=notifyPipelineSuccess,proto3" json:"notify_pipeline_success,omitempty"`
-	NotifyPipelineFailure  bool                   `protobuf:"varint,3,opt,name=notify_pipeline_failure,json=notifyPipelineFailure,proto3" json:"notify_pipeline_failure,omitempty"`
-	NotifyConnectionAction bool                   `protobuf:"varint,4,opt,name=notify_connection_action,json=notifyConnectionAction,proto3" json:"notify_connection_action,omitempty"`
-	NotifyShowcaseRoundup  bool                   `protobuf:"varint,5,opt,name=notify_showcase_roundup,json=notifyShowcaseRoundup,proto3" json:"notify_showcase_roundup,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state            protoimpl.MessageState      `protogen:"open.v1"`
+	PendingInput     *NotificationTypePreference `protobuf:"bytes,1,opt,name=pending_input,json=pendingInput,proto3" json:"pending_input,omitempty"`
+	PipelineSuccess  *NotificationTypePreference `protobuf:"bytes,2,opt,name=pipeline_success,json=pipelineSuccess,proto3" json:"pipeline_success,omitempty"`
+	PipelineFailure  *NotificationTypePreference `protobuf:"bytes,3,opt,name=pipeline_failure,json=pipelineFailure,proto3" json:"pipeline_failure,omitempty"`
+	ConnectionAction *NotificationTypePreference `protobuf:"bytes,4,opt,name=connection_action,json=connectionAction,proto3" json:"connection_action,omitempty"`
+	ShowcaseRoundup  *NotificationTypePreference `protobuf:"bytes,5,opt,name=showcase_roundup,json=showcaseRoundup,proto3" json:"showcase_roundup,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *NotificationPreferences) Reset() {
 	*x = NotificationPreferences{}
-	mi := &file_models_user_profile_proto_msgTypes[1]
+	mi := &file_models_user_profile_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -261,7 +357,7 @@ func (x *NotificationPreferences) String() string {
 func (*NotificationPreferences) ProtoMessage() {}
 
 func (x *NotificationPreferences) ProtoReflect() protoreflect.Message {
-	mi := &file_models_user_profile_proto_msgTypes[1]
+	mi := &file_models_user_profile_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -274,42 +370,42 @@ func (x *NotificationPreferences) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NotificationPreferences.ProtoReflect.Descriptor instead.
 func (*NotificationPreferences) Descriptor() ([]byte, []int) {
-	return file_models_user_profile_proto_rawDescGZIP(), []int{1}
+	return file_models_user_profile_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *NotificationPreferences) GetNotifyPendingInput() bool {
+func (x *NotificationPreferences) GetPendingInput() *NotificationTypePreference {
 	if x != nil {
-		return x.NotifyPendingInput
+		return x.PendingInput
 	}
-	return false
+	return nil
 }
 
-func (x *NotificationPreferences) GetNotifyPipelineSuccess() bool {
+func (x *NotificationPreferences) GetPipelineSuccess() *NotificationTypePreference {
 	if x != nil {
-		return x.NotifyPipelineSuccess
+		return x.PipelineSuccess
 	}
-	return false
+	return nil
 }
 
-func (x *NotificationPreferences) GetNotifyPipelineFailure() bool {
+func (x *NotificationPreferences) GetPipelineFailure() *NotificationTypePreference {
 	if x != nil {
-		return x.NotifyPipelineFailure
+		return x.PipelineFailure
 	}
-	return false
+	return nil
 }
 
-func (x *NotificationPreferences) GetNotifyConnectionAction() bool {
+func (x *NotificationPreferences) GetConnectionAction() *NotificationTypePreference {
 	if x != nil {
-		return x.NotifyConnectionAction
+		return x.ConnectionAction
 	}
-	return false
+	return nil
 }
 
-func (x *NotificationPreferences) GetNotifyShowcaseRoundup() bool {
+func (x *NotificationPreferences) GetShowcaseRoundup() *NotificationTypePreference {
 	if x != nil {
-		return x.NotifyShowcaseRoundup
+		return x.ShowcaseRoundup
 	}
-	return false
+	return nil
 }
 
 type Counter struct {
@@ -323,7 +419,7 @@ type Counter struct {
 
 func (x *Counter) Reset() {
 	*x = Counter{}
-	mi := &file_models_user_profile_proto_msgTypes[2]
+	mi := &file_models_user_profile_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -335,7 +431,7 @@ func (x *Counter) String() string {
 func (*Counter) ProtoMessage() {}
 
 func (x *Counter) ProtoReflect() protoreflect.Message {
-	mi := &file_models_user_profile_proto_msgTypes[2]
+	mi := &file_models_user_profile_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -348,7 +444,7 @@ func (x *Counter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Counter.ProtoReflect.Descriptor instead.
 func (*Counter) Descriptor() ([]byte, []int) {
-	return file_models_user_profile_proto_rawDescGZIP(), []int{2}
+	return file_models_user_profile_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Counter) GetId() string {
@@ -389,7 +485,7 @@ type PersonalRecord struct {
 
 func (x *PersonalRecord) Reset() {
 	*x = PersonalRecord{}
-	mi := &file_models_user_profile_proto_msgTypes[3]
+	mi := &file_models_user_profile_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -401,7 +497,7 @@ func (x *PersonalRecord) String() string {
 func (*PersonalRecord) ProtoMessage() {}
 
 func (x *PersonalRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_models_user_profile_proto_msgTypes[3]
+	mi := &file_models_user_profile_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +510,7 @@ func (x *PersonalRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PersonalRecord.ProtoReflect.Descriptor instead.
 func (*PersonalRecord) Descriptor() ([]byte, []int) {
-	return file_models_user_profile_proto_rawDescGZIP(), []int{3}
+	return file_models_user_profile_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PersonalRecord) GetRecordType() string {
@@ -498,13 +594,15 @@ const file_models_user_profile_proto_rawDesc = "" +
 	"\x13current_streak_days\x18\x0e \x01(\x05H\x00R\x11currentStreakDays\x88\x01\x01\x123\n" +
 	"\x13longest_streak_days\x18\x0f \x01(\x05H\x01R\x11longestStreakDays\x88\x01\x01B\x16\n" +
 	"\x14_current_streak_daysB\x16\n" +
-	"\x14_longest_streak_days\"\xad\x02\n" +
-	"\x17NotificationPreferences\x120\n" +
-	"\x14notify_pending_input\x18\x01 \x01(\bR\x12notifyPendingInput\x126\n" +
-	"\x17notify_pipeline_success\x18\x02 \x01(\bR\x15notifyPipelineSuccess\x126\n" +
-	"\x17notify_pipeline_failure\x18\x03 \x01(\bR\x15notifyPipelineFailure\x128\n" +
-	"\x18notify_connection_action\x18\x04 \x01(\bR\x16notifyConnectionAction\x126\n" +
-	"\x17notify_showcase_roundup\x18\x05 \x01(\bR\x15notifyShowcaseRoundup\"n\n" +
+	"\x14_longest_streak_days\"b\n" +
+	"\x1aNotificationTypePreference\x12D\n" +
+	"\bchannels\x18\x01 \x03(\x0e2(.fitglue.models.user.NotificationChannelR\bchannels\"\xe1\x03\n" +
+	"\x17NotificationPreferences\x12T\n" +
+	"\rpending_input\x18\x01 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\fpendingInput\x12Z\n" +
+	"\x10pipeline_success\x18\x02 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fpipelineSuccess\x12Z\n" +
+	"\x10pipeline_failure\x18\x03 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fpipelineFailure\x12\\\n" +
+	"\x11connection_action\x18\x04 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x10connectionAction\x12Z\n" +
+	"\x10showcase_roundup\x18\x05 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fshowcaseRoundup\"n\n" +
 	"\aCounter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x03R\x05count\x12=\n" +
@@ -522,7 +620,11 @@ const file_models_user_profile_proto_rawDesc = "" +
 	"\x0eprevious_value\x18\a \x01(\x01H\x00R\rpreviousValue\x88\x01\x01\x12%\n" +
 	"\vimprovement\x18\b \x01(\x01H\x01R\vimprovement\x88\x01\x01B\x11\n" +
 	"\x0f_previous_valueB\x0e\n" +
-	"\f_improvement*T\n" +
+	"\f_improvement*z\n" +
+	"\x13NotificationChannel\x12$\n" +
+	" NOTIFICATION_CHANNEL_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19NOTIFICATION_CHANNEL_PUSH\x10\x01\x12\x1e\n" +
+	"\x1aNOTIFICATION_CHANNEL_EMAIL\x10\x02*T\n" +
 	"\bUserTier\x12\x19\n" +
 	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
@@ -540,31 +642,39 @@ func file_models_user_profile_proto_rawDescGZIP() []byte {
 	return file_models_user_profile_proto_rawDescData
 }
 
-var file_models_user_profile_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_models_user_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_models_user_profile_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_models_user_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_models_user_profile_proto_goTypes = []any{
-	(UserTier)(0),                   // 0: fitglue.models.user.UserTier
-	(*UserProfile)(nil),             // 1: fitglue.models.user.UserProfile
-	(*NotificationPreferences)(nil), // 2: fitglue.models.user.NotificationPreferences
-	(*Counter)(nil),                 // 3: fitglue.models.user.Counter
-	(*PersonalRecord)(nil),          // 4: fitglue.models.user.PersonalRecord
-	(*timestamppb.Timestamp)(nil),   // 5: google.protobuf.Timestamp
-	(activity.ActivityType)(0),      // 6: fitglue.models.activity.ActivityType
+	(NotificationChannel)(0),           // 0: fitglue.models.user.NotificationChannel
+	(UserTier)(0),                      // 1: fitglue.models.user.UserTier
+	(*UserProfile)(nil),                // 2: fitglue.models.user.UserProfile
+	(*NotificationTypePreference)(nil), // 3: fitglue.models.user.NotificationTypePreference
+	(*NotificationPreferences)(nil),    // 4: fitglue.models.user.NotificationPreferences
+	(*Counter)(nil),                    // 5: fitglue.models.user.Counter
+	(*PersonalRecord)(nil),             // 6: fitglue.models.user.PersonalRecord
+	(*timestamppb.Timestamp)(nil),      // 7: google.protobuf.Timestamp
+	(activity.ActivityType)(0),         // 8: fitglue.models.activity.ActivityType
 }
 var file_models_user_profile_proto_depIdxs = []int32{
-	5, // 0: fitglue.models.user.UserProfile.created_at:type_name -> google.protobuf.Timestamp
-	0, // 1: fitglue.models.user.UserProfile.tier:type_name -> fitglue.models.user.UserTier
-	5, // 2: fitglue.models.user.UserProfile.sync_count_reset_at:type_name -> google.protobuf.Timestamp
-	2, // 3: fitglue.models.user.UserProfile.notification_preferences:type_name -> fitglue.models.user.NotificationPreferences
-	5, // 4: fitglue.models.user.UserProfile.trial_ends_at:type_name -> google.protobuf.Timestamp
-	5, // 5: fitglue.models.user.Counter.last_updated:type_name -> google.protobuf.Timestamp
-	5, // 6: fitglue.models.user.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
-	6, // 7: fitglue.models.user.PersonalRecord.activity_type:type_name -> fitglue.models.activity.ActivityType
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	7,  // 0: fitglue.models.user.UserProfile.created_at:type_name -> google.protobuf.Timestamp
+	1,  // 1: fitglue.models.user.UserProfile.tier:type_name -> fitglue.models.user.UserTier
+	7,  // 2: fitglue.models.user.UserProfile.sync_count_reset_at:type_name -> google.protobuf.Timestamp
+	4,  // 3: fitglue.models.user.UserProfile.notification_preferences:type_name -> fitglue.models.user.NotificationPreferences
+	7,  // 4: fitglue.models.user.UserProfile.trial_ends_at:type_name -> google.protobuf.Timestamp
+	0,  // 5: fitglue.models.user.NotificationTypePreference.channels:type_name -> fitglue.models.user.NotificationChannel
+	3,  // 6: fitglue.models.user.NotificationPreferences.pending_input:type_name -> fitglue.models.user.NotificationTypePreference
+	3,  // 7: fitglue.models.user.NotificationPreferences.pipeline_success:type_name -> fitglue.models.user.NotificationTypePreference
+	3,  // 8: fitglue.models.user.NotificationPreferences.pipeline_failure:type_name -> fitglue.models.user.NotificationTypePreference
+	3,  // 9: fitglue.models.user.NotificationPreferences.connection_action:type_name -> fitglue.models.user.NotificationTypePreference
+	3,  // 10: fitglue.models.user.NotificationPreferences.showcase_roundup:type_name -> fitglue.models.user.NotificationTypePreference
+	7,  // 11: fitglue.models.user.Counter.last_updated:type_name -> google.protobuf.Timestamp
+	7,  // 12: fitglue.models.user.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
+	8,  // 13: fitglue.models.user.PersonalRecord.activity_type:type_name -> fitglue.models.activity.ActivityType
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_models_user_profile_proto_init() }
@@ -573,14 +683,14 @@ func file_models_user_profile_proto_init() {
 		return
 	}
 	file_models_user_profile_proto_msgTypes[0].OneofWrappers = []any{}
-	file_models_user_profile_proto_msgTypes[3].OneofWrappers = []any{}
+	file_models_user_profile_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_user_profile_proto_rawDesc), len(file_models_user_profile_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   4,
+			NumEnums:      2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

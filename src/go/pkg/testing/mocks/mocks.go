@@ -313,6 +313,7 @@ func (m *MockDatabase) DeleteBoosterData(ctx context.Context, userId string, boo
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)
+	PublishJSONFunc       func(ctx context.Context, topic string, data []byte) error
 }
 
 func (m *MockPublisher) PublishCloudEvent(ctx context.Context, topic string, e event.Event) (string, error) {
@@ -320,6 +321,13 @@ func (m *MockPublisher) PublishCloudEvent(ctx context.Context, topic string, e e
 		return m.PublishCloudEventFunc(ctx, topic, e)
 	}
 	return "msg-id", nil
+}
+
+func (m *MockPublisher) PublishJSON(ctx context.Context, topic string, data []byte) error {
+	if m.PublishJSONFunc != nil {
+		return m.PublishJSONFunc(ctx, topic, data)
+	}
+	return nil
 }
 
 // --- Mock Storage ---

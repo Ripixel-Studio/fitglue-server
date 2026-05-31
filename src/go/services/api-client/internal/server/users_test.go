@@ -187,6 +187,8 @@ func (m *mockPublisher) PublishCloudEvent(ctx context.Context, topicID string, e
 	return "msg-id", nil
 }
 
+func (m *mockPublisher) PublishJSON(_ context.Context, _ string, _ []byte) error { return nil }
+
 // =============================================================
 // Test helpers
 // =============================================================

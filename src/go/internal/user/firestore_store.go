@@ -657,22 +657,17 @@ func (s *FirestoreStore) CreateUser(ctx context.Context, userID string) (*pbuser
 	trialEndsAt := now.Add(30 * 24 * time.Hour)
 
 	profile := &pbuser.UserProfile{
-		UserId:             userID,
-		CreatedAt:          timestamppb.New(now),
-		Tier:               pbuser.UserTier_USER_TIER_HOBBYIST,
-		IsAdmin:            false,
-		SyncCountThisMonth: 0,
-		SyncCountResetAt:   timestamppb.New(now),
-		PreventedSyncCount: 0,
-		AccessEnabled:      false, // Waitlisted until admin enables
-		NotificationPreferences: &pbuser.NotificationPreferences{
-			NotifyPendingInput:     true,
-			NotifyPipelineSuccess:  true,
-			NotifyPipelineFailure:  true,
-			NotifyConnectionAction: true,
-		},
-		TrialEndsAt: timestamppb.New(trialEndsAt),
-		FcmTokens:   []string{},
+		UserId:                  userID,
+		CreatedAt:               timestamppb.New(now),
+		Tier:                    pbuser.UserTier_USER_TIER_HOBBYIST,
+		IsAdmin:                 false,
+		SyncCountThisMonth:      0,
+		SyncCountResetAt:        timestamppb.New(now),
+		PreventedSyncCount:      0,
+		AccessEnabled:           false, // Waitlisted until admin enables
+		NotificationPreferences: defaultNotificationPreferences(),
+		TrialEndsAt:             timestamppb.New(trialEndsAt),
+		FcmTokens:               []string{},
 	}
 
 	docRef := s.client.Collection("users").Doc(userID)
@@ -700,4 +695,18 @@ func (s *FirestoreStore) CreateUser(ctx context.Context, userID string) (*pbuser
 	}
 
 	return profile, nil
+}
+
+// defaultNotificationPreferences returns the push-only defaults for a new user.
+func defaultNotificationPreferences() *pbuser.NotificationPreferences {
+	push := &pbuser.NotificationTypePreference{
+		Channels: []pbuser.NotificationChannel{pbuser.NotificationChannel_NOTIFICATION_CHANNEL_PUSH},
+	}
+	return &pbuser.NotificationPreferences{
+		PendingInput:     push,
+		PipelineSuccess:  push,
+		PipelineFailure:  push,
+		ConnectionAction: push,
+		ShowcaseRoundup:  push,
+	}
 }

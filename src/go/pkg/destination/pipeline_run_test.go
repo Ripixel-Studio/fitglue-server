@@ -1,20 +1,17 @@
 package destination
 
 import (
+	"context"
+	"testing"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 
-	user "github.com/fitglue/server/src/go/pkg/domain/user"
-
-	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
-
 	"github.com/fitglue/server/src/go/internal/infra"
-
-	"context"
-	"fmt"
-	"strings"
-	"testing"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // --- Mock Database ---
@@ -23,7 +20,6 @@ type MockDatabase struct {
 	Outcomes       []*pbpipeline.DestinationOutcome
 	SetOutcomeFunc func(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error
 	UpdateRunFunc  func(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	GetUserFunc    func(ctx context.Context, id string) (*user.Record, error)
 }
 
 func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error {
@@ -45,36 +41,31 @@ func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id 
 	return nil
 }
 
-func (m *MockDatabase) GetUser(ctx context.Context, id string) (*user.Record, error) {
-	if m.GetUserFunc != nil {
-		return m.GetUserFunc(ctx, id)
-	}
-	return nil, fmt.Errorf("no user")
+// --- Mock Publisher ---
+
+type MockPublisher struct {
+	Published [][]byte
 }
 
-// --- Mock NotificationService ---
-
-type MockNotifications struct {
-	Sent []NotificationRecord
+func (m *MockPublisher) PublishCloudEvent(_ context.Context, _ string, _ cloudevents.Event) (string, error) {
+	return "msg-id", nil
 }
 
-type NotificationRecord struct {
-	UserID string
-	Title  string
-	Body   string
-	Tokens []string
-	Data   map[string]string
-}
-
-func (m *MockNotifications) SendPushNotification(ctx context.Context, userID string, title, body string, tokens []string, data map[string]string) error {
-	m.Sent = append(m.Sent, NotificationRecord{
-		UserID: userID,
-		Title:  title,
-		Body:   body,
-		Tokens: tokens,
-		Data:   data,
-	})
+func (m *MockPublisher) PublishJSON(_ context.Context, _ string, data []byte) error {
+	m.Published = append(m.Published, data)
 	return nil
+}
+
+func (m *MockPublisher) lastNotification(t *testing.T) *pbnotification.NotificationRequest {
+	t.Helper()
+	if len(m.Published) == 0 {
+		return nil
+	}
+	var req pbnotification.NotificationRequest
+	if err := protojson.Unmarshal(m.Published[len(m.Published)-1], &req); err != nil {
+		t.Fatalf("failed to unmarshal notification: %v", err)
+	}
+	return &req
 }
 
 // --- Tests ---
@@ -130,167 +121,100 @@ func TestComputePipelineRunStatus_SuccessAndSkipped(t *testing.T) {
 	}
 }
 
-func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
-	notifications := &MockNotifications{}
+func TestUpdateStatus_EnqueuesNotificationOnSynced(t *testing.T) {
+	pub := &MockPublisher{}
 	db := &MockDatabase{
-		// Pre-populate with one already-complete destination
 		Outcomes: []*pbpipeline.DestinationOutcome{
 			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
-		},
-		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
-			return &user.Record{
-				UserProfile: &pbuser.UserProfile{
-					FcmTokens: []string{"token1"},
-				},
-			}, nil
 		},
 	}
 	logger := infra.NewLogger()
 
-	// When Hevy also succeeds → all complete → SYNCED → notification should fire
-	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"hevy-123", "", "Morning Run", "activity-1", logger)
 
-	if len(notifications.Sent) != 1 {
-		t.Fatalf("expected 1 notification, got %d", len(notifications.Sent))
+	n := pub.lastNotification(t)
+	if n == nil {
+		t.Fatal("expected notification to be enqueued")
 	}
-	n := notifications.Sent[0]
+	if n.Type != pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS {
+		t.Errorf("expected PIPELINE_SUCCESS, got %v", n.Type)
+	}
 	if n.Title != "Activity Synced: Morning Run" {
 		t.Errorf("unexpected title: %s", n.Title)
-	}
-	if !strings.Contains(n.Body, "Strava") || !strings.Contains(n.Body, "Hevy") {
-		t.Errorf("expected body to mention both destinations, got: %s", n.Body)
-	}
-	if n.Data["type"] != "PIPELINE_SUCCESS" {
-		t.Errorf("expected PIPELINE_SUCCESS type, got: %s", n.Data["type"])
 	}
 	if n.Data["activity_id"] != "activity-1" {
 		t.Errorf("expected activity_id 'activity-1', got: %s", n.Data["activity_id"])
 	}
 }
 
-func TestUpdateStatus_SendsNotificationOnPartial(t *testing.T) {
-	notifications := &MockNotifications{}
+func TestUpdateStatus_EnqueuesNotificationOnPartial(t *testing.T) {
+	pub := &MockPublisher{}
 	db := &MockDatabase{
 		Outcomes: []*pbpipeline.DestinationOutcome{
 			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		},
-		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
-			return &user.Record{
-				UserProfile: &pbuser.UserProfile{
-					FcmTokens: []string{"token1"},
-				},
-			}, nil
-		},
 	}
 	logger := infra.NewLogger()
 
-	// When Hevy fails → PARTIAL → notification should fire with failure info
-	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
 		"", "API error", "Morning Run", "activity-2", logger)
 
-	if len(notifications.Sent) != 1 {
-		t.Fatalf("expected 1 notification, got %d", len(notifications.Sent))
+	n := pub.lastNotification(t)
+	if n == nil {
+		t.Fatal("expected notification to be enqueued")
 	}
-	n := notifications.Sent[0]
+	if n.Type != pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE {
+		t.Errorf("expected PIPELINE_FAILURE, got %v", n.Type)
+	}
 	if n.Title != "Partial Sync: Morning Run" {
 		t.Errorf("unexpected title: %s", n.Title)
-	}
-	if !strings.Contains(n.Body, "Hevy") || !strings.Contains(n.Body, "failed") {
-		t.Errorf("expected body to mention Hevy failure, got: %s", n.Body)
-	}
-	if n.Data["type"] != "PIPELINE_FAILED" {
-		t.Errorf("expected PIPELINE_FAILED type, got: %s", n.Data["type"])
 	}
 }
 
 func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
-	notifications := &MockNotifications{}
+	pub := &MockPublisher{}
 	db := &MockDatabase{
-		// One destination still PENDING
 		Outcomes: []*pbpipeline.DestinationOutcome{
 			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING},
-		},
-		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
-			return &user.Record{
-				UserProfile: &pbuser.UserProfile{
-					FcmTokens: []string{"token1"},
-				},
-			}, nil
 		},
 	}
 	logger := infra.NewLogger()
 
 	// Only Hevy completes — Strava still pending → RUNNING → no notification
-	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"hevy-123", "", "Morning Run", "activity-3", logger)
 
-	if len(notifications.Sent) != 0 {
-		t.Fatalf("expected 0 notifications while RUNNING, got %d", len(notifications.Sent))
+	if len(pub.Published) != 0 {
+		t.Fatalf("expected 0 notifications while RUNNING, got %d", len(pub.Published))
 	}
 }
 
-func TestUpdateStatus_NoNotificationWhenPrefsDisabled(t *testing.T) {
-	notifications := &MockNotifications{}
-	db := &MockDatabase{
-		// Only one destination, so it goes to SYNCED immediately
-		Outcomes: []*pbpipeline.DestinationOutcome{},
-		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
-			return &user.Record{
-				UserProfile: &pbuser.UserProfile{
-					FcmTokens: []string{"token1"},
-					NotificationPreferences: &pbuser.NotificationPreferences{
-						NotifyPipelineSuccess: false,
-					},
-				},
-			}, nil
-		},
-	}
+func TestUpdateStatus_NilPublisher(t *testing.T) {
+	db := &MockDatabase{Outcomes: []*pbpipeline.DestinationOutcome{}}
 	logger := infra.NewLogger()
 
-	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
-		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-4", logger)
-
-	if len(notifications.Sent) != 0 {
-		t.Fatalf("expected 0 notifications when prefs disabled, got %d", len(notifications.Sent))
-	}
-}
-
-func TestUpdateStatus_NilNotificationService(t *testing.T) {
-	db := &MockDatabase{
-		Outcomes: []*pbpipeline.DestinationOutcome{},
-		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
-			return &user.Record{
-				UserProfile: &pbuser.UserProfile{
-					FcmTokens: []string{"token1"},
-				},
-			}, nil
-		},
-	}
-	logger := infra.NewLogger()
-
-	// Should not panic with nil notifications
+	// Should not panic with nil publisher
 	UpdateStatus(context.Background(), db, nil, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-5", logger)
+		"strava-123", "", "Morning Run", "activity-4", logger)
 }
 
 func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
-	notifications := &MockNotifications{}
+	pub := &MockPublisher{}
 	db := &MockDatabase{}
 	logger := infra.NewLogger()
 
 	// Empty pipelineRunId → early return (legacy flow)
-	UpdateStatus(context.Background(), db, notifications, "user1", "",
+	UpdateStatus(context.Background(), db, pub, "user1", "",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-6", logger)
+		"strava-123", "", "Morning Run", "activity-5", logger)
 
-	if len(notifications.Sent) != 0 {
-		t.Fatalf("expected 0 notifications for empty pipelineRunId, got %d", len(notifications.Sent))
+	if len(pub.Published) != 0 {
+		t.Fatalf("expected 0 notifications for empty pipelineRunId, got %d", len(pub.Published))
 	}
 }
 
@@ -308,7 +232,6 @@ func TestFormatDestinationName(t *testing.T) {
 		{pbplugin.DestinationType_DESTINATION_GITHUB, "GitHub"},
 		{pbplugin.DestinationType_DESTINATION_MOCK, "Mock"},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
 			got := FormatDestinationName(tt.dest)

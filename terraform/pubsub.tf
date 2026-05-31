@@ -183,3 +183,35 @@ resource "google_pubsub_subscription" "roundup_trigger_sub" {
     maximum_backoff = "600s"
   }
 }
+
+# Notification topic — any service publishes NotificationRequest messages here.
+# The notification service fans out to whichever channels the user has enabled.
+resource "google_pubsub_topic" "notification" {
+  name    = "topic-notification"
+  project = var.project_id
+
+  # Retain for 1 hour; if the notification service is down briefly, messages are replayed.
+  message_retention_duration = "3600s"
+}
+
+resource "google_pubsub_subscription" "notification_sub" {
+  name    = "sub-notification"
+  topic   = google_pubsub_topic.notification.name
+  project = var.project_id
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["notification"].uri}/pubsub/notifications"
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["notification"].email
+    }
+  }
+
+  # Notifications are best-effort; 60 s is enough for FCM round-trips.
+  ack_deadline_seconds       = 60
+  message_retention_duration = "3600s"
+
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "60s"
+  }
+}

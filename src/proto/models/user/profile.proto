@@ -40,12 +40,25 @@ message UserProfile {
   optional int32 longest_streak_days = 15;
 }
 
+enum NotificationChannel {
+  NOTIFICATION_CHANNEL_UNSPECIFIED = 0;
+  NOTIFICATION_CHANNEL_PUSH = 1;
+  NOTIFICATION_CHANNEL_EMAIL = 2;
+}
+
+// NotificationTypePreference holds which channels are active for one notification type.
+// An empty channels list means the notification type is disabled entirely.
+// A nil/absent preference means "use the default" which is [PUSH].
+message NotificationTypePreference {
+  repeated NotificationChannel channels = 1;
+}
+
 message NotificationPreferences {
-  bool notify_pending_input = 1;
-  bool notify_pipeline_success = 2;
-  bool notify_pipeline_failure = 3;
-  bool notify_connection_action = 4;
-  bool notify_showcase_roundup = 5;
+  NotificationTypePreference pending_input = 1;
+  NotificationTypePreference pipeline_success = 2;
+  NotificationTypePreference pipeline_failure = 3;
+  NotificationTypePreference connection_action = 4;
+  NotificationTypePreference showcase_roundup = 5;
 }
 
 enum UserTier {

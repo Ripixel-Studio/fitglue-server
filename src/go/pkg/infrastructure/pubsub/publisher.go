@@ -38,6 +38,11 @@ func (a *PubSubAdapter) publish(ctx context.Context, topicID string, data []byte
 	return a.publishWithAttrs(ctx, topicID, data, nil)
 }
 
+func (a *PubSubAdapter) PublishJSON(ctx context.Context, topicID string, data []byte) error {
+	_, err := a.publish(ctx, topicID, data)
+	return err
+}
+
 func (a *PubSubAdapter) publishWithAttrs(ctx context.Context, topicID string, data []byte, attributes map[string]string) (string, error) {
 	topic := a.Client.Topic(topicID)
 	msg := &pubsub.Message{

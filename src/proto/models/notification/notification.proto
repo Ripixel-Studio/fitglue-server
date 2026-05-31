@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package fitglue.models.notification;
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/notification";
+
+// NotificationRequest is published to topic-notification by any service that wants
+// to notify a user. The notification service decides which channels to use based on
+// the user's per-type, per-channel preferences.
+message NotificationRequest {
+  string user_id = 1;
+  NotificationType type = 2;
+  string title = 3;
+  string body = 4;
+  // Arbitrary key-value pairs forwarded to the client (e.g. activity_id for deep-linking).
+  map<string, string> data = 5;
+}
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_PENDING_INPUT = 1;
+  NOTIFICATION_TYPE_PIPELINE_SUCCESS = 2;
+  NOTIFICATION_TYPE_PIPELINE_FAILURE = 3;
+  NOTIFICATION_TYPE_CONNECTION_ACTION = 4;
+  NOTIFICATION_TYPE_SHOWCASE_ROUNDUP = 5;
+}

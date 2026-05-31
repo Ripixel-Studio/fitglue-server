@@ -6,12 +6,13 @@ locals {
     "api-webhook" = { is_public = true }
   }
   backend_services = {
-    "user"        = { is_public = false }
-    "billing"     = { is_public = false }
-    "pipeline"    = { is_public = false }
-    "activity"    = { is_public = false }
-    "registry"    = { is_public = false }
-    "destination" = { is_public = false }
+    "user"         = { is_public = false }
+    "billing"      = { is_public = false }
+    "pipeline"     = { is_public = false }
+    "activity"     = { is_public = false }
+    "registry"     = { is_public = false }
+    "destination"  = { is_public = false }
+    "notification" = { is_public = false }
   }
   all_services = merge(local.frontend_services, local.backend_services)
 }

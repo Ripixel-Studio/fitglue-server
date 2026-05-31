@@ -242,7 +242,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		bucketName = "fitglue-server-dev-artifacts" // Fallback for local development
 	}
 
-	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName, fwCtx.Service.Notifications)
+	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName, fwCtx.Service.Pub)
 
 	// Register Providers from registry
 	for _, provider := range providers.GetAll() {

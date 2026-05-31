@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/fitglue/server/src/go/internal/infra"
-	shared "github.com/fitglue/server/src/go/pkg"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	billingpb "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
@@ -43,7 +42,6 @@ type APIServer struct {
 	publisher      Publisher
 	apiKeyStore    ApiKeyStore
 	gcsSigner      GCSSigner // may be nil in test environments
-	notifications  shared.NotificationService
 	userService    userpb.UserServiceClient
 	billingService billingpb.BillingServiceClient
 	pipelineSvc    pipelinepb.PipelineServiceClient
@@ -58,7 +56,6 @@ func NewAPIServer(
 	publisher Publisher,
 	apiKeyStore ApiKeyStore,
 	gcsSigner GCSSigner,
-	notifications shared.NotificationService,
 	userSvc userpb.UserServiceClient,
 	billingSvc billingpb.BillingServiceClient,
 	pipelineSvc pipelinepb.PipelineServiceClient,
@@ -72,7 +69,6 @@ func NewAPIServer(
 		publisher:      publisher,
 		apiKeyStore:    apiKeyStore,
 		gcsSigner:      gcsSigner,
-		notifications:  notifications,
 		userService:    userSvc,
 		billingService: billingSvc,
 		pipelineSvc:    pipelineSvc,

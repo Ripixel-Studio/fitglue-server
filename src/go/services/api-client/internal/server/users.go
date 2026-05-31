@@ -4,6 +4,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"firebase.google.com/go/v4/auth"
@@ -302,63 +304,51 @@ func (s *APIServer) handleGetNotificationPrefs(w http.ResponseWriter, r *http.Re
 func (s *APIServer) handleUpdateNotificationPrefs(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)
 
-	// Read current prefs
+	// Read current prefs (empty struct = all defaults if not yet saved)
 	current, err := s.userService.GetNotificationPrefs(r.Context(), &userpb.GetNotificationPrefsRequest{UserId: token.UID})
 	if err != nil {
-		// If not found, start from defaults (all true)
 		st, _ := status.FromError(err)
 		if st.Code() != codes.NotFound {
 			WriteError(w, err)
 			return
 		}
-		current = &pbuser.NotificationPreferences{
-			NotifyPendingInput:     true,
-			NotifyPipelineSuccess:  true,
-			NotifyPipelineFailure:  true,
-			NotifyConnectionAction: true,
-		}
+		current = &pbuser.NotificationPreferences{}
 	}
 
-	// Decode partial body into a map to identify which fields were explicitly sent
-	var partial map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&partial); err != nil {
+	// Decode body as protojson NotificationPreferences.
+	// Only fields present in the body override the current prefs (nil = unchanged).
+	body, readErr := io.ReadAll(r.Body)
+	if readErr != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	var update pbuser.NotificationPreferences
+	prefsUnmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := prefsUnmarshaler.Unmarshal(body, &update); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
 
-	// Merge: only overwrite fields present in the partial update
-	merged := current
-	if v, ok := partial["notifyPendingInput"]; ok {
-		if b, ok := v.(bool); ok {
-			merged.NotifyPendingInput = b
-		}
+	if update.PendingInput != nil {
+		current.PendingInput = update.PendingInput
 	}
-	if v, ok := partial["notifyPipelineSuccess"]; ok {
-		if b, ok := v.(bool); ok {
-			merged.NotifyPipelineSuccess = b
-		}
+	if update.PipelineSuccess != nil {
+		current.PipelineSuccess = update.PipelineSuccess
 	}
-	if v, ok := partial["notifyPipelineFailure"]; ok {
-		if b, ok := v.(bool); ok {
-			merged.NotifyPipelineFailure = b
-		}
+	if update.PipelineFailure != nil {
+		current.PipelineFailure = update.PipelineFailure
 	}
-	if v, ok := partial["notifyConnectionAction"]; ok {
-		if b, ok := v.(bool); ok {
-			merged.NotifyConnectionAction = b
-		}
+	if update.ConnectionAction != nil {
+		current.ConnectionAction = update.ConnectionAction
+	}
+	if update.ShowcaseRoundup != nil {
+		current.ShowcaseRoundup = update.ShowcaseRoundup
 	}
 
-	var req userpb.UpdateNotificationPrefsRequest
-	req.UserId = token.UID
-	req.Prefs = &pbuser.NotificationPreferences{
-		NotifyPendingInput:     merged.NotifyPendingInput,
-		NotifyPipelineSuccess:  merged.NotifyPipelineSuccess,
-		NotifyPipelineFailure:  merged.NotifyPipelineFailure,
-		NotifyConnectionAction: merged.NotifyConnectionAction,
-	}
-
-	res, err := s.userService.UpdateNotificationPrefs(r.Context(), &req)
+	res, err := s.userService.UpdateNotificationPrefs(r.Context(), &userpb.UpdateNotificationPrefsRequest{
+		UserId: token.UID,
+		Prefs:  current,
+	})
 	if err != nil {
 		WriteError(w, err)
 		return

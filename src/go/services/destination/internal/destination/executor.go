@@ -17,7 +17,9 @@ import (
 	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	fitglueerrors "github.com/fitglue/server/src/go/pkg/errors"
+	"github.com/fitglue/server/src/go/pkg/notificationpub"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
@@ -33,7 +35,7 @@ type UploadExecutor struct {
 	activityClient activitypb.ActivityServiceClient
 	db             shared.Database
 	store          shared.BlobStore
-	notifications  shared.NotificationService
+	publisher      shared.Publisher
 	logger         infra.Logger
 }
 
@@ -44,7 +46,7 @@ func NewUploadExecutor(
 	activityClient activitypb.ActivityServiceClient,
 	db shared.Database,
 	store shared.BlobStore,
-	notifications shared.NotificationService,
+	publisher shared.Publisher,
 	logger infra.Logger,
 ) *UploadExecutor {
 	return &UploadExecutor{
@@ -53,7 +55,7 @@ func NewUploadExecutor(
 		activityClient: activityClient,
 		db:             db,
 		store:          store,
-		notifications:  notifications,
+		publisher:      publisher,
 		logger:         logger,
 	}
 }
@@ -247,7 +249,7 @@ destinations:
 		if !ok {
 			e.logger.Warn(ctx, "No uploader registered for destination", "destination", destEnum.String())
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger)
+				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger)
 			}
 			continue
 		}
@@ -292,17 +294,17 @@ destinations:
 			e.logger.Error(ctx, "Destination uploader failed", "destination", destEnum.String(), "error", uploadErr)
 			var fgErr *fitglueerrors.FitGlueError
 			if errors.As(uploadErr, &fgErr) && fgErr.Code == fitglueerrors.CodeIntegrationAuthFailed {
-				e.sendConnectionActionNotification(ctx, payload.UserId, destEnum)
+				e.enqueueConnectionActionNotification(ctx, payload.UserId, destEnum)
 			}
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger)
+				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger)
 			}
 			continue
 		}
 
 		// Success
 		if pipelineRunId != "" {
-			destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger)
+			destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger)
 		}
 		if err := e.db.RecordBillingEvent(ctx, payload.UserId, shared.BillingEvent{
 			ActivityID:    payload.ActivityId,
@@ -334,36 +336,26 @@ func (e *UploadExecutor) writeFailureForTargetedDestinations(ctx context.Context
 		if targetDest != pbplugin.DestinationType_DESTINATION_UNSPECIFIED && destEnum != targetDest {
 			continue
 		}
-		destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
+		destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
 	}
 }
 
-// sendConnectionActionNotification alerts the user that a destination's OAuth connection
-// has expired and needs to be re-authorised. The notification deep-links to the connection
-// detail page for the affected destination.
-func (e *UploadExecutor) sendConnectionActionNotification(ctx context.Context, userID string, dest pbplugin.DestinationType) {
-	if e.notifications == nil {
+// enqueueConnectionActionNotification publishes a CONNECTION_ACTION notification so the user
+// knows their destination OAuth needs re-authorisation. The notification service handles channel dispatch.
+func (e *UploadExecutor) enqueueConnectionActionNotification(ctx context.Context, userID string, dest pbplugin.DestinationType) {
+	if e.publisher == nil {
 		return
 	}
-	user, err := e.db.GetUser(ctx, userID)
-	if err != nil || user == nil || len(user.FcmTokens) == 0 {
-		return
-	}
-	prefs := user.NotificationPreferences
-	if prefs != nil && !prefs.NotifyConnectionAction {
-		return
-	}
-	// Derive the connection route ID from the destination enum: DESTINATION_STRAVA → "strava"
 	sourceID := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
 	destName := destination.FormatDestinationName(dest)
-	data := map[string]string{
-		"type":     "CONNECTION_ACTION",
-		"user_id":  userID,
-		"sourceId": sourceID,
+	req := &pbnotification.NotificationRequest{
+		UserId: userID,
+		Type:   pbnotification.NotificationType_NOTIFICATION_TYPE_CONNECTION_ACTION,
+		Title:  fmt.Sprintf("Reconnect %s", destName),
+		Body:   fmt.Sprintf("Your %s connection needs to be re-authorised.", destName),
+		Data:   map[string]string{"sourceId": sourceID},
 	}
-	title := fmt.Sprintf("Reconnect %s", destName)
-	body := fmt.Sprintf("Your %s connection needs to be re-authorised.", destName)
-	if err := e.notifications.SendPushNotification(ctx, userID, title, body, user.FcmTokens, data); err != nil {
-		e.logger.Warn(ctx, "Failed to send connection action notification", "error", err, "user_id", userID, "destination", dest.String())
+	if err := notificationpub.Enqueue(ctx, e.publisher, req); err != nil {
+		e.logger.Warn(ctx, "Failed to enqueue connection action notification", "error", err, "user_id", userID, "destination", dest.String())
 	}
 }

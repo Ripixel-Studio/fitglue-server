@@ -6,24 +6,23 @@ import (
 	"strings"
 
 	"github.com/fitglue/server/src/go/internal/infra"
-	"github.com/fitglue/server/src/go/pkg/domain/user"
 
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/notificationpub"
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Database interface subset needed for destination updates
-// This matches the shared Database interface in interfaces.go
 type Database interface {
 	UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error
 	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error)
-	GetUser(ctx context.Context, id string) (*user.Record, error)
 }
 
 // UpdateStatus updates a single destination's status using the subcollection pattern.
@@ -41,7 +40,7 @@ type Database interface {
 //   - errMsg: optional error message if status is FAILED
 //   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
-func UpdateStatus(ctx context.Context, db Database, notifications shared.NotificationService, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger) {
+func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
@@ -113,36 +112,17 @@ func UpdateStatus(ctx context.Context, db Database, notifications shared.Notific
 
 	// Send push notification when all destinations have reached a terminal status
 	if newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED || newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
-		sendSyncNotification(ctx, db, notifications, userId, activityName, activityId, newStatus, outcomes, logger)
+		sendSyncNotification(ctx, publisher, userId, activityName, activityId, newStatus, outcomes, logger)
 	}
 }
 
-// sendSyncNotification sends a push notification when all destinations have completed.
-// For SYNCED: "Successfully synced to: Strava, Hevy"
-// For PARTIAL: "Synced to Strava, but Hevy failed"
-func sendSyncNotification(ctx context.Context, db Database, notifications shared.NotificationService, userId string, activityName string, activityId string, status pbpipeline.PipelineRunStatus, outcomes []*pbpipeline.DestinationOutcome, logger infra.Logger) {
-	if notifications == nil {
+// sendSyncNotification enqueues a pipeline sync notification.
+// The notification service resolves the user's enabled channels and dispatches accordingly.
+func sendSyncNotification(ctx context.Context, publisher shared.Publisher, userId string, activityName string, activityId string, status pbpipeline.PipelineRunStatus, outcomes []*pbpipeline.DestinationOutcome, logger infra.Logger) {
+	if publisher == nil {
 		return
 	}
 
-	user, err := db.GetUser(ctx, userId)
-	if err != nil || user == nil || len(user.FcmTokens) == 0 {
-		return
-	}
-
-	// Check notification preferences (default to true if not set)
-	prefs := user.NotificationPreferences
-	if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
-		if prefs != nil && !prefs.NotifyPipelineSuccess {
-			return
-		}
-	} else if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
-		if prefs != nil && !prefs.NotifyPipelineFailure {
-			return
-		}
-	}
-
-	// Build human-readable destination lists
 	var succeeded []string
 	var failed []string
 	for _, o := range outcomes {
@@ -155,28 +135,32 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 		}
 	}
 
+	var notifType pbnotification.NotificationType
 	var title, body string
-	data := map[string]string{
-		"type":        "PIPELINE_SUCCESS",
-		"user_id":     userId,
-		"activity_id": activityId,
-	}
 
 	if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+		notifType = pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS
 		title = fmt.Sprintf("Activity Synced: %s", activityName)
 		body = fmt.Sprintf("Successfully synced to: %s", strings.Join(succeeded, ", "))
 	} else {
+		notifType = pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE
 		title = fmt.Sprintf("Partial Sync: %s", activityName)
 		if len(succeeded) > 0 && len(failed) > 0 {
 			body = fmt.Sprintf("Synced to %s, but %s failed", strings.Join(succeeded, ", "), strings.Join(failed, ", "))
 		} else if len(failed) > 0 {
 			body = fmt.Sprintf("Failed to sync to: %s", strings.Join(failed, ", "))
 		}
-		data["type"] = "PIPELINE_FAILED"
 	}
 
-	if err := notifications.SendPushNotification(ctx, userId, title, body, user.FcmTokens, data); err != nil {
-		logger.Warn(ctx, "Failed to send sync notification", "error", err, "user_id", userId)
+	req := &pbnotification.NotificationRequest{
+		UserId: userId,
+		Type:   notifType,
+		Title:  title,
+		Body:   body,
+		Data:   map[string]string{"activity_id": activityId},
+	}
+	if err := notificationpub.Enqueue(ctx, publisher, req); err != nil {
+		logger.Warn(ctx, "Failed to enqueue sync notification", "error", err, "user_id", userId)
 	}
 }
 

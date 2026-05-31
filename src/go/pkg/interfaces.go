@@ -106,6 +106,7 @@ type Database interface {
 
 type Publisher interface {
 	PublishCloudEvent(ctx context.Context, topic string, e event.Event) (string, error)
+	PublishJSON(ctx context.Context, topic string, data []byte) error
 }
 
 // --- Storage Interfaces ---

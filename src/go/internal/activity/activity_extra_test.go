@@ -14,15 +14,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// cloudEventsPublisher wraps MockPublisher to match the activity.Publisher interface
+// cloudEventsPublisher is a no-op Publisher for tests.
 type cloudEventsPublisher struct{}
 
 func (p *cloudEventsPublisher) PublishCloudEvent(_ context.Context, _ string, _ cloudevents.Event) (string, error) {
 	return "test-id", nil
 }
 
+func (p *cloudEventsPublisher) PublishJSON(_ context.Context, _ string, _ []byte) error {
+	return nil
+}
+
 func newTestSvc(store *MockActivityStore, blob *MockBlobStore) *Service {
-	return NewService(store, blob, &cloudEventsPublisher{}, "test-bucket", "test-showcase-bucket", infra.NewLogger(), nil)
+	return NewService(store, blob, &cloudEventsPublisher{}, "test-bucket", "test-showcase-bucket", infra.NewLogger())
 }
 
 func TestGetActivity_Validation(t *testing.T) {

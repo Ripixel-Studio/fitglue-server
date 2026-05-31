@@ -636,34 +636,6 @@ func (s *FirestoreStore) ListAllShowcaseUserIDs(ctx context.Context) ([]string, 
 	return userIDs, nil
 }
 
-// GetUserNotificationData reads FCM tokens and the showcase roundup notification preference
-// from the root users/{userID} document. Defaults notifyRoundup to true if the field is absent.
-func (s *FirestoreStore) GetUserNotificationData(ctx context.Context, userID string) ([]string, bool, error) {
-	doc, err := s.client.Collection("users").Doc(userID).Get(ctx)
-	if err != nil {
-		return nil, false, err
-	}
-	data := doc.Data()
-	var tokens []string
-	if raw, ok := data["fcm_tokens"]; ok {
-		if slice, ok := raw.([]interface{}); ok {
-			for _, v := range slice {
-				if s, ok := v.(string); ok {
-					tokens = append(tokens, s)
-				}
-			}
-		}
-	}
-	// Default to true (notify) when the preference hasn't been explicitly set.
-	notifyRoundup := true
-	if prefs, ok := data["notification_preferences"].(map[string]interface{}); ok {
-		if v, ok := prefs["notify_showcase_roundup"].(bool); ok {
-			notifyRoundup = v
-		}
-	}
-	return tokens, notifyRoundup, nil
-}
-
 // Helpers
 func encodeProtoMap(msg protoreflect.ProtoMessage) (map[string]interface{}, error) {
 	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(msg)

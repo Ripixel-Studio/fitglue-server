@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/pkg/notificationpub"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -113,11 +115,7 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 }
 
 func (s *Service) sendRoundupNotification(ctx context.Context, userID string, roundup *pbactivity.ShowcaseRoundup) {
-	if s.notifications == nil {
-		return
-	}
-	tokens, notifyRoundup, err := s.store.GetUserNotificationData(ctx, userID)
-	if err != nil || !notifyRoundup || len(tokens) == 0 {
+	if s.publisher == nil {
 		return
 	}
 	period := "Weekly"
@@ -127,16 +125,15 @@ func (s *Service) sendRoundupNotification(ctx context.Context, userID string, ro
 	case pbactivity.RoundupPeriodType_ROUNDUP_PERIOD_TYPE_YEAR:
 		period = "Yearly"
 	}
-	title := fmt.Sprintf("%s Showcase Roundup Ready", period)
-	body := fmt.Sprintf("%d activities · view your %s summary", roundup.TotalActivities, strings.ToLower(period))
-	data := map[string]string{
-		"type":    "SHOWCASE_ROUNDUP",
-		"user_id": userID,
-		"slug":    roundup.Slug,
-		"period":  roundup.PeriodKey,
+	req := &pbnotification.NotificationRequest{
+		UserId: userID,
+		Type:   pbnotification.NotificationType_NOTIFICATION_TYPE_SHOWCASE_ROUNDUP,
+		Title:  fmt.Sprintf("%s Showcase Roundup Ready", period),
+		Body:   fmt.Sprintf("%d activities · view your %s summary", roundup.TotalActivities, strings.ToLower(period)),
+		Data:   map[string]string{"slug": roundup.Slug, "period": roundup.PeriodKey},
 	}
-	if err := s.notifications.SendPushNotification(ctx, userID, title, body, tokens, data); err != nil {
-		s.logger.Warn(ctx, "Failed to send roundup notification", "error", err, "user_id", userID)
+	if err := notificationpub.Enqueue(ctx, s.publisher, req); err != nil {
+		s.logger.Warn(ctx, "Failed to enqueue roundup notification", "error", err, "user_id", userID)
 	}
 }
 

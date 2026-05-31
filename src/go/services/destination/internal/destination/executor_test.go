@@ -203,16 +203,9 @@ func (m *mockActivityServiceClient) GetActivityPhotoUploadUrl(ctx context.Contex
 	return &activitypb.GetActivityPhotoUploadUrlResponse{}, nil
 }
 
-type mockNotificationService struct{}
-
-func (m *mockNotificationService) SendPushNotification(ctx context.Context, userID string, title, body string, tokens []string, data map[string]string) error {
-	return nil
-}
-
 // ensure interfaces are implemented
 var _ userpb.UserServiceClient = (*mockUserServiceClient)(nil)
 var _ activitypb.ActivityServiceClient = (*mockActivityServiceClient)(nil)
-var _ shared.NotificationService = (*mockNotificationService)(nil)
 
 func TestUploadExecutor_Process(t *testing.T) {
 	registry := NewRegistry()
@@ -229,10 +222,10 @@ func TestUploadExecutor_Process(t *testing.T) {
 	}
 	activityClient := &mockActivityServiceClient{}
 	db := &mocks.MockDatabase{}
-	notifications := &mockNotificationService{}
+	publisher := &mocks.MockPublisher{}
 	logger := infra.NewLogger()
 
-	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, notifications, logger)
+	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, publisher, logger)
 
 	// Create a test payload
 	payload := &pbevents.EnrichedActivityEvent{
@@ -274,10 +267,10 @@ func TestUploadExecutor_Process_GetProfileError_WritesFailure(t *testing.T) {
 	// Track SetDestinationOutcome calls
 	var writtenOutcomes []*pbpipeline.DestinationOutcome
 	db := &mocks.MockDatabase{}
-	notifications := &mockNotificationService{}
+	publisher := &mocks.MockPublisher{}
 	logger := infra.NewLogger()
 
-	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, notifications, logger)
+	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, publisher, logger)
 
 	// Override the DB to track outcomes written by writeFailureForAllDestinations
 	type outcomeTracker struct {

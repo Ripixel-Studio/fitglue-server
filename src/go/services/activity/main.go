@@ -10,10 +10,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
-	firebase "firebase.google.com/go/v4"
 	"github.com/fitglue/server/src/go/internal/activity"
 	"github.com/fitglue/server/src/go/internal/infra"
-	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	gcsstorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
@@ -69,19 +67,7 @@ func main() {
 		showcaseAssetsBucket = "fitglue-server-dev-showcase-assets"
 	}
 
-	// FCM — non-fatal if unavailable; roundup notifications are best-effort
-	var notifSvc *notifications.FCMAdapter
-	fbApp, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: projectID})
-	if err != nil {
-		logger.Warn(ctx, "Firebase init failed — roundup notifications disabled", "error", err)
-	} else {
-		notifSvc, err = notifications.NewFCMAdapter(ctx, fbApp, fsClient, logger)
-		if err != nil {
-			logger.Warn(ctx, "FCM init failed — roundup notifications disabled", "error", err)
-		}
-	}
-
-	svc := activity.NewService(store, blobStore, pub, bucketName, showcaseAssetsBucket, logger, notifSvc)
+	svc := activity.NewService(store, blobStore, pub, bucketName, showcaseAssetsBucket, logger)
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pb.RegisterActivityServiceServer(grpcServer, svc)
