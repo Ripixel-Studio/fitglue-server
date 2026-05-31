@@ -209,7 +209,7 @@ func PaymentFailedTemplate(baseURL string) string {
 		emoji("⚠️"),
 		heading("Payment failed — action required"),
 		paragraph("We were unable to process your FitGlue Athlete subscription payment. Your access has not been affected yet, but we'll retry the charge over the next few days."),
-		paragraph(fmt.Sprintf(`Please update your payment method to avoid any interruption to your Athlete benefits.`, )),
+		paragraph(fmt.Sprintf(`Please update your payment method to avoid any interruption to your Athlete benefits.`)),
 		ctaButton("Update Payment Method", updateURL),
 		divider(),
 		smallText(fmt.Sprintf(`If your payment continues to fail, your subscription will be cancelled and your account will revert to the Hobbyist tier. Questions? Contact us at <a href="mailto:support@fitglue.tech" style="color:%s;">support@fitglue.tech</a>.`, Brand.Primary)),
