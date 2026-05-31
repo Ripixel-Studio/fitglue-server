@@ -491,7 +491,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				}); err != nil {
 					logger.Warn("Failed to link pending_input_id to pipeline run", "error", err)
 				}
-				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr, activityId)
+				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr, activityId, originalPayloadUri)
 			}
 
 			// This is a genuine error - log at ERROR level for Sentry capture
@@ -1173,7 +1173,7 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 	return nil, nil // Pipeline not found
 }
 
-func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pbevents.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError, linkedActivityId string) (*ProcessResult, error) {
+func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pbevents.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError, linkedActivityId string, originalPayloadUri string) (*ProcessResult, error) {
 	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID, "linked_activity_id", linkedActivityId)
 
 	// SAFETY CHECK: Don't overwrite an existing pending input (completed or already waiting).
@@ -1205,18 +1205,23 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		}
 	}
 
-	// Upload original payload to GCS for later retrieval
-	payloadUri := ""
-	if o.storage != nil && o.bucketName != "" {
-		payloadPath := fmt.Sprintf("payloads/%s/%s.json", payload.UserId, waitErr.ActivityID)
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			logger.Warn("Failed to marshal payload for GCS", "error", err)
-		} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
-			logger.Warn("Failed to upload payload to GCS", "error", err)
-		} else {
-			payloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
-			logger.Debug("Uploaded payload to GCS", "uri", payloadUri)
+	// Use the pre-enrichment payload URI captured before any enrichers mutated the activity.
+	// Re-serialising payload here would capture the already-mutated name (e.g. "(#24)" already
+	// appended by auto_increment), causing it to be doubled on resume.
+	payloadUri := originalPayloadUri
+	if payloadUri == "" {
+		// Fallback: upload current payload if no pre-enrichment URI is available.
+		if o.storage != nil && o.bucketName != "" {
+			payloadPath := fmt.Sprintf("payloads/%s/%s.json", payload.UserId, waitErr.ActivityID)
+			payloadBytes, err := protojson.Marshal(payload)
+			if err != nil {
+				logger.Warn("Failed to marshal payload for GCS", "error", err)
+			} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
+				logger.Warn("Failed to upload payload to GCS", "error", err)
+			} else {
+				payloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
+				logger.Debug("Uploaded payload to GCS", "uri", payloadUri)
+			}
 		}
 	}
 
