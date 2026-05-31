@@ -589,27 +589,21 @@ func (s *FirestoreStore) ListRecentRoundups(ctx context.Context, slug string, li
 }
 
 func (s *FirestoreStore) ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error) {
-	iter := s.entryCollectionRef(userID).
-		Where("start_time", ">=", from).
-		Where("start_time", "<", to).
-		OrderBy("start_time", firestore.Desc).
-		Documents(ctx)
-	defer iter.Stop()
-
+	// start_time is stored as a protojson RFC3339 string, not a Firestore Timestamp,
+	// so range queries against time.Time values don't work. Load all entries and filter in Go.
+	all, err := s.ListShowcaseProfileEntries(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 	var entries []*pbactivity.ShowcaseProfileEntry
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
+	for _, e := range all {
+		if e.StartTime == nil {
+			continue
 		}
-		if err != nil {
-			return nil, err
+		t := e.StartTime.AsTime()
+		if !t.Before(from) && t.Before(to) {
+			entries = append(entries, e)
 		}
-		var entry pbactivity.ShowcaseProfileEntry
-		if err := decodeProtoMap(doc.Data(), &entry); err != nil {
-			return nil, err
-		}
-		entries = append(entries, &entry)
 	}
 	return entries, nil
 }
