@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.30.1](https://github.com/FitGlue/server/compare/v16.30.0...v16.30.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* **goal-tracker:** correct month-end arithmetic in period key test ([e5b84b8](https://github.com/FitGlue/server/commit/e5b84b8e1813cd8297276804d562c4e52ec71b8e))
+* **terraform:** grant run.invoker to activity SA for Pub/Sub push ([b9caf76](https://github.com/FitGlue/server/commit/b9caf765bab39732149f8cc37cee4c40377ec1ad))
+
 ## [16.30.0](https://github.com/FitGlue/server/compare/v16.29.0...v16.30.0) (2026-05-31)
 
 
