@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.32.0](https://github.com/FitGlue/server/compare/v16.31.0...v16.32.0) (2026-05-31)
+
+
+### Features
+
+* **billing:** automated trial expiry email notifications ([28cba90](https://github.com/FitGlue/server/commit/28cba9033a09af6ac154660fbb0900c9112ed108))
+* **billing:** email notification system for billing events ([151af61](https://github.com/FitGlue/server/commit/151af61edda14d11c45c04eec1e8f7cc59d3fc06))
+* **email:** templates for all notification types and access-granted ([e6346eb](https://github.com/FitGlue/server/commit/e6346ebdd6a234754456311c43cbc2573e5e4a16))
+* **parkrun:** rebuild parkrun-fetcher Playwright service ([a0a4ee1](https://github.com/FitGlue/server/commit/a0a4ee1743144e9e2c2cd3d1aa8d77b6ca4c74f7))
+
+
+### Bug Fixes
+
+* **api-admin:** use snake_case is_admin field when checking admin status ([1ad7e50](https://github.com/FitGlue/server/commit/1ad7e5030199b64aecde463b3b62789fc10e8a75))
+* **ci:** include src/typescript in workspace for parkrun-fetcher build ([0f24352](https://github.com/FitGlue/server/commit/0f24352a6ffd2b722a029e85ddc96e26bc03f0d9))
+
 ## [16.31.0](https://github.com/FitGlue/server/compare/v16.30.5...v16.31.0) (2026-05-31)
 
 
