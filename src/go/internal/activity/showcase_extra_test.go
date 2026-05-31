@@ -16,7 +16,7 @@ import (
 )
 
 func newTestService(store ActivityStore, blob BlobStore) *Service {
-	return NewService(store, blob, nil, "test-bucket", "test-showcase-bucket", infra.NewLogger())
+	return NewService(store, blob, nil, "test-bucket", "test-showcase-bucket", infra.NewLogger(, nil))
 }
 
 // ------- GetShowcasePreferences -------

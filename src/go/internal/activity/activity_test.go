@@ -43,7 +43,7 @@ func TestGetActivity(t *testing.T) {
 		},
 	}
 
-	svc := NewService(store, blobStore, nil, "test-bucket", "test-showcase-bucket", logger)
+	svc := NewService(store, blobStore, nil, "test-bucket", "test-showcase-bucket", logger, nil)
 
 	// Test Found Activity
 	res, err := svc.GetActivity(ctx, &pbsvc.GetActivityRequest{UserId: "u1", ActivityId: "a1"})
@@ -89,7 +89,7 @@ func TestDeleteActivity(t *testing.T) {
 		},
 	}
 
-	svc := NewService(store, blobStore, nil, "test-bucket", "test-showcase-bucket", logger)
+	svc := NewService(store, blobStore, nil, "test-bucket", "test-showcase-bucket", logger, nil)
 
 	_, err := svc.DeleteActivity(ctx, &pbsvc.DeleteActivityRequest{UserId: "u1", ActivityId: "a1"})
 	if err != nil {

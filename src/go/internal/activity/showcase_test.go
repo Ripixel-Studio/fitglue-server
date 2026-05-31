@@ -32,7 +32,7 @@ func TestShowcaseOffloading(t *testing.T) {
 		},
 	}
 
-	svc := NewService(store, blobStore, nil, "test-bucket", "test-showcase-bucket", logger)
+	svc := NewService(store, blobStore, nil, "test-bucket", "test-showcase-bucket", logger, nil)
 
 	req := &pbsvc.CreateShowcaseRequest{
 		UserId: "u1",
