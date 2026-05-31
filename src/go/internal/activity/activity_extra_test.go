@@ -22,7 +22,7 @@ func (p *cloudEventsPublisher) PublishCloudEvent(_ context.Context, _ string, _ 
 }
 
 func newTestSvc(store *MockActivityStore, blob *MockBlobStore) *Service {
-	return NewService(store, blob, &cloudEventsPublisher{}, "test-bucket", "test-showcase-bucket", infra.NewLogger())
+	return NewService(store, blob, &cloudEventsPublisher{}, "test-bucket", "test-showcase-bucket", infra.NewLogger(), nil)
 }
 
 func TestGetActivity_Validation(t *testing.T) {
