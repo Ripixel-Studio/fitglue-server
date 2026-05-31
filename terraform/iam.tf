@@ -1,6 +1,6 @@
 locals {
-  firestore_services = ["user", "billing", "pipeline", "activity", "registry", "api-admin", "destination", "api-client"]
-  pubsub_publishers  = ["api-webhook", "pipeline", "activity", "api-client"]
+  firestore_services = ["user", "billing", "pipeline", "activity", "registry", "api-admin", "destination", "api-client", "notification"]
+  pubsub_publishers  = ["api-webhook", "pipeline", "activity", "api-client", "destination"]
   secret_accessors   = ["api-client", "user", "billing", "pipeline", "activity", "destination", "registry", "api-webhook"]
   storage_services   = ["activity", "pipeline", "destination"]
 }
@@ -36,7 +36,7 @@ resource "google_project_iam_member" "cr_storage_admin" {
 resource "google_project_iam_member" "cr_fcm_admin" {
   project = var.project_id
   role    = "roles/firebasecloudmessaging.admin"
-  member  = "serviceAccount:${google_service_account.cloud_run_sa["destination"].email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["notification"].email}"
 }
 
 # Firebase Auth Admin - allows get/delete user

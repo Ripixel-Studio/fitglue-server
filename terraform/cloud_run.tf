@@ -956,7 +956,7 @@ resource "google_cloud_run_v2_service_iam_member" "destination_to_activity" {
 # Pub/Sub push subscriptions use OIDC tokens with each service's own SA,
 # so the SA needs run.invoker on itself to authenticate the push.
 locals {
-  pubsub_push_targets = ["pipeline", "destination", "activity"]
+  pubsub_push_targets = ["pipeline", "destination", "activity", "notification"]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "pubsub_self_invoke" {
