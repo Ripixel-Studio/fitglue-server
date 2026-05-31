@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.30.5](https://github.com/FitGlue/server/compare/v16.30.4...v16.30.5) (2026-05-31)
+
+
+### Bug Fixes
+
+* **pipeline:** prevent double name-suffix on pending-input resume ([b78be46](https://github.com/FitGlue/server/commit/b78be46bb17866d5649b962ca63ee8f2e3d37b51)), closes [#24](https://github.com/FitGlue/server/issues/24)
+* **terraform:** grant notification SA correct IAM permissions ([2addaef](https://github.com/FitGlue/server/commit/2addaef1c911aa586f26e5e508568e67db0be363))
+* **webhook:** update bounceback check to use standardized activity start time ([12b3eb4](https://github.com/FitGlue/server/commit/12b3eb4fbd2908143ee54b9afa654669ffa6bc06))
+
 ### [16.30.4](https://github.com/FitGlue/server/compare/v16.30.3...v16.30.4) (2026-05-31)
 
 
