@@ -120,7 +120,10 @@ func TestGetPeriodKey(t *testing.T) {
 
 func TestGetPeriodKeyPastActivity(t *testing.T) {
 	now := time.Now()
-	lastMonth := now.AddDate(0, -1, 0)
+	// Subtract from the 1st of the current month to avoid month-end normalisation
+	// (e.g. May 31 - 1 month = Apr 31 → normalised to May 1, still May).
+	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	lastMonth := firstOfMonth.AddDate(0, -1, 0)
 
 	nowKey := getPeriodKey("month", now)
 	pastKey := getPeriodKey("month", lastMonth)
