@@ -45,6 +45,8 @@ func (p *RecoveryAdvisor) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR
 }
 
+func (p *RecoveryAdvisor) IsIdempotent() bool { return false }
+
 func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("recovery_advisor: starting", "activity_name", activity.Name)
 
@@ -194,11 +196,17 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		}
 	}
 
-	// Add today's load, accumulating with any previously stored TRIMP for today
+	// Add today's load, accumulating with any previously stored TRIMP for today.
+	// On a full-pipeline repost the original run already stored the correct value;
+	// use it as-is so we don't double-count this activity's TRIMP.
 	today := now.Format("2006-01-02")
 	todayLoad := trimp
 	if data != nil {
-		todayLoad += providers.ToFloat64(data[today])
+		if inputs["is_repost"] == "true" {
+			todayLoad = providers.ToFloat64(data[today])
+		} else {
+			todayLoad += providers.ToFloat64(data[today])
+		}
 	}
 
 	// Include today in acute and chronic totals
@@ -292,8 +300,9 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		},
 	}
 
-	// Persist today's load + cached result for same-source dedup
-	if p.Service != nil && p.Service.DB != nil {
+	// Persist today's load + cached result for same-source dedup.
+	// Skip on full-pipeline repost: today's TRIMP was already accumulated on the original run.
+	if p.Service != nil && p.Service.DB != nil && inputs["is_repost"] != "true" {
 		metadataMap := make(map[string]interface{})
 		for k, v := range resultMetadata {
 			metadataMap[k] = v

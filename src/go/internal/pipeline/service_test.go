@@ -146,6 +146,8 @@ func (m *MockPublisher) PublishCloudEvent(ctx context.Context, topic string, ce 
 	return fmt.Sprintf("msg_%d", len(m.PublishedEvents)), nil
 }
 
+func (m *MockPublisher) PublishJSON(_ context.Context, _ string, _ []byte) error { return nil }
+
 // MockBlobStore
 type MockBlobStore struct {
 	Blobs   map[string][]byte

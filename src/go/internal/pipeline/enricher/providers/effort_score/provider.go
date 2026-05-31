@@ -66,6 +66,8 @@ func (p *EffortScore) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE
 }
 
+func (p *EffortScore) IsIdempotent() bool { return false }
+
 func (p *EffortScore) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("effort_score: starting", "activity_name", activity.Name)
 
@@ -129,8 +131,14 @@ func (p *EffortScore) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	if len(history) < minHistory {
 		logger.Debug("effort_score: insufficient history, skipping", "count", len(history))
 
-		// Still persist the current activity to build history (no dedup fields — nothing to cache yet)
-		p.persistHistory(ctx, logger, user.UserId, history, current, nil)
+		// Persist the current activity to build history. Write last_external_id so that a
+		// re-run of this bootstrap-phase activity is detected by the dedup guard above and
+		// doesn't append a duplicate entry to the history array.
+		bootstrapExtra := map[string]interface{}{}
+		if externalId != "" {
+			bootstrapExtra["last_external_id"] = externalId
+		}
+		p.persistHistory(ctx, logger, user.UserId, history, current, bootstrapExtra)
 
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{

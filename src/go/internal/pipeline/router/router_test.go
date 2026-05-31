@@ -88,6 +88,8 @@ func (m *mockRouterPublisher) PublishCloudEvent(_ context.Context, _ string, _ e
 	return "msg-id", nil
 }
 
+func (m *mockRouterPublisher) PublishJSON(_ context.Context, _ string, _ []byte) error { return nil }
+
 var _ pipeline.Publisher = (*mockRouterPublisher)(nil)
 
 type mockBlobStore struct {

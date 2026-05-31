@@ -107,3 +107,18 @@ type DeferrableProvider interface {
 	// ShouldDefer returns true if this provider should be deferred to Phase 2.
 	ShouldDefer() bool
 }
+
+// NonIdempotentProvider marks an enricher whose side-effects must not repeat
+// within the same pipeline execution. When the orchestrator detects a resume
+// and finds this enricher already completed in the stored execution journal,
+// it skips the enricher call and replays the previously-stored mutations onto
+// currentActivity instead.
+//
+// Implement this on any enricher that writes persistent state (counters,
+// accumulated totals, external API calls with side-effects, etc.).
+type NonIdempotentProvider interface {
+	Provider
+	// IsIdempotent returns false, signalling the orchestrator to skip and
+	// replay this enricher rather than re-executing it on resume.
+	IsIdempotent() bool
+}

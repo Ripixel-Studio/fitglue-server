@@ -41,6 +41,8 @@ func (p *StreakTracker) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER
 }
 
+func (p *StreakTracker) IsIdempotent() bool { return false }
+
 func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("streak_tracker: starting", "activity_name", activity.Name)
 

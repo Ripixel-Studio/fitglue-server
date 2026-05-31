@@ -92,6 +92,8 @@ func (m *mockSplitterPublisher) PublishCloudEvent(_ context.Context, _ string, e
 	return "msg-id", nil
 }
 
+func (m *mockSplitterPublisher) PublishJSON(_ context.Context, _ string, _ []byte) error { return nil }
+
 var _ pipeline.Publisher = (*mockSplitterPublisher)(nil)
 
 // mockLogger implements infra.Logger with all required methods

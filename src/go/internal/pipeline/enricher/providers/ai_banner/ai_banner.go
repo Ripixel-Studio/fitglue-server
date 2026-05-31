@@ -54,6 +54,8 @@ func (p *AIBannerProvider) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER
 }
 
+func (p *AIBannerProvider) IsIdempotent() bool { return false }
+
 func (p *AIBannerProvider) ShouldDefer() bool {
 	return true
 }
@@ -114,6 +116,29 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 				"status_detail": "GEMINI_API_KEY environment variable not set",
 			},
 		}, nil
+	}
+
+	// Repost cache: return stored banner URL instead of calling Imagen again.
+	externalId := inputs["external_id"]
+	if inputs["is_repost"] == "true" && externalId != "" && p.Service != nil && p.Service.DB != nil {
+		if data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, "ai_banner"); err == nil && data != nil {
+			if cached, ok := data["cached_external_id"].(string); ok && cached == externalId {
+				if cachedURL, ok := data["cached_banner_url"].(string); ok && cachedURL != "" {
+					logger.Info("AI Banner: returning cached result for repost", "external_id", externalId)
+					return &providers.EnrichmentResult{
+						Metadata: map[string]string{
+							"status":          "success",
+							"asset_ai_banner": cachedURL,
+							"style":           style,
+							"cache":           "hit",
+						},
+						Enrichments: &pbactivity.ActivityEnrichments{
+							AiBanner: &pbactivity.AiBanner{ImageUrl: cachedURL},
+						},
+					}, nil
+				}
+			}
+		}
 	}
 
 	// Step 1: Build activity context (structured data)
@@ -181,6 +206,14 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 		"banner_url", bannerURL,
 		"style", style,
 	)
+
+	// Cache result so reposts don't re-call Imagen.
+	if externalId != "" && p.Service != nil && p.Service.DB != nil {
+		_ = p.Service.DB.SetBoosterData(ctx, user.UserId, "ai_banner", map[string]interface{}{
+			"cached_external_id": externalId,
+			"cached_banner_url":  bannerURL,
+		})
+	}
 
 	return &providers.EnrichmentResult{
 		Metadata: map[string]string{

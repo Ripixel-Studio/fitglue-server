@@ -42,6 +42,8 @@ func (p *AutoIncrementProvider) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT
 }
 
+func (p *AutoIncrementProvider) IsIdempotent() bool { return false }
+
 func (p *AutoIncrementProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("auto_increment: starting",
 		"activity_name", activity.Name,

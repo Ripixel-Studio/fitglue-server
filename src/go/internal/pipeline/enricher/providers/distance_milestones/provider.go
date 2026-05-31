@@ -40,6 +40,8 @@ func (p *DistanceMilestones) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES
 }
 
+func (p *DistanceMilestones) IsIdempotent() bool { return false }
+
 // Milestone thresholds in km
 var milestones = []float64{100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000}
 
@@ -174,8 +176,9 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 		resultMetadata["next_milestone"] = fmt.Sprintf("%.0f", nextMilestone)
 	}
 
-	// Persist state + cached result for same-source dedup
-	if p.Service != nil && p.Service.DB != nil {
+	// Persist state + cached result for same-source dedup.
+	// Skip on full-pipeline repost: the lifetime total was already updated on the original run.
+	if p.Service != nil && p.Service.DB != nil && inputs["is_repost"] != "true" {
 		// Convert metadata to interface map for Firestore
 		metadataMap := make(map[string]interface{})
 		for k, v := range resultMetadata {

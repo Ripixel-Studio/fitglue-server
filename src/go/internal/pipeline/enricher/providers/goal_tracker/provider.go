@@ -44,6 +44,8 @@ func (p *GoalTracker) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER
 }
 
+func (p *GoalTracker) IsIdempotent() bool { return false }
+
 func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("goal_tracker: starting", "activity_name", activity.Name)
 
@@ -178,9 +180,9 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		"goal_metric":      metric,
 	}
 
-	// Only persist state for current-period activities. Saving a backdated activity's period key
-	// would overwrite the stored data for the current period, wiping progress for current-period activities.
-	if p.Service != nil && p.Service.DB != nil && activityValue > 0 && isCurrentPeriod {
+	// Only persist state for current-period activities, and never on a full-pipeline repost
+	// (the accumulated total was already written on the original run; re-adding would double-count).
+	if p.Service != nil && p.Service.DB != nil && activityValue > 0 && isCurrentPeriod && inputs["is_repost"] != "true" {
 		metadataMap := make(map[string]interface{})
 		for k, v := range resultMetadata {
 			metadataMap[k] = v

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -213,18 +214,26 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	pipelineExecutionID := basePipelineExecutionID
 	logger.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
 
-	// Guard against Pub/Sub redelivery after the user cancelled the pipeline run.
-	// Without this, the enricher chain runs again, the user_input provider errors on
-	// the now-completed (but data-less) pending input, and a false "Enricher failed"
-	// notification fires.
-	if run, runErr := o.database.GetPipelineRun(ctx, payload.UserId, pipelineExecutionID); runErr == nil && run != nil {
-		if run.Status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED {
+	// Load the existing pipeline run once. Used to:
+	//  (a) guard against re-running a cancelled pipeline (Pub/Sub redelivery)
+	//  (b) build the replay journal for non-idempotent enrichers on resume
+	completedJournal := map[string]map[string]string{} // provider name → replay metadata
+	if existingRun, runErr := o.database.GetPipelineRun(ctx, payload.UserId, pipelineExecutionID); runErr == nil && existingRun != nil {
+		if existingRun.Status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED {
 			logger.Info("Pipeline run already cancelled — skipping enrichment", "pipeline_execution_id", pipelineExecutionID)
 			return &ProcessResult{
 				Events:             []*pbevents.EnrichedActivityEvent{},
 				ProviderExecutions: nil,
 				Status:             pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED,
 			}, nil
+		}
+		if isResumeMode {
+			for _, b := range existingRun.GetBoosters() {
+				if b.GetMetadata()["replay_completed"] == "true" {
+					completedJournal[b.GetProviderName()] = b.GetMetadata()
+				}
+			}
+			logger.Info("Resume mode: loaded enricher journal", "completed_count", len(completedJournal))
 		}
 	}
 
@@ -359,7 +368,46 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			continue
 		}
 
-		// 3a.1 Resume Mode: Skip enrichers not in the resume list
+		// 3a.1 Resume Mode: replay non-idempotent enrichers that already completed.
+		// This prevents stateful side-effects (counter increments, accumulated totals,
+		// external API calls) from running twice when a pipeline resumes after a
+		// WaitForInputError. Pure/idempotent enrichers are not in completedJournal and
+		// will run normally.
+		if isResumeMode {
+			if replayMeta, alreadyRan := completedJournal[provider.Name()]; alreadyRan {
+				if ni, ok := provider.(providers.NonIdempotentProvider); ok && !ni.IsIdempotent() {
+					if v := replayMeta["replay_name"]; v != "" {
+						currentActivity.Name = v
+					}
+					if v := replayMeta["replay_name_suffix"]; v != "" {
+						currentActivity.Name += v
+					}
+					if v := replayMeta["replay_activity_type"]; v != "" {
+						if n, err := strconv.ParseInt(v, 10, 32); err == nil && n != 0 {
+							currentActivity.Type = pbactivity.ActivityType(int32(n))
+						}
+					}
+					if v := replayMeta["replay_tags"]; v != "" {
+						var tags []string
+						if json.Unmarshal([]byte(v), &tags) == nil && len(tags) > 0 {
+							currentActivity.Tags = append(currentActivity.Tags, tags...)
+						}
+					}
+					if v := replayMeta["replay_description"]; v != "" {
+						descriptionSlots[i+1] = v
+					}
+					providerExecutions = append(providerExecutions, ProviderExecution{
+						ProviderName: provider.Name(),
+						Status:       "REPLAYED",
+						Metadata:     replayMeta,
+					})
+					logger.Info("Resume mode: replayed non-idempotent enricher", "provider", provider.Name())
+					continue
+				}
+			}
+		}
+
+		// 3a.2 Resume Mode: Skip enrichers not in the resume list
 		if isResumeMode && len(resumeOnlyEnrichers) > 0 {
 			shouldRun := false
 			for _, allowedName := range resumeOnlyEnrichers {
@@ -406,8 +454,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 		enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 		enricherConfig["pipeline_id"] = pipeline.ID
-		enricherConfig["activity_id"] = activityId                      // For pending input linking
-		enricherConfig["external_id"] = currentActivity.GetExternalId() // For same-source dedup
+		enricherConfig["activity_id"] = activityId                           // For pending input linking
+		enricherConfig["external_id"] = currentActivity.GetExternalId()      // For same-source dedup
+		enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost)   // For repost guards
 
 		// Clear stale pending inputs when re-running (not resuming)
 		// This allows users to provide different input on a fresh re-run.
@@ -583,7 +632,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 
 		pe.Status = "SUCCESS"
-		pe.Metadata = res.Metadata
+		pe.Metadata = buildBoosterMetadata(res, provider)
 		results[i] = res
 		providerExecutions = append(providerExecutions, pe)
 
@@ -763,7 +812,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 			enricherConfig["pipeline_id"] = pipeline.ID
 			enricherConfig["activity_id"] = activityId
-			enricherConfig["enriched_description"] = phase1Description // Phase 2 context injection
+			enricherConfig["enriched_description"] = phase1Description               // Phase 2 context injection
+			enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost)       // For repost guards
 
 			// Execute
 			providerLogger := logger.With("provider", provider.Name(), "phase", "deferred")
@@ -1538,6 +1588,39 @@ func boostersToFirestoreMaps(providerExecs []ProviderExecution) []map[string]int
 		boosters = append(boosters, booster)
 	}
 	return boosters
+}
+
+// buildBoosterMetadata returns the metadata map to store in a ProviderExecution on success.
+// For non-idempotent providers it appends replay_* keys so the orchestrator can skip and
+// replay the enricher's mutations if the pipeline is resumed later.
+func buildBoosterMetadata(res *providers.EnrichmentResult, provider providers.Provider) map[string]string {
+	m := make(map[string]string)
+	for k, v := range res.Metadata {
+		m[k] = v
+	}
+	ni, isNonIdempotent := provider.(providers.NonIdempotentProvider)
+	if !isNonIdempotent || ni.IsIdempotent() {
+		return m
+	}
+	m["replay_completed"] = "true"
+	if res.NameSuffix != "" {
+		m["replay_name_suffix"] = res.NameSuffix
+	}
+	if res.Name != "" {
+		m["replay_name"] = res.Name
+	}
+	if trimmed := strings.TrimSpace(res.Description); trimmed != "" {
+		m["replay_description"] = trimmed
+	}
+	if res.ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+		m["replay_activity_type"] = strconv.Itoa(int(res.ActivityType))
+	}
+	if len(res.Tags) > 0 {
+		if tagsJSON, err := json.Marshal(res.Tags); err == nil {
+			m["replay_tags"] = string(tagsJSON)
+		}
+	}
+	return m
 }
 
 // buildPendingInputStatusMessage creates a user-friendly status message for pending input.

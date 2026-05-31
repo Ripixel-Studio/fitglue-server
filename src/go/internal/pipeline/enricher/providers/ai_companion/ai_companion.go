@@ -45,6 +45,8 @@ func (p *AICompanionProvider) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION
 }
 
+func (p *AICompanionProvider) IsIdempotent() bool { return false }
+
 func (p *AICompanionProvider) ShouldDefer() bool {
 	return true
 }
@@ -98,6 +100,26 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 		}, nil
 	}
 
+	// Repost cache: return stored result instead of calling Gemini again.
+	externalId := inputs["external_id"]
+	if inputs["is_repost"] == "true" && externalId != "" && p.Service != nil && p.Service.DB != nil {
+		if data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, "ai_companion"); err == nil && data != nil {
+			if cached, ok := data["cached_external_id"].(string); ok && cached == externalId {
+				cachedDesc, _ := data["cached_description"].(string)
+				cachedName, _ := data["cached_name"].(string)
+				logger.Info("AI Companion: returning cached result for repost", "external_id", externalId)
+				return &providers.EnrichmentResult{
+					Name:        cachedName,
+					Description: cachedDesc,
+					Metadata:    map[string]string{"status": "success", "mode": mode, "cache": "hit"},
+					Enrichments: &pbactivity.ActivityEnrichments{
+						AiSummary: &pbactivity.AiSummary{Html: cachedDesc},
+					},
+				}, nil
+			}
+		}
+	}
+
 	// Generate content using Gemini
 	result, err := p.generateWithGemini(ctx, apiKey, mode, activityContext)
 	if err != nil {
@@ -120,6 +142,15 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 		"has_title", result.Title != "",
 		"has_description", result.Description != "",
 	)
+
+	// Cache result so reposts don't re-call Gemini.
+	if externalId != "" && p.Service != nil && p.Service.DB != nil {
+		_ = p.Service.DB.SetBoosterData(ctx, user.UserId, "ai_companion", map[string]interface{}{
+			"cached_external_id":  externalId,
+			"cached_description": result.Description,
+			"cached_name":        result.Title,
+		})
+	}
 
 	return &providers.EnrichmentResult{
 		Name:        result.Title,
