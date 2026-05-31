@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.30.4](https://github.com/FitGlue/server/compare/v16.30.3...v16.30.4) (2026-05-31)
+
+
+### Bug Fixes
+
+* **api-public:** register and implement roundup endpoints ([1268a80](https://github.com/FitGlue/server/commit/1268a8057143bc47fcb3bb5962e1229a3fa63b31))
+
 ### [16.30.3](https://github.com/FitGlue/server/compare/v16.30.2...v16.30.3) (2026-05-31)
 
 
