@@ -49,6 +49,7 @@ jobs:
             # Only ship what the deploy job needs — not node_modules, coverage, etc.
             - Dockerfile
             - src/go
+            - src/typescript
             - terraform
             - Makefile
 
