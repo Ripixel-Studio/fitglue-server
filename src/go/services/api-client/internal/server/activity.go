@@ -42,6 +42,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Delete("/users/me/showcase-management/profile/entries/{showcaseId}", s.handleRemoveShowcaseEntry)
 	r.Post("/users/me/showcase-management/profile/picture", s.handleGetShowcaseProfilePictureUploadUrl)
 	r.Post("/users/me/activity-photos/upload-url", s.handleGetActivityPhotoUploadUrl)
+	r.Put("/users/me/showcase-management/roundup-settings", s.handleUpdateRoundupSettings)
 	r.Get("/users/me/exercise-library", s.handleGetExerciseLibrary)
 }
 
@@ -537,6 +538,37 @@ func (s *APIServer) handleGetActivityPhotoUploadUrl(w http.ResponseWriter, r *ht
 	reqBody.UserId = token.UID
 
 	res, err := s.activitySvc.GetActivityPhotoUploadUrl(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleUpdateRoundupSettings(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	var settings pbactivitym.RoundupSettings
+	if err := protoUnmarshaler.Unmarshal(body, &settings); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	res, err := s.activitySvc.UpdateRoundupSettings(r.Context(), &activitypb.UpdateRoundupSettingsRequest{
+		UserId:   token.UID,
+		Settings: &settings,
+	})
 	if err != nil {
 		WriteError(w, err)
 		return
