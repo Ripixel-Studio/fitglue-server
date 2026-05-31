@@ -166,7 +166,6 @@ func (x *RoundupActivityTypeBreakdown) GetTotalReps() int32 {
 	return 0
 }
 
-// ShowcaseRoundup is a period-aggregated training summary stored as a public snapshot.
 type ShowcaseRoundup struct {
 	state                    protoimpl.MessageState          `protogen:"open.v1"`
 	RoundupId                string                          `protobuf:"bytes,1,opt,name=roundup_id,json=roundupId,proto3" json:"roundup_id,omitempty"`

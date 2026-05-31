@@ -1450,7 +1450,6 @@ components:
                     type: string
                 ownerProfileSlug:
                     type: string
-            description: ShowcaseRoundup is a period-aggregated training summary stored as a public snapshot.
         ShowcaseTheme:
             type: object
             properties:
