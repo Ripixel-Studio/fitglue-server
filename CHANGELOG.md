@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.32.1](https://github.com/FitGlue/server/compare/v16.32.0...v16.32.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* **parkrun-fetcher:** bump Playwright to v1.60.0 and pin npm package ([64a4242](https://github.com/FitGlue/server/commit/64a424212042fdf852c3823cdb056910f2abe3a6))
+
 ## [16.32.0](https://github.com/FitGlue/server/compare/v16.31.0...v16.32.0) (2026-05-31)
 
 
