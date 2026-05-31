@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.58.0-jammy AS builder
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.58.0-jammy
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy
 
 WORKDIR /app
 
