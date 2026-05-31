@@ -344,6 +344,9 @@ func (s *APIServer) handleUpdateNotificationPrefs(w http.ResponseWriter, r *http
 	if update.ShowcaseRoundup != nil {
 		current.ShowcaseRoundup = update.ShowcaseRoundup
 	}
+	if update.PipelineCancelled != nil {
+		current.PipelineCancelled = update.PipelineCancelled
+	}
 
 	res, err := s.userService.UpdateNotificationPrefs(r.Context(), &userpb.UpdateNotificationPrefsRequest{
 		UserId: token.UID,

@@ -196,6 +196,8 @@ func activeChannels(prefs *pbuser.NotificationPreferences, t pbnotification.Noti
 		typePref = prefs.GetConnectionAction()
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_SHOWCASE_ROUNDUP:
 		typePref = prefs.GetShowcaseRoundup()
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED:
+		typePref = prefs.GetPipelineCancelled()
 	}
 	if typePref == nil {
 		return []pbuser.NotificationChannel{pbuser.NotificationChannel_NOTIFICATION_CHANNEL_PUSH}
@@ -216,6 +218,8 @@ func notificationTypeString(t pbnotification.NotificationType) string {
 		return "CONNECTION_ACTION"
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_SHOWCASE_ROUNDUP:
 		return "SHOWCASE_ROUNDUP"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED:
+		return "PIPELINE_CANCELLED"
 	default:
 		return "UNKNOWN"
 	}

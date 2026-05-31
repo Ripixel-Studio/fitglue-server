@@ -2985,6 +2985,8 @@ components:
                     $ref: '#/components/schemas/NotificationTypePreference'
                 showcaseRoundup:
                     $ref: '#/components/schemas/NotificationTypePreference'
+                pipelineCancelled:
+                    $ref: '#/components/schemas/NotificationTypePreference'
         NotificationTypePreference:
             type: object
             properties:

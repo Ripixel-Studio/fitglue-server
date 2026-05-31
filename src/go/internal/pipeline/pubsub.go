@@ -1,13 +1,6 @@
 package pipeline
 
-import (
-	"context"
+import shared "github.com/fitglue/server/src/go/pkg"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-)
-
-// Publisher defines the contract for publishing events (e.g., to Pub/Sub).
-type Publisher interface {
-	// PublishCloudEvent publishes a CloudEvent to a specific topic and returns the message ID.
-	PublishCloudEvent(ctx context.Context, topic string, ce cloudevents.Event) (string, error)
-}
+// Publisher is the shared Publisher interface (CloudEvent + JSON publishing).
+type Publisher = shared.Publisher

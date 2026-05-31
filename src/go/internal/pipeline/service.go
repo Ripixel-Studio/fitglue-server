@@ -11,9 +11,11 @@ import (
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	"github.com/fitglue/server/src/go/pkg/notificationpub"
 	"github.com/fitglue/server/src/go/pkg/sourceplugins"
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
@@ -348,6 +350,7 @@ func (s *Service) CancelPipeline(ctx context.Context, req *pbsvc.CancelPipelineR
 		return nil, status.Error(codes.Internal, "failed to update pending input")
 	}
 
+	s.enqueueCancelledNotification(ctx, req.UserId)
 	return &emptypb.Empty{}, nil
 }
 
@@ -385,7 +388,22 @@ func (s *Service) CancelPipelineRun(ctx context.Context, req *pbsvc.CancelPipeli
 		}
 	}
 
+	s.enqueueCancelledNotification(ctx, req.UserId)
 	return &emptypb.Empty{}, nil
+}
+
+// enqueueCancelledNotification sends a PIPELINE_CANCELLED notification to the user.
+// Best-effort — a publish failure is logged but does not fail the cancel operation.
+func (s *Service) enqueueCancelledNotification(ctx context.Context, userID string) {
+	req := &pbnotification.NotificationRequest{
+		UserId: userID,
+		Type:   pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED,
+		Title:  "Pipeline Cancelled",
+		Body:   "Your activity pipeline was cancelled.",
+	}
+	if err := notificationpub.Enqueue(ctx, s.publisher, req); err != nil {
+		s.logger.Warn(ctx, "Failed to enqueue pipeline cancelled notification", "error", err, "user_id", userID)
+	}
 }
 
 func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityRequest) (*emptypb.Empty, error) {

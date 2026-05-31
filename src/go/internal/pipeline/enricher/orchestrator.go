@@ -213,6 +213,21 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	pipelineExecutionID := basePipelineExecutionID
 	logger.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
 
+	// Guard against Pub/Sub redelivery after the user cancelled the pipeline run.
+	// Without this, the enricher chain runs again, the user_input provider errors on
+	// the now-completed (but data-less) pending input, and a false "Enricher failed"
+	// notification fires.
+	if run, runErr := o.database.GetPipelineRun(ctx, payload.UserId, pipelineExecutionID); runErr == nil && run != nil {
+		if run.Status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED {
+			logger.Info("Pipeline run already cancelled — skipping enrichment", "pipeline_execution_id", pipelineExecutionID)
+			return &ProcessResult{
+				Events:             []*pbevents.EnrichedActivityEvent{},
+				ProviderExecutions: nil,
+				Status:             pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED,
+			}, nil
+		}
+	}
+
 	// Pre-generate ActivityId so enrichers can use it for pending input linking
 	// In resume mode, use the provided ActivityId; otherwise generate a new one
 	var activityId string

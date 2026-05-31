@@ -703,10 +703,11 @@ func defaultNotificationPreferences() *pbuser.NotificationPreferences {
 		Channels: []pbuser.NotificationChannel{pbuser.NotificationChannel_NOTIFICATION_CHANNEL_PUSH},
 	}
 	return &pbuser.NotificationPreferences{
-		PendingInput:     push,
-		PipelineSuccess:  push,
-		PipelineFailure:  push,
-		ConnectionAction: push,
-		ShowcaseRoundup:  push,
+		PendingInput:      push,
+		PipelineSuccess:   push,
+		PipelineFailure:   push,
+		ConnectionAction:  push,
+		ShowcaseRoundup:   push,
+		PipelineCancelled: push,
 	}
 }

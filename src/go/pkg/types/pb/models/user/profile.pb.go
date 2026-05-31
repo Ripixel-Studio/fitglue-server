@@ -333,14 +333,15 @@ func (x *NotificationTypePreference) GetChannels() []NotificationChannel {
 }
 
 type NotificationPreferences struct {
-	state            protoimpl.MessageState      `protogen:"open.v1"`
-	PendingInput     *NotificationTypePreference `protobuf:"bytes,1,opt,name=pending_input,json=pendingInput,proto3" json:"pending_input,omitempty"`
-	PipelineSuccess  *NotificationTypePreference `protobuf:"bytes,2,opt,name=pipeline_success,json=pipelineSuccess,proto3" json:"pipeline_success,omitempty"`
-	PipelineFailure  *NotificationTypePreference `protobuf:"bytes,3,opt,name=pipeline_failure,json=pipelineFailure,proto3" json:"pipeline_failure,omitempty"`
-	ConnectionAction *NotificationTypePreference `protobuf:"bytes,4,opt,name=connection_action,json=connectionAction,proto3" json:"connection_action,omitempty"`
-	ShowcaseRoundup  *NotificationTypePreference `protobuf:"bytes,5,opt,name=showcase_roundup,json=showcaseRoundup,proto3" json:"showcase_roundup,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state             protoimpl.MessageState      `protogen:"open.v1"`
+	PendingInput      *NotificationTypePreference `protobuf:"bytes,1,opt,name=pending_input,json=pendingInput,proto3" json:"pending_input,omitempty"`
+	PipelineSuccess   *NotificationTypePreference `protobuf:"bytes,2,opt,name=pipeline_success,json=pipelineSuccess,proto3" json:"pipeline_success,omitempty"`
+	PipelineFailure   *NotificationTypePreference `protobuf:"bytes,3,opt,name=pipeline_failure,json=pipelineFailure,proto3" json:"pipeline_failure,omitempty"`
+	ConnectionAction  *NotificationTypePreference `protobuf:"bytes,4,opt,name=connection_action,json=connectionAction,proto3" json:"connection_action,omitempty"`
+	ShowcaseRoundup   *NotificationTypePreference `protobuf:"bytes,5,opt,name=showcase_roundup,json=showcaseRoundup,proto3" json:"showcase_roundup,omitempty"`
+	PipelineCancelled *NotificationTypePreference `protobuf:"bytes,6,opt,name=pipeline_cancelled,json=pipelineCancelled,proto3" json:"pipeline_cancelled,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *NotificationPreferences) Reset() {
@@ -404,6 +405,13 @@ func (x *NotificationPreferences) GetConnectionAction() *NotificationTypePrefere
 func (x *NotificationPreferences) GetShowcaseRoundup() *NotificationTypePreference {
 	if x != nil {
 		return x.ShowcaseRoundup
+	}
+	return nil
+}
+
+func (x *NotificationPreferences) GetPipelineCancelled() *NotificationTypePreference {
+	if x != nil {
+		return x.PipelineCancelled
 	}
 	return nil
 }
@@ -596,13 +604,14 @@ const file_models_user_profile_proto_rawDesc = "" +
 	"\x14_current_streak_daysB\x16\n" +
 	"\x14_longest_streak_days\"b\n" +
 	"\x1aNotificationTypePreference\x12D\n" +
-	"\bchannels\x18\x01 \x03(\x0e2(.fitglue.models.user.NotificationChannelR\bchannels\"\xe1\x03\n" +
+	"\bchannels\x18\x01 \x03(\x0e2(.fitglue.models.user.NotificationChannelR\bchannels\"\xc1\x04\n" +
 	"\x17NotificationPreferences\x12T\n" +
 	"\rpending_input\x18\x01 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\fpendingInput\x12Z\n" +
 	"\x10pipeline_success\x18\x02 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fpipelineSuccess\x12Z\n" +
 	"\x10pipeline_failure\x18\x03 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fpipelineFailure\x12\\\n" +
 	"\x11connection_action\x18\x04 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x10connectionAction\x12Z\n" +
-	"\x10showcase_roundup\x18\x05 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fshowcaseRoundup\"n\n" +
+	"\x10showcase_roundup\x18\x05 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x0fshowcaseRoundup\x12^\n" +
+	"\x12pipeline_cancelled\x18\x06 \x01(\v2/.fitglue.models.user.NotificationTypePreferenceR\x11pipelineCancelled\"n\n" +
 	"\aCounter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x03R\x05count\x12=\n" +
@@ -667,14 +676,15 @@ var file_models_user_profile_proto_depIdxs = []int32{
 	3,  // 8: fitglue.models.user.NotificationPreferences.pipeline_failure:type_name -> fitglue.models.user.NotificationTypePreference
 	3,  // 9: fitglue.models.user.NotificationPreferences.connection_action:type_name -> fitglue.models.user.NotificationTypePreference
 	3,  // 10: fitglue.models.user.NotificationPreferences.showcase_roundup:type_name -> fitglue.models.user.NotificationTypePreference
-	7,  // 11: fitglue.models.user.Counter.last_updated:type_name -> google.protobuf.Timestamp
-	7,  // 12: fitglue.models.user.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
-	8,  // 13: fitglue.models.user.PersonalRecord.activity_type:type_name -> fitglue.models.activity.ActivityType
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	3,  // 11: fitglue.models.user.NotificationPreferences.pipeline_cancelled:type_name -> fitglue.models.user.NotificationTypePreference
+	7,  // 12: fitglue.models.user.Counter.last_updated:type_name -> google.protobuf.Timestamp
+	7,  // 13: fitglue.models.user.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
+	8,  // 14: fitglue.models.user.PersonalRecord.activity_type:type_name -> fitglue.models.activity.ActivityType
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_models_user_profile_proto_init() }

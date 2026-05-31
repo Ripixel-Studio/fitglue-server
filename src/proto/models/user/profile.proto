@@ -59,6 +59,7 @@ message NotificationPreferences {
   NotificationTypePreference pipeline_failure = 3;
   NotificationTypePreference connection_action = 4;
   NotificationTypePreference showcase_roundup = 5;
+  NotificationTypePreference pipeline_cancelled = 6;
 }
 
 enum UserTier {

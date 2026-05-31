@@ -24,12 +24,13 @@ const (
 type NotificationType int32
 
 const (
-	NotificationType_NOTIFICATION_TYPE_UNSPECIFIED       NotificationType = 0
-	NotificationType_NOTIFICATION_TYPE_PENDING_INPUT     NotificationType = 1
-	NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS  NotificationType = 2
-	NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE  NotificationType = 3
-	NotificationType_NOTIFICATION_TYPE_CONNECTION_ACTION NotificationType = 4
-	NotificationType_NOTIFICATION_TYPE_SHOWCASE_ROUNDUP  NotificationType = 5
+	NotificationType_NOTIFICATION_TYPE_UNSPECIFIED        NotificationType = 0
+	NotificationType_NOTIFICATION_TYPE_PENDING_INPUT      NotificationType = 1
+	NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS   NotificationType = 2
+	NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE   NotificationType = 3
+	NotificationType_NOTIFICATION_TYPE_CONNECTION_ACTION  NotificationType = 4
+	NotificationType_NOTIFICATION_TYPE_SHOWCASE_ROUNDUP   NotificationType = 5
+	NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED NotificationType = 6
 )
 
 // Enum value maps for NotificationType.
@@ -41,14 +42,16 @@ var (
 		3: "NOTIFICATION_TYPE_PIPELINE_FAILURE",
 		4: "NOTIFICATION_TYPE_CONNECTION_ACTION",
 		5: "NOTIFICATION_TYPE_SHOWCASE_ROUNDUP",
+		6: "NOTIFICATION_TYPE_PIPELINE_CANCELLED",
 	}
 	NotificationType_value = map[string]int32{
-		"NOTIFICATION_TYPE_UNSPECIFIED":       0,
-		"NOTIFICATION_TYPE_PENDING_INPUT":     1,
-		"NOTIFICATION_TYPE_PIPELINE_SUCCESS":  2,
-		"NOTIFICATION_TYPE_PIPELINE_FAILURE":  3,
-		"NOTIFICATION_TYPE_CONNECTION_ACTION": 4,
-		"NOTIFICATION_TYPE_SHOWCASE_ROUNDUP":  5,
+		"NOTIFICATION_TYPE_UNSPECIFIED":        0,
+		"NOTIFICATION_TYPE_PENDING_INPUT":      1,
+		"NOTIFICATION_TYPE_PIPELINE_SUCCESS":   2,
+		"NOTIFICATION_TYPE_PIPELINE_FAILURE":   3,
+		"NOTIFICATION_TYPE_CONNECTION_ACTION":  4,
+		"NOTIFICATION_TYPE_SHOWCASE_ROUNDUP":   5,
+		"NOTIFICATION_TYPE_PIPELINE_CANCELLED": 6,
 	}
 )
 
@@ -172,14 +175,15 @@ const file_models_notification_notification_proto_rawDesc = "" +
 	"\x04data\x18\x05 \x03(\v2:.fitglue.models.notification.NotificationRequest.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xfb\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xa5\x02\n" +
 	"\x10NotificationType\x12!\n" +
 	"\x1dNOTIFICATION_TYPE_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fNOTIFICATION_TYPE_PENDING_INPUT\x10\x01\x12&\n" +
 	"\"NOTIFICATION_TYPE_PIPELINE_SUCCESS\x10\x02\x12&\n" +
 	"\"NOTIFICATION_TYPE_PIPELINE_FAILURE\x10\x03\x12'\n" +
 	"#NOTIFICATION_TYPE_CONNECTION_ACTION\x10\x04\x12&\n" +
-	"\"NOTIFICATION_TYPE_SHOWCASE_ROUNDUP\x10\x05BCZAgithub.com/fitglue/server/src/go/pkg/types/pb/models/notificationb\x06proto3"
+	"\"NOTIFICATION_TYPE_SHOWCASE_ROUNDUP\x10\x05\x12(\n" +
+	"$NOTIFICATION_TYPE_PIPELINE_CANCELLED\x10\x06BCZAgithub.com/fitglue/server/src/go/pkg/types/pb/models/notificationb\x06proto3"
 
 var (
 	file_models_notification_notification_proto_rawDescOnce sync.Once
