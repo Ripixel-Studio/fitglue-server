@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.31.0](https://github.com/FitGlue/server/compare/v16.30.5...v16.31.0) (2026-05-31)
+
+
+### Features
+
+* **notifications:** add PIPELINE_CANCELLED notification type ([df68ca9](https://github.com/FitGlue/server/commit/df68ca9b61e7ede6888302a6491de92be7a4ae73))
+
+
+### Bug Fixes
+
+* **pipeline:** add PublishJSON to pipeline test mock publishers ([1fbd348](https://github.com/FitGlue/server/commit/1fbd348f864d52d7b0437159cd01deb6b5b6c5b5))
+
 ### [16.30.5](https://github.com/FitGlue/server/compare/v16.30.4...v16.30.5) (2026-05-31)
 
 
