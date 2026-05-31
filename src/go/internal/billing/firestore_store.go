@@ -107,6 +107,57 @@ func (s *FirestoreStore) UpdateUserTier(ctx context.Context, userID string, tier
 	return err
 }
 
+func (s *FirestoreStore) ListUsersWithTrialsEndingBetween(ctx context.Context, from, to time.Time) ([]TrialUser, error) {
+	iter := s.client.Collection("users").
+		Where("trial_ends_at", ">=", from).
+		Where("trial_ends_at", "<", to).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var users []TrialUser
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		trialEnd, ok := doc.Data()["trial_ends_at"].(time.Time)
+		if !ok {
+			continue
+		}
+
+		u := TrialUser{
+			UserID:      doc.Ref.ID,
+			TrialEndsAt: trialEnd,
+		}
+		if t, ok := doc.Data()["trial_warning_sent_at"].(time.Time); ok {
+			u.WarningSentAt = &t
+		}
+		if t, ok := doc.Data()["trial_expired_notified_at"].(time.Time); ok {
+			u.ExpiredNotifiedAt = &t
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+func (s *FirestoreStore) SetTrialWarningSent(ctx context.Context, userID string, at time.Time) error {
+	_, err := s.client.Collection("users").Doc(userID).Update(ctx, []firestore.Update{
+		{Path: "trial_warning_sent_at", Value: at},
+	})
+	return err
+}
+
+func (s *FirestoreStore) SetTrialExpiredNotified(ctx context.Context, userID string, at time.Time) error {
+	_, err := s.client.Collection("users").Doc(userID).Update(ctx, []firestore.Update{
+		{Path: "trial_expired_notified_at", Value: at},
+	})
+	return err
+}
+
 func (s *FirestoreStore) GetTierStatus(ctx context.Context, userID string) (pbuser.UserTier, bool, *time.Time, error) {
 	doc, err := s.client.Collection("users").Doc(userID).Get(ctx)
 	if err != nil {

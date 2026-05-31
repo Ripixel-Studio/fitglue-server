@@ -184,6 +184,39 @@ resource "google_pubsub_subscription" "roundup_trigger_sub" {
   }
 }
 
+# Trial check trigger — Cloud Scheduler publishes here daily to sweep trial expirations.
+resource "google_pubsub_topic" "trial_check_trigger" {
+  name    = "topic-trial-check-trigger"
+  project = var.project_id
+
+  # Trigger messages are only useful until the next daily run. Drop after 26h.
+  message_retention_duration = "93600s"
+}
+
+resource "google_pubsub_subscription" "trial_check_sub" {
+  name    = "sub-trial-check"
+  topic   = google_pubsub_topic.trial_check_trigger.name
+  project = var.project_id
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["billing"].uri}/pubsub/trial-check"
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["billing"].email
+    }
+  }
+
+  # Give the handler up to 5 min to sweep all trial users.
+  ack_deadline_seconds = 300
+
+  # Retain for 26h so a single missed run still gets delivered next day.
+  message_retention_duration = "93600s"
+
+  retry_policy {
+    minimum_backoff = "60s"
+    maximum_backoff = "300s"
+  }
+}
+
 # Notification topic — any service publishes NotificationRequest messages here.
 # The notification service fans out to whichever channels the user has enabled.
 resource "google_pubsub_topic" "notification" {

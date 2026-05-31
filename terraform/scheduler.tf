@@ -65,6 +65,28 @@ resource "google_cloud_scheduler_job" "yearly_roundup_generator" {
   }
 }
 
+# Trial expiry checker — runs daily at 08:00 UTC.
+# Sends 7-day warning emails and trial-expired notifications.
+# Uses a ±12h window so each user is caught at most once per pass.
+# The 48h look-back on the expired pass survives a single missed run.
+resource "google_cloud_scheduler_job" "trial_check" {
+  name        = "trial-expiry-check"
+  description = "Daily sweep for trials expiring in ~7 days and trials that just expired"
+  project     = var.project_id
+  region      = var.region
+  schedule    = "0 8 * * *"
+  time_zone   = "UTC"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.trial_check_trigger.id
+    data       = base64encode("{}")
+  }
+
+  retry_config {
+    retry_count = 1
+  }
+}
+
 resource "google_cloud_scheduler_job" "parkrun_results_check" {
   name        = "parkrun-results-check"
   description = "Polls parkrun for auto-resolution of waiting pending inputs"

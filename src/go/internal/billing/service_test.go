@@ -103,6 +103,18 @@ func (m *MockStore) GetTierStatus(ctx context.Context, userID string) (pbuser.Us
 	return pbuser.UserTier_USER_TIER_HOBBYIST, false, nil, nil
 }
 
+func (m *MockStore) ListUsersWithTrialsEndingBetween(_ context.Context, _, _ time.Time) ([]TrialUser, error) {
+	return nil, nil
+}
+
+func (m *MockStore) SetTrialWarningSent(_ context.Context, _ string, _ time.Time) error {
+	return nil
+}
+
+func (m *MockStore) SetTrialExpiredNotified(_ context.Context, _ string, _ time.Time) error {
+	return nil
+}
+
 type MockStripe struct {
 	Customers map[string]*stripe.Customer
 	Sessions  map[string]*stripe.CheckoutSession
