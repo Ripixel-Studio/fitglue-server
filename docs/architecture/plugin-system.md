@@ -11,7 +11,7 @@ FitGlue uses a **type-safe, self-registering plugin architecture** for extensibl
 |------|----------|---------|----------|
 | **Source** | Go | Ingests data via webhooks from external services | Hevy, Fitbit, Strava, Polar, Oura, Wahoo |
 | **Enricher** | Go | Transforms/enhances activities in pipeline | HR Summary, Weather, Parkrun, AI Companion |
-| **Destination** | Go | Uploads processed activities to external services | Strava, TrainingPeaks, Intervals.icu, Hevy |
+| **Destination** | Go | Uploads processed activities to external services | Strava, TrainingPeaks, Intervals.icu, Hevy, Fitbit, Google Sheets, GitHub, Showcase |
 
 ## Available Plugins
 
@@ -48,6 +48,7 @@ FitGlue uses a **type-safe, self-registering plugin architecture** for extensibl
 | TrainingPeaks | OAuth | Workout upload |
 | Intervals.icu | API Key | Activity upload |
 | Hevy | API Key | Sync back to Hevy |
+| Fitbit | OAuth | Activity upload to Fitbit |
 | Google Sheets | OAuth | Activity data export |
 | GitHub | OAuth | Activity data export |
 | Showcase | Built-in | Public activity sharing |
@@ -141,7 +142,7 @@ make plugin-destination name=runkeeper
 
 | Generated | Location |
 |-----------|----------|
-| Uploader file | `internal/destination/uploaders/{name}/uploader.go` |
+| Uploader file | `services/destination/internal/destination/uploaders/{name}/uploader.go` |
 | Proto enum | Auto-added to `events.proto` |
 | Type regeneration | Runs `make generate` automatically |
 

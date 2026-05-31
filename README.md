@@ -4,7 +4,7 @@
 
 ## Architecture
 
-FitGlue uses a domain-service architecture: 10 Go Cloud Run services communicating via gRPC, with a thin API gateway layer for HTTP clients.
+FitGlue uses a domain-service architecture: 11 Go Cloud Run services communicating via gRPC, with a thin API gateway layer for HTTP clients.
 
 ```text
 ┌─────────────────┐      ┌──────────────────────┐
@@ -34,6 +34,10 @@ FitGlue uses a domain-service architecture: 10 Go Cloud Run services communicati
 
 **Domain services** own their Firestore data and expose gRPC interfaces:
 - `service.user`, `service.billing`, `service.pipeline`, `service.activity`, `service.registry`
+
+**Worker services** consume Pub/Sub topics:
+- `service.destination` — uploads to Strava, TrainingPeaks, Fitbit, etc.
+- `service.notification` — FCM push dispatch, respects per-user notification preferences
 
 See [Architecture Overview](docs/architecture/overview.md) for the full system diagram.
 
@@ -73,7 +77,7 @@ make build
 # Run unit tests
 make test
 
-# Start local development stack (all 10 services)
+# Start local development stack (all 11 services)
 make local
 ```
 
@@ -85,7 +89,7 @@ See [Local Development](docs/development/local-development.md) for detailed inst
 fitglue-server/
 ├── src/
 │   ├── go/                    # Go monorepo
-│   │   ├── services/          # 10 Cloud Run services (main.go per service)
+│   │   ├── services/          # 11 Cloud Run services (main.go per service)
 │   │   ├── internal/          # Domain logic (owned by services)
 │   │   ├── pkg/               # Shared packages (proto stubs, integrations)
 │   │   ├── cmd/               # CLI tools (fit-gen, fit-inspect)

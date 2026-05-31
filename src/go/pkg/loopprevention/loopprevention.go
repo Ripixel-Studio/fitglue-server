@@ -20,11 +20,20 @@ import (
 
 // SourceToDestinationMap maps ActivitySource enums to their corresponding Destination enums.
 // Sources without destinations (e.g., FILE_UPLOAD) are not included.
+// Adding an entry here automatically enables bounceback detection in both directions:
+// the webhook processor checks for bouncebacks, and the executor pre-stores bounceback
+// records before every upload to that destination.
 var SourceToDestinationMap = map[pbactivity.ActivitySource]pbplugin.DestinationType{
 	pbactivity.ActivitySource_SOURCE_HEVY:   pbplugin.DestinationType_DESTINATION_HEVY,
 	pbactivity.ActivitySource_SOURCE_STRAVA: pbplugin.DestinationType_DESTINATION_STRAVA,
-	pbactivity.ActivitySource_SOURCE_FITBIT: pbplugin.DestinationType_DESTINATION_UNSPECIFIED, // Future: DESTINATION_FITBIT
 	// Note: SOURCE_FILE_UPLOAD, SOURCE_PARKRUN_RESULTS, etc. are source-only
+}
+
+// DestinationToSourceMap is the inverse of SourceToDestinationMap.
+// Used by the executor to decide which destinations need bounceback records written.
+var DestinationToSourceMap = map[pbplugin.DestinationType]pbactivity.ActivitySource{
+	pbplugin.DestinationType_DESTINATION_HEVY:   pbactivity.ActivitySource_SOURCE_HEVY,
+	pbplugin.DestinationType_DESTINATION_STRAVA: pbactivity.ActivitySource_SOURCE_STRAVA,
 }
 
 // GetCorrespondingDestination returns the destination that corresponds to the given source.
@@ -34,6 +43,14 @@ func GetCorrespondingDestination(source pbactivity.ActivitySource) pbplugin.Dest
 		return dest
 	}
 	return pbplugin.DestinationType_DESTINATION_UNSPECIFIED
+}
+
+// DestinationHasSource reports whether a destination has a corresponding webhook source
+// that could produce a bounceback. Only destinations in DestinationToSourceMap need
+// bounceback records written by the executor.
+func DestinationHasSource(dest pbplugin.DestinationType) bool {
+	_, ok := DestinationToSourceMap[dest]
+	return ok
 }
 
 // UploadedActivityStore defines the interface for persisting uploaded activity records.

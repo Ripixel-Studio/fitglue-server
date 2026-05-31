@@ -25,9 +25,10 @@ FitGlue is a fitness data aggregation and routing platform built on Google Cloud
 │  └────────────────────────┬────────────────────────────────────┘    │
 │                           │ Pub/Sub                                 │
 │  ┌────────────────────────▼────────────────────────────────────┐    │
-│  │              WORKER SERVICE (Pub/Sub consumer)               │    │
+│  │              WORKER SERVICES (Pub/Sub consumers)             │    │
 │  │                                                             │    │
-│  │             service.destination  (all uploaders)            │    │
+│  │  service.destination  (all uploaders)                       │    │
+│  │  service.notification (FCM push dispatch)                   │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │                                                                     │
 │  ┌──────────────┐  ┌────────────────┐  ┌────────────────────────┐   │
@@ -37,13 +38,13 @@ FitGlue is a fitness data aggregation and routing platform built on Google Cloud
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**10 Cloud Run services** replace the previous 48 Cloud Functions. All services are pure Go. See [Go Services](go-services.md) for the full directory map.
+**11 Cloud Run services** replace the previous 48 Cloud Functions. All services are pure Go. See [Go Services](go-services.md) for the full directory map.
 
 ## Data Flow
 
 ### 1. Ingestion
 
-Data enters via `service.api.webhook`, which hosts a generic `WebhookProcessor` backed by a per-provider `SourceProvider` interface (`internal/webhook/sources/`):
+Data enters via `service.api.webhook`, which hosts a generic `WebhookProcessor` backed by a per-provider `SourceProvider` interface (`services/api-webhook/internal/webhook/sources/`):
 
 | Source | Auth | Mechanism |
 |--------|------|-----------|
@@ -75,7 +76,7 @@ Each source:
 
 `service.pipeline` also handles enrichment — one pipeline per invocation:
 1. Receives from `topic-pipeline-activity`
-2. Runs enrichers sequentially (Go `Provider` interface, 40+ implementations)
+2. Runs enrichers sequentially (Go `Provider` interface, 45+ implementations)
 3. Generates FIT file → Cloud Storage
 4. Creates `PipelineRun` document for lifecycle tracking
 5. Publishes `EnrichedActivityEvent` to `topic-enriched-activity`
@@ -91,7 +92,11 @@ Each source:
 
 ### 4. Routing & Destination Upload
 
-`service.pipeline` routes enriched events to `service.destination` via `topic-enriched-activity`. `service.destination` handles all uploaders (Strava, TrainingPeaks, Intervals.icu, Hevy, Showcase, Google Sheets, GitHub).
+`service.pipeline` routes enriched events to `service.destination` via `topic-enriched-activity`. `service.destination` handles all uploaders (Strava, TrainingPeaks, Intervals.icu, Hevy, Fitbit, Google Sheets, GitHub, Showcase).
+
+### 5. Notifications
+
+After pipeline completion or significant events (pending inputs, connection actions), services publish to `topic-notifications`. `service.notification` fans out to active channels (FCM push, with email as a future channel) based on per-user `NotificationPreferences` stored in Firestore.
 
 ### 5. Pending Inputs
 

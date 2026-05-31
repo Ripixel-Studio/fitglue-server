@@ -17,12 +17,9 @@ import (
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
-	"github.com/fitglue/server/src/go/pkg/loopprevention"
-	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Uploader implements destination.Destination for Hevy
@@ -61,48 +58,9 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		return "", fmt.Errorf("failed to map activity to Hevy format: %w", err)
 	}
 
-	// Pre-store a pending bounceback record BEFORE calling Hevy so that the
-	// IsBounceback check succeeds even if Hevy fires the webhook before we receive
-	// the workout ID back. Keyed by startTime because the real Hevy ID is unknown yet.
-	if payload.Timestamp != nil {
-		pendingId := fmt.Sprintf("pending:%d", payload.Timestamp.AsTime().Unix())
-		preRecord := &pbactivity.UploadedActivityRecord{
-			Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, pendingId),
-			UserId:        payload.UserId,
-			Source:        payload.Source,
-			ExternalId:    payload.StandardizedActivity.GetExternalId(),
-			StartTime:     payload.Timestamp,
-			Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
-			DestinationId: pendingId,
-			UploadedAt:    timestamppb.Now(),
-		}
-		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, preRecord); err != nil {
-			logger.WarnContext(ctx, "Failed to pre-store Hevy pending bounceback record; webhook may re-trigger", "error", err)
-		}
-	}
-
 	workoutID, err := u.createHevyWorkout(ctx, apiKey, workout, logger)
 	if err != nil {
 		return "", fmt.Errorf("failed to create Hevy workout: %w", err)
-	}
-
-	if workoutID == "" {
-		// Hevy returned success but no workout ID — log so we can diagnose bounceback failures.
-		logger.WarnContext(ctx, "Hevy Create returned empty workoutID; bounceback record not stored")
-	} else {
-		uploadRecord := &pbactivity.UploadedActivityRecord{
-			Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, workoutID),
-			UserId:        payload.UserId,
-			Source:        payload.Source,
-			ExternalId:    payload.StandardizedActivity.GetExternalId(),
-			StartTime:     payload.Timestamp,
-			Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
-			DestinationId: workoutID,
-			UploadedAt:    timestamppb.Now(),
-		}
-		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-			logger.WarnContext(ctx, "Failed to store Hevy bounceback record; webhook may re-trigger", "workout_id", workoutID, "error", err)
-		}
 	}
 
 	return workoutID, nil
@@ -315,23 +273,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	bodyJSON, err := json.Marshal(putPayload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal update body: %w", err)
-	}
-
-	// Store the bounceback record BEFORE calling Hevy so the record exists by the
-	// time Hevy fires the webhook back. The workoutID is already known at this point
-	// (from pipelineRun or isSameSource), so we can safely pre-write it.
-	uploadRecord := &pbactivity.UploadedActivityRecord{
-		Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_HEVY, workoutID),
-		UserId:        payload.UserId,
-		Source:        payload.Source,
-		ExternalId:    payload.StandardizedActivity.GetExternalId(),
-		StartTime:     payload.Timestamp,
-		Destination:   pbplugin.DestinationType_DESTINATION_HEVY,
-		DestinationId: workoutID,
-		UploadedAt:    timestamppb.Now(),
-	}
-	if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-		logger.WarnContext(ctx, "Failed to pre-store Hevy bounceback record; webhook may re-trigger", "workout_id", workoutID, "error", err)
 	}
 
 	putURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)

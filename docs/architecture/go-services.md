@@ -1,12 +1,12 @@
 # Go Services Architecture
 
-FitGlue's server is composed of **10 Go Cloud Run services** organized under `src/go/services/`. All services use struct-based IoC dependency injection with `main.go` as the composition root.
+FitGlue's server is composed of **11 Go Cloud Run services** organized under `src/go/services/`. All services use struct-based IoC dependency injection with `main.go` as the composition root.
 
 ## Service Directory Map
 
 ```
 src/go/
-├── services/                          # All 10 Cloud Run services
+├── services/                          # All 11 Cloud Run services
 │   ├── api-client/                    # Authenticated user HTTP gateway
 │   │   ├── main.go                    # Composition root: wires gRPC clients → chi router
 │   │   └── internal/
@@ -40,17 +40,17 @@ src/go/
 │   │   └── main.go
 │   ├── registry/                      # Plugin manifests, categories, icons
 │   │   └── main.go
-│   └── destination/                   # All destination uploaders
+│   ├── destination/                   # All destination uploaders
+│   │   └── main.go
+│   └── notification/                  # FCM push dispatch, per-user preference routing
 │       └── main.go
 │
 ├── internal/                          # Shared internal implementations
 │   ├── user/                          # service.user business logic + store
 │   ├── billing/                       # service.billing business logic + store
-│   ├── pipeline/                      # Pipeline orchestration, enrichers, routing
+│   ├── pipeline/                      # Pipeline orchestration, enrichers (45+), routing
 │   ├── activity/                      # Activity CRUD, showcases, exports
 │   ├── registry/                      # Plugin registry logic
-│   ├── destination/                   # Uploader implementations
-│   ├── webhook/                       # Webhook processor (used by api-webhook)
 │   └── infra/                         # Shared infrastructure (logger, Firestore client)
 │
 └── pkg/                               # Shared packages used across services
@@ -100,6 +100,7 @@ If it compiles, it's wired correctly — no runtime dependency resolution.
 | `service.activity` | Activity records, showcases, FIT parsing, exports | gRPC + Pub/Sub | Firestore activities + GCS |
 | `service.registry` | Plugin manifests, categories | gRPC | Static config |
 | `service.destination` | Route and upload to destinations | Pub/Sub | Transient |
+| `service.notification` | FCM push dispatch, respects per-user channel preferences | Pub/Sub | Firestore `users/` (reads prefs + FCM tokens) |
 
 ## Source Provider Pattern
 
@@ -120,7 +121,7 @@ Each provider registers itself via `init()`. The generic `WebhookProcessor` hand
 1. Provider-specific: verify signature, resolve user, fetch & map activity
 2. Shared: get credentials via RPC to `service.user`, dedup check, publish to Pub/Sub
 
-**Adding a new source:** create `internal/webhook/sources/{name}/provider.go`, implement `SourceProvider`, register in `init()`. No other files touched.
+**Adding a new source:** create `services/api-webhook/internal/webhook/sources/{name}/provider.go`, implement `SourceProvider`, register in `init()`. No other files touched.
 
 ## Proto-Generated gRPC Stubs
 

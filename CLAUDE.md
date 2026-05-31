@@ -1,6 +1,6 @@
 # FitGlue Server
 
-Go backend — 10 Cloud Run microservices communicating via gRPC, fronted by 4 HTTP API gateways.
+Go backend — 11 Cloud Run microservices communicating via gRPC, fronted by 4 HTTP API gateways.
 
 ## Stack
 
@@ -47,7 +47,7 @@ npm run test:test       # Against test environment
 
 ## Service Architecture
 
-10 independent Cloud Run services. **4 HTTP gateways** (public-facing) + **6 gRPC domain services** (private).
+11 independent Cloud Run services. **4 HTTP gateways** (public-facing) + **7 domain services** (private).
 
 ```
 Internet
@@ -61,15 +61,17 @@ Pub/Sub
     ├── topic-raw-activity       → pipeline service (splitter + enricher)
     ├── topic-pipeline-activity  → pipeline service (per-pipeline routing)
     ├── topic-enriched-activity  → destination service
-    └── topic-destination-upload → destination service (upload jobs)
+    ├── topic-destination-upload → destination service (upload jobs)
+    └── topic-notifications      → notification service (FCM push dispatch)
 
-Domain Services (gRPC, private):
-    ├── user        (port 50051) — profiles, integrations, OAuth tokens
-    ├── billing     (port 50052) — Stripe subscriptions, tier enforcement
-    ├── pipeline    (port 50053) — pipeline CRUD + enrichment orchestration
-    ├── activity    (port 50054) — activity CRUD, showcases, exports
-    ├── registry    (port 50055) — plugin manifests (sources, enrichers, destinations)
-    └── destination (Pub/Sub)   — uploads to Strava, TrainingPeaks, Intervals, Hevy, etc.
+Domain Services (private):
+    ├── user         (gRPC, port 50051) — profiles, integrations, OAuth tokens
+    ├── billing      (gRPC, port 50052) — Stripe subscriptions, tier enforcement
+    ├── pipeline     (gRPC, port 50053) — pipeline CRUD + enrichment orchestration
+    ├── activity     (gRPC, port 50054) — activity CRUD, showcases, exports
+    ├── registry     (gRPC, port 50055) — plugin manifests (sources, enrichers, destinations)
+    ├── destination  (Pub/Sub)          — uploads to Strava, TrainingPeaks, Intervals, Hevy, Fitbit, etc.
+    └── notification (Pub/Sub, HTTP)    — FCM push dispatch, per-user preference routing
 ```
 
 ## Directory Structure
@@ -79,25 +81,35 @@ server/
 ├── src/
 │   ├── go/
 │   │   ├── go.mod, go.sum          # Single root module (all services share it)
-│   │   ├── services/               # Service entrypoints (main.go per service)
-│   │   ├── internal/               # Domain logic (not exported)
-│   │   │   ├── user/               # User service impl + Firestore store
-│   │   │   ├── billing/            # Billing service impl
-│   │   │   ├── pipeline/           # Pipeline orchestration + enrichers (40+ providers)
-│   │   │   │   ├── enricher/providers/   # One directory per enricher
+│   │   ├── services/               # One directory per Cloud Run service
+│   │   │   ├── api-client/         # HTTP gateway (Firebase JWT)
+│   │   │   ├── api-admin/          # HTTP gateway (admin auth)
+│   │   │   ├── api-public/         # HTTP gateway (no auth)
+│   │   │   ├── api-webhook/        # HTTP gateway (HMAC/OAuth)
+│   │   │   │   └── internal/webhook/sources/  # strava/, fitbit/, hevy/, polar/, oura/, wahoo/, mobile/, parkrun/
+│   │   │   ├── user/               # gRPC domain service
+│   │   │   ├── billing/            # gRPC domain service
+│   │   │   ├── pipeline/           # gRPC domain service + enrichment orchestration
+│   │   │   ├── activity/           # gRPC domain service
+│   │   │   ├── registry/           # gRPC domain service
+│   │   │   ├── destination/        # Pub/Sub domain service
+│   │   │   │   └── internal/destination/uploaders/  # strava/, trainingpeaks/, intervals/, hevy/, fitbit/, googlesheets/, github/, showcase/
+│   │   │   └── notification/       # Pub/Sub service — FCM push dispatch, per-user preference routing
+│   │   ├── internal/               # Shared domain logic (used by multiple services)
+│   │   │   ├── user/               # User domain (profiles, integrations, Firestore store)
+│   │   │   ├── billing/            # Billing domain
+│   │   │   ├── pipeline/           # Pipeline orchestration + enrichers (45+ providers)
+│   │   │   │   └── enricher/providers/   # One directory per enricher
 │   │   │   ├── activity/           # Activity CRUD + showcases
 │   │   │   ├── registry/           # Plugin registry
-│   │   │   ├── destination/        # Upload handlers (one dir per destination)
-│   │   │   │   └── uploaders/      # strava/, trainingpeaks/, intervals/, hevy/, etc.
-│   │   │   ├── webhook/            # Webhook processor + source providers
-│   │   │   │   └── sources/        # strava/, fitbit/, hevy/, polar/, oura/, wahoo/, mobile/
 │   │   │   └── infra/              # Logger, Firestore client, gRPC helpers
 │   │   ├── pkg/                    # Shared packages (exported)
 │   │   │   ├── types/pb/           # Generated gRPC stubs — DO NOT EDIT manually
 │   │   │   ├── bootstrap/          # Service init helpers (Firebase, Firestore, Pub/Sub)
 │   │   │   ├── domain/             # Domain models (activity, user, tier, FIT parser/generator)
 │   │   │   ├── integrations/       # Generated OpenAPI clients — DO NOT EDIT manually
-│   │   │   ├── infrastructure/     # Email, Pub/Sub adapter, storage, secrets
+│   │   │   ├── infrastructure/     # Email, Pub/Sub adapter, storage, secrets, FCM
+│   │   │   ├── sourceplugins/      # Historical activity sync providers (Fitbit, Hevy, Intervals, Strava)
 │   │   │   ├── storage/            # Firestore client utilities
 │   │   │   ├── errors/             # Error types + retryability
 │   │   │   ├── loopprevention/     # Duplicate detection
@@ -144,24 +156,25 @@ After `make generate`, if `../web` exists, web's protobuf types are also updated
 Three categories of plugins, each following the same provider interface pattern:
 
 ### Sources (webhook ingestion)
-- Location: `internal/webhook/sources/{name}/`
+- Location: `services/api-webhook/internal/webhook/sources/{name}/`
 - Interface: `SourceProvider`
-- Registered in `api-webhook/main.go`
+- Registered in `services/api-webhook/main.go`
 - Scaffold: `make plugin-source name=<name>`
+- Current: strava, fitbit, hevy, polar, oura, wahoo, mobile, parkrun
 
 ### Enrichers (pipeline steps)
 - Location: `internal/pipeline/enricher/providers/{name}/`
 - Interface: `EnricherProvider` (runs in sequence, can modify `StandardizedActivity`)
 - Registered via `init()` in each provider package
 - Scaffold: `make plugin-enricher name=<name>`
-- 40+ enrichers: Fitbit HR, Spotify, Weather, Parkrun Detector, Personal Records, AI Companion, etc.
+- 45+ enrichers: Fitbit HR, Spotify, Weather, Parkrun Detector, Personal Records, AI Companion, etc.
 
 ### Destinations (uploaders)
-- Location: `internal/destination/uploaders/{name}/`
+- Location: `services/destination/internal/destination/uploaders/{name}/`
 - Interface: uploader interface
-- Registered in `internal/destination/registry.go`
+- Registered in `services/destination/internal/destination/registry.go`
 - Scaffold: `make plugin-destination name=<name>`
-- Current: Strava, TrainingPeaks, Intervals.icu, Hevy, Google Sheets, GitHub, Showcase
+- Current: Strava, TrainingPeaks, Intervals.icu, Hevy, Fitbit, Google Sheets, GitHub, Showcase
 
 ## Data Flow
 
@@ -243,6 +256,8 @@ npm run test:dev        # Jest integration tests vs dev deployment
 ```bash
 make plugin-enricher name=my-enricher
 # Creates scaffold at internal/pipeline/enricher/providers/my-enricher/
+# (Sources: services/api-webhook/internal/webhook/sources/{name}/)
+# (Destinations: services/destination/internal/destination/uploaders/{name}/)
 ```
 
 Then:

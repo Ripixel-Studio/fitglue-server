@@ -17,7 +17,9 @@ import (
 	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	fitglueerrors "github.com/fitglue/server/src/go/pkg/errors"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	"github.com/fitglue/server/src/go/pkg/notificationpub"
+	pbactivitymodel "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
@@ -25,6 +27,7 @@ import (
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // UploadExecutor handles the consumption of Pub/Sub messages
@@ -283,11 +286,28 @@ destinations:
 		var externalId string
 		var uploadErr error
 
-		// Create or Update
 		if effectiveIsUpdate {
+			// Pre-write bounceback record before Update so the webhook that follows
+			// is suppressed even if it arrives before the response returns.
+			if loopprevention.DestinationHasSource(destEnum) {
+				if existID := existingExternalID(destEnum, pr, metadata, activityPayload); existID != "" {
+					e.storeBouncebackRecord(ctx, payload.UserId, payload.Source, activityPayload, destEnum, existID)
+				}
+			}
 			uploadErr = uploader.Update(ctx, activityPayload, userRecord, pr)
 		} else {
+			// Pre-write a pending bounceback record before Create so the webhook cannot
+			// arrive before we know the destination ID. Keyed by startTime since the
+			// real destination ID is unknown until the API responds.
+			if loopprevention.DestinationHasSource(destEnum) && activityPayload.Timestamp != nil {
+				pendingID := fmt.Sprintf("pending:%d", activityPayload.Timestamp.AsTime().Unix())
+				e.storeBouncebackRecord(ctx, payload.UserId, payload.Source, activityPayload, destEnum, pendingID)
+			}
 			externalId, uploadErr = uploader.Create(ctx, activityPayload, userRecord)
+			// Write the real record now that we have the destination ID.
+			if uploadErr == nil && externalId != "" && loopprevention.DestinationHasSource(destEnum) {
+				e.storeBouncebackRecord(ctx, payload.UserId, payload.Source, activityPayload, destEnum, externalId)
+			}
 		}
 
 		if uploadErr != nil {
@@ -338,6 +358,55 @@ func (e *UploadExecutor) writeFailureForTargetedDestinations(ctx context.Context
 		}
 		destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
 	}
+}
+
+// storeBouncebackRecord writes an UploadedActivityRecord to Firestore so the webhook
+// processor can recognise this activity as a bounceback and skip re-ingestion.
+// Errors are logged but never fatal — a missing record causes a duplicate, not a data loss.
+func (e *UploadExecutor) storeBouncebackRecord(
+	ctx context.Context,
+	userID string,
+	source pbactivitymodel.ActivitySource,
+	payload *pbevents.ActivityPayload,
+	dest pbplugin.DestinationType,
+	destinationID string,
+) {
+	record := &pbactivitymodel.UploadedActivityRecord{
+		Id:            loopprevention.BuildUploadedActivityID(dest, destinationID),
+		UserId:        userID,
+		Source:        source,
+		ExternalId:    payload.StandardizedActivity.GetExternalId(),
+		StartTime:     payload.Timestamp,
+		Destination:   dest,
+		DestinationId: destinationID,
+		UploadedAt:    timestamppb.Now(),
+	}
+	if err := e.db.SetUploadedActivity(ctx, userID, record); err != nil {
+		e.logger.Warn(ctx, "Failed to store bounceback record", "destination", dest.String(), "destination_id", destinationID, "error", err)
+	}
+}
+
+// existingExternalID returns the destination-side activity ID that was created in a prior
+// pipeline run, used to pre-write the bounceback record before an Update call.
+func existingExternalID(
+	dest pbplugin.DestinationType,
+	pr *pbpipeline.PipelineRun,
+	metadata map[string]string,
+	payload *pbevents.ActivityPayload,
+) string {
+	if pr != nil {
+		for _, d := range pr.Destinations {
+			if d.Destination == dest && d.ExternalId != nil && *d.ExternalId != "" {
+				return *d.ExternalId
+			}
+		}
+	}
+	// Same-source flow: the source's external ID is also the destination ID.
+	destName := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
+	if metadata["same_source_destination_"+destName] == "true" && payload.StandardizedActivity != nil {
+		return payload.StandardizedActivity.GetExternalId()
+	}
+	return ""
 }
 
 // enqueueConnectionActionNotification publishes a CONNECTION_ACTION notification so the user

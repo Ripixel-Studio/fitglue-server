@@ -19,12 +19,9 @@ import (
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
-	"github.com/fitglue/server/src/go/pkg/loopprevention"
-	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Uploader implements destination.Destination for Strava
@@ -137,20 +134,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	if uploadResp.ActivityId != nil && *uploadResp.ActivityId != 0 {
-		stravaDestID := fmt.Sprintf("%d", *uploadResp.ActivityId)
-		uploadRecord := &pbactivity.UploadedActivityRecord{
-			Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_STRAVA, stravaDestID),
-			UserId:        payload.UserId,
-			Source:        payload.Source,
-			ExternalId:    payload.StandardizedActivity.GetExternalId(),
-			StartTime:     nil, // Will fix next
-			Destination:   pbplugin.DestinationType_DESTINATION_STRAVA,
-			DestinationId: stravaDestID,
-			UploadedAt:    timestamppb.Now(),
-		}
-		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
-
-		return stravaDestID, nil
+		return fmt.Sprintf("%d", *uploadResp.ActivityId), nil
 	}
 
 	if uploadResp.Error != nil && *uploadResp.Error != "" {
@@ -276,20 +260,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if putResp.StatusCode >= 400 {
 		return httputil.WrapResponseError(putResp, "Strava PUT failed")
 	}
-
-	if !isSameSource {
-	}
-
-	uploadRecord := &pbactivity.UploadedActivityRecord{
-		Id:            loopprevention.BuildUploadedActivityID(pbplugin.DestinationType_DESTINATION_STRAVA, stravaIDStr),
-		UserId:        payload.UserId,
-		Source:        payload.Source,
-		ExternalId:    payload.StandardizedActivity.GetExternalId(),
-		Destination:   pbplugin.DestinationType_DESTINATION_STRAVA,
-		DestinationId: stravaIDStr,
-		UploadedAt:    timestamppb.Now(),
-	}
-	_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
 
 	return nil
 }
