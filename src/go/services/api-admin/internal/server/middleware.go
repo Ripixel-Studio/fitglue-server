@@ -63,7 +63,7 @@ func AdminMiddleware(authClient *auth.Client, fsClient *firestore.Client) func(h
 				http.Error(w, "forbidden", http.StatusForbidden)
 				return
 			}
-			isAdmin, _ := doc.Data()["isAdmin"].(bool)
+			isAdmin, _ := doc.Data()["is_admin"].(bool)
 			if !isAdmin {
 				http.Error(w, "forbidden", http.StatusForbidden)
 				return

@@ -34,7 +34,7 @@ func (s *APIServer) handleGetStats(w http.ResponseWriter, r *http.Request) {
 		if tier, ok := data["tier"].(string); ok && tier == "ATHLETE" {
 			athleteUsers++
 		}
-		if isAdmin, ok := data["isAdmin"].(bool); ok && isAdmin {
+		if isAdmin, ok := data["is_admin"].(bool); ok && isAdmin {
 			adminUsers++
 		}
 		if syncCount, ok := data["syncCountThisMonth"].(int64); ok {
