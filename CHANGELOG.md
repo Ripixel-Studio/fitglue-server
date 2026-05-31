@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.30.3](https://github.com/FitGlue/server/compare/v16.30.2...v16.30.3) (2026-05-31)
+
+
+### Bug Fixes
+
+* **api-client:** register and implement PUT /showcase-management/roundup-settings ([1ca635c](https://github.com/FitGlue/server/commit/1ca635c6e7b425c2741de3967fc1e9b2428a6bd4))
+* **api-client:** unwrap settings body before proto-unmarshal in roundup handler ([6f97d00](https://github.com/FitGlue/server/commit/6f97d00a157a99b23c6bf6c3f1a4e371937df8b8))
+
 ### [16.30.2](https://github.com/FitGlue/server/compare/v16.30.1...v16.30.2) (2026-05-31)
 
 
