@@ -6,7 +6,6 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
 
-// Keep browser instance alive for reuse (Cloud Run container lifecycle)
 let browser: Browser | null = null;
 
 async function getBrowser(): Promise<Browser> {
@@ -14,9 +13,10 @@ async function getBrowser(): Promise<Browser> {
     browser = await chromium.launch({
       headless: true,
       args: [
-        '--disable-dev-shm-usage', // Required for Docker
-        '--no-sandbox',            // Required for Cloud Run
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
         '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
       ],
     });
   }
@@ -34,10 +34,6 @@ interface FetchResponse {
   error?: string;
 }
 
-/**
- * POST /fetch
- * Fetches a URL using a headless browser to bypass JavaScript challenges.
- */
 app.post('/fetch', async (req: Request<{}, FetchResponse, FetchRequest>, res: Response<FetchResponse>) => {
   const { url } = req.body;
 
@@ -55,8 +51,54 @@ app.post('/fetch', async (req: Request<{}, FetchResponse, FetchRequest>, res: Re
   try {
     const browserInstance = await getBrowser();
     const context = await browserInstance.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      locale: 'en-GB',
+      timezoneId: 'Europe/London',
+      // Pre-set cookie consent so parkrun doesn't show the banner
+      storageState: {
+        cookies: [
+          {
+            name: 'cookie-consent-agreed',
+            value: '1',
+            domain: '.parkrun.org.uk',
+            path: '/',
+            expires: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+            httpOnly: false,
+            secure: false,
+            sameSite: 'Lax',
+          },
+          {
+            name: 'OptanonAlertBoxClosed',
+            value: new Date().toISOString(),
+            domain: '.parkrun.org.uk',
+            path: '/',
+            expires: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+            httpOnly: false,
+            secure: false,
+            sameSite: 'Lax',
+          },
+          {
+            name: 'OptanonConsent',
+            value: 'isIABGlobal=false&datestamp=' + encodeURIComponent(new Date().toUTCString()) + '&version=6.33.0&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1&hosts=&AwaitingReconsent=false',
+            domain: '.parkrun.org.uk',
+            path: '/',
+            expires: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+            httpOnly: false,
+            secure: false,
+            sameSite: 'Lax',
+          },
+        ],
+        origins: [],
+      },
     });
+
+    // Hide webdriver fingerprint (runs in browser context, not Node)
+    await context.addInitScript(`
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      delete window.__playwright;
+      delete window.__pw_manual;
+    `);
+
     const page = await context.newPage();
 
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -67,8 +109,33 @@ app.post('/fetch', async (req: Request<{}, FetchResponse, FetchRequest>, res: Re
       console.log('[parkrun-fetcher] Network idle timeout, continuing anyway');
     }
 
+    // Dismiss cookie consent banner if still present (OneTrust / CivicUK / generic)
+    const consentSelectors = [
+      'button#onetrust-accept-btn-handler',
+      'button.onetrust-accept-btn-handler',
+      'button[id*="accept-all"]',
+      'button[class*="accept-all"]',
+      'button:has-text("Accept All Cookies")',
+      'button:has-text("Accept all cookies")',
+      'button:has-text("Accept All")',
+      'button:has-text("Accept Cookies")',
+      'button:has-text("I Accept")',
+      '[data-testid="cookie-accept"]',
+    ];
+    for (const sel of consentSelectors) {
+      try {
+        await page.click(sel, { timeout: 1500 });
+        console.log(`[parkrun-fetcher] Dismissed consent banner via: ${sel}`);
+        await page.waitForTimeout(1000);
+        break;
+      } catch {
+        // not found, try next
+      }
+    }
+
+    // Wait for results table
     try {
-      await page.waitForSelector('table tbody tr', { timeout: 5000 });
+      await page.waitForSelector('table tbody tr', { timeout: 8000 });
       console.log('[parkrun-fetcher] Results table found');
     } catch {
       console.log('[parkrun-fetcher] Results table selector timeout, continuing');
@@ -98,6 +165,10 @@ app.post('/fetch', async (req: Request<{}, FetchResponse, FetchRequest>, res: Re
 
     const duration = Date.now() - startTime;
     console.log(`[parkrun-fetcher] Success: ${html.length} bytes in ${duration}ms`);
+
+    if (html.length < 5000) {
+      console.warn(`[parkrun-fetcher] Response suspiciously small (${html.length} bytes) — likely a consent/bot wall`);
+    }
 
     return res.json({ html, byteLength: html.length, success: true });
   } catch (error) {
