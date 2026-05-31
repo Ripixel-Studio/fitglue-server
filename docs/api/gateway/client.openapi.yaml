@@ -2983,6 +2983,8 @@ components:
                     type: boolean
                 notifyConnectionAction:
                     type: boolean
+                notifyShowcaseRoundup:
+                    type: boolean
         OAuthConnectResponse:
             type: object
             properties:

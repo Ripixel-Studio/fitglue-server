@@ -105,7 +105,38 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 	if err := s.store.SetRoundup(ctx, roundup); err != nil {
 		return nil, fmt.Errorf("save roundup: %w", err)
 	}
+
+	s.sendRoundupNotification(ctx, userID, roundup)
+
 	return roundup, nil
+}
+
+func (s *Service) sendRoundupNotification(ctx context.Context, userID string, roundup *pbactivity.ShowcaseRoundup) {
+	if s.notifications == nil {
+		return
+	}
+	tokens, notifyRoundup, err := s.store.GetUserNotificationData(ctx, userID)
+	if err != nil || !notifyRoundup || len(tokens) == 0 {
+		return
+	}
+	period := "Weekly"
+	switch roundup.PeriodType {
+	case pbactivity.RoundupPeriodType_ROUNDUP_PERIOD_TYPE_MONTH:
+		period = "Monthly"
+	case pbactivity.RoundupPeriodType_ROUNDUP_PERIOD_TYPE_YEAR:
+		period = "Yearly"
+	}
+	title := fmt.Sprintf("%s Showcase Roundup Ready", period)
+	body := fmt.Sprintf("%d activities · view your %s summary", roundup.TotalActivities, strings.ToLower(period))
+	data := map[string]string{
+		"type":    "SHOWCASE_ROUNDUP",
+		"user_id": userID,
+		"slug":    roundup.Slug,
+		"period":  roundup.PeriodKey,
+	}
+	if err := s.notifications.SendPushNotification(ctx, userID, title, body, tokens, data); err != nil {
+		s.logger.Warn(ctx, "Failed to send roundup notification", "error", err, "user_id", userID)
+	}
 }
 
 func periodKey(t pbactivity.RoundupPeriodType, start time.Time) string {

@@ -45,6 +45,7 @@ message NotificationPreferences {
   bool notify_pipeline_success = 2;
   bool notify_pipeline_failure = 3;
   bool notify_connection_action = 4;
+  bool notify_showcase_roundup = 5;
 }
 
 enum UserTier {

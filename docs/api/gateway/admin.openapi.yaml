@@ -466,6 +466,8 @@ components:
                     type: boolean
                 notifyConnectionAction:
                     type: boolean
+                notifyShowcaseRoundup:
+                    type: boolean
         PipelineConfig:
             type: object
             properties:

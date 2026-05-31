@@ -242,6 +242,7 @@ type NotificationPreferences struct {
 	NotifyPipelineSuccess  bool                   `protobuf:"varint,2,opt,name=notify_pipeline_success,json=notifyPipelineSuccess,proto3" json:"notify_pipeline_success,omitempty"`
 	NotifyPipelineFailure  bool                   `protobuf:"varint,3,opt,name=notify_pipeline_failure,json=notifyPipelineFailure,proto3" json:"notify_pipeline_failure,omitempty"`
 	NotifyConnectionAction bool                   `protobuf:"varint,4,opt,name=notify_connection_action,json=notifyConnectionAction,proto3" json:"notify_connection_action,omitempty"`
+	NotifyShowcaseRoundup  bool                   `protobuf:"varint,5,opt,name=notify_showcase_roundup,json=notifyShowcaseRoundup,proto3" json:"notify_showcase_roundup,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -300,6 +301,13 @@ func (x *NotificationPreferences) GetNotifyPipelineFailure() bool {
 func (x *NotificationPreferences) GetNotifyConnectionAction() bool {
 	if x != nil {
 		return x.NotifyConnectionAction
+	}
+	return false
+}
+
+func (x *NotificationPreferences) GetNotifyShowcaseRoundup() bool {
+	if x != nil {
+		return x.NotifyShowcaseRoundup
 	}
 	return false
 }
@@ -490,12 +498,13 @@ const file_models_user_profile_proto_rawDesc = "" +
 	"\x13current_streak_days\x18\x0e \x01(\x05H\x00R\x11currentStreakDays\x88\x01\x01\x123\n" +
 	"\x13longest_streak_days\x18\x0f \x01(\x05H\x01R\x11longestStreakDays\x88\x01\x01B\x16\n" +
 	"\x14_current_streak_daysB\x16\n" +
-	"\x14_longest_streak_days\"\xf5\x01\n" +
+	"\x14_longest_streak_days\"\xad\x02\n" +
 	"\x17NotificationPreferences\x120\n" +
 	"\x14notify_pending_input\x18\x01 \x01(\bR\x12notifyPendingInput\x126\n" +
 	"\x17notify_pipeline_success\x18\x02 \x01(\bR\x15notifyPipelineSuccess\x126\n" +
 	"\x17notify_pipeline_failure\x18\x03 \x01(\bR\x15notifyPipelineFailure\x128\n" +
-	"\x18notify_connection_action\x18\x04 \x01(\bR\x16notifyConnectionAction\"n\n" +
+	"\x18notify_connection_action\x18\x04 \x01(\bR\x16notifyConnectionAction\x126\n" +
+	"\x17notify_showcase_roundup\x18\x05 \x01(\bR\x15notifyShowcaseRoundup\"n\n" +
 	"\aCounter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x03R\x05count\x12=\n" +

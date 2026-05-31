@@ -54,4 +54,7 @@ type ActivityStore interface {
 	// Roundup — generation inputs
 	ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error)
 	ListAllShowcaseUserIDs(ctx context.Context) ([]string, error)
+
+	// Notification data — FCM tokens and roundup notification preference for a user
+	GetUserNotificationData(ctx context.Context, userID string) (fcmTokens []string, notifyRoundup bool, err error)
 }
