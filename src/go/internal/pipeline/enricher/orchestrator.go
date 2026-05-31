@@ -454,9 +454,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 		enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 		enricherConfig["pipeline_id"] = pipeline.ID
-		enricherConfig["activity_id"] = activityId                           // For pending input linking
-		enricherConfig["external_id"] = currentActivity.GetExternalId()      // For same-source dedup
-		enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost)   // For repost guards
+		enricherConfig["activity_id"] = activityId                         // For pending input linking
+		enricherConfig["external_id"] = currentActivity.GetExternalId()    // For same-source dedup
+		enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost) // For repost guards
 
 		// Clear stale pending inputs when re-running (not resuming)
 		// This allows users to provide different input on a fresh re-run.
@@ -812,8 +812,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 			enricherConfig["pipeline_id"] = pipeline.ID
 			enricherConfig["activity_id"] = activityId
-			enricherConfig["enriched_description"] = phase1Description               // Phase 2 context injection
-			enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost)       // For repost guards
+			enricherConfig["enriched_description"] = phase1Description         // Phase 2 context injection
+			enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost) // For repost guards
 
 			// Execute
 			providerLogger := logger.With("provider", provider.Name(), "phase", "deferred")

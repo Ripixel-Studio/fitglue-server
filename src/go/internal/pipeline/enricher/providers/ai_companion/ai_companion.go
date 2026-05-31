@@ -146,7 +146,7 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 	// Cache result so reposts don't re-call Gemini.
 	if externalId != "" && p.Service != nil && p.Service.DB != nil {
 		_ = p.Service.DB.SetBoosterData(ctx, user.UserId, "ai_companion", map[string]interface{}{
-			"cached_external_id":  externalId,
+			"cached_external_id": externalId,
 			"cached_description": result.Description,
 			"cached_name":        result.Title,
 		})
