@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
