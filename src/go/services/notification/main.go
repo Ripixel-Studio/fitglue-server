@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"cloud.google.com/go/firestore"
@@ -241,6 +242,8 @@ func (s *notificationService) dispatchEmail(ctx context.Context, req *pbnotifica
 // Returns empty strings if there is no email template for this type.
 func (s *notificationService) renderEmail(req *pbnotification.NotificationRequest) (subject, html string) {
 	switch req.Type {
+
+	// ── Billing (transactional) ──────────────────────────────────────────────
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_STARTED:
 		return "You're now a FitGlue Athlete!", emaildomain.SubscriptionConfirmationTemplate(s.baseURL)
 
@@ -267,9 +270,69 @@ func (s *notificationService) renderEmail(req *pbnotification.NotificationReques
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRED:
 		return "Your FitGlue Athlete trial has ended", emaildomain.TrialExpiredTemplate(s.baseURL)
 
+	// ── Pipeline activity ───────────────────────────────────────────────────
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS:
+		activityName := trimPrefix(req.Title, "Activity Synced: ")
+		// Body is "Successfully synced to: Strava, TrainingPeaks"
+		destinations := trimPrefix(req.Body, "Successfully synced to: ")
+		activityID := req.Data["activity_id"]
+		activityURL := s.baseURL + "/app/activities/" + activityID
+		return fmt.Sprintf("%s synced to FitGlue", activityName),
+			emaildomain.ActivitySyncedTemplate(activityName, destinations, activityURL, s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE:
+		// Two sources: destination executor ("Partial Sync: X") and enricher orchestrator ("Activity Failed: X")
+		activityName := trimPrefix(trimPrefix(req.Title, "Activity Failed: "), "Partial Sync: ")
+		activityID := req.Data["activity_id"]
+		activityURL := s.baseURL + "/app/activities/" + activityID
+		return fmt.Sprintf("Sync error: %s", activityName),
+			emaildomain.PipelineFailureTemplate(activityName, req.Body, activityURL, s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PENDING_INPUT:
+		activityID := req.Data["activity_id"]
+		activityURL := s.baseURL + "/app/activities/" + activityID
+		return "Action required: your pipeline needs input",
+			emaildomain.PendingInputTemplate(activityURL, s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_CONNECTION_ACTION:
+		// Title is "Reconnect {destName}", sourceId is in data
+		destName := trimPrefix(req.Title, "Reconnect ")
+		connectionsURL := s.baseURL + "/app/connections"
+		return fmt.Sprintf("Action required: reconnect %s", destName),
+			emaildomain.ConnectionActionTemplate(destName, connectionsURL, s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_SHOWCASE_ROUNDUP:
+		// Title: "Weekly Showcase Roundup Ready", body: "42 activities · view your weekly summary"
+		period := trimSuffix(trimPrefix(req.Title, ""), " Showcase Roundup Ready")
+		slug := req.Data["slug"]
+		periodKey := req.Data["period"]
+		roundupURL := s.baseURL + "/showcase/" + slug + "?period=" + periodKey
+		return fmt.Sprintf("Your %s showcase roundup is ready", strings.ToLower(period)),
+			emaildomain.ShowcaseRoundupTemplate(period, req.Body, roundupURL, s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED:
+		return "A FitGlue pipeline run was cancelled",
+			emaildomain.PipelineCancelledTemplate(s.baseURL)
+
 	default:
 		return "", ""
 	}
+}
+
+// trimPrefix removes a leading prefix from s if present. Unlike strings.TrimPrefix
+// this is just an alias for clarity in renderEmail.
+func trimPrefix(s, prefix string) string {
+	if strings.HasPrefix(s, prefix) {
+		return s[len(prefix):]
+	}
+	return s
+}
+
+func trimSuffix(s, suffix string) string {
+	if strings.HasSuffix(s, suffix) {
+		return s[:len(s)-len(suffix)]
+	}
+	return s
 }
 
 // activeChannels returns the channels configured for this notification type.

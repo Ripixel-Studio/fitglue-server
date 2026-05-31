@@ -242,6 +242,224 @@ func SubscriptionCancelledTemplate(baseURL string) string {
 	})
 }
 
+// AccessGrantedTemplate is sent when an admin approves a waitlisted user's account.
+func AccessGrantedTemplate(baseURL string) string {
+	dashboardURL := fmt.Sprintf("%s/app", baseURL)
+
+	stepsHTML := fmt.Sprintf(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%%" style="margin:24px 0;">
+  <tr>
+    <td style="background:%s;border-radius:10px;padding:20px 24px;">
+      <p style="color:%s;font-size:15px;font-weight:600;margin:0 0 12px;">Get started in three steps:</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="display:inline-block;background:%s;color:#fff;font-size:11px;font-weight:700;border-radius:50%%;width:20px;height:20px;text-align:center;line-height:20px;margin-right:10px;">1</span>
+            <span style="color:%s;font-size:14px;">Connect a fitness source (Strava, Hevy, Fitbit…)</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="display:inline-block;background:%s;color:#fff;font-size:11px;font-weight:700;border-radius:50%%;width:20px;height:20px;text-align:center;line-height:20px;margin-right:10px;">2</span>
+            <span style="color:%s;font-size:14px;">Set up a pipeline with boosters and a destination</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="display:inline-block;background:%s;color:#fff;font-size:11px;font-weight:700;border-radius:50%%;width:20px;height:20px;text-align:center;line-height:20px;margin-right:10px;">3</span>
+            <span style="color:%s;font-size:14px;">Record a workout — FitGlue takes it from there</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`,
+		Brand.BgBody,
+		Brand.TextPrimary,
+		Brand.Primary, Brand.TextSecondary,
+		Brand.Secondary, Brand.TextSecondary,
+		Brand.Primary, Brand.TextSecondary,
+	)
+
+	content := joinContent(
+		emoji("🎉"),
+		heading("You're in!"),
+		paragraph("Your FitGlue account has been approved and is ready to use. You have a <strong style=\"color:"+Brand.TextPrimary+"\">30-day free Athlete trial</strong> — full access to every feature, no card required."),
+		stepsHTML,
+		ctaButton("Go to Dashboard", dashboardURL),
+		divider(),
+		smallText(fmt.Sprintf(`Questions? We're here at <a href="mailto:support@fitglue.tech" style="color:%s;">support@fitglue.tech</a> or in the <a href="https://discord.gg/fitglue" style="color:%s;">community Discord</a>.`, Brand.Primary, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: "Your FitGlue account is ready — let's get started",
+		Content:     content,
+	})
+}
+
+// ActivitySyncedTemplate is sent on a successful pipeline run (NOTIFICATION_TYPE_PIPELINE_SUCCESS).
+// activityName is the human-readable activity title; destinations is a comma-separated list
+// of where it was synced; activityURL is a deep-link to the activity in the app.
+func ActivitySyncedTemplate(activityName, destinations, activityURL, baseURL string) string {
+	destHTML := ""
+	if destinations != "" {
+		var pills strings.Builder
+		for _, d := range strings.Split(destinations, ", ") {
+			d = strings.TrimSpace(d)
+			if d == "" {
+				continue
+			}
+			pills.WriteString(fmt.Sprintf(
+				`<span style="display:inline-block;background:%s;color:%s;font-size:13px;font-weight:600;border-radius:20px;padding:4px 12px;margin:3px 4px 3px 0;">%s</span>`,
+				Brand.BgBody, Brand.TextPrimary, d,
+			))
+		}
+		destHTML = fmt.Sprintf(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%%" style="margin:16px 0 24px;">
+  <tr>
+    <td style="background:%s;border-radius:10px;padding:16px 20px;">
+      <p style="color:%s;font-size:13px;font-weight:600;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.05em;">Synced to</p>
+      <div>%s</div>
+    </td>
+  </tr>
+</table>`, Brand.BgBody, Brand.TextMuted, pills.String())
+	}
+
+	content := joinContent(
+		emoji("✅"),
+		heading("Activity synced!"),
+		paragraph(fmt.Sprintf(`<strong style="color:%s;">%s</strong> has been processed and synced to your connected destinations.`, Brand.TextPrimary, activityName)),
+		destHTML,
+		ctaButton("View Activity", activityURL),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: fmt.Sprintf("%s synced successfully", activityName),
+		Content:     content,
+	})
+}
+
+// PipelineFailureTemplate is sent when a pipeline run fails (NOTIFICATION_TYPE_PIPELINE_FAILURE).
+func PipelineFailureTemplate(activityName, reason, activityURL, baseURL string) string {
+	pipelinesURL := fmt.Sprintf("%s/app/pipelines", baseURL)
+
+	reasonHTML := ""
+	if reason != "" {
+		reasonHTML = fmt.Sprintf(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%%" style="margin:16px 0 24px;">
+  <tr>
+    <td style="background:%s;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:14px 18px;">
+      <p style="color:%s;font-size:14px;margin:0;">%s</p>
+    </td>
+  </tr>
+</table>`, Brand.BgBody, Brand.TextSecondary, reason)
+	}
+
+	content := joinContent(
+		emoji("⚠️"),
+		heading("Pipeline error"),
+		paragraph(fmt.Sprintf(`<strong style="color:%s;">%s</strong> couldn't be fully synced. Don't worry — your activity data is safe and saved in FitGlue.`, Brand.TextPrimary, activityName)),
+		reasonHTML,
+		ctaButton("View Activity", activityURL),
+		divider(),
+		smallText(fmt.Sprintf(`Check your <a href="%s" style="color:%s;">pipeline settings</a> if this keeps happening, or reach out at <a href="mailto:support@fitglue.tech" style="color:%s;">support@fitglue.tech</a>.`, pipelinesURL, Brand.Primary, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: fmt.Sprintf("Sync error for %s — action may be needed", activityName),
+		Content:     content,
+	})
+}
+
+// PendingInputTemplate is sent when a pipeline is paused waiting for user input
+// (NOTIFICATION_TYPE_PENDING_INPUT).
+func PendingInputTemplate(activityURL, baseURL string) string {
+	content := joinContent(
+		emoji("🔔"),
+		heading("Your pipeline needs input"),
+		paragraph("An activity has been paused mid-pipeline and is waiting for information from you before it can continue processing."),
+		paragraph("This usually happens when a booster needs a detail it couldn't resolve automatically — like a parkrun result, a manual override, or a choice about where to sync."),
+		ctaButton("Review &amp; Continue", activityURL),
+		divider(),
+		smallText("If you don't respond before the deadline, the pipeline will auto-cancel for this activity. You can always re-run it manually from the activity page."),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: "Action required: a pipeline is waiting for your input",
+		Content:     content,
+	})
+}
+
+// ConnectionActionTemplate is sent when a destination connection needs to be re-authorised
+// (NOTIFICATION_TYPE_CONNECTION_ACTION).
+func ConnectionActionTemplate(destName, connectionsURL, baseURL string) string {
+	content := joinContent(
+		emoji("🔗"),
+		heading(fmt.Sprintf("Reconnect %s", destName)),
+		paragraph(fmt.Sprintf(`Your <strong style="color:%s;">%s</strong> connection has expired and needs to be re-authorised. Syncs to %s are paused until you reconnect.`, Brand.TextPrimary, destName, destName)),
+		paragraph("This happens periodically as part of OAuth security — it only takes a few seconds to fix."),
+		ctaButton(fmt.Sprintf("Reconnect %s", destName), connectionsURL),
+		divider(),
+		smallText(fmt.Sprintf(`If you no longer use %s with FitGlue, you can remove the connection from your <a href="%s" style="color:%s;">integrations page</a>.`, destName, connectionsURL, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: fmt.Sprintf("Action required: reconnect your %s integration", destName),
+		Content:     content,
+	})
+}
+
+// ShowcaseRoundupTemplate is sent when a showcase roundup is generated
+// (NOTIFICATION_TYPE_SHOWCASE_ROUNDUP).
+// period is a human-readable string like "Weekly", "Monthly", or "Yearly".
+func ShowcaseRoundupTemplate(period, summary, roundupURL, baseURL string) string {
+	periodLower := strings.ToLower(period)
+
+	content := joinContent(
+		emoji("🏆"),
+		heading(fmt.Sprintf("Your %s roundup is ready", periodLower)),
+		paragraph(fmt.Sprintf(`Your <strong style="color:%s;">%s showcase roundup</strong> has been generated and added to your profile.`, Brand.TextPrimary, periodLower)),
+		fmt.Sprintf(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%%" style="margin:24px 0;">
+  <tr>
+    <td style="background:%s;border-radius:10px;padding:20px 24px;text-align:center;">
+      <p style="color:%s;font-size:15px;margin:0;">%s</p>
+    </td>
+  </tr>
+</table>`, Brand.BgBody, Brand.TextSecondary, summary),
+		ctaButton("View Your Roundup", roundupURL),
+		divider(),
+		smallText(fmt.Sprintf(`Roundups are published to your public showcase profile. <a href="%s/app/settings" style="color:%s;">Manage your showcase settings</a>.`, baseURL, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: fmt.Sprintf("Your %s fitness roundup is ready to view", periodLower),
+		Content:     content,
+	})
+}
+
+// PipelineCancelledTemplate is sent when a pipeline run is cancelled
+// (NOTIFICATION_TYPE_PIPELINE_CANCELLED).
+func PipelineCancelledTemplate(baseURL string) string {
+	pipelinesURL := fmt.Sprintf("%s/app/pipelines", baseURL)
+
+	content := joinContent(
+		emoji("🚫"),
+		heading("Pipeline run cancelled"),
+		paragraph("A pipeline run for one of your activities was cancelled before it could complete. This can happen if the activity was deleted, the pipeline was paused, or a required input was never provided."),
+		paragraph("Your activity data is still safely stored in FitGlue — you can re-run the pipeline manually from the activity page."),
+		ctaButton("Go to Pipelines", pipelinesURL),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: "A FitGlue pipeline run was cancelled",
+		Content:     content,
+	})
+}
+
 // RegistrationSummaryUser represents a user row in the admin email
 type RegistrationSummaryUser struct {
 	Email         string
