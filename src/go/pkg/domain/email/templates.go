@@ -168,6 +168,80 @@ func TrialExpiredTemplate(baseURL string) string {
 	})
 }
 
+func SubscriptionConfirmationTemplate(baseURL string) string {
+	manageURL := fmt.Sprintf("%s/app/subscription", baseURL)
+
+	benefitsHTML := fmt.Sprintf(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%%" style="margin:24px 0;">
+  <tr>
+    <td style="background:%s;border-radius:10px;padding:20px 24px;">
+      <p style="color:%s;font-size:15px;font-weight:600;margin:0 0 12px;">Your Athlete benefits:</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding:4px 0;color:%s;font-size:14px;">⚡ Unlimited pipelines &amp; syncs</td></tr>
+        <tr><td style="padding:4px 0;color:%s;font-size:14px;">🤖 Premium AI &amp; image boosters</td></tr>
+        <tr><td style="padding:4px 0;color:%s;font-size:14px;">🏆 Showcase profile &amp; permanent activity history</td></tr>
+        <tr><td style="padding:4px 0;color:%s;font-size:14px;">🔗 All integrations &amp; destinations</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>`, Brand.BgBody, Brand.TextPrimary, Brand.TextSecondary, Brand.TextSecondary, Brand.TextSecondary, Brand.TextSecondary)
+
+	content := joinContent(
+		emoji("🎉"),
+		heading("You're now an Athlete!"),
+		paragraph("Your subscription is confirmed. Welcome to FitGlue Athlete — you now have full access to all features."),
+		benefitsHTML,
+		ctaButton("Go to Dashboard", manageURL),
+		divider(),
+		smallText(fmt.Sprintf(`To manage your subscription, visit your <a href="%s" style="color:%s;">subscription page</a>. Questions? Email <a href="mailto:support@fitglue.tech" style="color:%s;">support@fitglue.tech</a>.`, manageURL, Brand.Primary, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: "Your FitGlue Athlete subscription is confirmed",
+		Content:     content,
+	})
+}
+
+func PaymentFailedTemplate(baseURL string) string {
+	updateURL := fmt.Sprintf("%s/app/subscription", baseURL)
+
+	content := joinContent(
+		emoji("⚠️"),
+		heading("Payment failed — action required"),
+		paragraph("We were unable to process your FitGlue Athlete subscription payment. Your access has not been affected yet, but we'll retry the charge over the next few days."),
+		paragraph(fmt.Sprintf(`Please update your payment method to avoid any interruption to your Athlete benefits.`, )),
+		ctaButton("Update Payment Method", updateURL),
+		divider(),
+		smallText(fmt.Sprintf(`If your payment continues to fail, your subscription will be cancelled and your account will revert to the Hobbyist tier. Questions? Contact us at <a href="mailto:support@fitglue.tech" style="color:%s;">support@fitglue.tech</a>.`, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: "Action required: your FitGlue payment failed",
+		Content:     content,
+	})
+}
+
+func SubscriptionCancelledTemplate(baseURL string) string {
+	upgradeURL := fmt.Sprintf("%s/app/subscription", baseURL)
+
+	content := joinContent(
+		emoji("👋"),
+		heading("Your Athlete subscription has ended"),
+		paragraph("Your FitGlue Athlete subscription has been cancelled and your account has moved to the free Hobbyist tier. Your data and activity history are safe — nothing has been deleted."),
+		paragraph("You can re-subscribe at any time to regain full Athlete access."),
+		ctaButton("Re-subscribe to Athlete", upgradeURL),
+		divider(),
+		smallText(fmt.Sprintf(`If you cancelled by mistake or have questions, reach out at <a href="mailto:support@fitglue.tech" style="color:%s;">support@fitglue.tech</a>.`, Brand.Primary)),
+	)
+
+	return RenderLayout(LayoutOptions{
+		BaseURL:     baseURL,
+		PreviewText: "Your FitGlue Athlete subscription has ended",
+		Content:     content,
+	})
+}
+
 // RegistrationSummaryUser represents a user row in the admin email
 type RegistrationSummaryUser struct {
 	Email         string

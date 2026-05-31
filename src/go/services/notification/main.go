@@ -8,11 +8,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
 	"github.com/fitglue/server/src/go/internal/infra"
+	emaildomain "github.com/fitglue/server/src/go/pkg/domain/email"
+	emailinfra "github.com/fitglue/server/src/go/pkg/infrastructure/email"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
 	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -45,10 +48,38 @@ func main() {
 		log.Fatalf("FCM init: %v", err)
 	}
 
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://fitglue.tech"
+	}
+
+	// Email sender — required for billing transactional emails.
+	emailUser := os.Getenv("SYSTEM_EMAIL")
+	emailPass := os.Getenv("EMAIL_APP_PASSWORD")
+	smtpHost := os.Getenv("EMAIL_SMTP_HOST")
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	smtpPort := 465
+	if p := os.Getenv("EMAIL_SMTP_PORT"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil {
+			smtpPort = n
+		}
+	}
+
+	var emailSender emailinfra.Sender
+	if emailUser != "" && emailPass != "" {
+		emailSender = emailinfra.NewSMTPSender(smtpHost, smtpPort, emailUser, emailPass)
+	} else {
+		logger.Info(ctx, "SYSTEM_EMAIL/EMAIL_APP_PASSWORD not set — email channel will be skipped")
+	}
+
 	svc := &notificationService{
-		fs:     fsClient,
-		fcm:    fcmAdapter,
-		logger: logger,
+		fs:          fsClient,
+		fcm:         fcmAdapter,
+		emailSender: emailSender,
+		baseURL:     baseURL,
+		logger:      logger,
 	}
 
 	mux := http.NewServeMux()
@@ -68,9 +99,11 @@ func main() {
 }
 
 type notificationService struct {
-	fs     *firestore.Client
-	fcm    *notifications.FCMAdapter
-	logger infra.Logger
+	fs          *firestore.Client
+	fcm         *notifications.FCMAdapter
+	emailSender emailinfra.Sender
+	baseURL     string
+	logger      infra.Logger
 }
 
 func (s *notificationService) handlePubSub(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +171,9 @@ func (s *notificationService) dispatch(ctx context.Context, req *pbnotification.
 		}
 	}
 
+	// Read user email for email channel
+	userEmail, _ := doc.Data()["email"].(string)
+
 	channels := activeChannels(&prefs, req.Type)
 	if len(channels) == 0 {
 		s.logger.Info(ctx, "notification suppressed by user prefs", "user_id", req.UserId, "type", req.Type.String())
@@ -155,8 +191,7 @@ func (s *notificationService) dispatch(ctx context.Context, req *pbnotification.
 			case pbuser.NotificationChannel_NOTIFICATION_CHANNEL_PUSH:
 				s.dispatchPush(ctx, req, fcmTokens)
 			case pbuser.NotificationChannel_NOTIFICATION_CHANNEL_EMAIL:
-				// Email dispatcher: not yet wired — placeholder for future implementation
-				s.logger.Info(ctx, "email channel selected but not yet implemented", "user_id", req.UserId)
+				s.dispatchEmail(ctx, req, userEmail)
 			}
 		}()
 	}
@@ -181,9 +216,83 @@ func (s *notificationService) dispatchPush(ctx context.Context, req *pbnotificat
 	}
 }
 
+func (s *notificationService) dispatchEmail(ctx context.Context, req *pbnotification.NotificationRequest, toEmail string) {
+	if s.emailSender == nil {
+		s.logger.Info(ctx, "email sender not configured, skipping", "user_id", req.UserId, "type", req.Type.String())
+		return
+	}
+	if toEmail == "" {
+		s.logger.Info(ctx, "user has no email address, skipping email dispatch", "user_id", req.UserId)
+		return
+	}
+
+	subject, html := s.renderEmail(req)
+	if html == "" {
+		s.logger.Info(ctx, "no email template for notification type", "type", req.Type.String())
+		return
+	}
+
+	if err := s.emailSender.SendEmail(ctx, toEmail, subject, html); err != nil {
+		s.logger.Error(ctx, "email send failed", "error", err, "user_id", req.UserId, "to", toEmail)
+	}
+}
+
+// renderEmail returns the subject and HTML body for a given notification.
+// Returns empty strings if there is no email template for this type.
+func (s *notificationService) renderEmail(req *pbnotification.NotificationRequest) (subject, html string) {
+	switch req.Type {
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_STARTED:
+		return "You're now a FitGlue Athlete!", emaildomain.SubscriptionConfirmationTemplate(s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PAYMENT_FAILED:
+		return "Action required: your FitGlue payment failed", emaildomain.PaymentFailedTemplate(s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_ENDED:
+		return "Your FitGlue Athlete subscription has ended", emaildomain.SubscriptionCancelledTemplate(s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRING:
+		daysLeft := 7
+		if d, ok := req.Data["days_left"]; ok {
+			if n, err := strconv.Atoi(d); err == nil {
+				daysLeft = n
+			}
+		}
+		plural := ""
+		if daysLeft != 1 {
+			plural = "s"
+		}
+		return fmt.Sprintf("Your Athlete trial ends in %d day%s", daysLeft, plural),
+			emaildomain.TrialExpiringTemplate(daysLeft, s.baseURL)
+
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRED:
+		return "Your FitGlue Athlete trial has ended", emaildomain.TrialExpiredTemplate(s.baseURL)
+
+	default:
+		return "", ""
+	}
+}
+
 // activeChannels returns the channels configured for this notification type.
-// If the preference is absent (nil), defaults to [PUSH] — existing users stay notified.
+// Billing notification types are transactional — they always go to email regardless
+// of user preferences. All other types default to [PUSH] when no preference is set.
 func activeChannels(prefs *pbuser.NotificationPreferences, t pbnotification.NotificationType) []pbuser.NotificationChannel {
+	switch t {
+	// Transactional billing types: always email, never suppressed by prefs.
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_STARTED,
+		pbnotification.NotificationType_NOTIFICATION_TYPE_PAYMENT_FAILED,
+		pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_ENDED,
+		pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRED:
+		return []pbuser.NotificationChannel{pbuser.NotificationChannel_NOTIFICATION_CHANNEL_EMAIL}
+
+	// Trial expiring: push reminder + email.
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRING:
+		return []pbuser.NotificationChannel{
+			pbuser.NotificationChannel_NOTIFICATION_CHANNEL_PUSH,
+			pbuser.NotificationChannel_NOTIFICATION_CHANNEL_EMAIL,
+		}
+	}
+
+	// Pipeline / other types: respect user preferences.
 	var typePref *pbuser.NotificationTypePreference
 	switch t {
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_PENDING_INPUT:
@@ -220,6 +329,16 @@ func notificationTypeString(t pbnotification.NotificationType) string {
 		return "SHOWCASE_ROUNDUP"
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED:
 		return "PIPELINE_CANCELLED"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_STARTED:
+		return "SUBSCRIPTION_STARTED"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PAYMENT_FAILED:
+		return "PAYMENT_FAILED"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_ENDED:
+		return "SUBSCRIPTION_ENDED"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRING:
+		return "TRIAL_EXPIRING"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRED:
+		return "TRIAL_EXPIRED"
 	default:
 		return "UNKNOWN"
 	}

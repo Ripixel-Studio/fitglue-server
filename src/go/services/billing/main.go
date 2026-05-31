@@ -7,8 +7,10 @@ import (
 	"os"
 
 	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/pubsub"
 	"github.com/fitglue/server/src/go/internal/billing"
 	"github.com/fitglue/server/src/go/internal/infra"
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -49,7 +51,15 @@ func main() {
 
 	stripeClient := billing.NewLiveStripeClient(stripeSecret)
 
-	svc := billing.NewService(store, logger, stripeClient, priceID, webhookSecret)
+	rawPubClient, err := pubsub.NewClient(ctx, projectID)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize Pub/Sub client", "error", err)
+		os.Exit(1)
+	}
+	defer rawPubClient.Close()
+	publisher := &infrapubsub.PubSubAdapter{Client: rawPubClient, Logger: logger}
+
+	svc := billing.NewService(store, logger, stripeClient, publisher, priceID, webhookSecret)
 
 	server := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pbsvc.RegisterBillingServiceServer(server, svc)

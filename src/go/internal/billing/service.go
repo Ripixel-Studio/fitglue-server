@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/fitglue/server/src/go/internal/infra"
+	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/notificationpub"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	"github.com/stripe/stripe-go/v76"
@@ -23,17 +26,35 @@ type Service struct {
 	store         Store
 	logger        infra.Logger
 	stripeClient  StripeClient
+	publisher     shared.Publisher
 	priceID       string
 	webhookSecret string
 }
 
-func NewService(store Store, logger infra.Logger, stripeClient StripeClient, priceID, webhookSecret string) *Service {
+func NewService(store Store, logger infra.Logger, stripeClient StripeClient, publisher shared.Publisher, priceID, webhookSecret string) *Service {
 	return &Service{
 		store:         store,
 		logger:        logger,
 		stripeClient:  stripeClient,
+		publisher:     publisher,
 		priceID:       priceID,
 		webhookSecret: webhookSecret,
+	}
+}
+
+func (s *Service) enqueueNotification(ctx context.Context, userID string, notifType pbnotification.NotificationType, title, body string, data map[string]string) {
+	if s.publisher == nil {
+		return
+	}
+	req := &pbnotification.NotificationRequest{
+		UserId: userID,
+		Type:   notifType,
+		Title:  title,
+		Body:   body,
+		Data:   data,
+	}
+	if err := notificationpub.Enqueue(ctx, s.publisher, req); err != nil {
+		s.logger.Error(ctx, "failed to enqueue billing notification", "error", err, "type", notifType.String())
 	}
 }
 
@@ -242,8 +263,7 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 
 		userID := session.Metadata["fitglue_user_id"]
 		if userID != "" {
-			err := s.store.UpdateUserTier(ctx, userID, pbuser.UserTier_USER_TIER_ATHLETE, nil)
-			if err != nil {
+			if err := s.store.UpdateUserTier(ctx, userID, pbuser.UserTier_USER_TIER_ATHLETE, nil); err != nil {
 				s.logger.Error(ctx, "failed to update user tier to athlete", "error", err, "userId", userID)
 			}
 
@@ -258,6 +278,37 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 				sub.StripeSubscriptionId = session.Subscription.ID
 			}
 			_ = s.store.UpsertSubscription(ctx, sub)
+
+			s.enqueueNotification(ctx, userID,
+				pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_STARTED,
+				"Welcome to Athlete!",
+				"Your FitGlue Athlete subscription is confirmed. Enjoy unlimited syncs and all premium features.",
+				nil,
+			)
+		}
+
+	case "invoice.payment_failed":
+		var invoice stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
+			return nil, err
+		}
+
+		customerID := ""
+		if invoice.Customer != nil {
+			customerID = invoice.Customer.ID
+		}
+
+		if customerID != "" {
+			userID, err := s.store.GetUserIDByStripeCustomer(ctx, customerID)
+			if err == nil && userID != "" {
+				// Don't downgrade yet — Stripe retries the charge. Just notify.
+				s.enqueueNotification(ctx, userID,
+					pbnotification.NotificationType_NOTIFICATION_TYPE_PAYMENT_FAILED,
+					"Payment failed — action required",
+					"We couldn't process your FitGlue Athlete payment. Please update your payment method to avoid losing access.",
+					nil,
+				)
+			}
 		}
 
 	case "customer.subscription.deleted":
@@ -281,6 +332,13 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 					sub.Status = string(subscription.Status)
 					_ = s.store.UpsertSubscription(ctx, sub)
 				}
+
+				s.enqueueNotification(ctx, userID,
+					pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_ENDED,
+					"Your Athlete subscription has ended",
+					"Your FitGlue Athlete subscription has been cancelled. Your account has moved to the Hobbyist tier.",
+					nil,
+				)
 			}
 		}
 	}

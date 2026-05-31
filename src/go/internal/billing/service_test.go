@@ -191,7 +191,7 @@ func TestGetSubscription(t *testing.T) {
 	store := NewMockStore()
 	stripe := NewMockStripe()
 	logger := mockLogger{}
-	svc := NewService(store, logger, stripe, "price_123", "whsec_123")
+	svc := NewService(store, logger, stripe, nil, "price_123", "whsec_123")
 	ctx := context.Background()
 
 	// Empty sub
@@ -218,7 +218,7 @@ func TestGetTierStatus(t *testing.T) {
 	store := NewMockStore()
 	stripe := NewMockStripe()
 	logger := mockLogger{}
-	svc := NewService(store, logger, stripe, "price_123", "whsec_123")
+	svc := NewService(store, logger, stripe, nil, "price_123", "whsec_123")
 	ctx := context.Background()
 
 	// Base hobbyist
@@ -261,7 +261,7 @@ func TestStartTrial(t *testing.T) {
 	store := NewMockStore()
 	stripe := NewMockStripe()
 	logger := mockLogger{}
-	svc := NewService(store, logger, stripe, "price_123", "whsec_123")
+	svc := NewService(store, logger, stripe, nil, "price_123", "whsec_123")
 	ctx := context.Background()
 
 	// Start trial for hobbyist
@@ -290,7 +290,7 @@ func TestHandleWebhookEvent(t *testing.T) {
 	store := NewMockStore()
 	stripeClient := NewMockStripe()
 	logger := mockLogger{}
-	svc := NewService(store, logger, stripeClient, "price_123", "whsec_123")
+	svc := NewService(store, logger, stripeClient, nil, "price_123", "whsec_123")
 	ctx := context.Background()
 
 	// 1. checkout.session.completed
