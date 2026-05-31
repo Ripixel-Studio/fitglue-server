@@ -85,6 +85,8 @@ func (s *APIServer) handleGetPluginRegistry(w http.ResponseWriter, r *http.Reque
 func (s *APIServer) registerShowcaseRoutes(r chi.Router) {
 	r.Get("/showcase/{id}", s.handleGetPublicShowcase)
 	r.Get("/showcase/profile/{slug}", s.handleGetPublicShowcaseProfile)
+	r.Get("/showcase/{slug}/roundup/{periodKey}", s.handleGetPublicRoundup)
+	r.Get("/showcase/{slug}/roundups/recent", s.handleGetRecentPublicRoundups)
 }
 
 func (s *APIServer) handleListPlugins(w http.ResponseWriter, r *http.Request) {
@@ -168,6 +170,44 @@ func (s *APIServer) handleGetPublicShowcaseProfile(w http.ResponseWriter, r *htt
 	}
 
 	res, err := s.activitySvc.GetPublicShowcaseProfile(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleGetPublicRoundup(w http.ResponseWriter, r *http.Request) {
+	req := &activitypb.GetPublicRoundupRequest{
+		Slug:      chi.URLParam(r, "slug"),
+		PeriodKey: chi.URLParam(r, "periodKey"),
+	}
+
+	res, err := s.activitySvc.GetPublicRoundup(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleGetRecentPublicRoundups(w http.ResponseWriter, r *http.Request) {
+	limitStr := r.URL.Query().Get("limit")
+	var limit int32 = 3
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = int32(l)
+		}
+	}
+
+	req := &activitypb.GetRecentPublicRoundupsRequest{
+		Slug:  chi.URLParam(r, "slug"),
+		Limit: limit,
+	}
+
+	res, err := s.activitySvc.GetRecentPublicRoundups(r.Context(), req)
 	if err != nil {
 		WriteError(w, err)
 		return
