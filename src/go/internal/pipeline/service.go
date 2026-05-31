@@ -227,14 +227,30 @@ func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest
 		return nil, status.Error(codes.FailedPrecondition, "input is not in WAITING state")
 	}
 
-	if input.OriginalPayloadUri == "" || input.LinkedActivityId == "" {
-		return nil, status.Error(codes.Internal, "pending input missing payload URI or linked activity ID")
+	if input.LinkedActivityId == "" {
+		return nil, status.Error(codes.Internal, "pending input missing linked activity ID")
+	}
+
+	payloadUri := input.OriginalPayloadUri
+	if payloadUri == "" {
+		// Pending inputs created directly by enrichers (e.g. parkrun auto-poll) bypass
+		// handleWaitError and never have OriginalPayloadUri set. Fall back to the pipeline
+		// run stored for the linked activity.
+		run, runErr := s.store.FindPipelineRunByActivityId(ctx, req.UserId, input.LinkedActivityId)
+		if runErr != nil {
+			s.logger.Error(ctx, "failed to look up pipeline run for pending input fallback", "error", runErr, "activity_id", input.LinkedActivityId)
+			return nil, status.Error(codes.Internal, "pending input missing payload URI and pipeline run lookup failed")
+		}
+		if run == nil || run.OriginalPayloadUri == "" {
+			return nil, status.Error(codes.Internal, "pending input missing payload URI and no pipeline run found")
+		}
+		payloadUri = run.OriginalPayloadUri
 	}
 
 	// Fetch payload from GCS
-	payloadBytes, err := s.blobStore.Get(ctx, input.OriginalPayloadUri)
+	payloadBytes, err := s.blobStore.Get(ctx, payloadUri)
 	if err != nil {
-		s.logger.Error(ctx, "failed to fetch original payload from GCS", "error", err, "uri", input.OriginalPayloadUri)
+		s.logger.Error(ctx, "failed to fetch original payload from GCS", "error", err, "uri", payloadUri)
 		return nil, status.Error(codes.Internal, "failed to fetch original payload")
 	}
 
