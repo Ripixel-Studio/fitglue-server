@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.32.2](https://github.com/FitGlue/server/compare/v16.32.1...v16.32.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* **parkrun-fetcher:** handle cookie consent wall and add webdriver stealth ([0d93c5e](https://github.com/FitGlue/server/commit/0d93c5ebd48ef9ea91b809648d014a1c5d7c00e0))
+
 ### [16.32.1](https://github.com/FitGlue/server/compare/v16.32.0...v16.32.1) (2026-05-31)
 
 
