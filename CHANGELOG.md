@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.30.2](https://github.com/FitGlue/server/compare/v16.30.1...v16.30.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* **activity:** add GetUserNotificationData stub to mock; pass nil notifications to test helper ([4d6105f](https://github.com/FitGlue/server/commit/4d6105fdf690e7d3e85ee184ded0b5ac52f4143e))
+* **activity:** add nil notifications arg to all NewService calls in tests ([98c2d42](https://github.com/FitGlue/server/commit/98c2d42e4b9e21691ef338f4891babf92c3abee4))
+* **activity:** correct NewService call in showcase_extra_test ([c4f10b9](https://github.com/FitGlue/server/commit/c4f10b9b3b98f18d90c61357bc06339facd7789e))
+* **roundup:** filter showcase entries in Go instead of Firestore range query ([02a2773](https://github.com/FitGlue/server/commit/02a2773364ce80dd2e305330152bba335062d562))
+
 ### [16.30.1](https://github.com/FitGlue/server/compare/v16.30.0...v16.30.1) (2026-05-31)
 
 
