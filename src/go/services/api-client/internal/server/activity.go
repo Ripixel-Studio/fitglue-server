@@ -559,8 +559,17 @@ func (s *APIServer) handleUpdateRoundupSettings(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Body is {"settings": {...}} — extract the inner settings JSON before proto-unmarshaling.
+	var wrapper struct {
+		Settings json.RawMessage `json:"settings"`
+	}
+	if err := json.Unmarshal(body, &wrapper); err != nil || wrapper.Settings == nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
 	var settings pbactivitym.RoundupSettings
-	if err := protoUnmarshaler.Unmarshal(body, &settings); err != nil {
+	if err := protoUnmarshaler.Unmarshal(wrapper.Settings, &settings); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
