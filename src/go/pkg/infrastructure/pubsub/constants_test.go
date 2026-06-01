@@ -3,9 +3,9 @@ package pubsub
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetCloudEventType(t *testing.T) {
