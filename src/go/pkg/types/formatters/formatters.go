@@ -799,6 +799,8 @@ func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 		return "Ical Title"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY:
 		return "Temperature Summary"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS:
+		return "Best Efforts"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -943,6 +945,9 @@ func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 		"enricher_provider_temperature_summary":  pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY,
 		"temperature_summary":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY,
 		"temperature summary":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY,
+		"enricher_provider_best_efforts":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
+		"best_efforts":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
+		"best efforts":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
 		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}

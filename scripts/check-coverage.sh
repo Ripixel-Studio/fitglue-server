@@ -19,7 +19,7 @@ echo "Total Coverage: $COVERAGE%"
 
 # Threshold reflects the current baseline of the codebase.
 # Raise this number as coverage improves over time.
-THRESHOLD=11
+THRESHOLD=25
 COVERAGE_INT=${COVERAGE%.*}
 if [ "$COVERAGE_INT" -lt $THRESHOLD ]; then
   echo "❌ Error: Code coverage ($COVERAGE%) is below the ${THRESHOLD}% requirement."

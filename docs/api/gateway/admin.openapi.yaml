@@ -350,6 +350,7 @@ components:
                         - ENRICHER_PROVIDER_AI_ACTIVITY_TYPE
                         - ENRICHER_PROVIDER_ICAL_TITLE
                         - ENRICHER_PROVIDER_TEMPERATURE_SUMMARY
+                        - ENRICHER_PROVIDER_BEST_EFFORTS
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum

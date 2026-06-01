@@ -1946,6 +1946,8 @@ components:
                     $ref: '#/components/schemas/MuscleHeatmapSummary'
                 temperature:
                     $ref: '#/components/schemas/TemperatureSummary'
+                bestEfforts:
+                    $ref: '#/components/schemas/BestEffortsSummary'
             description: |-
                 ActivityEnrichments holds typed outputs from the enricher pipeline.
                  Each sub-message is optional — only present if the corresponding enricher
@@ -2006,6 +2008,26 @@ components:
                     type: array
                     items:
                         type: string
+        BestEffort:
+            type: object
+            properties:
+                distanceKey:
+                    type: string
+                display:
+                    type: string
+                distanceM:
+                    type: number
+                    format: double
+                timeSeconds:
+                    type: number
+                    format: double
+        BestEffortsSummary:
+            type: object
+            properties:
+                efforts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BestEffort'
         BoosterExecution:
             type: object
             properties:
@@ -2324,6 +2346,7 @@ components:
                         - ENRICHER_PROVIDER_AI_ACTIVITY_TYPE
                         - ENRICHER_PROVIDER_ICAL_TITLE
                         - ENRICHER_PROVIDER_TEMPERATURE_SUMMARY
+                        - ENRICHER_PROVIDER_BEST_EFFORTS
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum

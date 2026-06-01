@@ -104,6 +104,7 @@ type ActivityEnrichments struct {
 	Intervals         *IntervalsSummary         `protobuf:"bytes,23,opt,name=intervals,proto3,oneof" json:"intervals,omitempty"`
 	MuscleHeatmap     *MuscleHeatmapSummary     `protobuf:"bytes,24,opt,name=muscle_heatmap,json=muscleHeatmap,proto3,oneof" json:"muscle_heatmap,omitempty"`
 	Temperature       *TemperatureSummary       `protobuf:"bytes,25,opt,name=temperature,proto3,oneof" json:"temperature,omitempty"`
+	BestEfforts       *BestEffortsSummary       `protobuf:"bytes,26,opt,name=best_efforts,json=bestEfforts,proto3,oneof" json:"best_efforts,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -309,6 +310,13 @@ func (x *ActivityEnrichments) GetMuscleHeatmap() *MuscleHeatmapSummary {
 func (x *ActivityEnrichments) GetTemperature() *TemperatureSummary {
 	if x != nil {
 		return x.Temperature
+	}
+	return nil
+}
+
+func (x *ActivityEnrichments) GetBestEfforts() *BestEffortsSummary {
+	if x != nil {
+		return x.BestEfforts
 	}
 	return nil
 }
@@ -2405,11 +2413,123 @@ func (x *MuscleHeatmapSummary) GetImageUrl() string {
 	return ""
 }
 
+type BestEffort struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DistanceKey   string                 `protobuf:"bytes,1,opt,name=distance_key,json=distanceKey,proto3" json:"distance_key,omitempty"` // e.g. "5k", "half_marathon", "1_mile"
+	Display       string                 `protobuf:"bytes,2,opt,name=display,proto3" json:"display,omitempty"`                            // e.g. "5K", "Half Marathon", "1 Mile"
+	DistanceM     float64                `protobuf:"fixed64,3,opt,name=distance_m,json=distanceM,proto3" json:"distance_m,omitempty"`
+	TimeSeconds   float64                `protobuf:"fixed64,4,opt,name=time_seconds,json=timeSeconds,proto3" json:"time_seconds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BestEffort) Reset() {
+	*x = BestEffort{}
+	mi := &file_models_activity_enrichments_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BestEffort) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BestEffort) ProtoMessage() {}
+
+func (x *BestEffort) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_enrichments_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BestEffort.ProtoReflect.Descriptor instead.
+func (*BestEffort) Descriptor() ([]byte, []int) {
+	return file_models_activity_enrichments_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *BestEffort) GetDistanceKey() string {
+	if x != nil {
+		return x.DistanceKey
+	}
+	return ""
+}
+
+func (x *BestEffort) GetDisplay() string {
+	if x != nil {
+		return x.Display
+	}
+	return ""
+}
+
+func (x *BestEffort) GetDistanceM() float64 {
+	if x != nil {
+		return x.DistanceM
+	}
+	return 0
+}
+
+func (x *BestEffort) GetTimeSeconds() float64 {
+	if x != nil {
+		return x.TimeSeconds
+	}
+	return 0
+}
+
+type BestEffortsSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Efforts       []*BestEffort          `protobuf:"bytes,1,rep,name=efforts,proto3" json:"efforts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BestEffortsSummary) Reset() {
+	*x = BestEffortsSummary{}
+	mi := &file_models_activity_enrichments_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BestEffortsSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BestEffortsSummary) ProtoMessage() {}
+
+func (x *BestEffortsSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_enrichments_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BestEffortsSummary.ProtoReflect.Descriptor instead.
+func (*BestEffortsSummary) Descriptor() ([]byte, []int) {
+	return file_models_activity_enrichments_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *BestEffortsSummary) GetEfforts() []*BestEffort {
+	if x != nil {
+		return x.Efforts
+	}
+	return nil
+}
+
 var File_models_activity_enrichments_proto protoreflect.FileDescriptor
 
 const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\n" +
-	"!models/activity/enrichments.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x12\n" +
+	"!models/activity/enrichments.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9e\x13\n" +
 	"\x13ActivityEnrichments\x12M\n" +
 	"\n" +
 	"heart_rate\x18\x01 \x01(\v2).fitglue.models.activity.HeartRateSummaryH\x00R\theartRate\x88\x01\x01\x12]\n" +
@@ -2439,7 +2559,8 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\aspotify\x18\x16 \x01(\v2-.fitglue.models.activity.SpotifyTracksSummaryH\x15R\aspotify\x88\x01\x01\x12L\n" +
 	"\tintervals\x18\x17 \x01(\v2).fitglue.models.activity.IntervalsSummaryH\x16R\tintervals\x88\x01\x01\x12Y\n" +
 	"\x0emuscle_heatmap\x18\x18 \x01(\v2-.fitglue.models.activity.MuscleHeatmapSummaryH\x17R\rmuscleHeatmap\x88\x01\x01\x12R\n" +
-	"\vtemperature\x18\x19 \x01(\v2+.fitglue.models.activity.TemperatureSummaryH\x18R\vtemperature\x88\x01\x01B\r\n" +
+	"\vtemperature\x18\x19 \x01(\v2+.fitglue.models.activity.TemperatureSummaryH\x18R\vtemperature\x88\x01\x01\x12S\n" +
+	"\fbest_efforts\x18\x1a \x01(\v2+.fitglue.models.activity.BestEffortsSummaryH\x19R\vbestEfforts\x88\x01\x01B\r\n" +
 	"\v_heart_rateB\x13\n" +
 	"\x11_heart_rate_zonesB\t\n" +
 	"\a_effortB\v\n" +
@@ -2471,7 +2592,8 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\n" +
 	"_intervalsB\x11\n" +
 	"\x0f_muscle_heatmapB\x0e\n" +
-	"\f_temperature\"\x9f\x01\n" +
+	"\f_temperatureB\x0f\n" +
+	"\r_best_efforts\"\x9f\x01\n" +
 	"\x10HeartRateSummary\x12\x17\n" +
 	"\amin_bpm\x18\x01 \x01(\x05R\x06minBpm\x12\x17\n" +
 	"\aavg_bpm\x18\x02 \x01(\x05R\x06avgBpm\x12\x17\n" +
@@ -2635,7 +2757,16 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\x14MuscleHeatmapSummary\x12\x18\n" +
 	"\aprimary\x18\x01 \x03(\tR\aprimary\x12\x1c\n" +
 	"\tsecondary\x18\x02 \x03(\tR\tsecondary\x12\x1b\n" +
-	"\timage_url\x18\x03 \x01(\tR\bimageUrl*\x84\x01\n" +
+	"\timage_url\x18\x03 \x01(\tR\bimageUrl\"\x8b\x01\n" +
+	"\n" +
+	"BestEffort\x12!\n" +
+	"\fdistance_key\x18\x01 \x01(\tR\vdistanceKey\x12\x18\n" +
+	"\adisplay\x18\x02 \x01(\tR\adisplay\x12\x1d\n" +
+	"\n" +
+	"distance_m\x18\x03 \x01(\x01R\tdistanceM\x12!\n" +
+	"\ftime_seconds\x18\x04 \x01(\x01R\vtimeSeconds\"S\n" +
+	"\x12BestEffortsSummary\x12=\n" +
+	"\aefforts\x18\x01 \x03(\v2#.fitglue.models.activity.BestEffortR\aefforts*\x84\x01\n" +
 	"\x0eStreakDayState\x12 \n" +
 	"\x1cSTREAK_DAY_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14STREAK_DAY_STATE_OFF\x10\x01\x12\x1b\n" +
@@ -2655,7 +2786,7 @@ func file_models_activity_enrichments_proto_rawDescGZIP() []byte {
 }
 
 var file_models_activity_enrichments_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_models_activity_enrichments_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_models_activity_enrichments_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_models_activity_enrichments_proto_goTypes = []any{
 	(StreakDayState)(0),              // 0: fitglue.models.activity.StreakDayState
 	(*ActivityEnrichments)(nil),      // 1: fitglue.models.activity.ActivityEnrichments
@@ -2692,7 +2823,9 @@ var file_models_activity_enrichments_proto_goTypes = []any{
 	(*IntervalsSummary)(nil),         // 32: fitglue.models.activity.IntervalsSummary
 	(*TemperatureSummary)(nil),       // 33: fitglue.models.activity.TemperatureSummary
 	(*MuscleHeatmapSummary)(nil),     // 34: fitglue.models.activity.MuscleHeatmapSummary
-	(*timestamppb.Timestamp)(nil),    // 35: google.protobuf.Timestamp
+	(*BestEffort)(nil),               // 35: fitglue.models.activity.BestEffort
+	(*BestEffortsSummary)(nil),       // 36: fitglue.models.activity.BestEffortsSummary
+	(*timestamppb.Timestamp)(nil),    // 37: google.protobuf.Timestamp
 }
 var file_models_activity_enrichments_proto_depIdxs = []int32{
 	2,  // 0: fitglue.models.activity.ActivityEnrichments.heart_rate:type_name -> fitglue.models.activity.HeartRateSummary
@@ -2720,21 +2853,23 @@ var file_models_activity_enrichments_proto_depIdxs = []int32{
 	32, // 22: fitglue.models.activity.ActivityEnrichments.intervals:type_name -> fitglue.models.activity.IntervalsSummary
 	34, // 23: fitglue.models.activity.ActivityEnrichments.muscle_heatmap:type_name -> fitglue.models.activity.MuscleHeatmapSummary
 	33, // 24: fitglue.models.activity.ActivityEnrichments.temperature:type_name -> fitglue.models.activity.TemperatureSummary
-	4,  // 25: fitglue.models.activity.HeartRateZonesSummary.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
-	6,  // 26: fitglue.models.activity.EffortScoreSummary.factors:type_name -> fitglue.models.activity.EffortFactor
-	11, // 27: fitglue.models.activity.StreakSummary.calendar:type_name -> fitglue.models.activity.StreakDay
-	0,  // 28: fitglue.models.activity.StreakDay.state:type_name -> fitglue.models.activity.StreakDayState
-	35, // 29: fitglue.models.activity.AiSummary.generated_at:type_name -> google.protobuf.Timestamp
-	15, // 30: fitglue.models.activity.PaceSummary.splits:type_name -> fitglue.models.activity.PaceSplit
-	24, // 31: fitglue.models.activity.PersonalRecordsSummary.records:type_name -> fitglue.models.activity.PersonalRecord
-	27, // 32: fitglue.models.activity.GoalTrackerSummary.goals:type_name -> fitglue.models.activity.GoalEntry
-	29, // 33: fitglue.models.activity.SpotifyTracksSummary.tracks:type_name -> fitglue.models.activity.SpotifyTrack
-	31, // 34: fitglue.models.activity.IntervalsSummary.segments:type_name -> fitglue.models.activity.IntervalSegment
-	35, // [35:35] is the sub-list for method output_type
-	35, // [35:35] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	36, // 25: fitglue.models.activity.ActivityEnrichments.best_efforts:type_name -> fitglue.models.activity.BestEffortsSummary
+	4,  // 26: fitglue.models.activity.HeartRateZonesSummary.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
+	6,  // 27: fitglue.models.activity.EffortScoreSummary.factors:type_name -> fitglue.models.activity.EffortFactor
+	11, // 28: fitglue.models.activity.StreakSummary.calendar:type_name -> fitglue.models.activity.StreakDay
+	0,  // 29: fitglue.models.activity.StreakDay.state:type_name -> fitglue.models.activity.StreakDayState
+	37, // 30: fitglue.models.activity.AiSummary.generated_at:type_name -> google.protobuf.Timestamp
+	15, // 31: fitglue.models.activity.PaceSummary.splits:type_name -> fitglue.models.activity.PaceSplit
+	24, // 32: fitglue.models.activity.PersonalRecordsSummary.records:type_name -> fitglue.models.activity.PersonalRecord
+	27, // 33: fitglue.models.activity.GoalTrackerSummary.goals:type_name -> fitglue.models.activity.GoalEntry
+	29, // 34: fitglue.models.activity.SpotifyTracksSummary.tracks:type_name -> fitglue.models.activity.SpotifyTrack
+	31, // 35: fitglue.models.activity.IntervalsSummary.segments:type_name -> fitglue.models.activity.IntervalSegment
+	35, // 36: fitglue.models.activity.BestEffortsSummary.efforts:type_name -> fitglue.models.activity.BestEffort
+	37, // [37:37] is the sub-list for method output_type
+	37, // [37:37] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_enrichments_proto_init() }
@@ -2751,7 +2886,7 @@ func file_models_activity_enrichments_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_enrichments_proto_rawDesc), len(file_models_activity_enrichments_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   34,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

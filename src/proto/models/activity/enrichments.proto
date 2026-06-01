@@ -35,6 +35,7 @@ message ActivityEnrichments {
   optional IntervalsSummary intervals = 23;
   optional MuscleHeatmapSummary muscle_heatmap = 24;
   optional TemperatureSummary temperature = 25;
+  optional BestEffortsSummary best_efforts = 26;
 }
 
 message HeartRateSummary {
@@ -254,4 +255,15 @@ message MuscleHeatmapSummary {
   repeated string primary = 1;    // e.g. ["chest", "triceps"]
   repeated string secondary = 2;  // e.g. ["shoulders"]
   string image_url = 3;           // populated by MUSCLE_HEATMAP_IMAGE if it ran
+}
+
+message BestEffort {
+  string distance_key = 1;   // e.g. "5k", "half_marathon", "1_mile"
+  string display = 2;        // e.g. "5K", "Half Marathon", "1 Mile"
+  double distance_m = 3;
+  double time_seconds = 4;
+}
+
+message BestEffortsSummary {
+  repeated BestEffort efforts = 1;
 }

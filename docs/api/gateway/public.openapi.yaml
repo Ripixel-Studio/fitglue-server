@@ -281,6 +281,8 @@ components:
                     $ref: '#/components/schemas/MuscleHeatmapSummary'
                 temperature:
                     $ref: '#/components/schemas/TemperatureSummary'
+                bestEfforts:
+                    $ref: '#/components/schemas/BestEffortsSummary'
             description: |-
                 ActivityEnrichments holds typed outputs from the enricher pipeline.
                  Each sub-message is optional — only present if the corresponding enricher
@@ -304,6 +306,26 @@ components:
                 generatedAt:
                     type: string
                     format: date-time
+        BestEffort:
+            type: object
+            properties:
+                distanceKey:
+                    type: string
+                display:
+                    type: string
+                distanceM:
+                    type: number
+                    format: double
+                timeSeconds:
+                    type: number
+                    format: double
+        BestEffortsSummary:
+            type: object
+            properties:
+                efforts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BestEffort'
         CadenceSummary:
             type: object
             properties:

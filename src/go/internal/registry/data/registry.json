@@ -3869,6 +3869,58 @@
       "popularityScore": 55,
       "enricherProviderType": 44,
       "stage": 3
+    },
+    {
+      "id": "best-efforts",
+      "type": 2,
+      "name": "Best Efforts",
+      "description": "Calculates fastest times across standard distances (400m–marathon) for every run or ride",
+      "icon": "⚡",
+      "enabled": true,
+      "requiredIntegrations": [],
+      "configSchema": [
+        {
+          "key": "running",
+          "label": "Running Efforts",
+          "description": "Calculate best efforts for running activities (400m, 1K, 1 Mile, 5K, 10K, Half Marathon, Marathon)",
+          "fieldType": 3,
+          "required": false,
+          "defaultValue": "true",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        },
+        {
+          "key": "cycling",
+          "label": "Cycling Efforts",
+          "description": "Calculate best efforts for cycling activities (5K, 10K, 20K, 40K, 100K)",
+          "fieldType": 3,
+          "required": false,
+          "defaultValue": "true",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        }
+      ],
+      "marketingDescription": "\n### Best Efforts for Every Run and Ride\nLike Strava's Best Efforts, FitGlue automatically calculates your fastest times across a curated set of standard distances — for every single activity, not just when you set a record.\n\n### Distances Tracked\n**Running:** 400m, 1K, 1 Mile, 5K, 10K, Half Marathon, Marathon\n**Cycling:** 5K, 10K, 20K, 40K, 100K\n\n### How it works\nFitGlue uses the same high-fidelity sliding-window algorithm as Personal Records: it scans your GPS or speed data to find the fastest contiguous segment at each distance, using interpolation for sub-point precision.\n  ",
+      "features": [
+        "✅ Fastest segment per distance, every activity",
+        "✅ High-fidelity GPS sliding-window algorithm",
+        "✅ Running and cycling distance sets",
+        "✅ Powers showcase best-effort display"
+      ],
+      "transformations": [],
+      "useCases": [
+        "See your 5K split even when it wasn't a race",
+        "Track how your marathon pace improves over time",
+        "Surface effort data on your showcase profile"
+      ],
+      "category": "analytics",
+      "sortOrder": 4,
+      "isPremium": false,
+      "popularityScore": 72,
+      "enricherProviderType": 45,
+      "stage": 2
     }
   ],
   "destinations": [
