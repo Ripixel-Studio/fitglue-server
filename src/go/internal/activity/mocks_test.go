@@ -24,16 +24,16 @@ type MockActivityStore struct {
 	UpdateShowcasePreferencesFunc func(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error)
 	GetPublicShowcaseFunc         func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, string, error)
 
-	UpdateShowcaseSlugFunc            func(ctx context.Context, userID, slug string) error
-	GetShowcaseProfileBySlugFunc      func(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
-	ListShowcasedActivitiesByUserFunc func(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
-	CountPipelineRunsByStatusFunc     func(ctx context.Context, userID, status string) (int32, error)
-	CountShowcasedActivitiesFunc      func(ctx context.Context, userID string) (int32, error)
-	CountBillingEventsFunc                func(ctx context.Context, userID string) (int32, error)
-	CountBillingEventsForPeriodFunc       func(ctx context.Context, userID, period string) (int32, error)
-	CountBillingEventsSinceFunc           func(ctx context.Context, userID string, since time.Time) (int32, error)
-	CountDistinctActivitiesForPeriodFunc  func(ctx context.Context, userID, period string) (int32, error)
-	CountDistinctActivitiesSinceFunc      func(ctx context.Context, userID string, since time.Time) (int32, error)
+	UpdateShowcaseSlugFunc               func(ctx context.Context, userID, slug string) error
+	GetShowcaseProfileBySlugFunc         func(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
+	ListShowcasedActivitiesByUserFunc    func(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
+	CountPipelineRunsByStatusFunc        func(ctx context.Context, userID, status string) (int32, error)
+	CountShowcasedActivitiesFunc         func(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsFunc               func(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsForPeriodFunc      func(ctx context.Context, userID, period string) (int32, error)
+	CountBillingEventsSinceFunc          func(ctx context.Context, userID string, since time.Time) (int32, error)
+	CountDistinctActivitiesForPeriodFunc func(ctx context.Context, userID, period string) (int32, error)
+	CountDistinctActivitiesSinceFunc     func(ctx context.Context, userID string, since time.Time) (int32, error)
 
 	ListShowcaseProfileEntriesFunc func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
 	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error

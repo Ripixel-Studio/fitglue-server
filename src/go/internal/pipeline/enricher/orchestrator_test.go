@@ -1,9 +1,9 @@
 package enricher
 
 import (
+	user "github.com/fitglue/server/src/go/pkg/domain/user"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	user "github.com/fitglue/server/src/go/pkg/domain/user"
 
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 
