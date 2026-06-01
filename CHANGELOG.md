@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.34.0](https://github.com/FitGlue/server/compare/v16.33.0...v16.34.0) (2026-06-01)
+
+
+### Features
+
+* **iam:** add 'api-webhook' to firestore_services local variable ([ee5669c](https://github.com/FitGlue/server/commit/ee5669c8c4aa0d70d7463882268eaaedb1786a66))
+
 ## [16.33.0](https://github.com/FitGlue/server/compare/v16.32.2...v16.33.0) (2026-06-01)
 
 
