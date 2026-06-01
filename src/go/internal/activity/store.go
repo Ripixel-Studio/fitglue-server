@@ -45,6 +45,8 @@ type ActivityStore interface {
 	CountBillingEvents(ctx context.Context, userID string) (int32, error)
 	CountBillingEventsForPeriod(ctx context.Context, userID, period string) (int32, error)
 	CountBillingEventsSince(ctx context.Context, userID string, since time.Time) (int32, error)
+	CountDistinctActivitiesForPeriod(ctx context.Context, userID, period string) (int32, error)
+	CountDistinctActivitiesSince(ctx context.Context, userID string, since time.Time) (int32, error)
 
 	// Roundup — snapshot storage
 	GetRoundup(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error)

@@ -1656,8 +1656,9 @@ func buildPendingInputStatusMessage(waitErr *user_input.WaitForInputError) strin
 	return fmt.Sprintf("Waiting for user input: %s", strings.Join(humanized, ", "))
 }
 
-// mergeEnrichments copies non-nil sub-message fields from src into dst (allocating dst if nil).
-// Each enricher provider owns exactly one sub-message field; last write wins per field.
+// mergeEnrichments merges non-nil fields from src into dst using proto.Merge,
+// which walks all fields reflectively. New fields added to ActivityEnrichments
+// in the proto are automatically included without any changes here.
 func mergeEnrichments(dst, src *pbactivity.ActivityEnrichments) *pbactivity.ActivityEnrichments {
 	if src == nil {
 		return dst
@@ -1665,51 +1666,7 @@ func mergeEnrichments(dst, src *pbactivity.ActivityEnrichments) *pbactivity.Acti
 	if dst == nil {
 		dst = &pbactivity.ActivityEnrichments{}
 	}
-	if src.HeartRate != nil {
-		dst.HeartRate = src.HeartRate
-	}
-	if src.HeartRateZones != nil {
-		dst.HeartRateZones = src.HeartRateZones
-	}
-	if src.Effort != nil {
-		dst.Effort = src.Effort
-	}
-	if src.Calories != nil {
-		dst.Calories = src.Calories
-	}
-	if src.TrainingLoad != nil {
-		dst.TrainingLoad = src.TrainingLoad
-	}
-	if src.Recovery != nil {
-		dst.Recovery = src.Recovery
-	}
-	if src.Streak != nil {
-		dst.Streak = src.Streak
-	}
-	if src.AiSummary != nil {
-		dst.AiSummary = src.AiSummary
-	}
-	if src.AiBanner != nil {
-		dst.AiBanner = src.AiBanner
-	}
-	if src.Pace != nil {
-		dst.Pace = src.Pace
-	}
-	if src.Cadence != nil {
-		dst.Cadence = src.Cadence
-	}
-	if src.Power != nil {
-		dst.Power = src.Power
-	}
-	if src.Elevation != nil {
-		dst.Elevation = src.Elevation
-	}
-	if src.PersonalRecords != nil {
-		dst.PersonalRecords = src.PersonalRecords
-	}
-	if src.MuscleHeatmap != nil {
-		dst.MuscleHeatmap = src.MuscleHeatmap
-	}
+	proto.Merge(dst, src)
 	return dst
 }
 

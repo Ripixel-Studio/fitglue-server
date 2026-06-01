@@ -1,6 +1,8 @@
 package enricher
 
 import (
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	user "github.com/fitglue/server/src/go/pkg/domain/user"
 
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -895,4 +897,44 @@ func TestOrchestrator_DeferredExecution(t *testing.T) {
 			t.Errorf("Expected AI Summary BEFORE Weather (pipeline order, not execution order), got: %q", desc)
 		}
 	})
+}
+
+// TestMergeEnrichmentsAllFields verifies that mergeEnrichments preserves every
+// message-valued field defined on ActivityEnrichments. It uses protoreflect to
+// enumerate fields automatically, so the test stays correct when new enrichment
+// fields are added to the proto without any manual update here.
+func TestMergeEnrichmentsAllFields(t *testing.T) {
+	src := &pbactivity.ActivityEnrichments{}
+	srcReflect := src.ProtoReflect()
+	fields := srcReflect.Descriptor().Fields()
+
+	// Set every message-valued field to a non-nil (empty) instance.
+	// protoregistry.GlobalTypes resolves the concrete MessageType from the
+	// descriptor so we can call New() on it.
+	for i := 0; i < fields.Len(); i++ {
+		fd := fields.Get(i)
+		if fd.Kind() != protoreflect.MessageKind {
+			continue
+		}
+		mt, err := protoregistry.GlobalTypes.FindMessageByName(fd.Message().FullName())
+		if err != nil {
+			t.Fatalf("field %q: cannot resolve MessageType: %v", fd.FullName(), err)
+		}
+		srcReflect.Set(fd, protoreflect.ValueOfMessage(mt.New()))
+	}
+
+	result := mergeEnrichments(nil, src)
+	if result == nil {
+		t.Fatal("mergeEnrichments returned nil for non-nil src")
+	}
+
+	resultReflect := result.ProtoReflect()
+	for i := 0; i < fields.Len(); i++ {
+		fd := fields.Get(i)
+		if fd.Kind() == protoreflect.MessageKind && srcReflect.Has(fd) {
+			if !resultReflect.Has(fd) {
+				t.Errorf("mergeEnrichments dropped field %q — update the merge function to include it", fd.FullName())
+			}
+		}
+	}
 }

@@ -797,7 +797,7 @@ func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivitySt
 		totalActivities = 0
 	}
 
-	// Current-month count from billing_events.
+	// Current-month counts from billing_events.
 	now := time.Now()
 	period := now.Format("2006-01")
 	uploadsThisMonth, err := s.store.CountBillingEventsForPeriod(ctx, req.UserId, period)
@@ -805,16 +805,26 @@ func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivitySt
 		s.logger.Error(ctx, "failed to count billing events for period", "error", err, "period", period)
 		uploadsThisMonth = 0
 	}
+	activitiesThisMonth, err := s.store.CountDistinctActivitiesForPeriod(ctx, req.UserId, period)
+	if err != nil {
+		s.logger.Error(ctx, "failed to count distinct activities for period", "error", err, "period", period)
+		activitiesThisMonth = 0
+	}
 
-	// Current-week count: Monday 00:00 UTC to now.
+	// Current-week counts: Monday 00:00 UTC to now.
 	weekday := int(now.Weekday())
 	if weekday == 0 {
 		weekday = 7 // Sunday → 7 so Monday=1
 	}
 	startOfWeek := time.Date(now.Year(), now.Month(), now.Day()-weekday+1, 0, 0, 0, 0, time.UTC)
-	activitiesThisWeek, err := s.store.CountBillingEventsSince(ctx, req.UserId, startOfWeek)
+	uploadsThisWeek, err := s.store.CountBillingEventsSince(ctx, req.UserId, startOfWeek)
 	if err != nil {
 		s.logger.Error(ctx, "failed to count billing events this week", "error", err)
+		uploadsThisWeek = 0
+	}
+	activitiesThisWeek, err := s.store.CountDistinctActivitiesSince(ctx, req.UserId, startOfWeek)
+	if err != nil {
+		s.logger.Error(ctx, "failed to count distinct activities this week", "error", err)
 		activitiesThisWeek = 0
 	}
 
@@ -829,7 +839,8 @@ func (s *Service) GetActivityStats(ctx context.Context, req *pbsvc.GetActivitySt
 		TotalActivities:     totalActivities,
 		TotalShowcases:      totalShowcases,
 		UploadsThisMonth:    uploadsThisMonth,
-		ActivitiesThisMonth: uploadsThisMonth,
+		ActivitiesThisMonth: activitiesThisMonth,
+		UploadsThisWeek:     uploadsThisWeek,
 		ActivitiesThisWeek:  activitiesThisWeek,
 	}, nil
 }

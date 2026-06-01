@@ -441,6 +441,52 @@ func (s *FirestoreStore) CountBillingEventsSince(ctx context.Context, userID str
 	return 0, nil
 }
 
+func (s *FirestoreStore) CountDistinctActivitiesForPeriod(ctx context.Context, userID, period string) (int32, error) {
+	iter := s.client.Collection("users").Doc(userID).Collection("billing_events").
+		Where("period", "==", period).
+		Select("activity_id").
+		Documents(ctx)
+	defer iter.Stop()
+
+	seen := make(map[string]struct{})
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return 0, err
+		}
+		if id, ok := doc.Data()["activity_id"].(string); ok && id != "" {
+			seen[id] = struct{}{}
+		}
+	}
+	return int32(len(seen)), nil
+}
+
+func (s *FirestoreStore) CountDistinctActivitiesSince(ctx context.Context, userID string, since time.Time) (int32, error) {
+	iter := s.client.Collection("users").Doc(userID).Collection("billing_events").
+		Where("created_at", ">=", since).
+		Select("activity_id").
+		Documents(ctx)
+	defer iter.Stop()
+
+	seen := make(map[string]struct{})
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return 0, err
+		}
+		if id, ok := doc.Data()["activity_id"].(string); ok && id != "" {
+			seen[id] = struct{}{}
+		}
+	}
+	return int32(len(seen)), nil
+}
+
 // entryCollectionRef returns the sub-collection ref for showcase profile entries.
 func (s *FirestoreStore) entryCollectionRef(userID string) *firestore.CollectionRef {
 	return s.client.Collection("users").Doc(userID).Collection("showcase_profile_entries")

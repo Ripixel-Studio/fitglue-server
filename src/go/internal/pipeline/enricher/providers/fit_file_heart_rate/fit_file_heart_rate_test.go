@@ -152,9 +152,12 @@ func TestFitFileHR_EnrichResume_EmptyInput(t *testing.T) {
 		InputData: map[string]string{},
 	}
 
-	_, err := provider.EnrichResume(context.Background(), activity, user, pendingInput)
-	if err == nil {
-		t.Error("Expected error for empty fit_file_base64")
+	res, err := provider.EnrichResume(context.Background(), activity, user, pendingInput)
+	if err != nil {
+		t.Errorf("Expected no error for dismissed pending input, got: %v", err)
+	}
+	if res == nil || !res.Skipped {
+		t.Error("Expected skipped result for dismissed pending input")
 	}
 }
 

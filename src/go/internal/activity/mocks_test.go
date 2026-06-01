@@ -29,9 +29,11 @@ type MockActivityStore struct {
 	ListShowcasedActivitiesByUserFunc func(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
 	CountPipelineRunsByStatusFunc     func(ctx context.Context, userID, status string) (int32, error)
 	CountShowcasedActivitiesFunc      func(ctx context.Context, userID string) (int32, error)
-	CountBillingEventsFunc            func(ctx context.Context, userID string) (int32, error)
-	CountBillingEventsForPeriodFunc   func(ctx context.Context, userID, period string) (int32, error)
-	CountBillingEventsSinceFunc       func(ctx context.Context, userID string, since time.Time) (int32, error)
+	CountBillingEventsFunc                func(ctx context.Context, userID string) (int32, error)
+	CountBillingEventsForPeriodFunc       func(ctx context.Context, userID, period string) (int32, error)
+	CountBillingEventsSinceFunc           func(ctx context.Context, userID string, since time.Time) (int32, error)
+	CountDistinctActivitiesForPeriodFunc  func(ctx context.Context, userID, period string) (int32, error)
+	CountDistinctActivitiesSinceFunc      func(ctx context.Context, userID string, since time.Time) (int32, error)
 
 	ListShowcaseProfileEntriesFunc func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
 	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
@@ -175,6 +177,20 @@ func (m *MockActivityStore) CountBillingEventsForPeriod(ctx context.Context, use
 func (m *MockActivityStore) CountBillingEventsSince(ctx context.Context, userID string, since time.Time) (int32, error) {
 	if m.CountBillingEventsSinceFunc != nil {
 		return m.CountBillingEventsSinceFunc(ctx, userID, since)
+	}
+	return 0, nil
+}
+
+func (m *MockActivityStore) CountDistinctActivitiesForPeriod(ctx context.Context, userID, period string) (int32, error) {
+	if m.CountDistinctActivitiesForPeriodFunc != nil {
+		return m.CountDistinctActivitiesForPeriodFunc(ctx, userID, period)
+	}
+	return 0, nil
+}
+
+func (m *MockActivityStore) CountDistinctActivitiesSince(ctx context.Context, userID string, since time.Time) (int32, error) {
+	if m.CountDistinctActivitiesSinceFunc != nil {
+		return m.CountDistinctActivitiesSinceFunc(ctx, userID, since)
 	}
 	return 0, nil
 }

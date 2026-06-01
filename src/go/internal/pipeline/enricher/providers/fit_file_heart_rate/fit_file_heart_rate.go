@@ -139,7 +139,16 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 func (p *FitFileHRProvider) EnrichResume(ctx context.Context, activity *pbactivity.StandardizedActivity, user *user.Record, pendingInput *pbpipeline.PendingInput) (*providers.EnrichmentResult, error) {
 	fitFileBase64 := pendingInput.InputData["fit_file_base64"]
 	if fitFileBase64 == "" {
-		return nil, fmt.Errorf("fit_file_base64 not provided in pending input")
+		// User dismissed the pending input without uploading a file — skip gracefully
+		// so the pipeline can continue to destinations without HR data.
+		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "FIT file not uploaded",
+			Metadata: map[string]string{
+				"hr_source":     "dismissed",
+				"status_detail": "FIT file upload dismissed by user",
+			},
+		}, nil
 	}
 
 	// Decode base64

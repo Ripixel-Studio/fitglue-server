@@ -2473,6 +2473,9 @@ components:
                 longestStreakDays:
                     type: integer
                     format: int32
+                uploadsThisWeek:
+                    type: integer
+                    format: int32
         GetBoosterDataGatewayResponse:
             type: object
             properties:

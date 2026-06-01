@@ -698,11 +698,12 @@ message GetActivityStatsGatewayResponse {
   int32 total_activities = 1;
   int32 total_showcases = 2;
   string last_activity_at = 3;
-  int32 uploads_this_month = 5;   // DEPRECATED — prefer activities_this_month
-  int32 activities_this_month = 6;
-  int32 activities_this_week = 7;
+  int32 uploads_this_month = 5;   // Total destination posts this month (one per destination per activity)
+  int32 activities_this_month = 6; // Distinct activities successfully synced this month
+  int32 activities_this_week = 7;  // Distinct activities successfully synced this week
   int32 current_streak_days = 8;
   int32 longest_streak_days = 9;
+  int32 uploads_this_week = 10;   // Total destination posts this week (one per destination per activity)
 }
 
 // Showcases

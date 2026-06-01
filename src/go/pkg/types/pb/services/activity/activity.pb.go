@@ -1786,11 +1786,12 @@ type GetActivityStatsResponse struct {
 	TotalActivities     int32                  `protobuf:"varint,1,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
 	TotalShowcases      int32                  `protobuf:"varint,2,opt,name=total_showcases,json=totalShowcases,proto3" json:"total_showcases,omitempty"`
 	LastActivityAt      string                 `protobuf:"bytes,3,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
-	UploadsThisMonth    int32                  `protobuf:"varint,5,opt,name=uploads_this_month,json=uploadsThisMonth,proto3" json:"uploads_this_month,omitempty"` // DEPRECATED — prefer activities_this_month
-	ActivitiesThisMonth int32                  `protobuf:"varint,6,opt,name=activities_this_month,json=activitiesThisMonth,proto3" json:"activities_this_month,omitempty"`
-	ActivitiesThisWeek  int32                  `protobuf:"varint,7,opt,name=activities_this_week,json=activitiesThisWeek,proto3" json:"activities_this_week,omitempty"`
+	UploadsThisMonth    int32                  `protobuf:"varint,5,opt,name=uploads_this_month,json=uploadsThisMonth,proto3" json:"uploads_this_month,omitempty"`          // Total destination posts this month (one per destination per activity)
+	ActivitiesThisMonth int32                  `protobuf:"varint,6,opt,name=activities_this_month,json=activitiesThisMonth,proto3" json:"activities_this_month,omitempty"` // Distinct activities successfully synced this month
+	ActivitiesThisWeek  int32                  `protobuf:"varint,7,opt,name=activities_this_week,json=activitiesThisWeek,proto3" json:"activities_this_week,omitempty"`    // Distinct activities successfully synced this week
 	CurrentStreakDays   int32                  `protobuf:"varint,8,opt,name=current_streak_days,json=currentStreakDays,proto3" json:"current_streak_days,omitempty"`
 	LongestStreakDays   int32                  `protobuf:"varint,9,opt,name=longest_streak_days,json=longestStreakDays,proto3" json:"longest_streak_days,omitempty"`
+	UploadsThisWeek     int32                  `protobuf:"varint,10,opt,name=uploads_this_week,json=uploadsThisWeek,proto3" json:"uploads_this_week,omitempty"` // Total destination posts this week (one per destination per activity)
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1877,6 +1878,13 @@ func (x *GetActivityStatsResponse) GetCurrentStreakDays() int32 {
 func (x *GetActivityStatsResponse) GetLongestStreakDays() int32 {
 	if x != nil {
 		return x.LongestStreakDays
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetUploadsThisWeek() int32 {
+	if x != nil {
+		return x.UploadsThisWeek
 	}
 	return 0
 }
@@ -2217,7 +2225,7 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"totalPages\x12!\n" +
 	"\fcurrent_page\x18\x04 \x01(\x05R\vcurrentPage\"2\n" +
 	"\x17GetActivityStatsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x8c\x03\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xb8\x03\n" +
 	"\x18GetActivityStatsResponse\x12)\n" +
 	"\x10total_activities\x18\x01 \x01(\x05R\x0ftotalActivities\x12'\n" +
 	"\x0ftotal_showcases\x18\x02 \x01(\x05R\x0etotalShowcases\x12(\n" +
@@ -2226,7 +2234,9 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\x15activities_this_month\x18\x06 \x01(\x05R\x13activitiesThisMonth\x120\n" +
 	"\x14activities_this_week\x18\a \x01(\x05R\x12activitiesThisWeek\x12.\n" +
 	"\x13current_streak_days\x18\b \x01(\x05R\x11currentStreakDays\x12.\n" +
-	"\x13longest_streak_days\x18\t \x01(\x05R\x11longestStreakDays\"L\n" +
+	"\x13longest_streak_days\x18\t \x01(\x05R\x11longestStreakDays\x12*\n" +
+	"\x11uploads_this_week\x18\n" +
+	" \x01(\x05R\x0fuploadsThisWeek\"L\n" +
 	"\x17GetPublicRoundupRequest\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x1d\n" +
 	"\n" +
