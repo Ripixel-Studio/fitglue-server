@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.33.0](https://github.com/FitGlue/server/compare/v16.32.2...v16.33.0) (2026-06-01)
+
+
+### Features
+
+* **stats:** split synced-activity count from destination post count ([023c5c9](https://github.com/FitGlue/server/commit/023c5c9495c63786d99c3d72b6138c4970414a65))
+
 ### [16.32.2](https://github.com/FitGlue/server/compare/v16.32.1...v16.32.2) (2026-05-31)
 
 
