@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.34.2](https://github.com/FitGlue/server/compare/v16.34.1...v16.34.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* **showcase:** write user_id to showcased_activities docs so they appear in settings ([ae436f7](https://github.com/FitGlue/server/commit/ae436f7d7b2f6ed58ab698e6392951a057de0b4c))
+
 ### [16.34.1](https://github.com/FitGlue/server/compare/v16.34.0...v16.34.1) (2026-06-01)
 
 ## [16.34.0](https://github.com/FitGlue/server/compare/v16.33.0...v16.34.0) (2026-06-01)
