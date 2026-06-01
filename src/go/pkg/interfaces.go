@@ -70,7 +70,7 @@ type Database interface {
 
 	// Showcased Activities (public shareable snapshots)
 	ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error)
-	SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error
+	SetShowcasedActivity(ctx context.Context, userID string, activity *pbactivity.ShowcasedActivity) error
 	GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error)
 
 	// Showcase Profiles (materialized user profile for homepage)

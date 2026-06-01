@@ -222,7 +222,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		showcasedActivity.ExpiresAt = timestamppb.New(*expiresAt)
 	}
 
-	if err := u.svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
+	if err := u.svc.DB.SetShowcasedActivity(ctx, payload.UserId, showcasedActivity); err != nil {
 		return "", fmt.Errorf("failed to persist showcased activity: %w", err)
 	}
 
@@ -324,7 +324,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		showcasedActivity.ExpiresAt = timestamppb.New(*expiresAt)
 	}
 
-	if err := u.svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
+	if err := u.svc.DB.SetShowcasedActivity(ctx, payload.UserId, showcasedActivity); err != nil {
 		return fmt.Errorf("failed to persist updated showcased activity: %w", err)
 	}
 

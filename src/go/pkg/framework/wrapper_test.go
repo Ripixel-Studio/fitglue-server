@@ -98,7 +98,7 @@ func (m *MockDB) ListPendingInputsByEnricher(ctx context.Context, enricherId str
 func (m *MockDB) ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error) {
 	return false, nil
 }
-func (m *MockDB) SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error {
+func (m *MockDB) SetShowcasedActivity(ctx context.Context, userID string, activity *pbactivity.ShowcasedActivity) error {
 	return nil
 }
 func (m *MockDB) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error) {

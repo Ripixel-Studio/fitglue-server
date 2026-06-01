@@ -328,9 +328,13 @@ func (a *FirestoreAdapter) ShowcaseActivityExists(ctx context.Context, showcaseI
 	return true, nil
 }
 
-// SetShowcasedActivity creates or updates a showcased activity
-func (a *FirestoreAdapter) SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error {
-	return a.storage.ShowcasedActivities().Doc(activity.ShowcaseId).Set(ctx, activity)
+// SetShowcasedActivity creates or updates a showcased activity.
+// userID is stored as a top-level field for the ListShowcases Firestore query (user_id filter).
+func (a *FirestoreAdapter) SetShowcasedActivity(ctx context.Context, userID string, activity *pbactivity.ShowcasedActivity) error {
+	data := storage.ShowcasedActivityToFirestore(activity)
+	data["user_id"] = userID
+	_, err := a.Client.Collection("showcased_activities").Doc(activity.ShowcaseId).Set(ctx, data)
+	return err
 }
 
 // GetShowcasedActivity retrieves a showcased activity by ID

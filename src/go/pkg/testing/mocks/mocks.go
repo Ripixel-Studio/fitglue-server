@@ -164,7 +164,7 @@ func (m *MockDatabase) ShowcaseActivityExists(ctx context.Context, showcaseId st
 	return false, nil
 }
 
-func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error {
+func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, userID string, activity *pbactivity.ShowcasedActivity) error {
 	// No-op for tests by default
 	return nil
 }
