@@ -137,7 +137,7 @@ resource "google_cloud_run_v2_service" "backend" {
         }
       }
       dynamic "env" {
-        for_each = each.key == "user" ? [1] : []
+        for_each = contains(["user", "notification"], each.key) ? [1] : []
         content {
           name  = "SYSTEM_EMAIL"
           value = "system@fitglue.tech"
@@ -280,9 +280,9 @@ resource "google_cloud_run_v2_service" "backend" {
         }
       }
 
-      # ── User secrets (Email) ──
+      # ── User + Notification secrets (Email) ──
       dynamic "env" {
-        for_each = each.key == "user" ? [1] : []
+        for_each = contains(["user", "notification"], each.key) ? [1] : []
         content {
           name = "EMAIL_APP_PASSWORD"
           value_source {
