@@ -168,7 +168,10 @@ func (s *notificationService) dispatch(ctx context.Context, req *pbnotification.
 	if rawPrefs, ok := doc.Data()["notification_preferences"]; ok {
 		if prefsMap, ok := rawPrefs.(map[string]interface{}); ok {
 			prefsJSON, _ := json.Marshal(prefsMap)
-			_ = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(prefsJSON, &prefs)
+			unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+			if err := unmarshaler.Unmarshal(prefsJSON, &prefs); err != nil {
+				s.logger.Warn(ctx, "failed to unmarshal notification preferences; defaulting to empty", "error", err, "userId", req.UserId)
+			}
 		}
 	}
 
@@ -204,13 +207,18 @@ func (s *notificationService) dispatchPush(ctx context.Context, req *pbnotificat
 	if len(tokens) == 0 {
 		return
 	}
-	// Merge the notification type into the data map so clients can deep-link
-	data := make(map[string]string, len(req.Data)+1)
+	// Merge the notification type into the data map so clients can deep-link.
+	// Title and body are also included so the service worker's native push handler
+	// can display the notification even when Firebase messaging isn't yet initialized
+	// (e.g. after a cold service-worker restart where activate doesn't re-fire).
+	data := make(map[string]string, len(req.Data)+3)
 	for k, v := range req.Data {
 		data[k] = v
 	}
 	data["type"] = notificationTypeString(req.Type)
 	data["user_id"] = req.UserId
+	data["title"] = req.Title
+	data["body"] = req.Body
 
 	if err := s.fcm.SendPushNotification(ctx, req.UserId, req.Title, req.Body, tokens, data); err != nil {
 		s.logger.Error(ctx, "FCM send failed", "error", err, "user_id", req.UserId)
