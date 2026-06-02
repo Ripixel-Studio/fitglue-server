@@ -82,18 +82,6 @@ func TestAllStravaMethods(t *testing.T) {
 		{"GetClubById", func() (*http.Response, error) {
 			return c.GetClubById(ctx, 456)
 		}},
-		{"GetClubActivitiesById", func() (*http.Response, error) {
-			p := &strava.GetClubActivitiesByIdParams{}
-			return c.GetClubActivitiesById(ctx, 456, p)
-		}},
-		{"GetClubAdminsById", func() (*http.Response, error) {
-			p := &strava.GetClubAdminsByIdParams{}
-			return c.GetClubAdminsById(ctx, 456, p)
-		}},
-		{"GetClubMembersById", func() (*http.Response, error) {
-			p := &strava.GetClubMembersByIdParams{}
-			return c.GetClubMembersById(ctx, 456, p)
-		}},
 		// Gear
 		{"GetGearById", func() (*http.Response, error) {
 			return c.GetGearById(ctx, "g12345")
@@ -125,10 +113,6 @@ func TestAllStravaMethods(t *testing.T) {
 				KeyByType: true,
 			}
 			return c.GetSegmentEffortStreams(ctx, 222, p)
-		}},
-		{"ExploreSegments", func() (*http.Response, error) {
-			p := &strava.ExploreSegmentsParams{Bounds: []float32{0, 0, 1, 1}}
-			return c.ExploreSegments(ctx, p)
 		}},
 		{"GetLoggedInAthleteStarredSegments", func() (*http.Response, error) {
 			p := &strava.GetLoggedInAthleteStarredSegmentsParams{}

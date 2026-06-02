@@ -24,6 +24,10 @@ import (
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 )
 
+// stravaAPIBase is the Strava REST API base URL.
+// Changing to https://www.api-v3.strava.com is required before June 1, 2027.
+const stravaAPIBase = "https://www.strava.com/api/v3"
+
 // Uploader implements destination.Destination for Strava
 type Uploader struct {
 	svc *bootstrap.Service
@@ -101,7 +105,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	writer.WriteField("activity_type", stravaType)
 	writer.Close()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://www.strava.com/api/v3/uploads", body)
+	req, err := http.NewRequestWithContext(ctx, "POST", stravaAPIBase+"/uploads", body)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -172,7 +176,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "strava")
 	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "strava", infra.NewLogger())
 
-	getURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%s", stravaIDStr)
+	getURL := fmt.Sprintf("%s/activities/%s", stravaAPIBase, stravaIDStr)
 	getReq, err := http.NewRequestWithContext(ctx, "GET", getURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create GET request: %w", err)
@@ -244,7 +248,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		return fmt.Errorf("failed to marshal update body: %w", err)
 	}
 
-	putURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%s", stravaIDStr)
+	putURL := fmt.Sprintf("%s/activities/%s", stravaAPIBase, stravaIDStr)
 	putReq, err := http.NewRequestWithContext(ctx, "PUT", putURL, bytes.NewReader(bodyJSON))
 	if err != nil {
 		return fmt.Errorf("failed to create PUT request: %w", err)
@@ -276,7 +280,7 @@ func waitForUploadCompletion(ctx context.Context, client *http.Client, uploadID 
 		case <-timeout:
 			return nil, fmt.Errorf("timeout waiting for upload processing")
 		case <-ticker.C:
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://www.strava.com/api/v3/uploads/%d", uploadID), nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/uploads/%d", stravaAPIBase, uploadID), nil)
 			if err != nil {
 				return nil, err
 			}

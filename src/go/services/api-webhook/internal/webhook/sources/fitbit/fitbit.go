@@ -11,6 +11,8 @@ import (
 	"io"
 	"net/http"
 
+	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
@@ -20,13 +22,14 @@ import (
 type Provider struct {
 	verifyCode   string
 	clientSecret string
+	db           shared.Database
 }
 
-func NewProvider(verifyCode, clientSecret string) (*Provider, error) {
+func NewProvider(verifyCode, clientSecret string, db shared.Database) (*Provider, error) {
 	if clientSecret == "" {
 		return nil, fmt.Errorf("fitbit: FITBIT_OAUTH_CLIENT_SECRET must be set")
 	}
-	return &Provider{verifyCode: verifyCode, clientSecret: clientSecret}, nil
+	return &Provider{verifyCode: verifyCode, clientSecret: clientSecret, db: db}, nil
 }
 
 func (p *Provider) ID() string {
@@ -98,37 +101,27 @@ func (p *Provider) ParseEvent(r *http.Request) ([]*webhook.WebhookEvent, error) 
 	return events, nil
 }
 
-func (p *Provider) FetchActivity(ctx context.Context, userSvc userpb.UserServiceClient, internalUserID string, evt *webhook.WebhookEvent) (*pbevents.ActivityPayload, error) {
+func (p *Provider) FetchActivity(ctx context.Context, _ userpb.UserServiceClient, internalUserID string, evt *webhook.WebhookEvent) (*pbevents.ActivityPayload, error) {
 	// Fitbit activity id in the webhook is actually the date "YYYY-MM-DD"
 	date := evt.ActivityID
 	if date == "" {
 		return nil, fmt.Errorf("missing date for fitbit activity fetch")
 	}
 
-	// 1. Fetch Fitbit tokens for user
-	integResp, err := userSvc.GetIntegration(ctx, &userpb.GetIntegrationRequest{
-		UserId:   internalUserID,
-		Provider: p.ID(),
-	})
+	// 1. Get a valid (auto-refreshed) token via Firestore
+	token, err := oauth.NewFirestoreTokenSourceFromDB(p.db, internalUserID, "fitbit").Token(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get integration for user: %w", err)
-	}
-
-	fitbitInteg := integResp.Integrations.Fitbit
-	if fitbitInteg == nil || fitbitInteg.AccessToken == "" {
-		return nil, fmt.Errorf("fitbit integration not found or access token missing")
+		return nil, fmt.Errorf("failed to get fitbit token: %w", err)
 	}
 
 	// 2. Fetch activity list for the date from Fitbit API
-	// Fitbit uses api.fitbit.com
 	url := fmt.Sprintf("https://api.fitbit.com/1/user/-/activities/date/%s.json", date)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+fitbitInteg.AccessToken)
-	// Optionally set accept-language for standard units if needed, but not strictly required for raw dump
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

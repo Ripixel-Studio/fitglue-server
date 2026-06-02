@@ -3,7 +3,10 @@ package user
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	firebaseAuth "firebase.google.com/go/v4/auth" // Renamed to avoid conflict with local auth package
@@ -147,6 +150,16 @@ func (s *Service) DeleteIntegration(ctx context.Context, req *pbsvc.DeleteIntegr
 		return nil, status.Error(codes.InvalidArgument, "user_id and provider are required")
 	}
 
+	// Best-effort token revocation before removing credentials from the store.
+	if req.Provider == "strava" {
+		integ, err := s.store.GetIntegrations(ctx, req.UserId)
+		if err == nil && integ.GetStrava().GetAccessToken() != "" {
+			if rErr := revokeStravaToken(ctx, integ.GetStrava().GetAccessToken()); rErr != nil {
+				s.logger.Error(ctx, "failed to revoke strava token", "err", rErr, "user_id", req.UserId)
+			}
+		}
+	}
+
 	err := s.store.DeleteIntegration(ctx, req.UserId, req.Provider)
 	if err != nil {
 		s.logger.Error(ctx, "failed to delete integration", "err", err, "user_id", req.UserId, "provider", req.Provider)
@@ -154,6 +167,24 @@ func (s *Service) DeleteIntegration(ctx context.Context, req *pbsvc.DeleteIntegr
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func revokeStravaToken(ctx context.Context, accessToken string) error {
+	body := strings.NewReader(url.Values{"access_token": {accessToken}}.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://www.strava.com/oauth/revoke", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("strava revoke returned status %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func (s *Service) ListIntegrations(ctx context.Context, req *pbsvc.ListIntegrationsRequest) (*pbuser.UserIntegrations, error) {

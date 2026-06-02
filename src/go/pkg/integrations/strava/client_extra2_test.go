@@ -54,10 +54,7 @@ func TestStravaClientWithResponses(t *testing.T) {
 	c.GetStatsWithResponse(ctx, 1)                                                                //nolint:errcheck
 
 	// Clubs
-	c.GetClubByIdWithResponse(ctx, 1)                                                  //nolint:errcheck
-	c.GetClubActivitiesByIdWithResponse(ctx, 1, &strava.GetClubActivitiesByIdParams{}) //nolint:errcheck
-	c.GetClubAdminsByIdWithResponse(ctx, 1, &strava.GetClubAdminsByIdParams{})         //nolint:errcheck
-	c.GetClubMembersByIdWithResponse(ctx, 1, &strava.GetClubMembersByIdParams{})       //nolint:errcheck
+	c.GetClubByIdWithResponse(ctx, 1) //nolint:errcheck
 
 	// Gear
 	c.GetGearByIdWithResponse(ctx, "g12345") //nolint:errcheck
@@ -72,7 +69,6 @@ func TestStravaClientWithResponses(t *testing.T) {
 	c.GetEffortsBySegmentIdWithResponse(ctx, &strava.GetEffortsBySegmentIdParams{SegmentId: 1})     //nolint:errcheck
 	c.GetSegmentEffortByIdWithResponse(ctx, 1)                                                      //nolint:errcheck
 	c.GetSegmentEffortStreamsWithResponse(ctx, 1, &strava.GetSegmentEffortStreamsParams{Keys: nil}) //nolint:errcheck
-	c.ExploreSegmentsWithResponse(ctx, &strava.ExploreSegmentsParams{})                             //nolint:errcheck
 
 	t.Logf("All strava integrations ClientWithResponses methods exercised for coverage")
 }

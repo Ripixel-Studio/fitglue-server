@@ -2,7 +2,6 @@ package fitbit_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -10,30 +9,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/fitglue/server/src/go/pkg/types/pb/models/user"
-	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
-	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/fitbit"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
-// mockUserServiceClient implements userpb.UserServiceClient
-type mockUserServiceClient struct {
-	userpb.UserServiceClient
-	getIntegrationResp *userpb.GetIntegrationResponse
-	getIntegrationErr  error
-}
-
-func (m *mockUserServiceClient) GetIntegration(ctx context.Context, in *userpb.GetIntegrationRequest, opts ...grpc.CallOption) (*userpb.GetIntegrationResponse, error) {
-	if m.getIntegrationErr != nil {
-		return nil, m.getIntegrationErr
-	}
-	return m.getIntegrationResp, nil
-}
-
 func TestVerifySubscription(t *testing.T) {
-	provider, err := fitbit.NewProvider("secret-code", "any-secret")
+	provider, err := fitbit.NewProvider("secret-code", "any-secret", nil)
 	assert.NoError(t, err)
 
 	t.Run("success", func(t *testing.T) {
@@ -65,7 +46,7 @@ func computeFitbitSignature(body []byte, clientSecret string) string {
 func TestParseEvent(t *testing.T) {
 	t.Run("valid activity collection with HMAC", func(t *testing.T) {
 		clientSecret := "any-secret"
-		provider, err := fitbit.NewProvider("secret-code", clientSecret)
+		provider, err := fitbit.NewProvider("secret-code", clientSecret, nil)
 		assert.NoError(t, err)
 
 		payload := `[` +
@@ -91,7 +72,7 @@ func TestParseEvent(t *testing.T) {
 
 	t.Run("valid HMAC signature", func(t *testing.T) {
 		clientSecret := "test-secret"
-		provider, err := fitbit.NewProvider("secret-code", clientSecret)
+		provider, err := fitbit.NewProvider("secret-code", clientSecret, nil)
 		assert.NoError(t, err)
 
 		payload := `[{"collectionType":"activities","date":"2023-10-25","ownerId":"fitbitUser1","ownerType":"user","subscriptionId":"fitglue-activities"}]`
@@ -108,7 +89,7 @@ func TestParseEvent(t *testing.T) {
 	})
 
 	t.Run("invalid HMAC signature", func(t *testing.T) {
-		provider, err := fitbit.NewProvider("secret-code", "test-secret")
+		provider, err := fitbit.NewProvider("secret-code", "test-secret", nil)
 		assert.NoError(t, err)
 
 		payload := `[{"collectionType":"activities","date":"2023-10-25","ownerId":"fitbitUser1","ownerType":"user","subscriptionId":"fitglue-activities"}]`
@@ -124,7 +105,7 @@ func TestParseEvent(t *testing.T) {
 	})
 
 	t.Run("missing HMAC signature header", func(t *testing.T) {
-		provider, err := fitbit.NewProvider("secret-code", "test-secret")
+		provider, err := fitbit.NewProvider("secret-code", "test-secret", nil)
 		assert.NoError(t, err)
 
 		payload := `[{"collectionType":"activities","date":"2023-10-25","ownerId":"fitbitUser1","ownerType":"user","subscriptionId":"fitglue-activities"}]`
@@ -139,29 +120,3 @@ func TestParseEvent(t *testing.T) {
 	})
 }
 
-func TestFetchActivity(t *testing.T) {
-	provider, err := fitbit.NewProvider("secret", "any-secret")
-	if err != nil {
-		t.Fatalf("unexpected error creating fitbit provider: %v", err)
-	}
-
-	t.Run("missing integration returns error", func(t *testing.T) {
-		userSvc := &mockUserServiceClient{
-			getIntegrationErr: nil,
-			getIntegrationResp: &userpb.GetIntegrationResponse{
-				Integrations: &user.UserIntegrations{},
-			},
-		}
-
-		evt := &webhook.WebhookEvent{
-			Provider:   "fitbit",
-			ActivityID: "2023-10-25",
-		}
-
-		payload, err := provider.FetchActivity(context.Background(), userSvc, "user1", evt)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "fitbit integration not found or access token missing")
-		assert.Nil(t, payload)
-	})
-}

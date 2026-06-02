@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	shared "github.com/fitglue/server/src/go/pkg"
 )
 
 // nonRefreshableProviders are providers whose OAuth tokens don't expire
@@ -37,7 +38,7 @@ type TokenSource interface {
 
 // FirestoreTokenSource reads from Firestore and refreshes if necessary.
 type FirestoreTokenSource struct {
-	db       *bootstrap.Service
+	db       shared.Database
 	userID   string
 	provider string
 	mu       sync.Mutex
@@ -45,7 +46,17 @@ type FirestoreTokenSource struct {
 
 func NewFirestoreTokenSource(svc *bootstrap.Service, userID, provider string) *FirestoreTokenSource {
 	return &FirestoreTokenSource{
-		db:       svc,
+		db:       svc.DB,
+		userID:   userID,
+		provider: provider,
+	}
+}
+
+// NewFirestoreTokenSourceFromDB creates a token source from a shared.Database directly,
+// for use in contexts that don't have a full bootstrap.Service (e.g. webhook providers).
+func NewFirestoreTokenSourceFromDB(db shared.Database, userID, provider string) *FirestoreTokenSource {
+	return &FirestoreTokenSource{
+		db:       db,
 		userID:   userID,
 		provider: provider,
 	}
@@ -62,7 +73,7 @@ func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error)
 	}
 
 	// 1. Fetch refresh token explicitly from DB again to be safe
-	userData, err := s.db.DB.GetUser(ctx, s.userID)
+	userData, err := s.db.GetUser(ctx, s.userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -120,7 +131,7 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 	defer s.mu.Unlock()
 
 	// 1. Fetch current token from Firestore
-	userData, err := s.db.DB.GetUser(ctx, s.userID)
+	userData, err := s.db.GetUser(ctx, s.userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -328,7 +339,7 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		updateData[prefix+"refresh_token"] = result.RefreshToken
 	}
 
-	if err := s.db.DB.UpdateUser(ctx, s.userID, updateData); err != nil {
+	if err := s.db.UpdateUser(ctx, s.userID, updateData); err != nil {
 		return nil, fmt.Errorf("failed to persist new tokens: %w", err)
 	}
 

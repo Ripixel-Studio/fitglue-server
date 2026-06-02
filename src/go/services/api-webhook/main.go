@@ -134,12 +134,12 @@ func main() {
 	processor := webhook.NewProcessor(logger, userClient, publisher, db)
 
 	stravaToken := os.Getenv("STRAVA_WEBHOOK_VERIFY_TOKEN")
-	processor.Register(strava.NewProvider(stravaToken))
+	processor.Register(strava.NewProvider(stravaToken, db))
 	processor.Register(intervals.NewProvider())
 
 	fitbitToken := os.Getenv("FITBIT_SUBSCRIBER_VERIFICATION_TOKEN")
 	fitbitClientSecret := os.Getenv("FITBIT_OAUTH_CLIENT_SECRET")
-	fitbitProvider, err := fitbit.NewProvider(fitbitToken, fitbitClientSecret)
+	fitbitProvider, err := fitbit.NewProvider(fitbitToken, fitbitClientSecret, db)
 	if err != nil {
 		logger.Error(ctx, "Failed to initialize Fitbit provider", "error", err)
 		os.Exit(1)

@@ -17,6 +17,10 @@
 
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
+// STRAVA_API_BASE is the Strava REST API base URL.
+// Changing to https://www.api-v3.strava.com is required before June 1, 2027.
+const STRAVA_API_BASE = 'https://www.strava.com/api/v3';
+
 async function getSecret(projectId: string, secretName: string): Promise<string> {
   const client = new SecretManagerServiceClient();
   const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
@@ -61,7 +65,7 @@ async function main() {
 
     // First, check for existing subscriptions
     const listResponse = await fetch(
-      `https://www.strava.com/api/v3/push_subscriptions?client_id=${clientId}&client_secret=${clientSecret}`,
+      `${STRAVA_API_BASE}/push_subscriptions?client_id=${clientId}&client_secret=${clientSecret}`,
       { method: 'GET' }
     );
 
@@ -74,7 +78,7 @@ async function main() {
         });
         console.log('');
         console.log('To update, first delete the existing subscription using:');
-        console.log(`  curl -X DELETE "https://www.strava.com/api/v3/push_subscriptions/${existingSubs[0].id}?client_id=${clientId}&client_secret=${clientSecret}"`);
+        console.log(`  curl -X DELETE "${STRAVA_API_BASE}/push_subscriptions/${existingSubs[0].id}?client_id=${clientId}&client_secret=${clientSecret}"`);
         process.exit(0);
       }
     }
@@ -82,7 +86,7 @@ async function main() {
     // Create new subscription
     console.log('📝 Creating new subscription...');
 
-    const createResponse = await fetch('https://www.strava.com/api/v3/push_subscriptions', {
+    const createResponse = await fetch(`${STRAVA_API_BASE}/push_subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

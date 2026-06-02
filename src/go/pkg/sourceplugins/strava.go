@@ -13,6 +13,10 @@ import (
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 )
 
+// stravaAPIBase is the Strava REST API base URL.
+// Changing to https://www.api-v3.strava.com is required before June 1, 2027.
+const stravaAPIBase = "https://www.strava.com/api/v3"
+
 func init() {
 	register("SOURCE_STRAVA", &stravaProvider{})
 }
@@ -21,7 +25,7 @@ type stravaProvider struct{}
 
 func (p *stravaProvider) newClient(accessToken string) (*stravaapi.ClientWithResponses, error) {
 	return stravaapi.NewClientWithResponses(
-		"https://www.strava.com/api/v3",
+		stravaAPIBase,
 		stravaapi.WithRequestEditorFn(func(_ context.Context, req *http.Request) error {
 			req.Header.Set("Authorization", "Bearer "+accessToken)
 			return nil

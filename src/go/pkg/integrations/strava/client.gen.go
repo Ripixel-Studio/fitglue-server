@@ -355,12 +355,6 @@ const (
 	GetSegmentEffortStreamsParamsKeysWatts          GetSegmentEffortStreamsParamsKeys = "watts"
 )
 
-// Defines values for ExploreSegmentsParamsActivityType.
-const (
-	Riding  ExploreSegmentsParamsActivityType = "riding"
-	Running ExploreSegmentsParamsActivityType = "running"
-)
-
 // Defines values for GetSegmentStreamsParamsKeys.
 const (
 	Altitude GetSegmentStreamsParamsKeys = "altitude"
@@ -1768,33 +1762,6 @@ type GetRoutesByAthleteIdParams struct {
 	PerPage *PerPage `form:"per_page,omitempty" json:"per_page,omitempty"`
 }
 
-// GetClubActivitiesByIdParams defines parameters for GetClubActivitiesById.
-type GetClubActivitiesByIdParams struct {
-	// Page Page number. Defaults to 1.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PerPage Number of items per page. Defaults to 30.
-	PerPage *PerPage `form:"per_page,omitempty" json:"per_page,omitempty"`
-}
-
-// GetClubAdminsByIdParams defines parameters for GetClubAdminsById.
-type GetClubAdminsByIdParams struct {
-	// Page Page number. Defaults to 1.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PerPage Number of items per page. Defaults to 30.
-	PerPage *PerPage `form:"per_page,omitempty" json:"per_page,omitempty"`
-}
-
-// GetClubMembersByIdParams defines parameters for GetClubMembersById.
-type GetClubMembersByIdParams struct {
-	// Page Page number. Defaults to 1.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PerPage Number of items per page. Defaults to 30.
-	PerPage *PerPage `form:"per_page,omitempty" json:"per_page,omitempty"`
-}
-
 // GetEffortsBySegmentIdParams defines parameters for GetEffortsBySegmentId.
 type GetEffortsBySegmentIdParams struct {
 	// SegmentId The identifier of the segment.
@@ -1821,24 +1788,6 @@ type GetSegmentEffortStreamsParams struct {
 
 // GetSegmentEffortStreamsParamsKeys defines parameters for GetSegmentEffortStreams.
 type GetSegmentEffortStreamsParamsKeys string
-
-// ExploreSegmentsParams defines parameters for ExploreSegments.
-type ExploreSegmentsParams struct {
-	// Bounds The latitude and longitude for two points describing a rectangular boundary for the search: [southwest corner latitutde, southwest corner longitude, northeast corner latitude, northeast corner longitude]
-	Bounds []float32 `form:"bounds" json:"bounds"`
-
-	// ActivityType Desired activity type.
-	ActivityType *ExploreSegmentsParamsActivityType `form:"activity_type,omitempty" json:"activity_type,omitempty"`
-
-	// MinCat The minimum climbing category.
-	MinCat *int `form:"min_cat,omitempty" json:"min_cat,omitempty"`
-
-	// MaxCat The maximum climbing category.
-	MaxCat *int `form:"max_cat,omitempty" json:"max_cat,omitempty"`
-}
-
-// ExploreSegmentsParamsActivityType defines parameters for ExploreSegments.
-type ExploreSegmentsParamsActivityType string
 
 // GetLoggedInAthleteStarredSegmentsParams defines parameters for GetLoggedInAthleteStarredSegments.
 type GetLoggedInAthleteStarredSegmentsParams struct {
@@ -2031,15 +1980,6 @@ type ClientInterface interface {
 	// GetClubById request
 	GetClubById(ctx context.Context, id int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetClubActivitiesById request
-	GetClubActivitiesById(ctx context.Context, id int64, params *GetClubActivitiesByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetClubAdminsById request
-	GetClubAdminsById(ctx context.Context, id int64, params *GetClubAdminsByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetClubMembersById request
-	GetClubMembersById(ctx context.Context, id int64, params *GetClubMembersByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetGearById request
 	GetGearById(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2063,9 +2003,6 @@ type ClientInterface interface {
 
 	// GetSegmentEffortStreams request
 	GetSegmentEffortStreams(ctx context.Context, id int64, params *GetSegmentEffortStreamsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ExploreSegments request
-	ExploreSegments(ctx context.Context, params *ExploreSegmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLoggedInAthleteStarredSegments request
 	GetLoggedInAthleteStarredSegments(ctx context.Context, params *GetLoggedInAthleteStarredSegmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2304,42 +2241,6 @@ func (c *Client) GetClubById(ctx context.Context, id int64, reqEditors ...Reques
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetClubActivitiesById(ctx context.Context, id int64, params *GetClubActivitiesByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetClubActivitiesByIdRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetClubAdminsById(ctx context.Context, id int64, params *GetClubAdminsByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetClubAdminsByIdRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetClubMembersById(ctx context.Context, id int64, params *GetClubMembersByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetClubMembersByIdRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) GetGearById(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetGearByIdRequest(c.Server, id)
 	if err != nil {
@@ -2426,18 +2327,6 @@ func (c *Client) GetSegmentEffortById(ctx context.Context, id int64, reqEditors 
 
 func (c *Client) GetSegmentEffortStreams(ctx context.Context, id int64, params *GetSegmentEffortStreamsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSegmentEffortStreamsRequest(c.Server, id, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ExploreSegments(ctx context.Context, params *ExploreSegmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewExploreSegmentsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3384,222 +3273,6 @@ func NewGetClubByIdRequest(server string, id int64) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetClubActivitiesByIdRequest generates requests for GetClubActivitiesById
-func NewGetClubActivitiesByIdRequest(server string, id int64, params *GetClubActivitiesByIdParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/clubs/%s/activities", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page", runtime.ParamLocationQuery, *params.Page); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.PerPage != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "per_page", runtime.ParamLocationQuery, *params.PerPage); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetClubAdminsByIdRequest generates requests for GetClubAdminsById
-func NewGetClubAdminsByIdRequest(server string, id int64, params *GetClubAdminsByIdParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/clubs/%s/admins", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page", runtime.ParamLocationQuery, *params.Page); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.PerPage != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "per_page", runtime.ParamLocationQuery, *params.PerPage); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetClubMembersByIdRequest generates requests for GetClubMembersById
-func NewGetClubMembersByIdRequest(server string, id int64, params *GetClubMembersByIdParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/clubs/%s/members", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page", runtime.ParamLocationQuery, *params.Page); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.PerPage != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "per_page", runtime.ParamLocationQuery, *params.PerPage); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewGetGearByIdRequest generates requests for GetGearById
 func NewGetGearByIdRequest(server string, id string) (*http.Request, error) {
 	var err error
@@ -3948,99 +3621,6 @@ func NewGetSegmentEffortStreamsRequest(server string, id int64, params *GetSegme
 					queryValues.Add(k, v2)
 				}
 			}
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewExploreSegmentsRequest generates requests for ExploreSegments
-func NewExploreSegmentsRequest(server string, params *ExploreSegmentsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/segments/explore")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if queryFrag, err := runtime.StyleParamWithLocation("form", false, "bounds", runtime.ParamLocationQuery, params.Bounds); err != nil {
-			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
-		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
-		}
-
-		if params.ActivityType != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "activity_type", runtime.ParamLocationQuery, *params.ActivityType); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.MinCat != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "min_cat", runtime.ParamLocationQuery, *params.MinCat); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.MaxCat != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "max_cat", runtime.ParamLocationQuery, *params.MaxCat); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
 		}
 
 		queryURL.RawQuery = queryValues.Encode()
@@ -4422,15 +4002,6 @@ type ClientWithResponsesInterface interface {
 	// GetClubByIdWithResponse request
 	GetClubByIdWithResponse(ctx context.Context, id int64, reqEditors ...RequestEditorFn) (*GetClubByIdResponse, error)
 
-	// GetClubActivitiesByIdWithResponse request
-	GetClubActivitiesByIdWithResponse(ctx context.Context, id int64, params *GetClubActivitiesByIdParams, reqEditors ...RequestEditorFn) (*GetClubActivitiesByIdResponse, error)
-
-	// GetClubAdminsByIdWithResponse request
-	GetClubAdminsByIdWithResponse(ctx context.Context, id int64, params *GetClubAdminsByIdParams, reqEditors ...RequestEditorFn) (*GetClubAdminsByIdResponse, error)
-
-	// GetClubMembersByIdWithResponse request
-	GetClubMembersByIdWithResponse(ctx context.Context, id int64, params *GetClubMembersByIdParams, reqEditors ...RequestEditorFn) (*GetClubMembersByIdResponse, error)
-
 	// GetGearByIdWithResponse request
 	GetGearByIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetGearByIdResponse, error)
 
@@ -4454,9 +4025,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetSegmentEffortStreamsWithResponse request
 	GetSegmentEffortStreamsWithResponse(ctx context.Context, id int64, params *GetSegmentEffortStreamsParams, reqEditors ...RequestEditorFn) (*GetSegmentEffortStreamsResponse, error)
-
-	// ExploreSegmentsWithResponse request
-	ExploreSegmentsWithResponse(ctx context.Context, params *ExploreSegmentsParams, reqEditors ...RequestEditorFn) (*ExploreSegmentsResponse, error)
 
 	// GetLoggedInAthleteStarredSegmentsWithResponse request
 	GetLoggedInAthleteStarredSegmentsWithResponse(ctx context.Context, params *GetLoggedInAthleteStarredSegmentsParams, reqEditors ...RequestEditorFn) (*GetLoggedInAthleteStarredSegmentsResponse, error)
@@ -4916,119 +4484,6 @@ func (r GetClubByIdResponse) StatusCode() int {
 	return 0
 }
 
-type GetClubActivitiesByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		Athlete *MetaAthlete `json:"athlete,omitempty"`
-
-		// Distance The activity's distance, in meters
-		Distance *float32 `json:"distance,omitempty"`
-
-		// ElapsedTime The activity's elapsed time, in seconds
-		ElapsedTime *int `json:"elapsed_time,omitempty"`
-
-		// MovingTime The activity's moving time, in seconds
-		MovingTime *int `json:"moving_time,omitempty"`
-
-		// Name The name of the activity
-		Name *string `json:"name,omitempty"`
-
-		// SportType An enumeration of the types an activity may have.
-		SportType *ActivityType `json:"sport_type,omitempty"`
-
-		// TotalElevationGain The activity's total elevation gain.
-		TotalElevationGain *float32 `json:"total_elevation_gain,omitempty"`
-
-		// Type An enumeration of the types an activity may have.
-		Type *ActivityType `json:"type,omitempty"`
-
-		// WorkoutType The activity's workout type
-		WorkoutType *int `json:"workout_type,omitempty"`
-	}
-	JSONDefault *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r GetClubActivitiesByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetClubActivitiesByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetClubAdminsByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]SummaryAthlete
-	JSONDefault  *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r GetClubAdminsByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetClubAdminsByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetClubMembersByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		// Admin Whether the athlete is a club admin.
-		Admin *bool `json:"admin,omitempty"`
-
-		// Firstname The athlete's first name.
-		Firstname *string `json:"firstname,omitempty"`
-
-		// Lastname The athlete's last initial.
-		Lastname *string `json:"lastname,omitempty"`
-
-		// Member The athlete's member status.
-		Member *string `json:"member,omitempty"`
-
-		// Owner Whether the athlete is club owner.
-		Owner *bool `json:"owner,omitempty"`
-
-		// ResourceState Resource state, indicates level of detail. Possible values: 1 -> "meta", 2 -> "summary", 3 -> "detail"
-		ResourceState *int `json:"resource_state,omitempty"`
-	}
-	JSONDefault *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r GetClubMembersByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetClubMembersByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type GetGearByIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5205,63 +4660,6 @@ func (r GetSegmentEffortStreamsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetSegmentEffortStreamsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ExploreSegmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		// Segments The set of segments matching an explorer request
-		Segments *[]struct {
-			// AvgGrade The segment's average grade, in percents
-			AvgGrade *float32 `json:"avg_grade,omitempty"`
-
-			// ClimbCategory The category of the climb [0, 5]. Higher is harder ie. 5 is Hors catégorie, 0 is uncategorized in climb_category. If climb_category = 5, climb_category_desc = HC. If climb_category = 2, climb_category_desc = 3.
-			ClimbCategory *int `json:"climb_category,omitempty"`
-
-			// ClimbCategoryDesc The description for the category of the climb
-			ClimbCategoryDesc *ExploreSegments200SegmentsClimbCategoryDesc `json:"climb_category_desc,omitempty"`
-
-			// Distance The segment's distance, in meters
-			Distance *float32 `json:"distance,omitempty"`
-
-			// ElevDifference The segments's evelation difference, in meters
-			ElevDifference *float32 `json:"elev_difference,omitempty"`
-
-			// EndLatlng A pair of latitude/longitude coordinates, represented as an array of 2 floating point numbers.
-			EndLatlng *LatLng `json:"end_latlng,omitempty"`
-
-			// Id The unique identifier of this segment
-			Id *int64 `json:"id,omitempty"`
-
-			// Name The name of this segment
-			Name *string `json:"name,omitempty"`
-
-			// Points The polyline of the segment
-			Points *string `json:"points,omitempty"`
-
-			// StartLatlng A pair of latitude/longitude coordinates, represented as an array of 2 floating point numbers.
-			StartLatlng *LatLng `json:"start_latlng,omitempty"`
-		} `json:"segments,omitempty"`
-	}
-	JSONDefault *Error
-}
-type ExploreSegments200SegmentsClimbCategoryDesc string
-
-// Status returns HTTPResponse.Status
-func (r ExploreSegmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ExploreSegmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5566,33 +4964,6 @@ func (c *ClientWithResponses) GetClubByIdWithResponse(ctx context.Context, id in
 	return ParseGetClubByIdResponse(rsp)
 }
 
-// GetClubActivitiesByIdWithResponse request returning *GetClubActivitiesByIdResponse
-func (c *ClientWithResponses) GetClubActivitiesByIdWithResponse(ctx context.Context, id int64, params *GetClubActivitiesByIdParams, reqEditors ...RequestEditorFn) (*GetClubActivitiesByIdResponse, error) {
-	rsp, err := c.GetClubActivitiesById(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetClubActivitiesByIdResponse(rsp)
-}
-
-// GetClubAdminsByIdWithResponse request returning *GetClubAdminsByIdResponse
-func (c *ClientWithResponses) GetClubAdminsByIdWithResponse(ctx context.Context, id int64, params *GetClubAdminsByIdParams, reqEditors ...RequestEditorFn) (*GetClubAdminsByIdResponse, error) {
-	rsp, err := c.GetClubAdminsById(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetClubAdminsByIdResponse(rsp)
-}
-
-// GetClubMembersByIdWithResponse request returning *GetClubMembersByIdResponse
-func (c *ClientWithResponses) GetClubMembersByIdWithResponse(ctx context.Context, id int64, params *GetClubMembersByIdParams, reqEditors ...RequestEditorFn) (*GetClubMembersByIdResponse, error) {
-	rsp, err := c.GetClubMembersById(ctx, id, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetClubMembersByIdResponse(rsp)
-}
-
 // GetGearByIdWithResponse request returning *GetGearByIdResponse
 func (c *ClientWithResponses) GetGearByIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetGearByIdResponse, error) {
 	rsp, err := c.GetGearById(ctx, id, reqEditors...)
@@ -5663,15 +5034,6 @@ func (c *ClientWithResponses) GetSegmentEffortStreamsWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseGetSegmentEffortStreamsResponse(rsp)
-}
-
-// ExploreSegmentsWithResponse request returning *ExploreSegmentsResponse
-func (c *ClientWithResponses) ExploreSegmentsWithResponse(ctx context.Context, params *ExploreSegmentsParams, reqEditors ...RequestEditorFn) (*ExploreSegmentsResponse, error) {
-	rsp, err := c.ExploreSegments(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseExploreSegmentsResponse(rsp)
 }
 
 // GetLoggedInAthleteStarredSegmentsWithResponse request returning *GetLoggedInAthleteStarredSegmentsResponse
@@ -6332,149 +5694,6 @@ func ParseGetClubByIdResponse(rsp *http.Response) (*GetClubByIdResponse, error) 
 	return response, nil
 }
 
-// ParseGetClubActivitiesByIdResponse parses an HTTP response from a GetClubActivitiesByIdWithResponse call
-func ParseGetClubActivitiesByIdResponse(rsp *http.Response) (*GetClubActivitiesByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetClubActivitiesByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			Athlete *MetaAthlete `json:"athlete,omitempty"`
-
-			// Distance The activity's distance, in meters
-			Distance *float32 `json:"distance,omitempty"`
-
-			// ElapsedTime The activity's elapsed time, in seconds
-			ElapsedTime *int `json:"elapsed_time,omitempty"`
-
-			// MovingTime The activity's moving time, in seconds
-			MovingTime *int `json:"moving_time,omitempty"`
-
-			// Name The name of the activity
-			Name *string `json:"name,omitempty"`
-
-			// SportType An enumeration of the types an activity may have.
-			SportType *ActivityType `json:"sport_type,omitempty"`
-
-			// TotalElevationGain The activity's total elevation gain.
-			TotalElevationGain *float32 `json:"total_elevation_gain,omitempty"`
-
-			// Type An enumeration of the types an activity may have.
-			Type *ActivityType `json:"type,omitempty"`
-
-			// WorkoutType The activity's workout type
-			WorkoutType *int `json:"workout_type,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetClubAdminsByIdResponse parses an HTTP response from a GetClubAdminsByIdWithResponse call
-func ParseGetClubAdminsByIdResponse(rsp *http.Response) (*GetClubAdminsByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetClubAdminsByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []SummaryAthlete
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetClubMembersByIdResponse parses an HTTP response from a GetClubMembersByIdWithResponse call
-func ParseGetClubMembersByIdResponse(rsp *http.Response) (*GetClubMembersByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetClubMembersByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			// Admin Whether the athlete is a club admin.
-			Admin *bool `json:"admin,omitempty"`
-
-			// Firstname The athlete's first name.
-			Firstname *string `json:"firstname,omitempty"`
-
-			// Lastname The athlete's last initial.
-			Lastname *string `json:"lastname,omitempty"`
-
-			// Member The athlete's member status.
-			Member *string `json:"member,omitempty"`
-
-			// Owner Whether the athlete is club owner.
-			Owner *bool `json:"owner,omitempty"`
-
-			// ResourceState Resource state, indicates level of detail. Possible values: 1 -> "meta", 2 -> "summary", 3 -> "detail"
-			ResourceState *int `json:"resource_state,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseGetGearByIdResponse parses an HTTP response from a GetGearByIdWithResponse call
 func ParseGetGearByIdResponse(rsp *http.Response) (*GetGearByIdResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -6708,72 +5927,6 @@ func ParseGetSegmentEffortStreamsResponse(rsp *http.Response) (*GetSegmentEffort
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest StreamSet
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseExploreSegmentsResponse parses an HTTP response from a ExploreSegmentsWithResponse call
-func ParseExploreSegmentsResponse(rsp *http.Response) (*ExploreSegmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ExploreSegmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			// Segments The set of segments matching an explorer request
-			Segments *[]struct {
-				// AvgGrade The segment's average grade, in percents
-				AvgGrade *float32 `json:"avg_grade,omitempty"`
-
-				// ClimbCategory The category of the climb [0, 5]. Higher is harder ie. 5 is Hors catégorie, 0 is uncategorized in climb_category. If climb_category = 5, climb_category_desc = HC. If climb_category = 2, climb_category_desc = 3.
-				ClimbCategory *int `json:"climb_category,omitempty"`
-
-				// ClimbCategoryDesc The description for the category of the climb
-				ClimbCategoryDesc *ExploreSegments200SegmentsClimbCategoryDesc `json:"climb_category_desc,omitempty"`
-
-				// Distance The segment's distance, in meters
-				Distance *float32 `json:"distance,omitempty"`
-
-				// ElevDifference The segments's evelation difference, in meters
-				ElevDifference *float32 `json:"elev_difference,omitempty"`
-
-				// EndLatlng A pair of latitude/longitude coordinates, represented as an array of 2 floating point numbers.
-				EndLatlng *LatLng `json:"end_latlng,omitempty"`
-
-				// Id The unique identifier of this segment
-				Id *int64 `json:"id,omitempty"`
-
-				// Name The name of this segment
-				Name *string `json:"name,omitempty"`
-
-				// Points The polyline of the segment
-				Points *string `json:"points,omitempty"`
-
-				// StartLatlng A pair of latitude/longitude coordinates, represented as an array of 2 floating point numbers.
-				StartLatlng *LatLng `json:"start_latlng,omitempty"`
-			} `json:"segments,omitempty"`
-		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

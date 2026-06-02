@@ -8,21 +8,28 @@ import (
 	"io"
 	"net/http"
 
+	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook"
 )
 
+// stravaAPIBase is the Strava REST API base URL.
+// Changing to https://www.api-v3.strava.com is required before June 1, 2027.
+const stravaAPIBase = "https://www.strava.com/api/v3"
+
 type Provider struct {
 	verifyToken string
+	db          shared.Database
 }
 
-func NewProvider(verifyToken string) *Provider {
+func NewProvider(verifyToken string, db shared.Database) *Provider {
 	if verifyToken == "" {
 		panic("STRAVA_WEBHOOK_VERIFY_TOKEN must be set")
 	}
-	return &Provider{verifyToken: verifyToken}
+	return &Provider{verifyToken: verifyToken, db: db}
 }
 
 func (p *Provider) ID() string {
@@ -82,29 +89,21 @@ func (p *Provider) ParseEvent(r *http.Request) ([]*webhook.WebhookEvent, error) 
 	return []*webhook.WebhookEvent{evt}, nil
 }
 
-func (p *Provider) FetchActivity(ctx context.Context, userSvc userpb.UserServiceClient, internalUserID string, evt *webhook.WebhookEvent) (*pbevents.ActivityPayload, error) {
-	// 1. Fetch Strava tokens for user
-	integResp, err := userSvc.GetIntegration(ctx, &userpb.GetIntegrationRequest{
-		UserId:   internalUserID,
-		Provider: p.ID(),
-	})
+func (p *Provider) FetchActivity(ctx context.Context, _ userpb.UserServiceClient, internalUserID string, evt *webhook.WebhookEvent) (*pbevents.ActivityPayload, error) {
+	// 1. Get a valid (auto-refreshed) token via Firestore
+	token, err := oauth.NewFirestoreTokenSourceFromDB(p.db, internalUserID, "strava").Token(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get integration for user: %w", err)
-	}
-
-	stravaInteg := integResp.Integrations.Strava
-	if stravaInteg == nil || stravaInteg.AccessToken == "" {
-		return nil, fmt.Errorf("strava integration not found or access token missing")
+		return nil, fmt.Errorf("failed to get strava token: %w", err)
 	}
 
 	// 2. Fetch activity from Strava API
-	url := fmt.Sprintf("https://www.strava.com/api/v3/activities/%s?include_all_efforts=true", evt.ActivityID)
+	url := fmt.Sprintf("%s/activities/%s?include_all_efforts=true", stravaAPIBase, evt.ActivityID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+stravaInteg.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
