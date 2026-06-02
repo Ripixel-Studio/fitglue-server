@@ -363,11 +363,25 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 					},
 				}
 			} else if p.service != nil {
-				// Step 2: Results not available yet - create pending input for background polling
-				logger.Debug("parkrun: results not yet available, creating pending input")
-
-				// stableID is used as the pending input document ID (unique per source activity + enricher)
+				// Step 2: Results not available yet - create pending input for background polling.
+				// First check if a completed pending input already exists (second resume pass).
+				// If so, apply it directly rather than overwriting with STATUS_WAITING.
 				stableID := pendinginput.GenerateID(activity.Source.String(), activity.ExternalId, p.Name())
+				if existing, err := p.service.DB.GetPendingInput(ctx, user.UserId, stableID); err == nil && existing != nil && existing.Status == pbpipeline.PendingInput_STATUS_COMPLETED {
+					logger.Info("parkrun: re-applying completed pending input on re-run")
+					resumeResult, resumeErr := p.EnrichResume(ctx, activity, user, existing)
+					if resumeErr == nil && resumeResult != nil {
+						// Merge resume result into main result
+						result.Description = resumeResult.Description
+						result.Metadata["parkrun_results_reapplied"] = "true"
+						for k, v := range resumeResult.Metadata {
+							result.Metadata[k] = v
+						}
+					}
+					// Continue — don't create a new pending input
+				} else {
+				// stableID is used as the pending input document ID (unique per source activity + enricher)
+				logger.Debug("parkrun: results not yet available, creating pending input")
 
 				// Use the pre-generated activity_id from orchestrator for LinkedActivityId
 				// This is the UUID that will be used for the synchronized activity
@@ -423,6 +437,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 				result.SectionHeader = "🏃 Parkrun Results:"
 
 				result.Metadata["parkrun_results_state"] = "PENDING"
+				} // end else (no completed pending input — create new one)
 			} else {
 				// No service available for pending input creation, skip results enrichment
 				logger.Debug("parkrun: results not available and no service for pending input")

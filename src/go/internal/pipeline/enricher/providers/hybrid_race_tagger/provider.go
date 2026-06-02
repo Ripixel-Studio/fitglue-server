@@ -157,6 +157,17 @@ func (p *HybridRaceTaggerProvider) Enrich(ctx context.Context, logger *slog.Logg
 		}, nil
 	}
 
+	// Check if a completed pending input already exists (e.g. this is a second resume pass
+	// triggered by a different pending input such as photo-upload). If so, re-apply the
+	// stored race selection rather than blocking the pipeline again.
+	if p.service != nil {
+		stableID := pendinginput.GenerateID(activity.Source.String(), activity.ExternalId, p.Name())
+		if existing, err := p.service.DB.GetPendingInput(ctx, user.UserId, stableID); err == nil && existing != nil && existing.Status == pbpipeline.PendingInput_STATUS_COMPLETED {
+			logger.Info("hybrid_race_tagger: re-applying completed pending input")
+			return p.EnrichResume(ctx, activity, user, existing)
+		}
+	}
+
 	laps := activity.Sessions[0].Laps
 
 	// Build lap info for pending input metadata
