@@ -209,10 +209,12 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 
 	// Cache result so reposts don't re-call Imagen.
 	if externalId != "" && p.Service != nil && p.Service.DB != nil {
-		_ = p.Service.DB.SetBoosterData(ctx, user.UserId, "ai_banner", map[string]interface{}{
+		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, "ai_banner", map[string]interface{}{
 			"cached_external_id": externalId,
 			"cached_banner_url":  bannerURL,
-		})
+		}); err != nil {
+			slog.ErrorContext(ctx, "failed to cache ai_banner booster data", "error", err, "userId", user.UserId)
+		}
 	}
 
 	return &providers.EnrichmentResult{

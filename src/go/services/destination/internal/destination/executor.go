@@ -225,14 +225,22 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 	// Fetch the parent PipelineRun — needed by Update() to find the existing destination activity ID
 	var pr *pbpipeline.PipelineRun
 	if pipelineRunId != "" {
-		pr, _ = e.db.GetPipelineRun(ctx, payload.UserId, pipelineRunId)
+		var err error
+		pr, err = e.db.GetPipelineRun(ctx, payload.UserId, pipelineRunId)
+		if err != nil {
+			e.logger.Warn(ctx, "failed to fetch pipeline run for update/create decision", "error", err, "pipelineRunId", pipelineRunId)
+		}
 	}
 
 	// Pre-fetch destination outcomes once; used below to skip already-succeeded destinations
 	// on Pub/Sub redelivery (prevents double-posting).
 	var priorOutcomes []*pbpipeline.DestinationOutcome
 	if pipelineRunId != "" {
-		priorOutcomes, _ = e.db.GetDestinationOutcomes(ctx, payload.UserId, pipelineRunId)
+		var err error
+		priorOutcomes, err = e.db.GetDestinationOutcomes(ctx, payload.UserId, pipelineRunId)
+		if err != nil {
+			e.logger.Error(ctx, "failed to fetch prior destination outcomes; dedup check skipped, activity may re-upload", "error", err, "pipelineRunId", pipelineRunId)
+		}
 	}
 
 destinations:

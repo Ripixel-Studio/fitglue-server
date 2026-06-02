@@ -400,7 +400,9 @@ func (s *Service) CancelPipelineRun(ctx context.Context, req *pbsvc.CancelPipeli
 		input, fetchErr := s.store.GetPendingInput(ctx, req.UserId, pendingID)
 		if fetchErr == nil && input != nil && input.Status == pipeline.PendingInput_STATUS_WAITING {
 			input.Status = pipeline.PendingInput_STATUS_COMPLETED
-			_ = s.store.UpdatePendingInput(ctx, req.UserId, input)
+			if err := s.store.UpdatePendingInput(ctx, req.UserId, input); err != nil {
+				s.logger.Warn(ctx, "best-effort pending input cleanup failed", "error", err, "pendingId", pendingID)
+			}
 		}
 	}
 
