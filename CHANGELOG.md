@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.34.5](https://github.com/FitGlue/server/compare/v16.34.4...v16.34.5) (2026-06-02)
+
+
+### Bug Fixes
+
+* **enrichers:** re-apply completed pending inputs on subsequent resume passes ([9dc3dc1](https://github.com/FitGlue/server/commit/9dc3dc15c9f6866663a88cd640bb0eaeb9540881))
+* **fit-file-hr:** re-apply completed FIT file data on subsequent resume passes ([7a14d32](https://github.com/FitGlue/server/commit/7a14d322d5b2a2133a4113f0437b6609a55bb380))
+
 ### [16.34.4](https://github.com/FitGlue/server/compare/v16.34.3...v16.34.4) (2026-06-02)
 
 
