@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/domain/apikey"
@@ -341,13 +342,9 @@ func (s *FirestoreStore) FindUserByIntegration(ctx context.Context, provider str
 
 	var queryValue interface{} = providerUID
 	if provider == "strava" {
-		// Attempt to parse to int64, since Strava athlete_id is stored as int64
-		// But if it's stored in Firestore as a number, we must query it as a number.
-		// providerUID comes from the webhook, which might be a string.
-		// We'll decode using json unmarshal to handle strings. Actually,
-		// if we know it's a number:
-		importStrconv := true
-		_ = importStrconv
+		if n, err := strconv.ParseInt(providerUID, 10, 64); err == nil {
+			queryValue = n
+		}
 	}
 
 	iter := s.client.Collection("users").Where(fieldPath, "==", queryValue).Limit(1).Documents(ctx)
