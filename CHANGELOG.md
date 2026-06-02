@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.34.3](https://github.com/FitGlue/server/compare/v16.34.2...v16.34.3) (2026-06-02)
+
+
+### Bug Fixes
+
+* **registry:** update showcase externalUrlTemplate to /showcase/{id} ([250b2bf](https://github.com/FitGlue/server/commit/250b2bfbc4b9d6a79d758bc81a6265abe11271df))
+
 ### [16.34.2](https://github.com/FitGlue/server/compare/v16.34.1...v16.34.2) (2026-06-01)
 
 
