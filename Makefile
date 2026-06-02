@@ -155,6 +155,15 @@ lint:
 	@cd $(GO_SRC_DIR) && test -z "$$(gofmt -l pkg services cmd internal)" || (echo "Go files need formatting. Run 'gofmt -w pkg services cmd internal'" && exit 1)
 	@echo "Running go vet (excluding generated clients)..."
 	@cd $(GO_SRC_DIR) && go vet $$(go list ./pkg/... ./services/... ./cmd/... ./internal/... | grep -v '/integrations/')
+	@echo "Checking for direct sentry-go imports (use infra.Logger.Error instead)..."
+	@if grep -rn '"github.com/getsentry/sentry-go"' $(GO_SRC_DIR) --include="*.go" \
+		| grep -v "_test.go" \
+		| grep -v "pkg/infrastructure/sentry/sentry.go" \
+		| grep -v "pkg/framework/wrapper.go"; then \
+		echo "❌ Direct sentry-go import found. Use logger.Error(ctx, ...) via infra.Logger — the SentryHandler forwards Error-level logs to Sentry automatically."; \
+		exit 1; \
+	fi
+	@echo "✅ No direct sentry-go imports found."
 	@echo "Checking for Protobuf JSON misuse..."
 	@./scripts/lint-proto-json.sh
 
