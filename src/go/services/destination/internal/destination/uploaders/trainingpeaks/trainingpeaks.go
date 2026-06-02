@@ -71,7 +71,9 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			DestinationId: workoutID,
 			UploadedAt:    timestamppb.Now(),
 		}
-		_ = u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord)
+		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
+			logger.ErrorContext(ctx, "failed to store upload dedup record", "error", err, "destination", "trainingpeaks", "userId", payload.UserId)
+		}
 	}
 
 	return workoutID, nil

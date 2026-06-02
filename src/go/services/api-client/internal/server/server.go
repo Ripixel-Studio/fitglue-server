@@ -89,7 +89,7 @@ func (s *APIServer) setupRoutes() {
 	// Root level middleware (shared by all endpoints)
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.RealIP)
-	s.router.Use(middleware.Recoverer)
+	s.router.Use(SentryRecoveryMiddleware(s.logger))
 
 	// Create common middleware for route logging and API parsing
 	// s.router.Use(APILogger(s.logger))

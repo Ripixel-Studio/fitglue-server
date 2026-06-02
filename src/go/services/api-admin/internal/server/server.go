@@ -60,7 +60,7 @@ func (s *APIServer) setupRoutes() {
 	// Root level middleware (shared by all endpoints)
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.RealIP)
-	s.router.Use(middleware.Recoverer)
+	s.router.Use(SentryRecoveryMiddleware(s.logger))
 
 	// Health check (no auth required)
 	s.router.Get("/api/admin/health", func(w http.ResponseWriter, r *http.Request) {

@@ -62,7 +62,7 @@ func (s *APIServer) setupRoutes() {
 	// Root level middleware (shared by all endpoints)
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.RealIP)
-	s.router.Use(middleware.Recoverer)
+	s.router.Use(SentryRecoveryMiddleware(s.logger))
 
 	// API Webhook block
 	s.router.Route("/api/webhooks", func(r chi.Router) {

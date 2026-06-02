@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -60,4 +61,25 @@ func JSONResponseMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// SentryRecoveryMiddleware catches panics, logs them (which routes through SentryHandler
+// to capture the exception in Sentry), and returns HTTP 500.
+// Use in place of chi's middleware.Recoverer.
+func SentryRecoveryMiddleware(logger infra.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					err, ok := rec.(error)
+					if !ok {
+						err = fmt.Errorf("panic: %v", rec)
+					}
+					logger.Error(r.Context(), "Panic recovered in HTTP handler", "error", err, "path", r.URL.Path)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	}
 }

@@ -178,7 +178,9 @@ func (s *Service) StartTrial(ctx context.Context, req *pbsvc.StartTrialRequest) 
 		sub = &pbuser.SubscriptionState{UserId: req.UserId}
 	}
 	sub.TrialEndsAt = timestamppb.New(newTrialEnd)
-	_ = s.store.UpsertSubscription(ctx, sub)
+	if err := s.store.UpsertSubscription(ctx, sub); err != nil {
+		s.logger.Error(ctx, "failed to persist subscription after trial start", "error", err, "userId", req.UserId)
+	}
 
 	return sub, nil
 }
@@ -277,7 +279,9 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 			if session.Subscription != nil {
 				sub.StripeSubscriptionId = session.Subscription.ID
 			}
-			_ = s.store.UpsertSubscription(ctx, sub)
+			if err := s.store.UpsertSubscription(ctx, sub); err != nil {
+				s.logger.Error(ctx, "failed to persist subscription after checkout", "error", err, "userId", userID)
+			}
 
 			s.enqueueNotification(ctx, userID,
 				pbnotification.NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_STARTED,
@@ -325,12 +329,16 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebho
 		if customerID != "" {
 			userID, err := s.store.GetUserIDByStripeCustomer(ctx, customerID)
 			if err == nil && userID != "" {
-				s.store.UpdateUserTier(ctx, userID, pbuser.UserTier_USER_TIER_HOBBYIST, nil)
+				if err := s.store.UpdateUserTier(ctx, userID, pbuser.UserTier_USER_TIER_HOBBYIST, nil); err != nil {
+					s.logger.Error(ctx, "failed to downgrade user tier after subscription cancellation", "error", err, "userId", userID)
+				}
 
 				sub, _ := s.store.GetSubscription(ctx, userID)
 				if sub != nil {
 					sub.Status = string(subscription.Status)
-					_ = s.store.UpsertSubscription(ctx, sub)
+					if err := s.store.UpsertSubscription(ctx, sub); err != nil {
+						s.logger.Error(ctx, "failed to persist subscription after cancellation", "error", err, "userId", userID)
+					}
 				}
 
 				s.enqueueNotification(ctx, userID,
