@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.35.1](https://github.com/FitGlue/server/compare/v16.35.0...v16.35.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* **webhook:** convert Strava athlete ID to int64 for Firestore lookup ([95c56be](https://github.com/FitGlue/server/commit/95c56be9771d1c3168ddd45d6f3ea64f46ca2856))
+
 ## [16.35.0](https://github.com/FitGlue/server/compare/v16.34.6...v16.35.0) (2026-06-02)
 
 
