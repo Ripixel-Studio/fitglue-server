@@ -27,13 +27,15 @@ import (
 
 // Uploader implements destination.Destination for TrainingPeaks
 type Uploader struct {
-	svc *bootstrap.Service
+	svc    *bootstrap.Service
+	logger infra.Logger
 }
 
 // New returns a new TrainingPeaks Uploader initialized with dependencies.
 func New(svc *bootstrap.Service) *Uploader {
 	return &Uploader{
-		svc: svc,
+		svc:    svc,
+		logger: infra.NewLoggerWithComponent("destination.trainingpeaks"),
 	}
 }
 
@@ -72,7 +74,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			UploadedAt:    timestamppb.Now(),
 		}
 		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-			logger.ErrorContext(ctx, "failed to store upload dedup record", "error", err, "destination", "trainingpeaks", "userId", payload.UserId)
+			u.logger.Error(ctx, "failed to store upload dedup record", "error", err, "destination", "trainingpeaks", "userId", payload.UserId)
 		}
 	}
 

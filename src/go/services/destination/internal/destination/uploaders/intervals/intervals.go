@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
@@ -32,13 +33,15 @@ const (
 
 // Uploader implements destination.Destination for Intervals.icu
 type Uploader struct {
-	svc *bootstrap.Service
+	svc    *bootstrap.Service
+	logger infra.Logger
 }
 
 // New returns a new Intervals Uploader initialized with dependencies.
 func New(svc *bootstrap.Service) *Uploader {
 	return &Uploader{
-		svc: svc,
+		svc:    svc,
+		logger: infra.NewLoggerWithComponent("destination.intervals"),
 	}
 }
 
@@ -129,7 +132,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			UploadedAt:    timestamppb.Now(),
 		}
 		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-			logger.ErrorContext(ctx, "failed to store upload dedup record", "error", err, "destination", "intervals", "userId", payload.UserId)
+			u.logger.Error(ctx, "failed to store upload dedup record", "error", err, "destination", "intervals", "userId", payload.UserId)
 		}
 	}
 

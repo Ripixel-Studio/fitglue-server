@@ -26,13 +26,15 @@ import (
 
 // Uploader implements destination.Destination for Google Sheets
 type Uploader struct {
-	svc *bootstrap.Service
+	svc    *bootstrap.Service
+	logger infra.Logger
 }
 
 // New returns a new Google Sheets Uploader initialized with dependencies.
 func New(svc *bootstrap.Service) *Uploader {
 	return &Uploader{
-		svc: svc,
+		svc:    svc,
+		logger: infra.NewLoggerWithComponent("destination.googlesheets"),
 	}
 }
 
@@ -93,7 +95,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 			UploadedAt:    timestamppb.Now(),
 		}
 		if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-			logger.ErrorContext(ctx, "failed to store upload dedup record", "error", err, "destination", "googlesheets", "userId", payload.UserId)
+			u.logger.Error(ctx, "failed to store upload dedup record", "error", err, "destination", "googlesheets", "userId", payload.UserId)
 		}
 	}
 

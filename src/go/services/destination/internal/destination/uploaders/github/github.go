@@ -27,13 +27,15 @@ import (
 
 // Uploader implements destination.Destination for GitHub
 type Uploader struct {
-	svc *bootstrap.Service
+	svc    *bootstrap.Service
+	logger infra.Logger
 }
 
 // New returns a new GitHub Uploader initialized with dependencies.
 func New(svc *bootstrap.Service) *Uploader {
 	return &Uploader{
-		svc: svc,
+		svc:    svc,
+		logger: infra.NewLoggerWithComponent("destination.github"),
 	}
 }
 
@@ -160,7 +162,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		UploadedAt:    timestamppb.Now(),
 	}
 	if err := u.svc.DB.SetUploadedActivity(ctx, payload.UserId, uploadRecord); err != nil {
-		logger.ErrorContext(ctx, "failed to store upload dedup record", "error", err, "destination", "github", "userId", payload.UserId)
+		u.logger.Error(ctx, "failed to store upload dedup record", "error", err, "destination", "github", "userId", payload.UserId)
 	}
 
 	return externalID, nil

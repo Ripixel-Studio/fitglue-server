@@ -213,7 +213,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 			"cached_external_id": externalId,
 			"cached_banner_url":  bannerURL,
 		}); err != nil {
-			slog.ErrorContext(ctx, "failed to cache ai_banner booster data", "error", err, "userId", user.UserId)
+			logger.ErrorContext(ctx, "failed to cache ai_banner booster data", "error", err, "userId", user.UserId)
 		}
 	}
 
