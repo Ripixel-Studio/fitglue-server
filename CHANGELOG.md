@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.34.6](https://github.com/FitGlue/server/compare/v16.34.5...v16.34.6) (2026-06-02)
+
+
+### Bug Fixes
+
+* **enricher:** provision lag topic infra and extend Fitbit HR retry windows ([f66bb15](https://github.com/FitGlue/server/commit/f66bb15e68ccf3fce093a8fde01236a56bcd9253))
+* **terraform:** use project-level IAM for Pub/Sub service agent dead-letter grants ([3665500](https://github.com/FitGlue/server/commit/3665500c9c0f526ffa5dc7d44ba6bece66b01251))
+
 ### [16.34.5](https://github.com/FitGlue/server/compare/v16.34.4...v16.34.5) (2026-06-02)
 
 
