@@ -880,6 +880,42 @@ resource "google_cloud_run_v2_service" "frontend" {
           }
         }
       }
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "STRAVA_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "STRAVA_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
     }
     scaling {
       min_instance_count = 0
