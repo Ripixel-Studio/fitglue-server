@@ -380,63 +380,63 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 					}
 					// Continue — don't create a new pending input
 				} else {
-				// stableID is used as the pending input document ID (unique per source activity + enricher)
-				logger.Debug("parkrun: results not yet available, creating pending input")
+					// stableID is used as the pending input document ID (unique per source activity + enricher)
+					logger.Debug("parkrun: results not yet available, creating pending input")
 
-				// Use the pre-generated activity_id from orchestrator for LinkedActivityId
-				// This is the UUID that will be used for the synchronized activity
-				linkedActivityId := inputs["activity_id"]
-				if linkedActivityId == "" {
-					// activity_id must be provided by orchestrator - this is a bug if missing
-					logger.Error("parkrun: activity_id not in inputs - orchestrator bug")
-					return nil, fmt.Errorf("activity_id not provided in enricher inputs")
-				}
+					// Use the pre-generated activity_id from orchestrator for LinkedActivityId
+					// This is the UUID that will be used for the synchronized activity
+					linkedActivityId := inputs["activity_id"]
+					if linkedActivityId == "" {
+						// activity_id must be provided by orchestrator - this is a bug if missing
+						logger.Error("parkrun: activity_id not in inputs - orchestrator bug")
+						return nil, fmt.Errorf("activity_id not provided in enricher inputs")
+					}
 
-				// Calculate auto deadline (48 hours from now - Parkrun results usually come within 24h)
-				autoDeadline := time.Now().Add(48 * time.Hour)
+					// Calculate auto deadline (48 hours from now - Parkrun results usually come within 24h)
+					autoDeadline := time.Now().Add(48 * time.Hour)
 
-				pendingInput := &pbpipeline.PendingInput{
-					ActivityId:                 stableID, // Document ID stays as stableID for uniqueness
-					UserId:                     user.UserId,
-					Status:                     pbpipeline.PendingInput_STATUS_WAITING,
-					RequiredFields:             []string{"description", "position", "time", "age_grade"},
-					AutoPopulated:              true,
-					ContinuedWithoutResolution: true,
-					EnricherProviderId:         "parkrun",
-					AutoDeadline:               timestamppb.New(autoDeadline),
-					LinkedActivityId:           linkedActivityId,      // Now uses the correct UUID!
-					PipelineId:                 inputs["pipeline_id"], // For resume mode
-					// OriginalPayload is now stored in GCS via original_payload_uri (set by orchestrator)
-					ProviderMetadata: map[string]string{
-						"parkrun_event_slug":   matchedLocation.EventSlug,
-						"parkrun_event_name":   matchedLocation.Name,
-						"parkrun_country":      matchedLocation.CountryURL,
-						"expected_date":        estimatedLocalTime.Format("02/01/2006"),
-						"source_activity_id":   activity.ExternalId,
-						"source_activity_type": activity.Source.String(),
-						"display.field_labels": `{"description":"Results Summary","position":"Finish Position","time":"Finish Time","age_grade":"Age Grade %"}`,
-						"display.field_types":  `{"description":"textarea:rows=3","position":"text:placeholder=e.g. 42","time":"text:placeholder=e.g. 25:30","age_grade":"text:placeholder=e.g. 55.5%"}`,
-						"display.summary":      "Waiting for Parkrun results",
-						"display.title":        "Enter Parkrun Results",
-					},
-					CreatedAt: timestamppb.Now(),
-					UpdatedAt: timestamppb.Now(),
-				}
+					pendingInput := &pbpipeline.PendingInput{
+						ActivityId:                 stableID, // Document ID stays as stableID for uniqueness
+						UserId:                     user.UserId,
+						Status:                     pbpipeline.PendingInput_STATUS_WAITING,
+						RequiredFields:             []string{"description", "position", "time", "age_grade"},
+						AutoPopulated:              true,
+						ContinuedWithoutResolution: true,
+						EnricherProviderId:         "parkrun",
+						AutoDeadline:               timestamppb.New(autoDeadline),
+						LinkedActivityId:           linkedActivityId,      // Now uses the correct UUID!
+						PipelineId:                 inputs["pipeline_id"], // For resume mode
+						// OriginalPayload is now stored in GCS via original_payload_uri (set by orchestrator)
+						ProviderMetadata: map[string]string{
+							"parkrun_event_slug":   matchedLocation.EventSlug,
+							"parkrun_event_name":   matchedLocation.Name,
+							"parkrun_country":      matchedLocation.CountryURL,
+							"expected_date":        estimatedLocalTime.Format("02/01/2006"),
+							"source_activity_id":   activity.ExternalId,
+							"source_activity_type": activity.Source.String(),
+							"display.field_labels": `{"description":"Results Summary","position":"Finish Position","time":"Finish Time","age_grade":"Age Grade %"}`,
+							"display.field_types":  `{"description":"textarea:rows=3","position":"text:placeholder=e.g. 42","time":"text:placeholder=e.g. 25:30","age_grade":"text:placeholder=e.g. 55.5%"}`,
+							"display.summary":      "Waiting for Parkrun results",
+							"display.title":        "Enter Parkrun Results",
+						},
+						CreatedAt: timestamppb.Now(),
+						UpdatedAt: timestamppb.Now(),
+					}
 
-				if err := p.service.DB.CreatePendingInput(ctx, user.UserId, pendingInput); err != nil {
-					// Log but don't fail - we can still continue without results enrichment
-					logger.Warn("parkrun: failed to create pending input", "error", err)
-					result.Metadata["results_pending_input_error"] = err.Error()
-				} else {
-					result.Metadata["results_pending_input_created"] = "true"
-					result.Metadata["results_auto_deadline"] = autoDeadline.Format(time.RFC3339)
-				}
+					if err := p.service.DB.CreatePendingInput(ctx, user.UserId, pendingInput); err != nil {
+						// Log but don't fail - we can still continue without results enrichment
+						logger.Warn("parkrun: failed to create pending input", "error", err)
+						result.Metadata["results_pending_input_error"] = err.Error()
+					} else {
+						result.Metadata["results_pending_input_created"] = "true"
+						result.Metadata["results_auto_deadline"] = autoDeadline.Format(time.RFC3339)
+					}
 
-				// Add placeholder description for destinations while waiting for official results
-				result.Description = "🏃 Parkrun Results:\nWaiting for results to be released..."
-				result.SectionHeader = "🏃 Parkrun Results:"
+					// Add placeholder description for destinations while waiting for official results
+					result.Description = "🏃 Parkrun Results:\nWaiting for results to be released..."
+					result.SectionHeader = "🏃 Parkrun Results:"
 
-				result.Metadata["parkrun_results_state"] = "PENDING"
+					result.Metadata["parkrun_results_state"] = "PENDING"
 				} // end else (no completed pending input — create new one)
 			} else {
 				// No service available for pending input creation, skip results enrichment
