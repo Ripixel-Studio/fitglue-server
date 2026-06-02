@@ -88,18 +88,13 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 			}, nil
 		}
 		if pending.Status == pbpipeline.PendingInput_STATUS_COMPLETED {
-			// The user has already uploaded the FIT file. EnrichResume handles applying the data
-			// in resume mode. If Enrich is called directly (e.g., pipeline re-run) after the input
-			// is already completed, skip gracefully rather than prompting for the file again.
-			logger.Info("fit-file-hr: pending input already completed, skipping re-request")
-			return &providers.EnrichmentResult{
-				Skipped:    true,
-				SkipReason: "FIT file already uploaded; data applied via EnrichResume",
-				Metadata: map[string]string{
-					"hr_source":     "skipped",
-					"status_detail": "Pending input already completed",
-				},
-			}, nil
+			// The FIT file was already uploaded in a prior resume pass. Re-apply it now so
+			// that downstream enrichers (heart-rate-summary, heart-rate-zones, etc.) always
+			// receive HR data, regardless of which pending input triggered this resume.
+			// This covers the case where a second pending input (e.g. photo-upload) causes
+			// a fresh enricher pass where only Enrich() is called, not EnrichResume().
+			logger.Info("fit-file-hr: re-applying completed FIT file input")
+			return p.EnrichResume(ctx, activity, user, pending)
 		}
 	}
 
