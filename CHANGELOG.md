@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.35.3](https://github.com/FitGlue/server/compare/v16.35.2...v16.35.3) (2026-06-02)
+
+
+### Bug Fixes
+
+* **notifications:** include title/body in FCM data map for SW fallback ([f200c3b](https://github.com/FitGlue/server/commit/f200c3becfd121ecf764fc77e372d24901f46457))
+* **notifications:** wire SYSTEM_EMAIL and EMAIL_APP_PASSWORD to notification service ([8f43da5](https://github.com/FitGlue/server/commit/8f43da5b327183f46db78563a3fe53646fc50e2e))
+* **terraform:** grant notification service account secret accessor role ([5d034b6](https://github.com/FitGlue/server/commit/5d034b63ac23de426b5ea0f42d7eb3053291ef6a))
+* **webhook:** parse Strava API response into StandardizedActivity ([725bfa9](https://github.com/FitGlue/server/commit/725bfa986aae187eb0794ec68565036d2b94dbee))
+
 ### [16.35.2](https://github.com/FitGlue/server/compare/v16.35.1...v16.35.2) (2026-06-02)
 
 
