@@ -95,6 +95,11 @@ func (s *APIServer) setupRoutes() {
 	// s.router.Use(APILogger(s.logger))
 	// s.router.Use(JSONResponseHeaders)
 
+	// Legacy OAuth callback path — the Fitbit (and other) developer apps have
+	// /auth/{provider}/callback registered from the pre-v2 architecture.
+	// Firebase routes /auth/** to api-client, so we handle it here as an alias.
+	s.router.Get("/auth/{provider}/callback", s.handleOAuthCallback)
+
 	// API v2 block (Authenticated / CORS config / API routing)
 	s.router.Route("/api/v2", func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
