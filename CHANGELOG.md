@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.34.4](https://github.com/FitGlue/server/compare/v16.34.3...v16.34.4) (2026-06-02)
+
+
+### Bug Fixes
+
+* **oauth:** add legacy /auth/{provider}/callback route for Fitbit and other providers ([cdb6df9](https://github.com/FitGlue/server/commit/cdb6df9a8f237610cd64fba156b5c463bf09476c))
+
 ### [16.34.3](https://github.com/FitGlue/server/compare/v16.34.2...v16.34.3) (2026-06-02)
 
 
