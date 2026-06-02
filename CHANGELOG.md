@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.35.0](https://github.com/FitGlue/server/compare/v16.34.6...v16.35.0) (2026-06-02)
+
+
+### Features
+
+* **refactor:** Strava and Fitbit integrations to remove deprecated methods and improve token handling ([ec3fdf3](https://github.com/FitGlue/server/commit/ec3fdf303327cec8a169442d6c7ff38ca478bd67))
+
+
+### Bug Fixes
+
+* **webhook:** use FirestoreTokenSource for Strava and Fitbit token refresh ([ee6af1d](https://github.com/FitGlue/server/commit/ee6af1dc333e8eadfbcd16e651d60c80a069240d))
+
 ### [16.34.6](https://github.com/FitGlue/server/compare/v16.34.5...v16.34.6) (2026-06-02)
 
 
