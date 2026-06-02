@@ -213,7 +213,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 
 	// Decision logic
 	timeSinceEnd := time.Since(endTime)
-	isRecent := timeSinceEnd < 30*time.Minute
+	isRecent := timeSinceEnd < 1*time.Hour
 
 	var lagErr error
 	if (!hasStart || !hasEnd) && isRecent {

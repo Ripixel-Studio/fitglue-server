@@ -261,7 +261,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 	// Note: For unwrapped events, e.Time() is the original event time, which is what we want.
 	if !e.Time().IsZero() {
 		lagDuration := time.Since(e.Time())
-		if lagDuration > 15*time.Minute {
+		if lagDuration > 30*time.Minute {
 			fwCtx.Logger.Warn("Activity lag exhausted, forcing partial enrichment", "age", lagDuration)
 			doNotRetry = true
 		}

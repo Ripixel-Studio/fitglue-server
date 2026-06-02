@@ -79,3 +79,21 @@ resource "google_project_iam_member" "web_deployer_firebase_rules_admin" {
   role    = "roles/firebaserules.admin"
   member  = "serviceAccount:circleci-web-deployer@${var.project_id}.iam.gserviceaccount.com"
 }
+
+# Pub/Sub service agent needs publisher rights on the dead-letter topic so it can
+# forward exhausted lag messages there automatically.
+resource "google_pubsub_topic_iam_member" "lag_dead_letter_pubsub_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.enrichment_lag_dead_letter.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+# Pub/Sub service agent also needs subscriber rights on the lag subscription itself
+# so it can read and forward messages to the dead-letter topic.
+resource "google_pubsub_subscription_iam_member" "lag_sub_pubsub_subscriber" {
+  project      = var.project_id
+  subscription = google_pubsub_subscription.enrichment_lag_sub.name
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}

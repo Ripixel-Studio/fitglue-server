@@ -40,6 +40,54 @@ resource "google_pubsub_topic" "destination_upload" {
   message_retention_duration = "3600s"
 }
 
+# Enrichment lag topic — receives activities that need to wait for device sync
+# (e.g. Fitbit HR data not yet available). The enricher publishes here on first
+# retry; this subscription pushes back to /pubsub/run with isLagRetry=true.
+resource "google_pubsub_topic" "enrichment_lag" {
+  name    = "topic-enrichment-lag"
+  project = var.project_id
+
+  # Retain for 2h — well beyond the 30-min lag window. If the pipeline service
+  # is briefly down, lag messages survive and still get a chance to process.
+  message_retention_duration = "7200s"
+}
+
+# Dead-letter topic for lag messages that exhaust all retries.
+resource "google_pubsub_topic" "enrichment_lag_dead_letter" {
+  name    = "topic-enrichment-lag-dead-letter"
+  project = var.project_id
+
+  message_retention_duration = "604800s" # 7 days for investigation
+}
+
+resource "google_pubsub_subscription" "enrichment_lag_sub" {
+  name    = "sub-enrichment-lag"
+  topic   = google_pubsub_topic.enrichment_lag.name
+  project = var.project_id
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/run"
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email
+    }
+  }
+
+  ack_deadline_seconds = 600
+
+  # Retain for 2h, aligned to the topic retention.
+  message_retention_duration = "7200s"
+
+  retry_policy {
+    minimum_backoff = "60s"
+    maximum_backoff = "300s"
+  }
+
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.enrichment_lag_dead_letter.id
+    max_delivery_attempts = 10
+  }
+}
+
 
 resource "google_pubsub_topic" "parkrun_results_trigger" {
   name    = "topic-parkrun-results-trigger"
