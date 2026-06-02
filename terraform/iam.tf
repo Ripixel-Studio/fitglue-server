@@ -80,20 +80,17 @@ resource "google_project_iam_member" "web_deployer_firebase_rules_admin" {
   member  = "serviceAccount:circleci-web-deployer@${var.project_id}.iam.gserviceaccount.com"
 }
 
-# Pub/Sub service agent needs publisher rights on the dead-letter topic so it can
-# forward exhausted lag messages there automatically.
-resource "google_pubsub_topic_iam_member" "lag_dead_letter_pubsub_publisher" {
+# Pub/Sub service agent needs publisher and subscriber rights to operate dead-letter
+# forwarding. Using project-level bindings to match the deployer's IAM scope
+# (resource-level pubsub IAM requires pubsub.admin which the deployer doesn't have).
+resource "google_project_iam_member" "pubsub_sa_publisher" {
   project = var.project_id
-  topic   = google_pubsub_topic.enrichment_lag_dead_letter.name
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
-# Pub/Sub service agent also needs subscriber rights on the lag subscription itself
-# so it can read and forward messages to the dead-letter topic.
-resource "google_pubsub_subscription_iam_member" "lag_sub_pubsub_subscriber" {
-  project      = var.project_id
-  subscription = google_pubsub_subscription.enrichment_lag_sub.name
-  role         = "roles/pubsub.subscriber"
-  member       = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+resource "google_project_iam_member" "pubsub_sa_subscriber" {
+  project = var.project_id
+  role    = "roles/pubsub.subscriber"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
