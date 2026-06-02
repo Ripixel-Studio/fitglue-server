@@ -74,4 +74,3 @@ func TestParseEvent(t *testing.T) {
 		assert.Empty(t, events)
 	})
 }
-

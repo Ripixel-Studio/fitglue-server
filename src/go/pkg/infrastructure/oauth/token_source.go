@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
 )
 
 // nonRefreshableProviders are providers whose OAuth tokens don't expire

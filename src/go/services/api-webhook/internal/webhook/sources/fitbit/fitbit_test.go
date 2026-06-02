@@ -119,4 +119,3 @@ func TestParseEvent(t *testing.T) {
 		assert.Nil(t, events)
 	})
 }
-
