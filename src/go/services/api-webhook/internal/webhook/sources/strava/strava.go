@@ -123,15 +123,17 @@ func (p *Provider) FetchActivity(ctx context.Context, _ userpb.UserServiceClient
 	}
 
 	// 3. Map to StandardizedActivity
-	// For now we just create the skeleton with the raw json payload,
-	// Actual parsing of Strava types -> StandardizedActivity should be fully implemented here
-	// or in a separate standardization package.
-	// Since phase 3.4 just wants the payload to get to pubsub, we will attach the Raw Payload json
+	stdActivity, err := mapToStandardizedActivity(rawBody, internalUserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse strava activity: %w", err)
+	}
+
 	payload := &pbevents.ActivityPayload{
-		Source:              activitypb.ActivitySource_SOURCE_STRAVA,
-		UserId:              internalUserID,
-		OriginalPayloadJson: string(rawBody),
-		ActivityId:          &evt.ActivityID,
+		Source:               activitypb.ActivitySource_SOURCE_STRAVA,
+		UserId:               internalUserID,
+		OriginalPayloadJson:  string(rawBody),
+		ActivityId:           &evt.ActivityID,
+		StandardizedActivity: stdActivity,
 	}
 
 	return payload, nil
