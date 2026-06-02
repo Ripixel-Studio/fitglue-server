@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.35.2](https://github.com/FitGlue/server/compare/v16.35.1...v16.35.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **terraform:** add Strava and Fitbit OAuth client credentials to api-webhook ([17adbce](https://github.com/FitGlue/server/commit/17adbce6a1fa21113ab8b6d1e2dcc34be41216e5))
+
 ### [16.35.1](https://github.com/FitGlue/server/compare/v16.35.0...v16.35.1) (2026-06-02)
 
 
