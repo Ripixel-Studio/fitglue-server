@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -92,8 +93,6 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 
 	events, err := provider.ParseEvent(r)
 	if err != nil {
-		// Log the error but return 200 to acknowledge receipt (providers will retry otherwise)
-		// unless it's a verification signature failure where we might return 401.
 		p.logger.Warn(r.Context(), "Failed to parse webhook event (returning 400)", "provider", providerID, "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -103,27 +102,42 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 		p.logger.Info(r.Context(), "Parsed webhook but no events returned", "provider", providerID)
 	}
 
+	// Acknowledge immediately — Strava retries if it doesn't receive 200 within 2s,
+	// which causes duplicate pipeline runs when FetchActivity is slow (e.g. cold start).
+	w.WriteHeader(http.StatusOK)
+
+	if len(events) > 0 {
+		go p.processEvents(provider, events)
+	}
+}
+
+// processEvents runs the fetch/bounceback/publish pipeline for each webhook event.
+// It runs in a goroutine detached from the HTTP request context.
+func (p *Processor) processEvents(provider SourceProvider, events []*WebhookEvent) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	for _, evt := range events {
 		// 1. Resolve internal user ID
-		resolveResp, err := p.userSvc.ResolveUserByIntegration(r.Context(), &userpb.ResolveUserByIntegrationRequest{
+		resolveResp, err := p.userSvc.ResolveUserByIntegration(ctx, &userpb.ResolveUserByIntegrationRequest{
 			Provider:    evt.Provider,
 			ProviderUid: evt.ProviderUID,
 		})
 		if err != nil {
-			p.logger.Warn(r.Context(), "Skipping webhook event: User not found or resolve error", "provider", evt.Provider, "provider_uid", evt.ProviderUID, "error", err)
+			p.logger.Warn(ctx, "Skipping webhook event: User not found or resolve error", "provider", evt.Provider, "provider_uid", evt.ProviderUID, "error", err)
 			continue
 		}
 
 		internalUserID := resolveResp.Profile.UserId
 
 		// 2. Fetch the full activity data using SourceProvider
-		activityPayload, err := provider.FetchActivity(r.Context(), p.userSvc, internalUserID, evt)
+		activityPayload, err := provider.FetchActivity(ctx, p.userSvc, internalUserID, evt)
 		if err != nil {
-			p.logger.Warn(r.Context(), "Skipping webhook event: Failed to fetch activity payload", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID, "error", err)
+			p.logger.Warn(ctx, "Skipping webhook event: Failed to fetch activity payload", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID, "error", err)
 			continue
 		}
 		if activityPayload == nil {
-			p.logger.Info(r.Context(), "Webhook event ignored by provider logic (returned nil payload)", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID)
+			p.logger.Info(ctx, "Webhook event ignored by provider logic (returned nil payload)", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID)
 			continue
 		}
 
@@ -133,11 +147,11 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 			if st := activityPayload.StandardizedActivity.GetStartTime(); st != nil {
 				startTimeUnix = st.AsTime().Unix()
 			}
-			isBounceback, bbErr := loopprevention.IsBounceback(r.Context(), p.db, internalUserID, activityPayload.Source, activityPayload.StandardizedActivity.GetExternalId(), startTimeUnix)
+			isBounceback, bbErr := loopprevention.IsBounceback(ctx, p.db, internalUserID, activityPayload.Source, activityPayload.StandardizedActivity.GetExternalId(), startTimeUnix)
 			if bbErr != nil {
-				p.logger.Warn(r.Context(), "Bounceback check failed, proceeding", "provider", evt.Provider, "error", bbErr)
+				p.logger.Warn(ctx, "Bounceback check failed, proceeding", "provider", evt.Provider, "error", bbErr)
 			} else if isBounceback {
-				p.logger.Info(r.Context(), "Skipping bounceback activity", "provider", evt.Provider, "activity_id", evt.ActivityID)
+				p.logger.Info(ctx, "Skipping bounceback activity", "provider", evt.Provider, "activity_id", evt.ActivityID)
 				continue
 			}
 		}
@@ -155,19 +169,16 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 			activityPayload,
 		)
 		if err != nil {
-			p.logger.Error(r.Context(), "Failed to pack CloudEvent data", "provider", evt.Provider, "user_id", internalUserID, "error", err)
+			p.logger.Error(ctx, "Failed to pack CloudEvent data", "provider", evt.Provider, "user_id", internalUserID, "error", err)
 			continue
 		}
 
-		msgID, err := p.publisher.PublishCloudEvent(r.Context(), "topic-raw-activity", ce)
+		msgID, err := p.publisher.PublishCloudEvent(ctx, "topic-raw-activity", ce)
 		if err != nil {
-			p.logger.Error(r.Context(), "Failed to publish webhook event to Pub/Sub", "provider", evt.Provider, "user_id", internalUserID, "error", err)
+			p.logger.Error(ctx, "Failed to publish webhook event to Pub/Sub", "provider", evt.Provider, "user_id", internalUserID, "error", err)
 			continue
 		}
 
-		p.logger.Info(r.Context(), "Successfully published webhook event to Pipeline payload topic", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID, "msg_id", msgID)
+		p.logger.Info(ctx, "Successfully published webhook event to Pipeline payload topic", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID, "msg_id", msgID)
 	}
-
-	// Always acknowledge receipt successfully if parsing succeeded
-	w.WriteHeader(http.StatusOK)
 }
