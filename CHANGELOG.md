@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.35.4](https://github.com/FitGlue/server/compare/v16.35.3...v16.35.4) (2026-06-03)
+
+
+### Bug Fixes
+
+* **webhook:** acknowledge receipt immediately to prevent Strava duplicate retries ([7843eb2](https://github.com/FitGlue/server/commit/7843eb283b9060de519459dc0dea87dc3dd7ff92))
+
 ### [16.35.3](https://github.com/FitGlue/server/compare/v16.35.2...v16.35.3) (2026-06-02)
 
 
