@@ -3,13 +3,14 @@ package strava
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
-	stravaapi "github.com/fitglue/server/src/go/pkg/integrations/strava"
+	stravaapi "github.com/fitglue/server/src/go/pkg/api/strava"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func mapToStandardizedActivity(rawJSON []byte, userID string) (*activitypb.StandardizedActivity, error) {
+func mapToStandardizedActivity(rawJSON []byte, userID string, streams *stravaapi.StreamSet) (*activitypb.StandardizedActivity, error) {
 	var activity stravaapi.DetailedActivity
 	if err := json.Unmarshal(rawJSON, &activity); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal strava activity: %w", err)
@@ -40,9 +41,11 @@ func mapToStandardizedActivity(rawJSON []byte, userID string) (*activitypb.Stand
 
 	session := &activitypb.Session{}
 
+	var startTime time.Time
 	if activity.StartDate != nil {
-		act.StartTime = timestamppb.New(*activity.StartDate)
-		session.StartTime = timestamppb.New(*activity.StartDate)
+		startTime = *activity.StartDate
+		act.StartTime = timestamppb.New(startTime)
+		session.StartTime = timestamppb.New(startTime)
 	}
 	if activity.ElapsedTime != nil {
 		session.TotalElapsedTime = float64(*activity.ElapsedTime)
@@ -55,7 +58,25 @@ func mapToStandardizedActivity(rawJSON []byte, userID string) (*activitypb.Stand
 		session.TotalCalories = &cal
 	}
 
-	if activity.Laps != nil {
+	// Build per-second records from streams — enables HR, GPS, speed, cadence, power enrichers
+	if records := buildRecordsFromStreams(streams, startTime); len(records) > 0 {
+		avgHR, maxHR, hasHR := computeSessionHR(streams)
+		if hasHR {
+			session.AvgHeartRate = &avgHR
+			session.MaxHeartRate = &maxHR
+		}
+		// Single telemetry lap containing all stream records
+		session.Laps = []*activitypb.Lap{
+			{
+				StartTime:                session.StartTime,
+				TotalElapsedTime:         session.TotalElapsedTime,
+				TotalDistance:            session.TotalDistance,
+				Records:                  records,
+				IsTelemetryContainerOnly: true,
+			},
+		}
+	} else if activity.Laps != nil {
+		// Fall back to summary laps when no stream data is available
 		for _, l := range *activity.Laps {
 			lap := &activitypb.Lap{}
 			if l.StartDate != nil {
@@ -73,6 +94,75 @@ func mapToStandardizedActivity(rawJSON []byte, userID string) (*activitypb.Stand
 
 	act.Sessions = []*activitypb.Session{session}
 	return act, nil
+}
+
+func buildRecordsFromStreams(streams *stravaapi.StreamSet, startTime time.Time) []*activitypb.Record {
+	if streams == nil || streams.Time == nil || streams.Time.Data == nil {
+		return nil
+	}
+	times := *streams.Time.Data
+	n := len(times)
+	if n == 0 {
+		return nil
+	}
+
+	records := make([]*activitypb.Record, n)
+	for i := 0; i < n; i++ {
+		ts := startTime.Add(time.Duration(times[i]) * time.Second)
+		r := &activitypb.Record{
+			Timestamp: timestamppb.New(ts),
+		}
+		if streams.Heartrate != nil && streams.Heartrate.Data != nil && i < len(*streams.Heartrate.Data) {
+			r.HeartRate = int32((*streams.Heartrate.Data)[i])
+		}
+		if streams.VelocitySmooth != nil && streams.VelocitySmooth.Data != nil && i < len(*streams.VelocitySmooth.Data) {
+			r.Speed = float64((*streams.VelocitySmooth.Data)[i])
+		}
+		if streams.Altitude != nil && streams.Altitude.Data != nil && i < len(*streams.Altitude.Data) {
+			r.Altitude = float64((*streams.Altitude.Data)[i])
+		}
+		if streams.Latlng != nil && streams.Latlng.Data != nil && i < len(*streams.Latlng.Data) {
+			pos := (*streams.Latlng.Data)[i]
+			if len(pos) >= 2 {
+				r.PositionLat = float64(pos[0])
+				r.PositionLong = float64(pos[1])
+			}
+		}
+		if streams.Cadence != nil && streams.Cadence.Data != nil && i < len(*streams.Cadence.Data) {
+			r.Cadence = int32((*streams.Cadence.Data)[i])
+		}
+		if streams.Watts != nil && streams.Watts.Data != nil && i < len(*streams.Watts.Data) {
+			r.Power = int32((*streams.Watts.Data)[i])
+		}
+		if streams.Distance != nil && streams.Distance.Data != nil && i < len(*streams.Distance.Data) {
+			r.Distance = float64((*streams.Distance.Data)[i])
+		}
+		if streams.Temp != nil && streams.Temp.Data != nil && i < len(*streams.Temp.Data) {
+			temp := int32((*streams.Temp.Data)[i])
+			r.Temperature = &temp
+		}
+		records[i] = r
+	}
+	return records
+}
+
+// computeSessionHR derives avg and max heart rate from the heartrate stream.
+func computeSessionHR(streams *stravaapi.StreamSet) (avg int32, max int32, ok bool) {
+	if streams == nil || streams.Heartrate == nil || streams.Heartrate.Data == nil {
+		return 0, 0, false
+	}
+	data := *streams.Heartrate.Data
+	if len(data) == 0 {
+		return 0, 0, false
+	}
+	sum, maxHR := 0, 0
+	for _, hr := range data {
+		sum += hr
+		if hr > maxHR {
+			maxHR = hr
+		}
+	}
+	return int32(sum / len(data)), int32(maxHR), true
 }
 
 var stravaTypeMap = map[stravaapi.ActivityType]activitypb.ActivityType{
