@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.36.1](https://github.com/FitGlue/server/compare/v16.36.0...v16.36.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* **firestore:** improve time handling in getTime helper for Firestore data ([9a7048a](https://github.com/FitGlue/server/commit/9a7048a231ab69774b0a487d581cfae13674e8c3))
+
 ## [16.36.0](https://github.com/FitGlue/server/compare/v16.35.4...v16.36.0) (2026-06-03)
 
 
