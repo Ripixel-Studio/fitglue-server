@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.36.0](https://github.com/FitGlue/server/compare/v16.35.4...v16.36.0) (2026-06-03)
+
+
+### Features
+
+* **webhook:** fetch Strava streams for HR, GPS, speed, cadence and power data ([c7abf26](https://github.com/FitGlue/server/commit/c7abf266153ddd2c3f6c3f2cea97bf2daee38602))
+
 ### [16.35.4](https://github.com/FitGlue/server/compare/v16.35.3...v16.35.4) (2026-06-03)
 
 
