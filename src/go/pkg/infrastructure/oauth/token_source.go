@@ -324,19 +324,27 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		newExpiry = time.Unix(result.ExpiresAt, 0)
 	}
 
-	// Update Firestore using dotted paths to avoid overwriting the entire
-	// integration sub-object (which would wipe enabled, google_user_id, etc.)
-	prefix := "integrations." + s.provider + "."
-	updateData := map[string]interface{}{
-		prefix + "access_token": result.AccessToken,
-		prefix + "expires_at":   newExpiry,
-		prefix + "last_used_at": time.Now(),
+	// Update Firestore using a nested map so that Set+MergeAll computes leaf-level
+	// field paths (e.g. integrations.fitbit.access_token) and does not overwrite
+	// the entire integration sub-object (which would wipe enabled, fitbit_user_id, etc.).
+	// Dotted-path string keys in a flat map are escaped by the Go Firestore SDK and
+	// treated as literal field names, not nested paths — only nested maps produce the
+	// correct leaf-path field mask.
+	providerData := map[string]interface{}{
+		"access_token": result.AccessToken,
+		"expires_at":   newExpiry,
+		"last_used_at": time.Now(),
 	}
 	// Only update refresh_token if the provider returned a new one.
 	// Google and GitHub don't rotate refresh tokens on refresh, so
 	// writing the empty response value would wipe the stored token.
 	if result.RefreshToken != "" {
-		updateData[prefix+"refresh_token"] = result.RefreshToken
+		providerData["refresh_token"] = result.RefreshToken
+	}
+	updateData := map[string]interface{}{
+		"integrations": map[string]interface{}{
+			s.provider: providerData,
+		},
 	}
 
 	if err := s.db.UpdateUser(ctx, s.userID, updateData); err != nil {

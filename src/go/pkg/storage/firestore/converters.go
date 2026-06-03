@@ -61,11 +61,17 @@ func getStringSlice(m map[string]interface{}, key string) []string {
 	return nil
 }
 
-// Helper to safely get time from map (handles time.Time from Firestore)
+// Helper to safely get time from map. Handles both time.Time (Firestore native Timestamps)
+// and RFC3339 strings (written by the OAuth callback via structpb.NewStruct).
 func getTime(m map[string]interface{}, key string) *timestamppb.Timestamp {
 	if v, ok := m[key]; ok {
-		if t, ok := v.(time.Time); ok {
+		switch t := v.(type) {
+		case time.Time:
 			return timestamppb.New(t)
+		case string:
+			if parsed, err := time.Parse(time.RFC3339, t); err == nil {
+				return timestamppb.New(parsed)
+			}
 		}
 	}
 	return nil
