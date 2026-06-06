@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.37.0](https://github.com/FitGlue/server/compare/v16.36.1...v16.37.0) (2026-06-06)
+
+
+### Features
+
+* **fitbit:** enhance time handling by fetching user's Fitbit profile timezone ([3baaa5e](https://github.com/FitGlue/server/commit/3baaa5e97ee0fd7592031bcde4015076f8ad3c88))
+
 ### [16.36.1](https://github.com/FitGlue/server/compare/v16.36.0...v16.36.1) (2026-06-03)
 
 
