@@ -88,15 +88,6 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	}
 	endTime := startTime.Add(time.Duration(durationSec) * time.Second)
 
-	// Format for Fitbit API
-	startTimeStr := startTime.Format("15:04")
-	endTimeStr := endTime.Format("15:04")
-	startDate := startTime.Format("2006-01-02")
-	endDate := endTime.Format("2006-01-02")
-
-	// Check if activity spans midnight (crosses day boundary)
-	spansMidnight := startDate != endDate
-
 	// 3. Initialize OAuth HTTP Client if not provided (for testing)
 	if httpClient == nil {
 		tokenSource := oauth.NewFirestoreTokenSource(p.Service, user.UserId, "fitbit")
@@ -108,6 +99,26 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	if err != nil {
 		return nil, fmt.Errorf("failed to create fitbit client: %w", err)
 	}
+
+	// 4a. Fetch user's Fitbit profile timezone so we query with local time.
+	// Fitbit's intraday API interprets all date/time parameters in the user's profile timezone,
+	// not UTC. Sending UTC times causes the wrong hour's data to be fetched (e.g. BST = UTC+1
+	// means we'd retrieve pre-workout resting HR instead of the actual session).
+	loc := fetchFitbitTimezone(ctx, client)
+	if loc != time.UTC {
+		logger.Info("Using Fitbit profile timezone for HR query", "timezone", loc.String())
+	}
+
+	// Format for Fitbit API using local timezone
+	startTimeLocal := startTime.In(loc)
+	endTimeLocal := endTime.In(loc)
+	startTimeStr := startTimeLocal.Format("15:04")
+	endTimeStr := endTimeLocal.Format("15:04")
+	startDate := startTimeLocal.Format("2006-01-02")
+	endDate := endTimeLocal.Format("2006-01-02")
+
+	// Check if activity spans midnight (crosses day boundary)
+	spansMidnight := startDate != endDate
 
 	// 5. Request Data (Intraday HR)
 	// Use date range API when activity spans midnight to avoid "start time after end time" error
@@ -250,6 +261,36 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 			"do_not_retry":   fmt.Sprintf("%v", doNotRetry),
 		}, alignmentMetadata),
 	}, nil
+}
+
+// fetchFitbitTimezone retrieves the IANA timezone from the user's Fitbit profile.
+// Falls back to UTC on any error so enrichment still proceeds.
+func fetchFitbitTimezone(ctx context.Context, client *fitbit.Client) *time.Location {
+	resp, err := client.GetProfile(ctx)
+	if err != nil {
+		return time.UTC
+	}
+	defer resp.Body.Close()
+
+	var profileResp struct {
+		User *struct {
+			Timezone *string `json:"timezone,omitempty"`
+		} `json:"user,omitempty"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&profileResp); err != nil {
+		return time.UTC
+	}
+
+	if profileResp.User == nil || profileResp.User.Timezone == nil || *profileResp.User.Timezone == "" {
+		return time.UTC
+	}
+
+	loc, err := time.LoadLocation(*profileResp.User.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+
+	return loc
 }
 
 // hasGPSData checks if any record in the activity has GPS coordinates

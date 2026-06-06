@@ -488,15 +488,19 @@ func (s *APIServer) handleSetBoosterData(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var reqBody userpb.SetBoosterDataRequest
-	if err := decodeProto(r, &reqBody); err != nil {
+	// The proto HTTP annotation uses body:"data", so the request body IS the
+	// structpb.Struct directly — not wrapped in the outer request message.
+	var data structpb.Struct
+	if err := decodeProto(r, &data); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
-	reqBody.UserId = token.UID
-	reqBody.BoosterId = chi.URLParam(r, "boosterId")
 
-	_, err := s.userService.SetBoosterData(r.Context(), &reqBody)
+	_, err := s.userService.SetBoosterData(r.Context(), &userpb.SetBoosterDataRequest{
+		UserId:    token.UID,
+		BoosterId: chi.URLParam(r, "boosterId"),
+		Data:      &data,
+	})
 	if err != nil {
 		WriteError(w, err)
 		return

@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,12 +21,19 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const mockProfileUTC = `{"user":{"timezone":"UTC"}}`
+
 func TestFitBitHeartRate_Enrich(t *testing.T) {
 	// Setup mock HTTP client
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
-				// Return mock heart rate data
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				mockResponse := `{
 					"activities-heart-intraday": {
 						"dataset": [
@@ -137,6 +145,12 @@ func TestFitBitHeartRate_Enrich_APIError(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				return &http.Response{
 					StatusCode: 401,
 					Body:       io.NopCloser(bytes.NewBufferString(`{"errors":[{"errorType":"invalid_token"}]}`)),
@@ -180,6 +194,12 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if m.DoFunc != nil {
 		return m.DoFunc(req)
 	}
+	if strings.Contains(req.URL.Path, "/profile.json") {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+		}, nil
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
@@ -190,11 +210,15 @@ func TestFitBitHeartRate_Enrich_LagDetected(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
-				// Return EMPTY mock heart rate data
-				mockResponse := `{"activities-heart-intraday":{"dataset":[]}}`
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				return &http.Response{
 					StatusCode: 200,
-					Body:       io.NopCloser(bytes.NewBufferString(mockResponse)),
+					Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
 				}, nil
 			},
 		},
@@ -239,6 +263,12 @@ func TestFitBitHeartRate_Enrich_LagExpired(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				return &http.Response{
 					StatusCode: 200,
 					Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
@@ -289,7 +319,12 @@ func TestFitBitHeartRate_Enrich_LagExhausted(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
-				// Return EMPTY mock heart rate data
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				return &http.Response{
 					StatusCode: 200,
 					Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
@@ -376,10 +411,87 @@ func TestFitBitHeartRate_Enrich_SkipIfExistingHRData(t *testing.T) {
 	}
 }
 
+// TestFitBitHeartRate_Enrich_BSTTimezone is a regression test for the UTC/BST bug.
+// Fitbit's intraday API uses the user's profile timezone, not UTC. When a user in BST
+// (UTC+1) does a workout at 10:00 BST (= 09:00 UTC), sending "09:00" to Fitbit causes
+// it to fetch data for 09:00 BST (= 08:00 UTC) — one full hour too early. This means
+// pre-workout resting HR (Zone 1) gets mapped onto the activity instead of real data.
+func TestFitBitHeartRate_Enrich_BSTTimezone(t *testing.T) {
+	var capturedURL string
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(`{"user":{"timezone":"Europe/London"}}`)),
+					}, nil
+				}
+				capturedURL = req.URL.String()
+				// Fitbit returns times in local (BST) format
+				mockResponse := `{
+					"activities-heart-intraday": {
+						"dataset": [
+							{"time": "10:00:00", "value": 150},
+							{"time": "10:01:00", "value": 155},
+							{"time": "10:02:00", "value": 160}
+						]
+					}
+				}`
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(mockResponse)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Activity at 09:00 UTC on a past summer date = 10:00 BST
+	startTime := time.Date(2025, 6, 15, 9, 0, 0, 0, time.UTC)
+	activity := &pbactivity.StandardizedActivity{
+		StartTime: timestamppb.New(startTime),
+		Sessions:  []*pbactivity.Session{{TotalElapsedTime: 3600}},
+	}
+
+	user := &user.Record{
+		UserProfile: &pbuser.UserProfile{UserId: "test-user"},
+		Integrations: &pbuser.UserIntegrations{
+			Fitbit: &pbuser.FitbitIntegration{Enabled: true, AccessToken: "test-token"},
+		},
+	}
+
+	result, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+
+	// The query must use local BST time "10:00", not UTC "09:00"
+	if result.Metadata["query_start"] != "10:00" {
+		t.Errorf("Expected query_start=10:00 (BST local time), got %s — UTC was sent instead of local time", result.Metadata["query_start"])
+	}
+	if !strings.Contains(capturedURL, "10:00") {
+		t.Errorf("Expected Fitbit API URL to contain local time 10:00, got: %s", capturedURL)
+	}
+
+	// The HR stream should contain the elevated heart rate data (not Zone 1 resting HR)
+	if result.HeartRateStream[0] == 0 {
+		t.Error("Expected populated heart rate stream at start, got zero")
+	}
+}
+
 func TestFitBitHeartRate_Enrich_ForceOverwrite(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				mockResponse := `{
 					"activities-heart-intraday": {
 						"dataset": [
@@ -444,6 +556,12 @@ func TestFitBitHeartRate_Enrich_SpansMidnight(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{
 			DoFunc: func(req *http.Request) (*http.Response, error) {
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
 				capturedURL = req.URL.String()
 				mockResponse := `{
 					"activities-heart-intraday": {
