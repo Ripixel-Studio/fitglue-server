@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.37.1](https://github.com/FitGlue/server/compare/v16.37.0...v16.37.1) (2026-06-08)
+
+
+### Bug Fixes
+
+* **notifications:** implement SetFCMToken in user service ([f2a2b78](https://github.com/FitGlue/server/commit/f2a2b78a5585be60eedf6f1c55f590391ffe5e1d))
+
 ## [16.37.0](https://github.com/FitGlue/server/compare/v16.36.1...v16.37.0) (2026-06-06)
 
 
