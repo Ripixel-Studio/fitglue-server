@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.38.0](https://github.com/FitGlue/server/compare/v16.37.1...v16.38.0) (2026-06-08)
+
+
+### Features
+
+* **api-client:** expose platform stats in plugin registry marketing mode ([1ea1c14](https://github.com/FitGlue/server/commit/1ea1c143eef99f3e86792c64494410dc6d8e72a8))
+* **pipeline:** implement AdminListPipelineRuns gRPC method ([5cfed4d](https://github.com/FitGlue/server/commit/5cfed4dfe50fa70a4b8921bbce538bd3b288500e))
+
 ### [16.37.1](https://github.com/FitGlue/server/compare/v16.37.0...v16.37.1) (2026-06-08)
 
 
