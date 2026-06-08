@@ -484,6 +484,13 @@ func (s *FirestoreStore) UpdateNotificationPrefs(ctx context.Context, userID str
 	return err
 }
 
+func (s *FirestoreStore) AddFCMToken(ctx context.Context, userID, token string) error {
+	_, err := s.client.Collection("users").Doc(userID).Update(ctx, []firestore.Update{
+		{Path: "fcm_tokens", Value: firestore.ArrayUnion(token)},
+	})
+	return err
+}
+
 func (s *FirestoreStore) GetBoosterData(ctx context.Context, userID, boosterID string) (map[string]*structpb.Struct, error) {
 	col := s.client.Collection("users").Doc(userID).Collection("booster_data")
 	res := make(map[string]*structpb.Struct)

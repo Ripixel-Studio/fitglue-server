@@ -27,6 +27,8 @@ type Store interface {
 	GetNotificationPrefs(ctx context.Context, userID string) (*pbuser.NotificationPreferences, error)
 	UpdateNotificationPrefs(ctx context.Context, userID string, prefs *pbuser.NotificationPreferences) error
 
+	AddFCMToken(ctx context.Context, userID, token string) error
+
 	GetBoosterData(ctx context.Context, userID, boosterID string) (map[string]*structpb.Struct, error)
 	SetBoosterData(ctx context.Context, userID, boosterID string, data *structpb.Struct) error
 	DeleteBoosterData(ctx context.Context, userID, boosterID string) error

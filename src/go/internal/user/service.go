@@ -677,3 +677,14 @@ func (s *Service) ListUsers(ctx context.Context, req *pbsvc.ListUsersRequest) (*
 		NextPageToken: nextToken,
 	}, nil
 }
+
+func (s *Service) SetFCMToken(ctx context.Context, req *pbsvc.SetFCMTokenRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.Token == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and token are required")
+	}
+	if err := s.store.AddFCMToken(ctx, req.UserId, req.Token); err != nil {
+		s.logger.Error(ctx, "failed to add FCM token", "user_id", req.UserId, "err", err)
+		return nil, status.Errorf(codes.Internal, "add fcm token: %v", err)
+	}
+	return &emptypb.Empty{}, nil
+}
