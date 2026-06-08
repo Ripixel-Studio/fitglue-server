@@ -142,6 +142,10 @@ func (m *mockStore) DeletePluginDefaults(ctx context.Context, userID, pluginID s
 	return m.err
 }
 
+func (m *mockStore) AddFCMToken(ctx context.Context, userID, token string) error {
+	return m.err
+}
+
 type mockLogger struct{}
 
 func (m mockLogger) Debug(ctx context.Context, msg string, args ...any) {}
