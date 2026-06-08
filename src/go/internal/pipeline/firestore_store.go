@@ -293,6 +293,50 @@ func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID, pipelineI
 	return runs, "", nil
 }
 
+func (s *FirestoreStore) AdminListPipelineRuns(ctx context.Context, status, source, userID string, limit int32) ([]*pipeline.PipelineRun, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+
+	var q firestore.Query
+	if userID != "" {
+		q = s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
+			OrderBy("created_at", firestore.Desc)
+	} else {
+		q = s.client.CollectionGroup("pipeline_runs").
+			OrderBy("created_at", firestore.Desc)
+	}
+
+	if status != "" {
+		if v, ok := pipeline.PipelineRunStatus_value[status]; ok {
+			q = q.Where("status", "==", v)
+		}
+	}
+	if source != "" {
+		q = q.Where("source", "==", source)
+	}
+
+	iter := q.Limit(int(limit)).Documents(ctx)
+	defer iter.Stop()
+
+	var runs []*pipeline.PipelineRun
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var run pipeline.PipelineRun
+		if err := decodeProtoMap(doc.Data(), &run); err != nil {
+			return nil, err
+		}
+		runs = append(runs, &run)
+	}
+	return runs, nil
+}
+
 func (s *FirestoreStore) UpdatePipelineRun(ctx context.Context, userID, runID string, updateData map[string]interface{}) error {
 	_, err := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").Doc(runID).Set(ctx, updateData, firestore.MergeAll)
 	return err

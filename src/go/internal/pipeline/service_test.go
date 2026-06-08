@@ -136,6 +136,10 @@ func (m *MockPipelineStore) UpdatePipelineRun(ctx context.Context, userID, runID
 	return nil
 }
 
+func (m *MockPipelineStore) AdminListPipelineRuns(ctx context.Context, status, source, userID string, limit int32) ([]*pipeline.PipelineRun, error) {
+	return nil, nil
+}
+
 // MockPublisher
 type MockPublisher struct {
 	PublishedEvents []cloudevents.Event

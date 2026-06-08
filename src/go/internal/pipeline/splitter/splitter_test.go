@@ -77,6 +77,10 @@ func (m *mockSplitterStore) FindAnyPipelineRunBySourceActivityID(_ context.Conte
 	return nil, nil
 }
 
+func (m *mockSplitterStore) AdminListPipelineRuns(_ context.Context, _, _, _ string, _ int32) ([]*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
+
 var _ pipeline.PipelineStore = (*mockSplitterStore)(nil)
 
 type mockSplitterPublisher struct {

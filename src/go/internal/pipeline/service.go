@@ -540,6 +540,16 @@ func (s *Service) ListPipelineRuns(ctx context.Context, req *pbsvc.ListPipelineR
 	}, nil
 }
 
+func (s *Service) AdminListPipelineRuns(ctx context.Context, req *pbsvc.AdminListPipelineRunsRequest) (*pbsvc.AdminListPipelineRunsResponse, error) {
+	limit := req.GetLimit()
+	runs, err := s.store.AdminListPipelineRuns(ctx, req.GetStatus(), req.GetSource(), req.GetUserId(), limit)
+	if err != nil {
+		s.logger.Error(ctx, "failed to admin list pipeline runs", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list pipeline runs")
+	}
+	return &pbsvc.AdminListPipelineRunsResponse{Runs: runs}, nil
+}
+
 func (s *Service) ListSourceActivities(ctx context.Context, req *pbsvc.ListSourceActivitiesRequest) (*pbsvc.ListSourceActivitiesResponse, error) {
 	if req.UserId == "" || req.Source == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id and source are required")
