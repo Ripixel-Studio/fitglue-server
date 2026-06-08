@@ -1,10 +1,12 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 
 	registrypb "github.com/fitglue/server/src/go/pkg/types/pb/services/registry"
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (s *APIServer) registerRegistryRoutes(r chi.Router) {
@@ -88,7 +90,11 @@ func (s *APIServer) handleListSources(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *APIServer) handleGetPluginRegistry(w http.ResponseWriter, r *http.Request) {
-	req := &registrypb.GetPluginRegistryRequest{}
+	marketingMode := r.URL.Query().Get("marketingMode") == "true"
+
+	req := &registrypb.GetPluginRegistryRequest{
+		MarketingMode: marketingMode,
+	}
 
 	res, err := s.registrySvc.GetPluginRegistry(r.Context(), req)
 	if err != nil {
@@ -96,5 +102,31 @@ func (s *APIServer) handleGetPluginRegistry(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	WriteJSON(w, res)
+	if !marketingMode || s.statsStore == nil {
+		WriteJSON(w, res)
+		return
+	}
+
+	stats, err := s.statsStore.GetPlatformStats(r.Context())
+	if err != nil || stats == nil {
+		s.logger.Warn(r.Context(), "Failed to fetch platform stats, using zeros", "error", err)
+		stats = &PlatformStats{}
+	}
+
+	marshaler := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
+	protoBytes, err := marshaler.Marshal(res)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	var combined map[string]interface{}
+	if err := json.Unmarshal(protoBytes, &combined); err != nil {
+		WriteError(w, err)
+		return
+	}
+	combined["stats"] = stats
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(combined)
 }

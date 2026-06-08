@@ -42,6 +42,7 @@ type APIServer struct {
 	publisher      Publisher
 	apiKeyStore    ApiKeyStore
 	gcsSigner      GCSSigner // may be nil in test environments
+	statsStore     PlatformStatsStore
 	userService    userpb.UserServiceClient
 	billingService billingpb.BillingServiceClient
 	pipelineSvc    pipelinepb.PipelineServiceClient
@@ -56,6 +57,7 @@ func NewAPIServer(
 	publisher Publisher,
 	apiKeyStore ApiKeyStore,
 	gcsSigner GCSSigner,
+	statsStore PlatformStatsStore,
 	userSvc userpb.UserServiceClient,
 	billingSvc billingpb.BillingServiceClient,
 	pipelineSvc pipelinepb.PipelineServiceClient,
@@ -69,6 +71,7 @@ func NewAPIServer(
 		publisher:      publisher,
 		apiKeyStore:    apiKeyStore,
 		gcsSigner:      gcsSigner,
+		statsStore:     statsStore,
 		userService:    userSvc,
 		billingService: billingSvc,
 		pipelineSvc:    pipelineSvc,

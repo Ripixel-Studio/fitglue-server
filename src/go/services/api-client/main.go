@@ -108,6 +108,7 @@ func main() {
 	}
 	defer firestoreClient.Close()
 	apiKeyStore := server.NewFirestoreApiKeyStore(firestoreClient)
+	platformStatsStore := server.NewFirestorePlatformStatsStore(firestoreClient)
 
 	// Setup GCS client for signed payload download URLs
 	gcsClient, err := gcstorage.NewClient(ctx)
@@ -125,6 +126,7 @@ func main() {
 		publisher,
 		apiKeyStore,
 		gcsSigner,
+		platformStatsStore,
 		userClient,
 		billingClient,
 		pipelineClient,
