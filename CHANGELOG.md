@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.39.0](https://github.com/FitGlue/server/compare/v16.38.0...v16.39.0) (2026-06-09)
+
+
+### Features
+
+* **enricher:** add hDrop sweat analysis enricher and non-blocking pending input ([22c6f7c](https://github.com/FitGlue/server/commit/22c6f7c232c5869df373501b8d32740c1714d038))
+* **photos:** add server-side image resize in photo-upload enricher ([835b5ae](https://github.com/FitGlue/server/commit/835b5ae0267d78210870681c8fe1565d574526f4))
+
 ## [16.38.0](https://github.com/FitGlue/server/compare/v16.37.1...v16.38.0) (2026-06-08)
 
 
