@@ -243,6 +243,37 @@ func TestFirestoreToPipeline_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestFirestoreToPipeline_NonBlocking(t *testing.T) {
+	m := map[string]interface{}{
+		"id":     "p1",
+		"source": "SOURCE_HEVY",
+		"enrichers": []interface{}{
+			map[string]interface{}{
+				"provider_type": int64(2),
+				"typed_config":  map[string]interface{}{},
+				"non_blocking":  true,
+			},
+			map[string]interface{}{
+				"provider_type": int64(3),
+				"typed_config":  map[string]interface{}{},
+			},
+		},
+		"destinations": []interface{}{},
+	}
+
+	pipeline := FirestoreToPipeline(m)
+
+	if len(pipeline.Enrichers) != 2 {
+		t.Fatalf("Expected 2 enrichers, got %d", len(pipeline.Enrichers))
+	}
+	if !pipeline.Enrichers[0].NonBlocking {
+		t.Error("Expected Enrichers[0].NonBlocking to be true")
+	}
+	if pipeline.Enrichers[1].NonBlocking {
+		t.Error("Expected Enrichers[1].NonBlocking to be false")
+	}
+}
+
 // --- PipelineRun string enum tests ---
 
 func TestFirestoreToPipelineRun_StringEnums(t *testing.T) {
