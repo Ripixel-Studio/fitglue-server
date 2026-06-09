@@ -75,6 +75,9 @@ func (s *APIServer) registerUserRoutes(r chi.Router) {
 	// FCM Token (push notifications)
 	r.Post("/users/me/fcm-token", s.handleSetFCMToken)
 
+	// Web auth token — allows mobile WebView to sign in to the web app without a second login
+	r.Get("/users/me/web-auth-token", s.handleGetWebAuthToken)
+
 	// Mobile sync (trigger data sync)
 	r.Post("/users/me/mobile/sync", s.handleMobileSync)
 }

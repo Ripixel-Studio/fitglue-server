@@ -8,6 +8,26 @@ import (
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
 
+// handleGetWebAuthToken mints a Firebase custom token for the authenticated user so
+// the mobile WebView can call signInWithCustomToken() on the web app without a
+// separate login. Custom tokens are valid for 1 hour; the web Firebase SDK manages
+// its own refresh-token session after the first sign-in.
+func (s *APIServer) handleGetWebAuthToken(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	customToken, err := s.authClient.CustomToken(r.Context(), token.UID)
+	if err != nil {
+		WriteError(w, statusError(http.StatusInternalServerError, "failed to create web auth token"))
+		return
+	}
+
+	WriteJSON(w, map[string]string{"customToken": customToken})
+}
+
 // handleSetFCMToken registers or updates a device's FCM token for push notifications
 func (s *APIServer) handleSetFCMToken(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)
