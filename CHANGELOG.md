@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.41.0](https://github.com/FitGlue/server/compare/v16.40.2...v16.41.0) (2026-06-09)
+
+
+### Features
+
+* **pipeline:** add non_blocking field to enrichers in Pipeline converters ([097b552](https://github.com/FitGlue/server/commit/097b55271b6e769edee1231ca92f2e95f32bec4e))
+* **registry:** add hDrop Sweat Analysis enricher manifest ([8f497d7](https://github.com/FitGlue/server/commit/8f497d78bac75616c33b651e7cb46cdb5b012547))
+
 ### [16.40.2](https://github.com/FitGlue/server/compare/v16.40.1...v16.40.2) (2026-06-09)
 
 
