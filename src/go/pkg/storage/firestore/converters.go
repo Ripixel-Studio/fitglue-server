@@ -502,6 +502,7 @@ func PipelineToFirestore(p *pbpipeline.PipelineConfig) map[string]interface{} {
 		enrichers[i] = map[string]interface{}{
 			"provider_type": int32(e.ProviderType),
 			"typed_config":  e.TypedConfig,
+			"non_blocking":  e.NonBlocking,
 		}
 	}
 
@@ -575,6 +576,7 @@ func FirestoreToPipeline(m map[string]interface{}) *pbpipeline.PipelineConfig {
 				enrichers[j] = &pbpipeline.EnricherConfig{
 					ProviderType: ptype,
 					TypedConfig:  typedConfig,
+					NonBlocking:  getBool(eMap, "non_blocking"),
 				}
 			}
 		}
