@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.40.2](https://github.com/FitGlue/server/compare/v16.40.1...v16.40.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* **platform-stats:** use existing CG composite index for pipeline_runs COUNT ([3635e55](https://github.com/FitGlue/server/commit/3635e5598a64bca888285f3dd7c619bfca5086bf))
+
 ### [16.40.1](https://github.com/FitGlue/server/compare/v16.40.0...v16.40.1) (2026-06-09)
 
 
