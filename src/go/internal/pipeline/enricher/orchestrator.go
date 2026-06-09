@@ -1534,16 +1534,16 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	// (e.g., "Waiting for user input: ...") since the input has been resolved.
 	// The status will transition to SYNCED/PARTIAL/SYNCED_WITH_PENDING once destinations are processed.
 	updateData := map[string]interface{}{
-		"title":                event.Name,
-		"description":          event.Description,
-		"type":                 int32(event.ActivityType),
-		"start_time":           event.StartTime.AsTime(),
-		"updated_at":           time.Now(),
-		"status":               int32(pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING),
-		"status_message":       nil, // Clear pending input message on successful resume
-		"boosters":             boosters,
-		"original_payload_uri": originalPayloadUri,
-		"steps":                buildAllSteps(*event.PipelineExecutionId, providerExecs, false, false),
+		"title":                          event.Name,
+		"description":                    event.Description,
+		"type":                           int32(event.ActivityType),
+		"start_time":                     event.StartTime.AsTime(),
+		"updated_at":                     time.Now(),
+		"status":                         int32(pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING),
+		"status_message":                 nil, // Clear pending input message on successful resume
+		"boosters":                       boosters,
+		"original_payload_uri":           originalPayloadUri,
+		"steps":                          buildAllSteps(*event.PipelineExecutionId, providerExecs, false, false),
 		"non_blocking_pending_input_ids": event.NonBlockingPendingInputIds,
 	}
 

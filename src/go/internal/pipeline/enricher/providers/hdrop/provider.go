@@ -87,10 +87,10 @@ type hDropJSON struct {
 		MaxTemperature      float64 `json:"maxTemperature"`
 	} `json:"metadata"`
 	TimeseriesData []struct {
-		TimeMinutes        float64 `json:"timeMinutes"`
-		SweatRate          float64 `json:"sweatRate"`
-		FluidLoss          float64 `json:"fluidLoss"`
-		Temperature        float64 `json:"temperature"`
+		TimeMinutes         float64 `json:"timeMinutes"`
+		SweatRate           float64 `json:"sweatRate"`
+		FluidLoss           float64 `json:"fluidLoss"`
+		Temperature         float64 `json:"temperature"`
 		SodiumConcentration float64 `json:"sodiumConcentration"`
 	} `json:"timeseriesData"`
 }
@@ -122,17 +122,17 @@ func processHDropData(raw string) (*providers.EnrichmentResult, error) {
 	}
 
 	summary := &pbactivity.HDropSummary{
-		TotalFluidLossL:          m.TotalSweatLoss,
-		SweatRateLPerHr:          m.SweatRate,
-		TotalSodiumMg:            m.TotalSodium,
-		TotalPotassiumMg:         m.TotalPotassium,
+		TotalFluidLossL:           m.TotalSweatLoss,
+		SweatRateLPerHr:           m.SweatRate,
+		TotalSodiumMg:             m.TotalSodium,
+		TotalPotassiumMg:          m.TotalPotassium,
 		SodiumConcentrationMgPerL: parseSodiumConcentration(m.SodiumConcentration),
-		AvgHdropScore:            m.AveragehDropScore,
-		MinHdropScore:            m.MinhDropScore,
-		BodyLocation:             m.BodyLocation,
-		MinTemperatureC:          m.MinTemperature,
-		MaxTemperatureC:          m.MaxTemperature,
-		Timeseries:               pts,
+		AvgHdropScore:             m.AveragehDropScore,
+		MinHdropScore:             m.MinhDropScore,
+		BodyLocation:              m.BodyLocation,
+		MinTemperatureC:           m.MinTemperature,
+		MaxTemperatureC:           m.MaxTemperature,
+		Timeseries:                pts,
 	}
 
 	desc := buildDescription(m.TotalSweatLoss, m.SweatRate, m.TotalSodium, m.TotalPotassium, parseSodiumConcentration(m.SodiumConcentration), m.AveragehDropScore, m.MinhDropScore, m.MinTemperature, m.MaxTemperature)
