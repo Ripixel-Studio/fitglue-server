@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.43.0](https://github.com/FitGlue/server/compare/v16.42.0...v16.43.0) (2026-06-09)
+
+
+### Features
+
+* **api-client:** add web-auth-token endpoint for mobile WebView auth bridge ([9805310](https://github.com/FitGlue/server/commit/9805310d29d13d47ce6e7c5786d5ce8466e021d3))
+
 ## [16.42.0](https://github.com/FitGlue/server/compare/v16.41.0...v16.42.0) (2026-06-09)
 
 
