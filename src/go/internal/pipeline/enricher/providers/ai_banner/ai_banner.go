@@ -273,7 +273,7 @@ func (p *AIBannerProvider) generateImagePromptWithLLM(ctx context.Context, apiKe
 	}
 	defer client.Close()
 
-	model := client.GenerativeModel("gemini-2.0-flash")
+	model := client.GenerativeModel("gemini-2.5-flash")
 
 	// Configure for concise, focused output
 	model.SetTemperature(0.8) // Slightly creative

@@ -246,7 +246,7 @@ func callGemini(ctx context.Context, apiKey, systemInstruction, userData string)
 	}
 	defer client.Close()
 
-	model := client.GenerativeModel("gemini-2.0-flash")
+	model := client.GenerativeModel("gemini-2.5-flash")
 	model.SetTemperature(0.1) // Low temperature for deterministic classification
 	model.SetTopP(0.9)
 	model.SetMaxOutputTokens(50) // We only need a short enum string

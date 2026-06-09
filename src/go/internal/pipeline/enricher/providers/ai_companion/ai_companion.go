@@ -190,7 +190,7 @@ func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mo
 	}
 	defer client.Close()
 
-	model := client.GenerativeModel("gemini-2.0-flash")
+	model := client.GenerativeModel("gemini-2.5-flash")
 
 	// Configure model for short, punchy outputs
 	model.SetTemperature(0.7)
