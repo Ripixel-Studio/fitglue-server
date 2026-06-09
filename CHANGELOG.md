@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.42.0](https://github.com/FitGlue/server/compare/v16.41.0...v16.42.0) (2026-06-09)
+
+
+### Features
+
+* **pipeline:** upgrade Gemini model version to 2.5-flash in AI providers ([558e7e4](https://github.com/FitGlue/server/commit/558e7e45dfaa498acd05fe4d06abe2e4065fa239))
+
+
+### Bug Fixes
+
+* **registry:** mark hdrop enricher as supportsNonBlocking ([c631644](https://github.com/FitGlue/server/commit/c63164469651f4ec6ab64ff83cf64c9a1274f691))
+
 ## [16.41.0](https://github.com/FitGlue/server/compare/v16.40.2...v16.41.0) (2026-06-09)
 
 
