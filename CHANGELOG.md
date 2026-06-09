@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.40.0](https://github.com/FitGlue/server/compare/v16.39.0...v16.40.0) (2026-06-09)
+
+
+### Features
+
+* **registry:** add supports_non_blocking to PluginManifest proto ([9f902ba](https://github.com/FitGlue/server/commit/9f902ba86ef1b05556909d62b9f38a115861124b))
+
+
+### Bug Fixes
+
+* **api-client:** correct Firestore aggregation type assertion in platform stats ([f9257a4](https://github.com/FitGlue/server/commit/f9257a43a10509eaf8e962f57f3624d8b23c5f82))
+
 ## [16.39.0](https://github.com/FitGlue/server/compare/v16.38.0...v16.39.0) (2026-06-09)
 
 
