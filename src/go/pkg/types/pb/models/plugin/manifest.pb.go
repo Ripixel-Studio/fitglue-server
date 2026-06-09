@@ -282,9 +282,13 @@ type PluginManifest struct {
 	AllowMultipleInstances   *bool                  `protobuf:"varint,24,opt,name=allow_multiple_instances,json=allowMultipleInstances,proto3,oneof" json:"allow_multiple_instances,omitempty"`
 	// PipelineStage groups boosters in the pipeline editor UI.
 	// Only meaningful for type == PLUGIN_TYPE_ENRICHER.
-	Stage         *PipelineStage `protobuf:"varint,25,opt,name=stage,proto3,enum=fitglue.models.plugin.PipelineStage,oneof" json:"stage,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Stage *PipelineStage `protobuf:"varint,25,opt,name=stage,proto3,enum=fitglue.models.plugin.PipelineStage,oneof" json:"stage,omitempty"`
+	// supportsNonBlocking indicates this enricher can run in non-blocking mode:
+	// the pipeline continues to destinations while the enricher waits for user
+	// input, then destinations are updated (not duplicated) when input is resolved.
+	SupportsNonBlocking *bool `protobuf:"varint,26,opt,name=supports_non_blocking,json=supportsNonBlocking,proto3,oneof" json:"supports_non_blocking,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *PluginManifest) Reset() {
@@ -490,6 +494,13 @@ func (x *PluginManifest) GetStage() PipelineStage {
 		return *x.Stage
 	}
 	return PipelineStage_PIPELINE_STAGE_UNSPECIFIED
+}
+
+func (x *PluginManifest) GetSupportsNonBlocking() bool {
+	if x != nil && x.SupportsNonBlocking != nil {
+		return *x.SupportsNonBlocking
+	}
+	return false
 }
 
 type Transformation struct {
@@ -1208,8 +1219,7 @@ var File_models_plugin_manifest_proto protoreflect.FileDescriptor
 
 const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/plugin/manifest.proto\x12\x15fitglue.models.plugin\"\xea\n" +
-	"\n" +
+	"\x1cmodels/plugin/manifest.proto\x12\x15fitglue.models.plugin\"\xbd\v\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x125\n" +
 	"\x04type\x18\x02 \x01(\x0e2!.fitglue.models.plugin.PluginTypeR\x04type\x12\x12\n" +
@@ -1239,7 +1249,8 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\x1ais_temporarily_unavailable\x18\x17 \x01(\bH\n" +
 	"R\x18isTemporarilyUnavailable\x88\x01\x01\x12=\n" +
 	"\x18allow_multiple_instances\x18\x18 \x01(\bH\vR\x16allowMultipleInstances\x88\x01\x01\x12?\n" +
-	"\x05stage\x18\x19 \x01(\x0e2$.fitglue.models.plugin.PipelineStageH\fR\x05stage\x88\x01\x01B\x19\n" +
+	"\x05stage\x18\x19 \x01(\x0e2$.fitglue.models.plugin.PipelineStageH\fR\x05stage\x88\x01\x01\x127\n" +
+	"\x15supports_non_blocking\x18\x1a \x01(\bH\rR\x13supportsNonBlocking\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
 	"\x11_destination_typeB\x18\n" +
 	"\x16_external_url_templateB\x10\n" +
@@ -1254,7 +1265,8 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"_icon_pathB\x1d\n" +
 	"\x1b_is_temporarily_unavailableB\x1b\n" +
 	"\x19_allow_multiple_instancesB\b\n" +
-	"\x06_stage\"\xaa\x01\n" +
+	"\x06_stageB\x18\n" +
+	"\x16_supports_non_blocking\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +

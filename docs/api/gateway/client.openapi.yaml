@@ -3525,6 +3525,12 @@ components:
                         PipelineStage groups boosters in the pipeline editor UI.
                          Only meaningful for type == PLUGIN_TYPE_ENRICHER.
                     format: enum
+                supportsNonBlocking:
+                    type: boolean
+                    description: |-
+                        supportsNonBlocking indicates this enricher can run in non-blocking mode:
+                         the pipeline continues to destinations while the enricher waits for user
+                         input, then destinations are updated (not duplicated) when input is resolved.
         PluginRegistryResponse:
             type: object
             properties:

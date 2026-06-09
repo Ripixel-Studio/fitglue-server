@@ -3582,6 +3582,7 @@
       "enabled": true,
       "requiredIntegrations": [],
       "configSchema": [],
+      "supportsNonBlocking": true,
       "marketingDescription": "\n### Capture Your Activity in Photos\nAttach photos to your showcase activities to bring them to life. Perfect for race finishes, scenic routes, and memorable moments.\n\n### How it works\nWhen an activity is imported, FitGlue pauses the pipeline and asks you to upload photos (up to 10). Photos are stored securely and displayed on your public showcase activity page and profile gallery.\n  ",
       "features": [
         "\u2705 Upload up to 10 photos per activity",
