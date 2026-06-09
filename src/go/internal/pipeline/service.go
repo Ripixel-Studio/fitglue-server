@@ -263,6 +263,10 @@ func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest
 	payload["isResume"] = true
 	payload["resumePendingInputId"] = req.PendingInputId
 	payload["activityId"] = input.LinkedActivityId
+	if input.NonBlocking {
+		// Destinations already ran (Create) — use Update so they patch rather than duplicate.
+		payload["useUpdateMethod"] = true
+	}
 
 	// Re-serialize payload
 	updatedPayloadBytes, err := json.Marshal(payload)

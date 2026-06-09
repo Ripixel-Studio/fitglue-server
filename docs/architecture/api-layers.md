@@ -98,9 +98,9 @@ internal/webhook/sources/
 
 **Adding a new source:**
 ```bash
-make plugin-source name=garmin
+make plugin-source name=wahoo
 ```
-Creates `internal/webhook/sources/garmin/provider.go` with stub implementation. Implement `SourceProvider`, register in `init()`. No router changes needed.
+Creates `internal/webhook/sources/wahoo/provider.go` with stub implementation. Implement `SourceProvider`, register in `init()`. No router changes needed.
 
 ## OpenAPI Spec
 

@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestParseFitFile_GarminExample(t *testing.T) {
-	// Load the actual Garmin FIT file
+func TestParseFitFile_ActivityExample(t *testing.T) {
+	// Load the sample FIT file
 	data, err := os.ReadFile("../../../cmd/fit-inspect/examples/21583826023_ACTIVITY.fit")
 	if err != nil {
 		t.Skipf("Skipping test - could not read test file: %v", err)
@@ -86,7 +86,7 @@ func TestParseFitFile_GarminExample(t *testing.T) {
 		t.Errorf("Expected activity type RUN, got %v", activity.Type)
 	}
 
-	t.Logf("Successfully parsed Garmin file: %d laps, %d records, type=%v",
+	t.Logf("Successfully parsed FIT file: %d laps, %d records, type=%v",
 		len(session.Laps), totalRecords, activity.Type)
 }
 

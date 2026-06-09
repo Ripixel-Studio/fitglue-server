@@ -19,7 +19,6 @@ enum ActivitySource {
   SOURCE_PARKRUN_RESULTS = 4; 
   SOURCE_FILE_UPLOAD = 5;     
   SOURCE_STRAVA = 6 [(corresponding_destination) = "DESTINATION_STRAVA"];
-  SOURCE_GARMIN = 7;
   SOURCE_APPLE_HEALTH = 8;
   SOURCE_HEALTH_CONNECT = 9;
   SOURCE_OURA = 10;

@@ -30,6 +30,7 @@ message SourceEnrichmentConfig {
 message EnricherConfig {
   fitglue.models.plugin.EnricherProviderType provider_type = 1;
   map<string, string> typed_config = 2;
+  bool non_blocking = 3;
 }
 
 message PluginDefault {

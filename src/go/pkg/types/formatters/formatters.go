@@ -627,8 +627,6 @@ func FormatActivitySource(value pbactivity.ActivitySource) string {
 		return "File Upload"
 	case pbactivity.ActivitySource_SOURCE_STRAVA:
 		return "Strava"
-	case pbactivity.ActivitySource_SOURCE_GARMIN:
-		return "Garmin"
 	case pbactivity.ActivitySource_SOURCE_APPLE_HEALTH:
 		return "Apple Health"
 	case pbactivity.ActivitySource_SOURCE_HEALTH_CONNECT:
@@ -676,8 +674,6 @@ func ParseActivitySource(input string) pbactivity.ActivitySource {
 		"file upload":            pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
 		"source_strava":          pbactivity.ActivitySource_SOURCE_STRAVA,
 		"strava":                 pbactivity.ActivitySource_SOURCE_STRAVA,
-		"source_garmin":          pbactivity.ActivitySource_SOURCE_GARMIN,
-		"garmin":                 pbactivity.ActivitySource_SOURCE_GARMIN,
 		"source_apple_health":    pbactivity.ActivitySource_SOURCE_APPLE_HEALTH,
 		"apple_health":           pbactivity.ActivitySource_SOURCE_APPLE_HEALTH,
 		"apple health":           pbactivity.ActivitySource_SOURCE_APPLE_HEALTH,
@@ -801,6 +797,8 @@ func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 		return "Temperature Summary"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS:
 		return "Best Efforts"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HDROP:
+		return "Hdrop"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -948,6 +946,8 @@ func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 		"enricher_provider_best_efforts":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
 		"best_efforts":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
 		"best efforts":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
+		"enricher_provider_hdrop":                pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HDROP,
+		"hdrop":                                  pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HDROP,
 		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}
@@ -1459,6 +1459,8 @@ func FormatPipelineRunStatus(value pbpipeline.PipelineRunStatus) string {
 		return "Tier Blocked"
 	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED:
 		return "Cancelled"
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING:
+		return "Synced With Pending"
 	default:
 		return "Unknown"
 	}
@@ -1495,6 +1497,9 @@ func ParsePipelineRunStatus(input string) pbpipeline.PipelineRunStatus {
 		"tier blocked":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
 		"pipeline_run_status_cancelled":    pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED,
 		"cancelled":                        pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED,
+		"pipeline_run_status_synced_with_pending": pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING,
+		"synced_with_pending":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING,
+		"synced with pending":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))

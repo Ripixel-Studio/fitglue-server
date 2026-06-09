@@ -41,6 +41,11 @@ message PendingInput {
   string source_activity_type = 19;
   google.protobuf.Timestamp source_start_time = 20;
   string source_activity_source = 21;
+
+  // When true, this pending input does not block the pipeline — destinations are called
+  // immediately with whatever enrichment is available. On resolution, destinations are
+  // updated via Update() rather than Create().
+  bool non_blocking = 22;
 }
 
 enum ParkrunResultsState {

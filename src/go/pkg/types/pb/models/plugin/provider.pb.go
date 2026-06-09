@@ -137,6 +137,7 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_ICAL_TITLE           EnricherProviderType = 43
 	EnricherProviderType_ENRICHER_PROVIDER_TEMPERATURE_SUMMARY  EnricherProviderType = 44
 	EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS         EnricherProviderType = 45
+	EnricherProviderType_ENRICHER_PROVIDER_HDROP                EnricherProviderType = 46
 	EnricherProviderType_ENRICHER_PROVIDER_MOCK                 EnricherProviderType = 99
 )
 
@@ -188,6 +189,7 @@ var (
 		43: "ENRICHER_PROVIDER_ICAL_TITLE",
 		44: "ENRICHER_PROVIDER_TEMPERATURE_SUMMARY",
 		45: "ENRICHER_PROVIDER_BEST_EFFORTS",
+		46: "ENRICHER_PROVIDER_HDROP",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -236,6 +238,7 @@ var (
 		"ENRICHER_PROVIDER_ICAL_TITLE":           43,
 		"ENRICHER_PROVIDER_TEMPERATURE_SUMMARY":  44,
 		"ENRICHER_PROVIDER_BEST_EFFORTS":         45,
+		"ENRICHER_PROVIDER_HDROP":                46,
 		"ENRICHER_PROVIDER_MOCK":                 99,
 	}
 )
@@ -503,7 +506,7 @@ const file_models_plugin_provider_proto_rawDesc = "" +
 	"\x15DESTINATION_INTERVALS\x10\x05\x1a\x1c\x92\xb5\x18\x18topic-destination-upload\x12:\n" +
 	"\x18DESTINATION_GOOGLESHEETS\x10\x06\x1a\x1c\x92\xb5\x18\x18topic-destination-upload\x124\n" +
 	"\x12DESTINATION_GITHUB\x10\a\x1a\x1c\x92\xb5\x18\x18topic-destination-upload\x122\n" +
-	"\x10DESTINATION_MOCK\x10c\x1a\x1c\x92\xb5\x18\x18topic-destination-upload*\xdd\r\n" +
+	"\x10DESTINATION_MOCK\x10c\x1a\x1c\x92\xb5\x18\x18topic-destination-upload*\xfa\r\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -550,7 +553,8 @@ const file_models_plugin_provider_proto_rawDesc = "" +
 	"\"ENRICHER_PROVIDER_AI_ACTIVITY_TYPE\x10*\x12 \n" +
 	"\x1cENRICHER_PROVIDER_ICAL_TITLE\x10+\x12)\n" +
 	"%ENRICHER_PROVIDER_TEMPERATURE_SUMMARY\x10,\x12\"\n" +
-	"\x1eENRICHER_PROVIDER_BEST_EFFORTS\x10-\x12\x1a\n" +
+	"\x1eENRICHER_PROVIDER_BEST_EFFORTS\x10-\x12\x1b\n" +
+	"\x17ENRICHER_PROVIDER_HDROP\x10.\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

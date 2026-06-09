@@ -43,7 +43,7 @@ func withOAuthProvider(r *http.Request, provider string) *http.Request {
 }
 
 func firstKnownProvider() string {
-	for _, p := range []string{"strava", "fitbit", "spotify", "garmin", "wahoo", "polar", "oura"} {
+	for _, p := range []string{"strava", "fitbit", "spotify", "wahoo", "polar", "oura"} {
 		if GetOAuthConfig(p) != nil {
 			return p
 		}

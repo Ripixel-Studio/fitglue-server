@@ -283,6 +283,8 @@ components:
                     $ref: '#/components/schemas/TemperatureSummary'
                 bestEfforts:
                     $ref: '#/components/schemas/BestEffortsSummary'
+                hdrop:
+                    $ref: '#/components/schemas/HDropSummary'
             description: |-
                 ActivityEnrichments holds typed outputs from the enricher pipeline.
                  Each sub-message is optional — only present if the corresponding enricher
@@ -533,6 +535,60 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        HDropSummary:
+            type: object
+            properties:
+                totalFluidLossL:
+                    type: number
+                    format: double
+                sweatRateLPerHr:
+                    type: number
+                    format: double
+                totalSodiumMg:
+                    type: number
+                    format: double
+                totalPotassiumMg:
+                    type: number
+                    format: double
+                sodiumConcentrationMgPerL:
+                    type: number
+                    format: double
+                avgHdropScore:
+                    type: number
+                    format: double
+                minHdropScore:
+                    type: number
+                    format: double
+                bodyLocation:
+                    type: string
+                minTemperatureC:
+                    type: number
+                    format: double
+                maxTemperatureC:
+                    type: number
+                    format: double
+                timeseries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/HDropTimeseriesPoint'
+        HDropTimeseriesPoint:
+            type: object
+            properties:
+                timeMinutes:
+                    type: number
+                    format: double
+                sweatRate:
+                    type: number
+                    format: double
+                fluidLossCumulative:
+                    type: number
+                    format: double
+                sodiumConcentration:
+                    type: number
+                    format: double
+                temperature:
+                    type: number
+                    format: double
         HeartRateSummary:
             type: object
             properties:
@@ -1311,7 +1367,6 @@ components:
                         - SOURCE_PARKRUN_RESULTS
                         - SOURCE_FILE_UPLOAD
                         - SOURCE_STRAVA
-                        - SOURCE_GARMIN
                         - SOURCE_APPLE_HEALTH
                         - SOURCE_HEALTH_CONNECT
                         - SOURCE_OURA
@@ -1444,7 +1499,6 @@ components:
                             - SOURCE_PARKRUN_RESULTS
                             - SOURCE_FILE_UPLOAD
                             - SOURCE_STRAVA
-                            - SOURCE_GARMIN
                             - SOURCE_APPLE_HEALTH
                             - SOURCE_HEALTH_CONNECT
                             - SOURCE_OURA
@@ -1574,7 +1628,6 @@ components:
                         - SOURCE_PARKRUN_RESULTS
                         - SOURCE_FILE_UPLOAD
                         - SOURCE_STRAVA
-                        - SOURCE_GARMIN
                         - SOURCE_APPLE_HEALTH
                         - SOURCE_HEALTH_CONNECT
                         - SOURCE_OURA
@@ -1665,7 +1718,6 @@ components:
                         - SOURCE_PARKRUN_RESULTS
                         - SOURCE_FILE_UPLOAD
                         - SOURCE_STRAVA
-                        - SOURCE_GARMIN
                         - SOURCE_APPLE_HEALTH
                         - SOURCE_HEALTH_CONNECT
                         - SOURCE_OURA

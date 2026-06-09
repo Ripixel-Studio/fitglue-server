@@ -40,7 +40,8 @@ type Database interface {
 //   - errMsg: optional error message if status is FAILED
 //   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
-func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger) {
+//   - nonBlockingPendingIDs: IDs of non-blocking pending inputs still awaiting user input
+func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger, nonBlockingPendingIDs []string) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
@@ -75,7 +76,7 @@ func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, 
 		return
 	}
 
-	newStatus := ComputePipelineRunStatus(outcomes)
+	newStatus := ComputePipelineRunStatus(outcomes, nonBlockingPendingIDs)
 
 	// Convert outcomes to Firestore-compatible format for the inline destinations array
 	// This keeps the inline array in sync with the subcollection for UI consumers
@@ -97,11 +98,13 @@ func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, 
 		destinationsData[i] = destData
 	}
 
-	// Update the parent pipeline run's overall status AND inline destinations array
+	// Update the parent pipeline run's overall status AND inline destinations array.
+	// Always write non_blocking_pending_input_ids so resolution clears them correctly.
 	updateData := map[string]interface{}{
-		"status":       int32(newStatus),
-		"updated_at":   timestamppb.Now(),
-		"destinations": destinationsData,
+		"status":                         int32(newStatus),
+		"updated_at":                     timestamppb.Now(),
+		"destinations":                   destinationsData,
+		"non_blocking_pending_input_ids": nonBlockingPendingIDs,
 	}
 
 	if err := db.UpdatePipelineRun(ctx, userId, pipelineRunId, updateData); err != nil {
@@ -110,8 +113,11 @@ func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, 
 		logger.Debug(ctx, "Updated pipeline run status and destinations", "pipeline_run_id", pipelineRunId, "status", newStatus.String(), "destinations_count", len(destinationsData))
 	}
 
-	// Send push notification when all destinations have reached a terminal status
-	if newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED || newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+	// Send push notification when all destinations have reached a terminal status.
+	// SYNCED_WITH_PENDING is terminal for destinations (enricher resolution notifies separately).
+	if newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED ||
+		newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING ||
+		newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
 		sendSyncNotification(ctx, publisher, userId, activityName, activityId, newStatus, outcomes, logger)
 	}
 }
@@ -170,13 +176,13 @@ func FormatDestinationName(dest pbplugin.DestinationType) string {
 	return formatters.FormatDestination(dest)
 }
 
-// ComputePipelineRunStatus determines overall status from destination outcomes
-func ComputePipelineRunStatus(destinations []*pbpipeline.DestinationOutcome) pbpipeline.PipelineRunStatus {
+// ComputePipelineRunStatus determines overall status from destination outcomes and any
+// non-blocking pending inputs still awaiting user input.
+func ComputePipelineRunStatus(destinations []*pbpipeline.DestinationOutcome, nonBlockingPendingIDs []string) pbpipeline.PipelineRunStatus {
 	if len(destinations) == 0 {
 		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING
 	}
 
-	allSuccess := true
 	anyFailed := false
 	allComplete := true
 
@@ -184,10 +190,8 @@ func ComputePipelineRunStatus(destinations []*pbpipeline.DestinationOutcome) pbp
 		switch d.Status {
 		case pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING:
 			allComplete = false
-			allSuccess = false
 		case pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED:
 			anyFailed = true
-			allSuccess = false
 		case pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS:
 			// Good
 		case pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED:
@@ -198,11 +202,11 @@ func ComputePipelineRunStatus(destinations []*pbpipeline.DestinationOutcome) pbp
 	if !allComplete {
 		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING
 	}
-	if allSuccess {
-		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED
-	}
 	if anyFailed {
 		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL
+	}
+	if len(nonBlockingPendingIDs) > 0 {
+		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING
 	}
 	return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED
 }

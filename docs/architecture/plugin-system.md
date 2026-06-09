@@ -102,7 +102,7 @@ Destinations live in `services/destination/internal/destination/uploaders/{name}
 
 ```bash
 # Add a new data source (Go webhook provider)
-make plugin-source name=garmin
+make plugin-source name=suunto
 
 # Add a new enricher (Go pipeline step)
 make plugin-enricher name=sleep_score

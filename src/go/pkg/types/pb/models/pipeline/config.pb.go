@@ -230,6 +230,7 @@ type EnricherConfig struct {
 	state         protoimpl.MessageState      `protogen:"open.v1"`
 	ProviderType  plugin.EnricherProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=fitglue.models.plugin.EnricherProviderType" json:"provider_type,omitempty"`
 	TypedConfig   map[string]string           `protobuf:"bytes,2,rep,name=typed_config,json=typedConfig,proto3" json:"typed_config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	NonBlocking   bool                        `protobuf:"varint,3,opt,name=non_blocking,json=nonBlocking,proto3" json:"non_blocking,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -276,6 +277,13 @@ func (x *EnricherConfig) GetTypedConfig() map[string]string {
 		return x.TypedConfig
 	}
 	return nil
+}
+
+func (x *EnricherConfig) GetNonBlocking() bool {
+	if x != nil {
+		return x.NonBlocking
+	}
+	return false
 }
 
 type PluginDefault struct {
@@ -374,10 +382,11 @@ const file_models_pipeline_config_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
 	"\x16SourceEnrichmentConfig\x12E\n" +
-	"\tenrichers\x18\x01 \x03(\v2'.fitglue.models.pipeline.EnricherConfigR\tenrichers\"\xff\x01\n" +
+	"\tenrichers\x18\x01 \x03(\v2'.fitglue.models.pipeline.EnricherConfigR\tenrichers\"\xa2\x02\n" +
 	"\x0eEnricherConfig\x12P\n" +
 	"\rprovider_type\x18\x01 \x01(\x0e2+.fitglue.models.plugin.EnricherProviderTypeR\fproviderType\x12[\n" +
-	"\ftyped_config\x18\x02 \x03(\v28.fitglue.models.pipeline.EnricherConfig.TypedConfigEntryR\vtypedConfig\x1a>\n" +
+	"\ftyped_config\x18\x02 \x03(\v28.fitglue.models.pipeline.EnricherConfig.TypedConfigEntryR\vtypedConfig\x12!\n" +
+	"\fnon_blocking\x18\x03 \x01(\bR\vnonBlocking\x1a>\n" +
 	"\x10TypedConfigEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x01\n" +

@@ -374,8 +374,11 @@ type EnrichedActivityEvent struct {
 	PipelineExecutionId *string                        `protobuf:"bytes,15,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
 	ActivityDataUri     string                         `protobuf:"bytes,16,opt,name=activity_data_uri,json=activityDataUri,proto3" json:"activity_data_uri,omitempty"`
 	Enrichments         *activity.ActivityEnrichments  `protobuf:"bytes,17,opt,name=enrichments,proto3" json:"enrichments,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Non-blocking pending input IDs still awaiting user input after this enrichment run.
+	// The destination service writes these to the PipelineRun and sets SYNCED_WITH_PENDING status.
+	NonBlockingPendingInputIds []string `protobuf:"bytes,18,rep,name=non_blocking_pending_input_ids,json=nonBlockingPendingInputIds,proto3" json:"non_blocking_pending_input_ids,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *EnrichedActivityEvent) Reset() {
@@ -527,6 +530,13 @@ func (x *EnrichedActivityEvent) GetEnrichments() *activity.ActivityEnrichments {
 	return nil
 }
 
+func (x *EnrichedActivityEvent) GetNonBlockingPendingInputIds() []string {
+	if x != nil {
+		return x.NonBlockingPendingInputIds
+	}
+	return nil
+}
+
 type MessagePublishedData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
@@ -656,7 +666,7 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination\"\x84\b\n" +
+	"\x13_origin_destination\"\xc8\b\n" +
 	"\x15EnrichedActivityEvent\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -679,7 +689,8 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\x04tags\x18\x0e \x03(\tR\x04tags\x127\n" +
 	"\x15pipeline_execution_id\x18\x0f \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x12*\n" +
 	"\x11activity_data_uri\x18\x10 \x01(\tR\x0factivityDataUri\x12N\n" +
-	"\venrichments\x18\x11 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichments\x1aE\n" +
+	"\venrichments\x18\x11 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichments\x12B\n" +
+	"\x1enon_blocking_pending_input_ids\x18\x12 \x03(\tR\x1anonBlockingPendingInputIds\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +

@@ -37,33 +37,38 @@ const (
 	PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED     PipelineRunStatus = 7
 	PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED PipelineRunStatus = 8
 	PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED    PipelineRunStatus = 9
+	// Destinations were called successfully, but one or more non-blocking enrichers
+	// are still awaiting user input. Destinations will be updated when they resolve.
+	PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING PipelineRunStatus = 10
 )
 
 // Enum value maps for PipelineRunStatus.
 var (
 	PipelineRunStatus_name = map[int32]string{
-		0: "PIPELINE_RUN_STATUS_UNSPECIFIED",
-		1: "PIPELINE_RUN_STATUS_RUNNING",
-		2: "PIPELINE_RUN_STATUS_SYNCED",
-		3: "PIPELINE_RUN_STATUS_PARTIAL",
-		4: "PIPELINE_RUN_STATUS_FAILED",
-		5: "PIPELINE_RUN_STATUS_PENDING",
-		6: "PIPELINE_RUN_STATUS_SKIPPED",
-		7: "PIPELINE_RUN_STATUS_ARCHIVED",
-		8: "PIPELINE_RUN_STATUS_TIER_BLOCKED",
-		9: "PIPELINE_RUN_STATUS_CANCELLED",
+		0:  "PIPELINE_RUN_STATUS_UNSPECIFIED",
+		1:  "PIPELINE_RUN_STATUS_RUNNING",
+		2:  "PIPELINE_RUN_STATUS_SYNCED",
+		3:  "PIPELINE_RUN_STATUS_PARTIAL",
+		4:  "PIPELINE_RUN_STATUS_FAILED",
+		5:  "PIPELINE_RUN_STATUS_PENDING",
+		6:  "PIPELINE_RUN_STATUS_SKIPPED",
+		7:  "PIPELINE_RUN_STATUS_ARCHIVED",
+		8:  "PIPELINE_RUN_STATUS_TIER_BLOCKED",
+		9:  "PIPELINE_RUN_STATUS_CANCELLED",
+		10: "PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING",
 	}
 	PipelineRunStatus_value = map[string]int32{
-		"PIPELINE_RUN_STATUS_UNSPECIFIED":  0,
-		"PIPELINE_RUN_STATUS_RUNNING":      1,
-		"PIPELINE_RUN_STATUS_SYNCED":       2,
-		"PIPELINE_RUN_STATUS_PARTIAL":      3,
-		"PIPELINE_RUN_STATUS_FAILED":       4,
-		"PIPELINE_RUN_STATUS_PENDING":      5,
-		"PIPELINE_RUN_STATUS_SKIPPED":      6,
-		"PIPELINE_RUN_STATUS_ARCHIVED":     7,
-		"PIPELINE_RUN_STATUS_TIER_BLOCKED": 8,
-		"PIPELINE_RUN_STATUS_CANCELLED":    9,
+		"PIPELINE_RUN_STATUS_UNSPECIFIED":         0,
+		"PIPELINE_RUN_STATUS_RUNNING":             1,
+		"PIPELINE_RUN_STATUS_SYNCED":              2,
+		"PIPELINE_RUN_STATUS_PARTIAL":             3,
+		"PIPELINE_RUN_STATUS_FAILED":              4,
+		"PIPELINE_RUN_STATUS_PENDING":             5,
+		"PIPELINE_RUN_STATUS_SKIPPED":             6,
+		"PIPELINE_RUN_STATUS_ARCHIVED":            7,
+		"PIPELINE_RUN_STATUS_TIER_BLOCKED":        8,
+		"PIPELINE_RUN_STATUS_CANCELLED":           9,
+		"PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING": 10,
 	}
 )
 
@@ -358,6 +363,9 @@ type PipelineRun struct {
 	PendingInputId     *string                `protobuf:"bytes,16,opt,name=pending_input_id,json=pendingInputId,proto3,oneof" json:"pending_input_id,omitempty"`
 	OriginalPayloadUri string                 `protobuf:"bytes,22,opt,name=original_payload_uri,json=originalPayloadUri,proto3" json:"original_payload_uri,omitempty"`
 	EnrichedEventUri   string                 `protobuf:"bytes,23,opt,name=enriched_event_uri,json=enrichedEventUri,proto3" json:"enriched_event_uri,omitempty"`
+	// IDs of non-blocking PendingInputs still awaiting user input for this run.
+	// Cleared as each one is resolved; when empty the status transitions to SYNCED.
+	NonBlockingPendingInputIds []string `protobuf:"bytes,25,rep,name=non_blocking_pending_input_ids,json=nonBlockingPendingInputIds,proto3" json:"non_blocking_pending_input_ids,omitempty"`
 	// Unified record of every step in a pipeline run — source, parse, gate,
 	// enricher batch, router, and per-destination uploaders.
 	// boosters[] is preserved for existing documents; new clients should prefer steps[].
@@ -520,6 +528,13 @@ func (x *PipelineRun) GetEnrichedEventUri() string {
 		return x.EnrichedEventUri
 	}
 	return ""
+}
+
+func (x *PipelineRun) GetNonBlockingPendingInputIds() []string {
+	if x != nil {
+		return x.NonBlockingPendingInputIds
+	}
+	return nil
 }
 
 func (x *PipelineRun) GetSteps() []*ExecutionStep {
@@ -958,7 +973,7 @@ var File_models_pipeline_execution_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\n" +
-	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\xc6\a\n" +
+	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x8a\b\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -983,7 +998,8 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\x0estatus_message\x18\x0f \x01(\tH\x00R\rstatusMessage\x88\x01\x01\x12-\n" +
 	"\x10pending_input_id\x18\x10 \x01(\tH\x01R\x0ependingInputId\x88\x01\x01\x120\n" +
 	"\x14original_payload_uri\x18\x16 \x01(\tR\x12originalPayloadUri\x12,\n" +
-	"\x12enriched_event_uri\x18\x17 \x01(\tR\x10enrichedEventUri\x12<\n" +
+	"\x12enriched_event_uri\x18\x17 \x01(\tR\x10enrichedEventUri\x12B\n" +
+	"\x1enon_blocking_pending_input_ids\x18\x19 \x03(\tR\x1anonBlockingPendingInputIds\x12<\n" +
 	"\x05steps\x18\x18 \x03(\v2&.fitglue.models.pipeline.ExecutionStepR\x05stepsB\x11\n" +
 	"\x0f_status_messageB\x13\n" +
 	"\x11_pending_input_id\"\xa7\x04\n" +
@@ -1054,7 +1070,7 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\r_outputs_jsonB\f\n" +
 	"\n" +
 	"_expire_atB\x18\n" +
-	"\x16_pipeline_execution_id*\xe7\x02\n" +
+	"\x16_pipeline_execution_id*\x94\x03\n" +
 	"\x11PipelineRunStatus\x12#\n" +
 	"\x1fPIPELINE_RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_RUNNING\x10\x01\x12\x1e\n" +
@@ -1065,7 +1081,9 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\x1bPIPELINE_RUN_STATUS_SKIPPED\x10\x06\x12 \n" +
 	"\x1cPIPELINE_RUN_STATUS_ARCHIVED\x10\a\x12$\n" +
 	" PIPELINE_RUN_STATUS_TIER_BLOCKED\x10\b\x12!\n" +
-	"\x1dPIPELINE_RUN_STATUS_CANCELLED\x10\t*\x82\x02\n" +
+	"\x1dPIPELINE_RUN_STATUS_CANCELLED\x10\t\x12+\n" +
+	"'PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING\x10\n" +
+	"*\x82\x02\n" +
 	"\x11ExecutionStepKind\x12#\n" +
 	"\x1fEXECUTION_STEP_KIND_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aEXECUTION_STEP_KIND_SOURCE\x10\x01\x12\x1d\n" +

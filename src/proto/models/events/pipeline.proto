@@ -94,6 +94,10 @@ message EnrichedActivityEvent {
   optional string pipeline_execution_id = 15;
   string activity_data_uri = 16;
   fitglue.models.activity.ActivityEnrichments enrichments = 17;
+
+  // Non-blocking pending input IDs still awaiting user input after this enrichment run.
+  // The destination service writes these to the PipelineRun and sets SYNCED_WITH_PENDING status.
+  repeated string non_blocking_pending_input_ids = 18;
 }
 
 message MessagePublishedData {

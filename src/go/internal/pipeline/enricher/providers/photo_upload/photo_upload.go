@@ -25,6 +25,9 @@ type Provider struct {
 	service *bootstrap.Service
 }
 
+// Compile-time assertion: photo_upload supports non-blocking mode.
+var _ providers.SupportsNonBlocking = (*Provider)(nil)
+
 func init() {
 	providers.Register(&Provider{})
 }

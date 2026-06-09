@@ -323,7 +323,7 @@ func buildSessions(records []*pbactivity.Record, lapInfos []lapInfo, sessionInfo
 	}
 
 	// Merge consecutive laps with the same workout step index
-	// This handles cases where Garmin records multiple sub-laps per interval (e.g., 1km auto-laps within a Hyrox station)
+	// This handles cases where devices record multiple sub-laps per interval (e.g., 1km auto-laps within a Hyrox station)
 	mergedLapInfos := mergeLapInfosByWorkoutStep(lapInfos)
 
 	// Assign records to laps based on timestamps
@@ -456,7 +456,7 @@ func buildSessions(records []*pbactivity.Record, lapInfos []lapInfo, sessionInfo
 }
 
 // mergeLapInfosByWorkoutStep merges consecutive laps that share the same workout step index.
-// This handles Garmin's behavior of recording multiple sub-laps per workout interval
+// This handles FIT devices' behavior of recording multiple sub-laps per workout interval
 // (e.g., 1km auto-laps within a Hyrox station that should be a single interval).
 // Also merges zero-duration laps with adjacent laps (these are transition markers).
 func mergeLapInfosByWorkoutStep(lapInfos []lapInfo) []lapInfo {
@@ -613,7 +613,7 @@ func parseRecord(msg *proto.Message) *pbactivity.Record {
 		record.PositionLong = float64(recordMsg.PositionLong) / semicircleConst
 	}
 
-	// Garmin Running Dynamics
+	// Running Dynamics (FIT standard fields)
 	// Stance Time (Ground Contact Time) - FIT unit is 0.1ms
 	if recordMsg.StanceTime != 0xFFFF {
 		gct := int32(recordMsg.StanceTime / 10) // Convert to ms

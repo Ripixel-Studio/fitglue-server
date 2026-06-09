@@ -314,6 +314,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	var deferredEnrichers []deferredEnricher
 
+	// Non-blocking enrichers that raised WaitForInputError — pipeline continues without them.
+	// Their pending input IDs are attached to the event so the destination service records
+	// them on the PipelineRun and sets SYNCED_WITH_PENDING status.
+	var nonBlockingPendingIDs []string
+
 	// Map to track excluded downstream enrichers (type -> excluder name)
 	excludedEnrichers := make(map[pbplugin.EnricherProviderType]string)
 
@@ -537,6 +542,29 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				}, retryErr
 			}
 			if waitErr, ok := err.(*user_input.WaitForInputError); ok {
+				_, supportsNonBlocking := provider.(providers.SupportsNonBlocking)
+				if supportsNonBlocking && cfg.NonBlocking {
+					// Non-blocking: create the pending input, continue the pipeline.
+					// Destinations run normally; this enricher's output arrives later via Update().
+					logger.Info("Non-blocking enricher deferred pending user input",
+						"provider", provider.Name(),
+						"activity_id", waitErr.ActivityID,
+						"duration_ms", duration,
+					)
+					pendingID := o.createNonBlockingPendingInput(ctx, logger, payload, waitErr, activityId, originalPayloadUri)
+					if pendingID != "" {
+						nonBlockingPendingIDs = append(nonBlockingPendingIDs, pendingID)
+					}
+					pe.Status = "WAITING_NON_BLOCKING"
+					pe.Metadata = map[string]string{
+						"activity_id":     waitErr.ActivityID,
+						"required_fields": strings.Join(waitErr.RequiredFields, ","),
+						"non_blocking":    "true",
+					}
+					providerExecutions = append(providerExecutions, pe)
+					continue
+				}
+
 				logger.Info(fmt.Sprintf("Provider waiting for user input: %v", provider.Name()), "name", provider.Name(), "activity_id", waitErr.ActivityID, "required_fields", waitErr.RequiredFields, "duration_ms", duration, "execution_id", execID)
 				pe.Status = "WAITING"
 				pe.Metadata = map[string]string{
@@ -957,6 +985,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		StartTime:           currentActivity.Sessions[0].StartTime,
 	}
 
+	// Attach non-blocking pending input IDs so the destination service can record them
+	// on the PipelineRun and set SYNCED_WITH_PENDING status.
+	if len(nonBlockingPendingIDs) > 0 {
+		finalEvent.NonBlockingPendingInputIds = nonBlockingPendingIDs
+	}
+
 	// Resume Mode: Add update metadata
 	if isResumeMode {
 		if useUpdateMethod {
@@ -1194,6 +1228,7 @@ type configuredPipeline struct {
 type configuredEnricher struct {
 	ProviderType pbplugin.EnricherProviderType
 	TypedConfig  map[string]string
+	NonBlocking  bool
 }
 
 // resolvePipeline looks up a single pipeline by ID from the user's pipelines collection.
@@ -1216,6 +1251,7 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 				enrichers = append(enrichers, configuredEnricher{
 					ProviderType: e.ProviderType,
 					TypedConfig:  e.TypedConfig,
+					NonBlocking:  e.NonBlocking,
 				})
 			}
 			// Prefer Sources (array) over the legacy Source field; service.go clears
@@ -1236,6 +1272,61 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 	}
 
 	return nil, nil // Pipeline not found
+}
+
+// createNonBlockingPendingInput creates a PendingInput record for a non-blocking enricher.
+// Unlike handleWaitError, it does not halt the pipeline — the caller continues enrichment.
+// Returns the stable pending input ID, or "" if creation failed (pipeline still continues).
+func (o *Orchestrator) createNonBlockingPendingInput(ctx context.Context, logger *slog.Logger, payload *pbevents.ActivityPayload, waitErr *user_input.WaitForInputError, linkedActivityId string, originalPayloadUri string) string {
+	// SAFETY CHECK: if the pending input already exists (e.g. Pub/Sub redelivery or a
+	// resume triggered by another non-blocking enricher resolving), return the existing ID.
+	existing, fetchErr := o.database.GetPendingInput(ctx, payload.UserId, waitErr.ActivityID)
+	if fetchErr == nil && existing != nil {
+		return waitErr.ActivityID
+	}
+
+	payloadUri := originalPayloadUri
+	if payloadUri == "" {
+		if o.storage != nil && o.bucketName != "" {
+			payloadPath := fmt.Sprintf("payloads/%s/%s.json", payload.UserId, waitErr.ActivityID)
+			payloadBytes, err := protojson.Marshal(payload)
+			if err != nil {
+				logger.Warn("Failed to marshal payload for non-blocking pending input", "error", err)
+			} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
+				logger.Warn("Failed to upload payload for non-blocking pending input", "error", err)
+			} else {
+				payloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
+			}
+		}
+	}
+
+	pi := &pbpipeline.PendingInput{
+		ActivityId:         waitErr.ActivityID,
+		UserId:             payload.UserId,
+		Status:             pbpipeline.PendingInput_STATUS_WAITING,
+		RequiredFields:     waitErr.RequiredFields,
+		OriginalPayloadUri: payloadUri,
+		EnricherProviderId: waitErr.EnricherProviderID,
+		NonBlocking:        true,
+		CreatedAt:          timestamppb.Now(),
+		UpdatedAt:          timestamppb.Now(),
+		ProviderMetadata:   waitErr.Metadata,
+		LinkedActivityId:   linkedActivityId,
+		PipelineId:         *payload.PipelineId,
+	}
+	if act := payload.GetStandardizedActivity(); act != nil {
+		pi.SourceDisplayName = act.Name
+		pi.SourceActivityType = act.Type.String()
+		pi.SourceStartTime = act.StartTime
+		pi.SourceActivitySource = act.Source.String()
+	}
+	if err := o.database.CreatePendingInput(ctx, payload.UserId, pi); err != nil {
+		logger.Warn("Failed to create non-blocking pending input", "error", err, "activity_id", waitErr.ActivityID)
+		return ""
+	}
+
+	logger.Info("Created non-blocking pending input", "pending_id", waitErr.ActivityID, "provider", waitErr.EnricherProviderID)
+	return waitErr.ActivityID
 }
 
 func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pbevents.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError, linkedActivityId string, originalPayloadUri string) (*ProcessResult, error) {
@@ -1441,7 +1532,7 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	// Update pipeline run with final enriched data
 	// Note: status changes from PENDING -> RUNNING, and we clear any status_message
 	// (e.g., "Waiting for user input: ...") since the input has been resolved.
-	// The status will transition to SYNCED/PARTIAL/FAILED once destinations are processed.
+	// The status will transition to SYNCED/PARTIAL/SYNCED_WITH_PENDING once destinations are processed.
 	updateData := map[string]interface{}{
 		"title":                event.Name,
 		"description":          event.Description,
@@ -1453,6 +1544,7 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 		"boosters":             boosters,
 		"original_payload_uri": originalPayloadUri,
 		"steps":                buildAllSteps(*event.PipelineExecutionId, providerExecs, false, false),
+		"non_blocking_pending_input_ids": event.NonBlockingPendingInputIds,
 	}
 
 	if err := o.database.UpdatePipelineRun(ctx, userId, *event.PipelineExecutionId, updateData); err != nil {
@@ -1565,6 +1657,8 @@ func pipelineRunStatusToStepStatus(s pbpipeline.PipelineRunStatus) pbpipeline.Ex
 		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_SKIPPED
 	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING:
 		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_QUEUED
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING:
+		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_OK
 	default:
 		// RUNNING (retry-in-progress) and any other transitional status.
 		return pbpipeline.ExecutionStepStatus_EXECUTION_STEP_STATUS_RETRIED

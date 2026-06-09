@@ -71,7 +71,7 @@ func (m *MockPublisher) lastNotification(t *testing.T) *pbnotification.Notificat
 // --- Tests ---
 
 func TestComputePipelineRunStatus_Empty(t *testing.T) {
-	status := ComputePipelineRunStatus(nil)
+	status := ComputePipelineRunStatus(nil, nil)
 	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
 		t.Errorf("expected RUNNING for empty outcomes, got %v", status)
 	}
@@ -82,7 +82,7 @@ func TestComputePipelineRunStatus_AllSuccess(t *testing.T) {
 		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 	}
-	status := ComputePipelineRunStatus(outcomes)
+	status := ComputePipelineRunStatus(outcomes, nil)
 	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
 		t.Errorf("expected SYNCED, got %v", status)
 	}
@@ -93,7 +93,7 @@ func TestComputePipelineRunStatus_SomePending(t *testing.T) {
 		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING},
 	}
-	status := ComputePipelineRunStatus(outcomes)
+	status := ComputePipelineRunStatus(outcomes, nil)
 	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
 		t.Errorf("expected RUNNING, got %v", status)
 	}
@@ -104,7 +104,7 @@ func TestComputePipelineRunStatus_SomeFailed(t *testing.T) {
 		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED},
 	}
-	status := ComputePipelineRunStatus(outcomes)
+	status := ComputePipelineRunStatus(outcomes, nil)
 	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
 		t.Errorf("expected PARTIAL, got %v", status)
 	}
@@ -115,7 +115,7 @@ func TestComputePipelineRunStatus_SuccessAndSkipped(t *testing.T) {
 		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED},
 	}
-	status := ComputePipelineRunStatus(outcomes)
+	status := ComputePipelineRunStatus(outcomes, nil)
 	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
 		t.Errorf("expected SYNCED (skipped doesn't count as failure), got %v", status)
 	}
@@ -132,7 +132,7 @@ func TestUpdateStatus_EnqueuesNotificationOnSynced(t *testing.T) {
 
 	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"hevy-123", "", "Morning Run", "activity-1", logger)
+		"hevy-123", "", "Morning Run", "activity-1", logger, nil)
 
 	n := pub.lastNotification(t)
 	if n == nil {
@@ -160,7 +160,7 @@ func TestUpdateStatus_EnqueuesNotificationOnPartial(t *testing.T) {
 
 	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
-		"", "API error", "Morning Run", "activity-2", logger)
+		"", "API error", "Morning Run", "activity-2", logger, nil)
 
 	n := pub.lastNotification(t)
 	if n == nil {
@@ -186,7 +186,7 @@ func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
 	// Only Hevy completes — Strava still pending → RUNNING → no notification
 	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"hevy-123", "", "Morning Run", "activity-3", logger)
+		"hevy-123", "", "Morning Run", "activity-3", logger, nil)
 
 	if len(pub.Published) != 0 {
 		t.Fatalf("expected 0 notifications while RUNNING, got %d", len(pub.Published))
@@ -200,7 +200,7 @@ func TestUpdateStatus_NilPublisher(t *testing.T) {
 	// Should not panic with nil publisher
 	UpdateStatus(context.Background(), db, nil, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-4", logger)
+		"strava-123", "", "Morning Run", "activity-4", logger, nil)
 }
 
 func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
@@ -211,7 +211,7 @@ func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 	// Empty pipelineRunId → early return (legacy flow)
 	UpdateStatus(context.Background(), db, pub, "user1", "",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-5", logger)
+		"strava-123", "", "Morning Run", "activity-5", logger, nil)
 
 	if len(pub.Published) != 0 {
 		t.Fatalf("expected 0 notifications for empty pipelineRunId, got %d", len(pub.Published))

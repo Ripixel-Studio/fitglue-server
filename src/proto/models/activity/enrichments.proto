@@ -36,6 +36,7 @@ message ActivityEnrichments {
   optional MuscleHeatmapSummary muscle_heatmap = 24;
   optional TemperatureSummary temperature = 25;
   optional BestEffortsSummary best_efforts = 26;
+  optional HDropSummary hdrop = 27;
 }
 
 message HeartRateSummary {
@@ -266,4 +267,26 @@ message BestEffort {
 
 message BestEffortsSummary {
   repeated BestEffort efforts = 1;
+}
+
+message HDropTimeseriesPoint {
+  double time_minutes = 1;
+  double sweat_rate = 2;             // L/hr
+  double fluid_loss_cumulative = 3;  // L, cumulative
+  double sodium_concentration = 4;   // mg/L
+  double temperature = 5;            // °C skin temperature
+}
+
+message HDropSummary {
+  double total_fluid_loss_l = 1;
+  double sweat_rate_l_per_hr = 2;
+  double total_sodium_mg = 3;
+  double total_potassium_mg = 4;
+  double sodium_concentration_mg_per_l = 5;
+  double avg_hdrop_score = 6;
+  double min_hdrop_score = 7;
+  string body_location = 8;
+  double min_temperature_c = 9;
+  double max_temperature_c = 10;
+  repeated HDropTimeseriesPoint timeseries = 11;
 }

@@ -245,7 +245,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 }
 
 // lapElapsedSeconds returns the elapsed time for a lap in seconds.
-// For structured workouts (e.g. Garmin), TotalElapsedTime may be 0.
+// For structured workouts, TotalElapsedTime may be 0.
 // In that case we fall back to computing the duration from timestamps:
 // either (nextLapStartTime - thisLapStartTime) when a successor lap exists,
 // or (sessionEndTime - thisLapStartTime) for the final lap.

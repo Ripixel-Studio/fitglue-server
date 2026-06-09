@@ -49,6 +49,7 @@ import (
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/fit_file_heart_rate"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/fitbit_heart_rate"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/goal_tracker"
+	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/hdrop"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/heart_rate_summary"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/heart_rate_zones"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/hybrid_race_tagger"

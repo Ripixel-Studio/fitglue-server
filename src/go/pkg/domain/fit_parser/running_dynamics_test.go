@@ -7,7 +7,7 @@ import (
 
 func TestParseFitFile_RunningDynamics(t *testing.T) {
 	// Path to the problematic FIT file
-	filePath := "../../../cmd/fit-inspect/examples/garmin_dynamics_example.fit"
+	filePath := "../../../cmd/fit-inspect/examples/running_dynamics_example.fit"
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Skipf("Skipping test - could not read test file: %v", err)
@@ -69,6 +69,6 @@ func TestParseFitFile_RunningDynamics(t *testing.T) {
 		t.Error("Expected Step Length data")
 	}
 
-	t.Logf("Verified Garmin Dynamics: Speed=%v, Alt=%v, GCT=%v, VO=%v, SL=%v (Total Records: %d)",
+	t.Logf("Verified Running Dynamics: Speed=%v, Alt=%v, GCT=%v, VO=%v, SL=%v (Total Records: %d)",
 		hasSpeed, hasAltitude, hasGCT, hasVO, hasSL, totalRecords)
 }

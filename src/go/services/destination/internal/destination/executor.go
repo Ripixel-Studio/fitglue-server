@@ -222,6 +222,8 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		isUpdate = true
 	}
 
+	nonBlockingPendingIDs := payload.NonBlockingPendingInputIds
+
 	// Fetch the parent PipelineRun — needed by Update() to find the existing destination activity ID
 	var pr *pbpipeline.PipelineRun
 	if pipelineRunId != "" {
@@ -260,7 +262,7 @@ destinations:
 		if !ok {
 			e.logger.Warn(ctx, "No uploader registered for destination", "destination", destEnum.String())
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger)
+				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs)
 			}
 			continue
 		}
@@ -325,14 +327,14 @@ destinations:
 				e.enqueueConnectionActionNotification(ctx, payload.UserId, destEnum)
 			}
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger)
+				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs)
 			}
 			continue
 		}
 
 		// Success
 		if pipelineRunId != "" {
-			destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger)
+			destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs)
 		}
 		if err := e.db.RecordBillingEvent(ctx, payload.UserId, shared.BillingEvent{
 			ActivityID:    payload.ActivityId,
@@ -364,7 +366,7 @@ func (e *UploadExecutor) writeFailureForTargetedDestinations(ctx context.Context
 		if targetDest != pbplugin.DestinationType_DESTINATION_UNSPECIFIED && destEnum != targetDest {
 			continue
 		}
-		destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
+		destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger, payload.NonBlockingPendingInputIds)
 	}
 }
 

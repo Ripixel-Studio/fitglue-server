@@ -351,6 +351,7 @@ components:
                         - ENRICHER_PROVIDER_ICAL_TITLE
                         - ENRICHER_PROVIDER_TEMPERATURE_SUMMARY
                         - ENRICHER_PROVIDER_BEST_EFFORTS
+                        - ENRICHER_PROVIDER_HDROP
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum
@@ -358,6 +359,8 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+                nonBlocking:
+                    type: boolean
         ExecutionStep:
             type: object
             properties:
@@ -616,6 +619,7 @@ components:
                         - PIPELINE_RUN_STATUS_ARCHIVED
                         - PIPELINE_RUN_STATUS_TIER_BLOCKED
                         - PIPELINE_RUN_STATUS_CANCELLED
+                        - PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING
                     type: string
                     format: enum
                 createdAt:
@@ -640,6 +644,13 @@ components:
                     type: string
                 enrichedEventUri:
                     type: string
+                nonBlockingPendingInputIds:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        IDs of non-blocking PendingInputs still awaiting user input for this run.
+                         Cleared as each one is resolved; when empty the status transitions to SYNCED.
                 steps:
                     type: array
                     items:

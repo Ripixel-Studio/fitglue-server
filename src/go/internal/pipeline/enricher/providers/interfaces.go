@@ -108,6 +108,16 @@ type DeferrableProvider interface {
 	ShouldDefer() bool
 }
 
+// SupportsNonBlocking marks an enricher that can run in non-blocking mode when
+// its EnricherConfig.NonBlocking flag is set. Instead of halting the pipeline on
+// a WaitForInputError, the orchestrator continues, runs destinations normally, and
+// re-runs only this enricher (via EnrichResume) when the user submits input —
+// updating destinations rather than creating new activities.
+// Enrichers that implement this interface MUST also implement ResumableProvider.
+type SupportsNonBlocking interface {
+	Provider
+}
+
 // NonIdempotentProvider marks an enricher whose side-effects must not repeat
 // within the same pipeline execution. When the orchestrator detects a resume
 // and finds this enricher already completed in the stored execution journal,

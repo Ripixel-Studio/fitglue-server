@@ -406,7 +406,7 @@ func TestCalculateOverlap_MediumOverlap(t *testing.T) {
 func TestCalculateOverlap_LowOverlap_FITStartsBeforeActivity(t *testing.T) {
 	// Spinning class scenario:
 	// Activity (Hevy): 19:26:15 to 20:06:15 (40 minutes = 2400 seconds)
-	// HR data (Garmin): 19:04:47 to 19:40:46 (36 minutes = ~2160 seconds)
+	// HR data (FIT file): 19:04:47 to 19:40:46 (36 minutes = ~2160 seconds)
 	// Natural overlap: 19:26:15 to 19:40:46 = ~14 minutes = 35% of activity
 	activityStart := time.Date(2026, 2, 4, 19, 26, 15, 0, time.UTC)
 	durationSec := 2400 // 40 minutes
@@ -472,7 +472,7 @@ func TestReindexSamples(t *testing.T) {
 func TestBuildStreamTimeBased_SpinningClassScenario(t *testing.T) {
 	// This tests the exact spinning class scenario:
 	// Activity (Hevy): 19:26:15, duration 40 minutes (2400s)
-	// HR (Garmin FIT): starts 19:04:47, ~36 minutes of data
+	// HR (FIT file): starts 19:04:47, ~36 minutes of data
 	activityStart := time.Date(2026, 2, 4, 19, 26, 15, 0, time.UTC)
 	durationSec := 2400
 

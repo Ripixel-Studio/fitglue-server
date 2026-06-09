@@ -105,6 +105,7 @@ type ActivityEnrichments struct {
 	MuscleHeatmap     *MuscleHeatmapSummary     `protobuf:"bytes,24,opt,name=muscle_heatmap,json=muscleHeatmap,proto3,oneof" json:"muscle_heatmap,omitempty"`
 	Temperature       *TemperatureSummary       `protobuf:"bytes,25,opt,name=temperature,proto3,oneof" json:"temperature,omitempty"`
 	BestEfforts       *BestEffortsSummary       `protobuf:"bytes,26,opt,name=best_efforts,json=bestEfforts,proto3,oneof" json:"best_efforts,omitempty"`
+	Hdrop             *HDropSummary             `protobuf:"bytes,27,opt,name=hdrop,proto3,oneof" json:"hdrop,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -317,6 +318,13 @@ func (x *ActivityEnrichments) GetTemperature() *TemperatureSummary {
 func (x *ActivityEnrichments) GetBestEfforts() *BestEffortsSummary {
 	if x != nil {
 		return x.BestEfforts
+	}
+	return nil
+}
+
+func (x *ActivityEnrichments) GetHdrop() *HDropSummary {
+	if x != nil {
+		return x.Hdrop
 	}
 	return nil
 }
@@ -2525,11 +2533,211 @@ func (x *BestEffortsSummary) GetEfforts() []*BestEffort {
 	return nil
 }
 
+type HDropTimeseriesPoint struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	TimeMinutes         float64                `protobuf:"fixed64,1,opt,name=time_minutes,json=timeMinutes,proto3" json:"time_minutes,omitempty"`
+	SweatRate           float64                `protobuf:"fixed64,2,opt,name=sweat_rate,json=sweatRate,proto3" json:"sweat_rate,omitempty"`                                 // L/hr
+	FluidLossCumulative float64                `protobuf:"fixed64,3,opt,name=fluid_loss_cumulative,json=fluidLossCumulative,proto3" json:"fluid_loss_cumulative,omitempty"` // L, cumulative
+	SodiumConcentration float64                `protobuf:"fixed64,4,opt,name=sodium_concentration,json=sodiumConcentration,proto3" json:"sodium_concentration,omitempty"`   // mg/L
+	Temperature         float64                `protobuf:"fixed64,5,opt,name=temperature,proto3" json:"temperature,omitempty"`                                              // °C skin temperature
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *HDropTimeseriesPoint) Reset() {
+	*x = HDropTimeseriesPoint{}
+	mi := &file_models_activity_enrichments_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HDropTimeseriesPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HDropTimeseriesPoint) ProtoMessage() {}
+
+func (x *HDropTimeseriesPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_enrichments_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HDropTimeseriesPoint.ProtoReflect.Descriptor instead.
+func (*HDropTimeseriesPoint) Descriptor() ([]byte, []int) {
+	return file_models_activity_enrichments_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *HDropTimeseriesPoint) GetTimeMinutes() float64 {
+	if x != nil {
+		return x.TimeMinutes
+	}
+	return 0
+}
+
+func (x *HDropTimeseriesPoint) GetSweatRate() float64 {
+	if x != nil {
+		return x.SweatRate
+	}
+	return 0
+}
+
+func (x *HDropTimeseriesPoint) GetFluidLossCumulative() float64 {
+	if x != nil {
+		return x.FluidLossCumulative
+	}
+	return 0
+}
+
+func (x *HDropTimeseriesPoint) GetSodiumConcentration() float64 {
+	if x != nil {
+		return x.SodiumConcentration
+	}
+	return 0
+}
+
+func (x *HDropTimeseriesPoint) GetTemperature() float64 {
+	if x != nil {
+		return x.Temperature
+	}
+	return 0
+}
+
+type HDropSummary struct {
+	state                     protoimpl.MessageState  `protogen:"open.v1"`
+	TotalFluidLossL           float64                 `protobuf:"fixed64,1,opt,name=total_fluid_loss_l,json=totalFluidLossL,proto3" json:"total_fluid_loss_l,omitempty"`
+	SweatRateLPerHr           float64                 `protobuf:"fixed64,2,opt,name=sweat_rate_l_per_hr,json=sweatRateLPerHr,proto3" json:"sweat_rate_l_per_hr,omitempty"`
+	TotalSodiumMg             float64                 `protobuf:"fixed64,3,opt,name=total_sodium_mg,json=totalSodiumMg,proto3" json:"total_sodium_mg,omitempty"`
+	TotalPotassiumMg          float64                 `protobuf:"fixed64,4,opt,name=total_potassium_mg,json=totalPotassiumMg,proto3" json:"total_potassium_mg,omitempty"`
+	SodiumConcentrationMgPerL float64                 `protobuf:"fixed64,5,opt,name=sodium_concentration_mg_per_l,json=sodiumConcentrationMgPerL,proto3" json:"sodium_concentration_mg_per_l,omitempty"`
+	AvgHdropScore             float64                 `protobuf:"fixed64,6,opt,name=avg_hdrop_score,json=avgHdropScore,proto3" json:"avg_hdrop_score,omitempty"`
+	MinHdropScore             float64                 `protobuf:"fixed64,7,opt,name=min_hdrop_score,json=minHdropScore,proto3" json:"min_hdrop_score,omitempty"`
+	BodyLocation              string                  `protobuf:"bytes,8,opt,name=body_location,json=bodyLocation,proto3" json:"body_location,omitempty"`
+	MinTemperatureC           float64                 `protobuf:"fixed64,9,opt,name=min_temperature_c,json=minTemperatureC,proto3" json:"min_temperature_c,omitempty"`
+	MaxTemperatureC           float64                 `protobuf:"fixed64,10,opt,name=max_temperature_c,json=maxTemperatureC,proto3" json:"max_temperature_c,omitempty"`
+	Timeseries                []*HDropTimeseriesPoint `protobuf:"bytes,11,rep,name=timeseries,proto3" json:"timeseries,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *HDropSummary) Reset() {
+	*x = HDropSummary{}
+	mi := &file_models_activity_enrichments_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HDropSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HDropSummary) ProtoMessage() {}
+
+func (x *HDropSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_enrichments_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HDropSummary.ProtoReflect.Descriptor instead.
+func (*HDropSummary) Descriptor() ([]byte, []int) {
+	return file_models_activity_enrichments_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *HDropSummary) GetTotalFluidLossL() float64 {
+	if x != nil {
+		return x.TotalFluidLossL
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetSweatRateLPerHr() float64 {
+	if x != nil {
+		return x.SweatRateLPerHr
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetTotalSodiumMg() float64 {
+	if x != nil {
+		return x.TotalSodiumMg
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetTotalPotassiumMg() float64 {
+	if x != nil {
+		return x.TotalPotassiumMg
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetSodiumConcentrationMgPerL() float64 {
+	if x != nil {
+		return x.SodiumConcentrationMgPerL
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetAvgHdropScore() float64 {
+	if x != nil {
+		return x.AvgHdropScore
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetMinHdropScore() float64 {
+	if x != nil {
+		return x.MinHdropScore
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetBodyLocation() string {
+	if x != nil {
+		return x.BodyLocation
+	}
+	return ""
+}
+
+func (x *HDropSummary) GetMinTemperatureC() float64 {
+	if x != nil {
+		return x.MinTemperatureC
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetMaxTemperatureC() float64 {
+	if x != nil {
+		return x.MaxTemperatureC
+	}
+	return 0
+}
+
+func (x *HDropSummary) GetTimeseries() []*HDropTimeseriesPoint {
+	if x != nil {
+		return x.Timeseries
+	}
+	return nil
+}
+
 var File_models_activity_enrichments_proto protoreflect.FileDescriptor
 
 const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\n" +
-	"!models/activity/enrichments.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9e\x13\n" +
+	"!models/activity/enrichments.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\"\xea\x13\n" +
 	"\x13ActivityEnrichments\x12M\n" +
 	"\n" +
 	"heart_rate\x18\x01 \x01(\v2).fitglue.models.activity.HeartRateSummaryH\x00R\theartRate\x88\x01\x01\x12]\n" +
@@ -2560,7 +2768,8 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"\tintervals\x18\x17 \x01(\v2).fitglue.models.activity.IntervalsSummaryH\x16R\tintervals\x88\x01\x01\x12Y\n" +
 	"\x0emuscle_heatmap\x18\x18 \x01(\v2-.fitglue.models.activity.MuscleHeatmapSummaryH\x17R\rmuscleHeatmap\x88\x01\x01\x12R\n" +
 	"\vtemperature\x18\x19 \x01(\v2+.fitglue.models.activity.TemperatureSummaryH\x18R\vtemperature\x88\x01\x01\x12S\n" +
-	"\fbest_efforts\x18\x1a \x01(\v2+.fitglue.models.activity.BestEffortsSummaryH\x19R\vbestEfforts\x88\x01\x01B\r\n" +
+	"\fbest_efforts\x18\x1a \x01(\v2+.fitglue.models.activity.BestEffortsSummaryH\x19R\vbestEfforts\x88\x01\x01\x12@\n" +
+	"\x05hdrop\x18\x1b \x01(\v2%.fitglue.models.activity.HDropSummaryH\x1aR\x05hdrop\x88\x01\x01B\r\n" +
 	"\v_heart_rateB\x13\n" +
 	"\x11_heart_rate_zonesB\t\n" +
 	"\a_effortB\v\n" +
@@ -2593,7 +2802,8 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"_intervalsB\x11\n" +
 	"\x0f_muscle_heatmapB\x0e\n" +
 	"\f_temperatureB\x0f\n" +
-	"\r_best_efforts\"\x9f\x01\n" +
+	"\r_best_effortsB\b\n" +
+	"\x06_hdrop\"\x9f\x01\n" +
 	"\x10HeartRateSummary\x12\x17\n" +
 	"\amin_bpm\x18\x01 \x01(\x05R\x06minBpm\x12\x17\n" +
 	"\aavg_bpm\x18\x02 \x01(\x05R\x06avgBpm\x12\x17\n" +
@@ -2766,7 +2976,29 @@ const file_models_activity_enrichments_proto_rawDesc = "" +
 	"distance_m\x18\x03 \x01(\x01R\tdistanceM\x12!\n" +
 	"\ftime_seconds\x18\x04 \x01(\x01R\vtimeSeconds\"S\n" +
 	"\x12BestEffortsSummary\x12=\n" +
-	"\aefforts\x18\x01 \x03(\v2#.fitglue.models.activity.BestEffortR\aefforts*\x84\x01\n" +
+	"\aefforts\x18\x01 \x03(\v2#.fitglue.models.activity.BestEffortR\aefforts\"\xe1\x01\n" +
+	"\x14HDropTimeseriesPoint\x12!\n" +
+	"\ftime_minutes\x18\x01 \x01(\x01R\vtimeMinutes\x12\x1d\n" +
+	"\n" +
+	"sweat_rate\x18\x02 \x01(\x01R\tsweatRate\x122\n" +
+	"\x15fluid_loss_cumulative\x18\x03 \x01(\x01R\x13fluidLossCumulative\x121\n" +
+	"\x14sodium_concentration\x18\x04 \x01(\x01R\x13sodiumConcentration\x12 \n" +
+	"\vtemperature\x18\x05 \x01(\x01R\vtemperature\"\x9d\x04\n" +
+	"\fHDropSummary\x12+\n" +
+	"\x12total_fluid_loss_l\x18\x01 \x01(\x01R\x0ftotalFluidLossL\x12,\n" +
+	"\x13sweat_rate_l_per_hr\x18\x02 \x01(\x01R\x0fsweatRateLPerHr\x12&\n" +
+	"\x0ftotal_sodium_mg\x18\x03 \x01(\x01R\rtotalSodiumMg\x12,\n" +
+	"\x12total_potassium_mg\x18\x04 \x01(\x01R\x10totalPotassiumMg\x12@\n" +
+	"\x1dsodium_concentration_mg_per_l\x18\x05 \x01(\x01R\x19sodiumConcentrationMgPerL\x12&\n" +
+	"\x0favg_hdrop_score\x18\x06 \x01(\x01R\ravgHdropScore\x12&\n" +
+	"\x0fmin_hdrop_score\x18\a \x01(\x01R\rminHdropScore\x12#\n" +
+	"\rbody_location\x18\b \x01(\tR\fbodyLocation\x12*\n" +
+	"\x11min_temperature_c\x18\t \x01(\x01R\x0fminTemperatureC\x12*\n" +
+	"\x11max_temperature_c\x18\n" +
+	" \x01(\x01R\x0fmaxTemperatureC\x12M\n" +
+	"\n" +
+	"timeseries\x18\v \x03(\v2-.fitglue.models.activity.HDropTimeseriesPointR\n" +
+	"timeseries*\x84\x01\n" +
 	"\x0eStreakDayState\x12 \n" +
 	"\x1cSTREAK_DAY_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14STREAK_DAY_STATE_OFF\x10\x01\x12\x1b\n" +
@@ -2786,7 +3018,7 @@ func file_models_activity_enrichments_proto_rawDescGZIP() []byte {
 }
 
 var file_models_activity_enrichments_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_models_activity_enrichments_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_models_activity_enrichments_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_models_activity_enrichments_proto_goTypes = []any{
 	(StreakDayState)(0),              // 0: fitglue.models.activity.StreakDayState
 	(*ActivityEnrichments)(nil),      // 1: fitglue.models.activity.ActivityEnrichments
@@ -2825,7 +3057,9 @@ var file_models_activity_enrichments_proto_goTypes = []any{
 	(*MuscleHeatmapSummary)(nil),     // 34: fitglue.models.activity.MuscleHeatmapSummary
 	(*BestEffort)(nil),               // 35: fitglue.models.activity.BestEffort
 	(*BestEffortsSummary)(nil),       // 36: fitglue.models.activity.BestEffortsSummary
-	(*timestamppb.Timestamp)(nil),    // 37: google.protobuf.Timestamp
+	(*HDropTimeseriesPoint)(nil),     // 37: fitglue.models.activity.HDropTimeseriesPoint
+	(*HDropSummary)(nil),             // 38: fitglue.models.activity.HDropSummary
+	(*timestamppb.Timestamp)(nil),    // 39: google.protobuf.Timestamp
 }
 var file_models_activity_enrichments_proto_depIdxs = []int32{
 	2,  // 0: fitglue.models.activity.ActivityEnrichments.heart_rate:type_name -> fitglue.models.activity.HeartRateSummary
@@ -2854,22 +3088,24 @@ var file_models_activity_enrichments_proto_depIdxs = []int32{
 	34, // 23: fitglue.models.activity.ActivityEnrichments.muscle_heatmap:type_name -> fitglue.models.activity.MuscleHeatmapSummary
 	33, // 24: fitglue.models.activity.ActivityEnrichments.temperature:type_name -> fitglue.models.activity.TemperatureSummary
 	36, // 25: fitglue.models.activity.ActivityEnrichments.best_efforts:type_name -> fitglue.models.activity.BestEffortsSummary
-	4,  // 26: fitglue.models.activity.HeartRateZonesSummary.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
-	6,  // 27: fitglue.models.activity.EffortScoreSummary.factors:type_name -> fitglue.models.activity.EffortFactor
-	11, // 28: fitglue.models.activity.StreakSummary.calendar:type_name -> fitglue.models.activity.StreakDay
-	0,  // 29: fitglue.models.activity.StreakDay.state:type_name -> fitglue.models.activity.StreakDayState
-	37, // 30: fitglue.models.activity.AiSummary.generated_at:type_name -> google.protobuf.Timestamp
-	15, // 31: fitglue.models.activity.PaceSummary.splits:type_name -> fitglue.models.activity.PaceSplit
-	24, // 32: fitglue.models.activity.PersonalRecordsSummary.records:type_name -> fitglue.models.activity.PersonalRecord
-	27, // 33: fitglue.models.activity.GoalTrackerSummary.goals:type_name -> fitglue.models.activity.GoalEntry
-	29, // 34: fitglue.models.activity.SpotifyTracksSummary.tracks:type_name -> fitglue.models.activity.SpotifyTrack
-	31, // 35: fitglue.models.activity.IntervalsSummary.segments:type_name -> fitglue.models.activity.IntervalSegment
-	35, // 36: fitglue.models.activity.BestEffortsSummary.efforts:type_name -> fitglue.models.activity.BestEffort
-	37, // [37:37] is the sub-list for method output_type
-	37, // [37:37] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	38, // 26: fitglue.models.activity.ActivityEnrichments.hdrop:type_name -> fitglue.models.activity.HDropSummary
+	4,  // 27: fitglue.models.activity.HeartRateZonesSummary.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
+	6,  // 28: fitglue.models.activity.EffortScoreSummary.factors:type_name -> fitglue.models.activity.EffortFactor
+	11, // 29: fitglue.models.activity.StreakSummary.calendar:type_name -> fitglue.models.activity.StreakDay
+	0,  // 30: fitglue.models.activity.StreakDay.state:type_name -> fitglue.models.activity.StreakDayState
+	39, // 31: fitglue.models.activity.AiSummary.generated_at:type_name -> google.protobuf.Timestamp
+	15, // 32: fitglue.models.activity.PaceSummary.splits:type_name -> fitglue.models.activity.PaceSplit
+	24, // 33: fitglue.models.activity.PersonalRecordsSummary.records:type_name -> fitglue.models.activity.PersonalRecord
+	27, // 34: fitglue.models.activity.GoalTrackerSummary.goals:type_name -> fitglue.models.activity.GoalEntry
+	29, // 35: fitglue.models.activity.SpotifyTracksSummary.tracks:type_name -> fitglue.models.activity.SpotifyTrack
+	31, // 36: fitglue.models.activity.IntervalsSummary.segments:type_name -> fitglue.models.activity.IntervalSegment
+	35, // 37: fitglue.models.activity.BestEffortsSummary.efforts:type_name -> fitglue.models.activity.BestEffort
+	37, // 38: fitglue.models.activity.HDropSummary.timeseries:type_name -> fitglue.models.activity.HDropTimeseriesPoint
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_enrichments_proto_init() }
@@ -2886,7 +3122,7 @@ func file_models_activity_enrichments_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_enrichments_proto_rawDesc), len(file_models_activity_enrichments_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   36,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

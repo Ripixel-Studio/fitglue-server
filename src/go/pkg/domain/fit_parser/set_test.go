@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseFitFile_StrengthSets(t *testing.T) {
-	// This test uses the sample Garmin Mobility FIT file which contains 13 Set messages
+	// This test uses a sample FIT file which contains 13 Set messages
 	data, err := os.ReadFile("../../../../../web/.cache/21808300906_ACTIVITY.fit")
 	if err != nil {
 		t.Skip("Skipping: sample FIT file not available")
@@ -73,7 +73,7 @@ func TestParseFitFile_StrengthSets(t *testing.T) {
 		}
 	}
 
-	t.Logf("Successfully parsed %d StrengthSets and %d TimeMarkers from Garmin Mobility FIT file",
+	t.Logf("Successfully parsed %d StrengthSets and %d TimeMarkers from FIT file",
 		len(session.StrengthSets), len(activity.TimeMarkers))
 }
 
