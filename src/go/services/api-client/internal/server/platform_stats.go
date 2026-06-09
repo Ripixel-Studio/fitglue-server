@@ -43,8 +43,12 @@ func (s *FirestorePlatformStatsStore) GetPlatformStats(ctx context.Context) (*Pl
 	}
 
 	// PIPELINE_RUN_STATUS_SYNCED = 2, PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING = 10
+	// OrderBy created_at so the query is covered by the existing pipeline_runs_cg_status_created
+	// COLLECTION_GROUP composite index (status ASC, created_at DESC).
 	for _, statusVal := range []int32{2, 10} {
-		q := s.client.CollectionGroup("pipeline_runs").Where("status", "==", statusVal)
+		q := s.client.CollectionGroup("pipeline_runs").
+			Where("status", "==", statusVal).
+			OrderBy("created_at", firestore.Desc)
 		result, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
 		if err != nil {
 			s.logger.Warn(ctx, "platform_stats: failed to count pipeline_runs", "status", statusVal, "error", err)
