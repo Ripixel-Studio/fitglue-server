@@ -3928,7 +3928,8 @@
       "isPremium": false,
       "popularityScore": 35,
       "enricherProviderType": 46,
-      "stage": 3
+      "stage": 3,
+      "supportsNonBlocking": true
     }
   ],
   "destinations": [
