@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.40.1](https://github.com/FitGlue/server/compare/v16.40.0...v16.40.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **platform-stats:** count synced pipeline_runs for activitiesBoostedCount ([96b69ec](https://github.com/FitGlue/server/commit/96b69ec317b784e69c139dcd01ec47078c9bf5e2))
+
 ## [16.40.0](https://github.com/FitGlue/server/compare/v16.39.0...v16.40.0) (2026-06-09)
 
 
