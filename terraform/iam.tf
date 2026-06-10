@@ -60,6 +60,14 @@ resource "google_project_iam_member" "cr_token_creator" {
   member  = "serviceAccount:${google_service_account.cloud_run_sa["activity"].email}"
 }
 
+# Service Account Token Creator for api-client - required to mint Firebase custom tokens
+# via Firebase Admin SDK auth.CustomToken() for the mobile WebView auth bridge
+resource "google_project_iam_member" "cr_api_client_token_creator" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["api-client"].email}"
+}
+
 resource "google_project_iam_member" "web_deployer_run_viewer" {
   project = var.project_id
   role    = "roles/run.viewer"
