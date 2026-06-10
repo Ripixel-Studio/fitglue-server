@@ -2,10 +2,17 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	activitymodelpb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // handleGetWebAuthToken mints a Firebase custom token for the authenticated user so
@@ -63,8 +70,34 @@ func (s *APIServer) handleSetFCMToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// handleMobileSync triggers a data synchronization for the mobile app.
-// For now this is a no-op placeholder that returns success.
+type mobileSyncActivity struct {
+	ExternalID       string             `json:"externalId"`
+	ActivityName     string             `json:"activityName"`
+	StartTime        string             `json:"startTime"`
+	EndTime          string             `json:"endTime"`
+	Duration         float64            `json:"duration"`
+	Calories         *float64           `json:"calories"`
+	Distance         *float64           `json:"distance"`
+	HeartRateSamples []mobileHRSample   `json:"heartRateSamples"`
+	Route            []mobileRoutePoint `json:"route"`
+	Source           string             `json:"source"`
+}
+
+type mobileHRSample struct {
+	Timestamp string `json:"timestamp"`
+	BPM       int32  `json:"bpm"`
+}
+
+type mobileRoutePoint struct {
+	Latitude  float64  `json:"latitude"`
+	Longitude float64  `json:"longitude"`
+	Altitude  *float64 `json:"altitude"`
+	Timestamp string   `json:"timestamp"`
+}
+
+// handleMobileSync receives health data from the iOS/Android app and publishes it to the
+// activity pipeline. Each activity becomes a separate Pub/Sub message on topic-raw-activity,
+// exactly as webhook sources do. Auth is already verified by the Firebase middleware.
 func (s *APIServer) handleMobileSync(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)
 	if token == nil {
@@ -72,12 +105,141 @@ func (s *APIServer) handleMobileSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mobile sync is currently a placeholder — the sync pipeline is triggered
-	// by webhook events, not client requests. This endpoint exists to satisfy
-	// the mobile client's API contract.
+	var body struct {
+		Activities []mobileSyncActivity `json:"activities"`
+		Device     struct {
+			Platform string `json:"platform"`
+		} `json:"device"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	if len(body.Activities) == 0 {
+		WriteJSON(w, map[string]interface{}{"status": "ok", "processedCount": 0, "skippedCount": 0})
+		return
+	}
+
+	source := activitymodelpb.ActivitySource_SOURCE_HEALTH_CONNECT
+	if body.Device.Platform == "ios" {
+		source = activitymodelpb.ActivitySource_SOURCE_APPLE_HEALTH
+	}
+
+	processedCount := 0
+	skippedCount := 0
+
+	for _, act := range body.Activities {
+		startTime, err := time.Parse(time.RFC3339, act.StartTime)
+		if err != nil {
+			s.logger.Warn(r.Context(), "Skipping mobile activity: invalid start time", "start_time", act.StartTime, "error", err)
+			skippedCount++
+			continue
+		}
+
+		// Build HR records
+		var records []*activitymodelpb.Record
+		var hrSum int32
+		for _, sample := range act.HeartRateSamples {
+			t, parseErr := time.Parse(time.RFC3339, sample.Timestamp)
+			if parseErr != nil {
+				continue
+			}
+			records = append(records, &activitymodelpb.Record{
+				Timestamp: timestamppb.New(t),
+				HeartRate: sample.BPM,
+			})
+			hrSum += sample.BPM
+		}
+
+		// Append GPS points to records
+		for _, pt := range act.Route {
+			t, parseErr := time.Parse(time.RFC3339, pt.Timestamp)
+			if parseErr != nil {
+				continue
+			}
+			rec := &activitymodelpb.Record{
+				Timestamp:    timestamppb.New(t),
+				PositionLat:  pt.Latitude,
+				PositionLong: pt.Longitude,
+			}
+			if pt.Altitude != nil {
+				rec.Altitude = *pt.Altitude
+			}
+			records = append(records, rec)
+		}
+
+		lap := &activitymodelpb.Lap{
+			StartTime:        timestamppb.New(startTime),
+			TotalElapsedTime: act.Duration,
+			Records:          records,
+		}
+		if act.Distance != nil {
+			lap.TotalDistance = *act.Distance
+		}
+
+		session := &activitymodelpb.Session{
+			StartTime:        timestamppb.New(startTime),
+			TotalElapsedTime: act.Duration,
+			Laps:             []*activitymodelpb.Lap{lap},
+		}
+		if act.Distance != nil {
+			session.TotalDistance = *act.Distance
+		}
+		if act.Calories != nil {
+			session.TotalCalories = act.Calories
+		}
+		if len(act.HeartRateSamples) > 0 {
+			avg := int32(int(hrSum) / len(act.HeartRateSamples))
+			session.AvgHeartRate = &avg
+		}
+
+		externalID := act.ExternalID
+		if externalID == "" {
+			externalID = fmt.Sprintf("mobile-%s-%s", act.Source, act.StartTime)
+		}
+
+		sa := &activitymodelpb.StandardizedActivity{
+			Source:     source,
+			ExternalId: externalID,
+			UserId:     token.UID,
+			StartTime:  timestamppb.New(startTime),
+			Name:       act.ActivityName,
+			Sessions:   []*activitymodelpb.Session{session},
+		}
+
+		execID := uuid.NewString()
+		payload := &pbevents.ActivityPayload{
+			Source:               source,
+			UserId:               token.UID,
+			StandardizedActivity: sa,
+			PipelineExecutionId:  &execID,
+		}
+
+		ce, ceErr := infrapubsub.NewCloudEvent(
+			"/integrations/mobile/sync",
+			"com.fitglue.activity.created",
+			payload,
+		)
+		if ceErr != nil {
+			s.logger.Error(r.Context(), "Failed to create cloud event for mobile activity", "error", ceErr, "external_id", externalID)
+			skippedCount++
+			continue
+		}
+
+		if _, pubErr := s.publisher.PublishCloudEvent(r.Context(), "topic-raw-activity", ce); pubErr != nil {
+			s.logger.Error(r.Context(), "Failed to publish mobile activity", "error", pubErr, "external_id", externalID)
+			skippedCount++
+			continue
+		}
+
+		processedCount++
+	}
+
 	WriteJSON(w, map[string]interface{}{
-		"status":  "ok",
-		"message": "Sync triggered",
+		"status":         "ok",
+		"processedCount": processedCount,
+		"skippedCount":   skippedCount,
 	})
 }
 
