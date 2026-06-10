@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.43.1](https://github.com/FitGlue/server/compare/v16.43.0...v16.43.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **infra:** grant serviceAccountTokenCreator to cr-api-client-sa ([6c01d1e](https://github.com/FitGlue/server/commit/6c01d1e4acb5870b9ed49c14789aa9752bc7f762))
+
 ## [16.43.0](https://github.com/FitGlue/server/compare/v16.42.0...v16.43.0) (2026-06-09)
 
 
