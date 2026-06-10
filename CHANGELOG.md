@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.43.2](https://github.com/FitGlue/server/compare/v16.43.1...v16.43.2) (2026-06-10)
+
+
+### Bug Fixes
+
+* **mobile-sync:** implement handleMobileSync to publish activities to pipeline ([ccb2682](https://github.com/FitGlue/server/commit/ccb2682732ca2583a6b2c3d7bcf2ad56d6dad473))
+
 ### [16.43.1](https://github.com/FitGlue/server/compare/v16.43.0...v16.43.1) (2026-06-10)
 
 
