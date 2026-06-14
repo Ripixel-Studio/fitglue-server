@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.44.0](https://github.com/FitGlue/server/compare/v16.43.2...v16.44.0) (2026-06-14)
+
+
+### Features
+
+* **showcase:** add fallback method to retrieve showcased activity by pipeline execution ID ([6021806](https://github.com/FitGlue/server/commit/6021806ea9920eb2e43c096e730e7dba546c1b5d))
+
+
+### Bug Fixes
+
+* **tests:** add GetShowcasedActivityByPipelineExecutionId stub to local test mocks ([b39c29b](https://github.com/FitGlue/server/commit/b39c29bcda85acd291d19ec0ae13289a14677724))
+
 ### [16.43.2](https://github.com/FitGlue/server/compare/v16.43.1...v16.43.2) (2026-06-10)
 
 
