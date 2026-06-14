@@ -104,6 +104,9 @@ func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, userID string, 
 func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error) {
 	return nil, nil
 }
+func (m *MockDatabase) GetShowcasedActivityByPipelineExecutionId(ctx context.Context, pipelineExecutionId string) (*pbactivity.ShowcasedActivity, error) {
+	return nil, nil
+}
 func (m *MockDatabase) SetShowcaseProfile(ctx context.Context, profile *pbactivity.ShowcaseProfile) error {
 	return nil
 }
