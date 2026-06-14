@@ -174,6 +174,11 @@ func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId stri
 	return nil, nil
 }
 
+func (m *MockDatabase) GetShowcasedActivityByPipelineExecutionId(ctx context.Context, pipelineExecutionId string) (*pbactivity.ShowcasedActivity, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
 func (m *MockDatabase) SetShowcaseProfile(ctx context.Context, profile *pbactivity.ShowcaseProfile) error {
 	// No-op for tests by default
 	return nil

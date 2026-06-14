@@ -262,7 +262,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	// Create initial pipeline run document for lifecycle tracking (RUNNING status)
 	// This ensures we track the pipeline execution even if it fails partway through
-	o.createInitialPipelineRun(ctx, logger, payload.UserId, pipelineExecutionID, pipeline.ID, activityId, payload, activeDestinations)
+	o.createInitialPipelineRun(ctx, logger, payload.UserId, pipelineExecutionID, pipeline.ID, activityId, payload, activeDestinations, isResumeMode)
 
 	// Upload original payload to GCS for Magic Actions (retry/repost) BEFORE any mutations
 	// This ensures the stored payload has the clean original description (Rule E22: Reset-on-Repost)
@@ -577,11 +577,13 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
 					buildPendingInputStatusMessage(waitErr),
 					providerExecutions)
-				// Write pending_input_id so the UI can offer a cancel button
+				// Write pending_input_id and any already-accumulated non-blocking IDs so the UI
+				// can offer a cancel button and show all related pending inputs for this run.
 				if err := o.database.UpdatePipelineRun(ctx, payload.UserId, pipelineExecutionID, map[string]interface{}{
-					"pending_input_id": waitErr.ActivityID,
+					"pending_input_id":               waitErr.ActivityID,
+					"non_blocking_pending_input_ids": nonBlockingPendingIDs,
 				}); err != nil {
-					logger.Warn("Failed to link pending_input_id to pipeline run", "error", err)
+					logger.Warn("Failed to link pending input IDs to pipeline run", "error", err)
 				}
 				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr, activityId, originalPayloadUri)
 			}
@@ -1451,8 +1453,24 @@ func (o *Orchestrator) enqueuePipelineFailureNotification(logger *slog.Logger, c
 }
 
 // createInitialPipelineRun creates a minimal PipelineRun document with RUNNING status
-// Called early in the pipeline execution to ensure lifecycle tracking even if pipeline fails
-func (o *Orchestrator) createInitialPipelineRun(ctx context.Context, logger *slog.Logger, userId string, pipelineExecutionID string, pipelineID string, activityId string, payload *pbevents.ActivityPayload, destinations []pbplugin.DestinationType) {
+// Called early in the pipeline execution to ensure lifecycle tracking even if pipeline fails.
+// In resume mode, only the status is reset to RUNNING — destination ExternalIds are preserved.
+func (o *Orchestrator) createInitialPipelineRun(ctx context.Context, logger *slog.Logger, userId string, pipelineExecutionID string, pipelineID string, activityId string, payload *pbevents.ActivityPayload, destinations []pbplugin.DestinationType, isResume bool) {
+	if isResume {
+		// The pipeline run document already exists with valid destination ExternalIds from the
+		// first run. Only reset status to RUNNING so the destination executor can call Update()
+		// with the correct ExternalIds intact.
+		if err := o.database.UpdatePipelineRun(ctx, userId, pipelineExecutionID, map[string]interface{}{
+			"status":     int32(pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING),
+			"updated_at": time.Now(),
+		}); err != nil {
+			logger.Warn("Failed to reset pipeline run status to RUNNING in resume mode", "error", err, "pipeline_run_id", pipelineExecutionID)
+		} else {
+			logger.Debug("Reset pipeline run status to RUNNING (resume mode)", "pipeline_run_id", pipelineExecutionID)
+		}
+		return
+	}
+
 	activity := payload.GetStandardizedActivity()
 
 	// Build destination outcomes (all pending at this point)

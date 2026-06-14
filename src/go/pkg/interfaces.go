@@ -72,6 +72,7 @@ type Database interface {
 	ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error)
 	SetShowcasedActivity(ctx context.Context, userID string, activity *pbactivity.ShowcasedActivity) error
 	GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error)
+	GetShowcasedActivityByPipelineExecutionId(ctx context.Context, pipelineExecutionId string) (*pbactivity.ShowcasedActivity, error)
 
 	// Showcase Profiles (materialized user profile for homepage)
 	SetShowcaseProfile(ctx context.Context, profile *pbactivity.ShowcaseProfile) error

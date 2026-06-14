@@ -350,6 +350,23 @@ func (a *FirestoreAdapter) GetShowcasedActivity(ctx context.Context, showcaseId 
 	return activity, nil
 }
 
+// GetShowcasedActivityByPipelineExecutionId finds a showcased activity by the pipeline_execution_id field.
+// Used as a fallback in the destination service when the pipeline run's Destinations array is unavailable.
+func (a *FirestoreAdapter) GetShowcasedActivityByPipelineExecutionId(ctx context.Context, pipelineExecutionId string) (*pbactivity.ShowcasedActivity, error) {
+	col := a.storage.ShowcasedActivities()
+	iter := col.Ref.Where("pipeline_execution_id", "==", pipelineExecutionId).Limit(1).Documents(ctx)
+	defer iter.Stop()
+	doc, err := iter.Next()
+	if err != nil {
+		return nil, nil // Not found - no existing showcase for this pipeline run
+	}
+	activity := col.FromFirestore(doc.Data())
+	if activity != nil && activity.ShowcaseId == "" {
+		activity.ShowcaseId = doc.Ref.ID
+	}
+	return activity, nil
+}
+
 // --- Showcase Profiles (materialized user profile for homepage) ---
 
 // SetShowcaseProfile creates or updates a showcase profile

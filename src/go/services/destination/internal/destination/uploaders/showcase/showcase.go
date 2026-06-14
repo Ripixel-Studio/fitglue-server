@@ -256,8 +256,20 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		}
 	}
 
+	if showcaseID == "" && payload.PipelineExecutionId != nil && *payload.PipelineExecutionId != "" {
+		// Fallback: look up the showcase by pipeline execution ID when the pipeline run's
+		// Destinations array doesn't have the ExternalId (e.g. edge cases where it was unavailable).
+		existing, err := u.svc.DB.GetShowcasedActivityByPipelineExecutionId(ctx, *payload.PipelineExecutionId)
+		if err != nil {
+			logger.Warn("Failed to look up showcase by pipeline execution ID", "error", err, "pipeline_execution_id", *payload.PipelineExecutionId)
+		} else if existing != nil {
+			showcaseID = existing.ShowcaseId
+			logger.Info("Resolved showcase ID via pipeline execution ID fallback", "showcase_id", showcaseID)
+		}
+	}
+
 	if showcaseID == "" {
-		return fmt.Errorf("no Showcase destination found in pipeline run")
+		return fmt.Errorf("no Showcase destination found for pipeline run")
 	}
 
 	createdAt := time.Now()
