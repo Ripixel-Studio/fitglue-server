@@ -147,6 +147,18 @@ func (u *Uploader) resolveOwnerDisplayName(ctx context.Context, userID string, u
 func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record) (string, error) {
 	logger := slog.Default()
 
+	// Idempotency guard: if a showcase already exists for this pipeline execution (e.g. Pub/Sub redelivery
+	// before the subcollection SUCCESS status is written), return the existing ID rather than creating a duplicate.
+	if payload.PipelineExecutionId != nil && *payload.PipelineExecutionId != "" {
+		existing, err := u.svc.DB.GetShowcasedActivityByPipelineExecutionId(ctx, *payload.PipelineExecutionId)
+		if err == nil && existing != nil {
+			logger.Info("Showcase already exists for this pipeline execution, skipping duplicate create",
+				"showcase_id", existing.ShowcaseId,
+				"pipeline_execution_id", *payload.PipelineExecutionId)
+			return existing.ShowcaseId, nil
+		}
+	}
+
 	var startTime time.Time
 	if payload.Timestamp != nil {
 		startTime = payload.Timestamp.AsTime()
