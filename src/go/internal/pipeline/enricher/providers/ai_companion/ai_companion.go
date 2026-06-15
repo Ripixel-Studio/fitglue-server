@@ -192,10 +192,12 @@ func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mo
 
 	model := client.GenerativeModel("gemini-2.5-flash")
 
-	// Configure model for short, punchy outputs
+	// Configure model for short, punchy outputs.
+	// gemini-2.5-flash thinking tokens count toward MaxOutputTokens, so 1024
+	// gives the model enough budget to think and still produce a full summary.
 	model.SetTemperature(0.7)
 	model.SetTopP(0.9)
-	model.SetMaxOutputTokens(300)
+	model.SetMaxOutputTokens(1024)
 
 	// Structural separation: fixed instructions go in SystemInstruction; user-controlled
 	// activity data is passed only in the user-role content part.
