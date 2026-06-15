@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -47,6 +48,26 @@ func (u *Uploader) Name() string {
 
 // Create uploads a new activity to Strava.
 func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record) (string, error) {
+	// Idempotency guard: check destination subcollection for an existing SUCCESS entry.
+	// Strava's own API deduplicates by FIT file hash, but a Pub/Sub redelivery before
+	// the first delivery's UpdateStatus call writes SUCCESS can slip past the executor's
+	// guard and lose the real ExternalId when the second delivery returns ("", nil).
+	if payload.PipelineExecutionId != nil && *payload.PipelineExecutionId != "" {
+		outcomes, err := u.svc.DB.GetDestinationOutcomes(ctx, payload.UserId, *payload.PipelineExecutionId)
+		if err == nil {
+			for _, outcome := range outcomes {
+				if outcome.Destination == pbplugin.DestinationType_DESTINATION_STRAVA &&
+					outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS &&
+					outcome.ExternalId != nil && *outcome.ExternalId != "" {
+					slog.Default().Info("Strava activity already uploaded for this pipeline execution, skipping duplicate create",
+						"strava_id", *outcome.ExternalId,
+						"pipeline_execution_id", *payload.PipelineExecutionId)
+					return *outcome.ExternalId, nil
+				}
+			}
+		}
+	}
+
 	// Initialize OAuth HTTP Client — force HTTP/1.1 to avoid HTTP/2 stream errors
 	// from Strava's /uploads endpoint when sending multipart file bodies.
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "strava")

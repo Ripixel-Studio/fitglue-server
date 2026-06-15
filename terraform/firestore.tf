@@ -396,6 +396,28 @@ resource "google_firestore_index" "uploaded_activities_destination_id" {
 }
 
 # -------------------------------------------------------------------
+# Showcased Roundups Indexes
+# Used by ListRecentRoundups: .Where("slug","==",slug).OrderBy("period_start", Desc)
+# -------------------------------------------------------------------
+
+resource "google_firestore_index" "showcased_roundups_slug_period_start" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "showcased_roundups"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "slug"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "period_start"
+    order      = "DESCENDING"
+  }
+}
+
+# -------------------------------------------------------------------
 # Showcased Activities Indexes
 # Used by ShowcaseStore.listByUserId in showcase-management-handler
 # -------------------------------------------------------------------

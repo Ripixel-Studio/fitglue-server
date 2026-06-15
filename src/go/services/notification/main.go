@@ -314,7 +314,7 @@ func (s *notificationService) renderEmail(req *pbnotification.NotificationReques
 		period := trimSuffix(trimPrefix(req.Title, ""), " Showcase Roundup Ready")
 		slug := req.Data["slug"]
 		periodKey := req.Data["period"]
-		roundupURL := s.baseURL + "/showcase/" + slug + "?period=" + periodKey
+		roundupURL := s.baseURL + "/@" + slug + "/" + periodKey
 		return fmt.Sprintf("Your %s showcase roundup is ready", strings.ToLower(period)),
 			emaildomain.ShowcaseRoundupTemplate(period, req.Body, roundupURL, s.baseURL)
 
