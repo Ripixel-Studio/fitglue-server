@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.49.0](https://github.com/FitGlue/server/compare/v16.48.0...v16.49.0) (2026-06-15)
+
+
+### Features
+
+* **roundup:** collect photos and GPS routes for media sections ([4e07cdf](https://github.com/FitGlue/server/commit/4e07cdfd767e2d94d5ef94da739715d30b6c2d50))
+
 ## [16.48.0](https://github.com/FitGlue/server/compare/v16.47.0...v16.48.0) (2026-06-15)
 
 
