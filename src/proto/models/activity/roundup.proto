@@ -43,4 +43,10 @@ message ShowcaseRoundup {
   string owner_display_name = 21;
   string owner_profile_picture_url = 22;
   string owner_profile_slug = 23;
+  // Highlight stats — best single activity across the period
+  double longest_activity_duration_seconds = 24;
+  double highest_single_lift_kg = 25;
+  double highest_calories_per_hour_kcal = 26;
+  string highest_avg_bpm_activity_title = 27;
+  int32 highest_avg_bpm = 28;
 }

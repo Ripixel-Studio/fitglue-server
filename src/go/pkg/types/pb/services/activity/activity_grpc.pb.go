@@ -47,6 +47,7 @@ const (
 	ActivityService_GetPublicRoundup_FullMethodName                   = "/fitglue.services.activity.ActivityService/GetPublicRoundup"
 	ActivityService_GetRecentPublicRoundups_FullMethodName            = "/fitglue.services.activity.ActivityService/GetRecentPublicRoundups"
 	ActivityService_UpdateRoundupSettings_FullMethodName              = "/fitglue.services.activity.ActivityService/UpdateRoundupSettings"
+	ActivityService_RecomputeRoundup_FullMethodName                   = "/fitglue.services.activity.ActivityService/RecomputeRoundup"
 )
 
 // ActivityServiceClient is the client API for ActivityService service.
@@ -80,6 +81,7 @@ type ActivityServiceClient interface {
 	GetPublicRoundup(ctx context.Context, in *GetPublicRoundupRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
 	GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsResponse, error)
 	UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
+	RecomputeRoundup(ctx context.Context, in *RecomputeRoundupRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
 }
 
 type activityServiceClient struct {
@@ -350,6 +352,16 @@ func (c *activityServiceClient) UpdateRoundupSettings(ctx context.Context, in *U
 	return out, nil
 }
 
+func (c *activityServiceClient) RecomputeRoundup(ctx context.Context, in *RecomputeRoundupRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseRoundup)
+	err := c.cc.Invoke(ctx, ActivityService_RecomputeRoundup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActivityServiceServer is the server API for ActivityService service.
 // All implementations must embed UnimplementedActivityServiceServer
 // for forward compatibility.
@@ -381,6 +393,7 @@ type ActivityServiceServer interface {
 	GetPublicRoundup(context.Context, *GetPublicRoundupRequest) (*activity.ShowcaseRoundup, error)
 	GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsRequest) (*GetRecentPublicRoundupsResponse, error)
 	UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsRequest) (*activity.ShowcaseProfile, error)
+	RecomputeRoundup(context.Context, *RecomputeRoundupRequest) (*activity.ShowcaseRoundup, error)
 	mustEmbedUnimplementedActivityServiceServer()
 }
 
@@ -468,6 +481,9 @@ func (UnimplementedActivityServiceServer) GetRecentPublicRoundups(context.Contex
 }
 func (UnimplementedActivityServiceServer) UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsRequest) (*activity.ShowcaseProfile, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateRoundupSettings not implemented")
+}
+func (UnimplementedActivityServiceServer) RecomputeRoundup(context.Context, *RecomputeRoundupRequest) (*activity.ShowcaseRoundup, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecomputeRoundup not implemented")
 }
 func (UnimplementedActivityServiceServer) mustEmbedUnimplementedActivityServiceServer() {}
 func (UnimplementedActivityServiceServer) testEmbeddedByValue()                         {}
@@ -958,6 +974,24 @@ func _ActivityService_UpdateRoundupSettings_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActivityService_RecomputeRoundup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecomputeRoundupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).RecomputeRoundup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_RecomputeRoundup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).RecomputeRoundup(ctx, req.(*RecomputeRoundupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActivityService_ServiceDesc is the grpc.ServiceDesc for ActivityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1068,6 +1102,10 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRoundupSettings",
 			Handler:    _ActivityService_UpdateRoundupSettings_Handler,
+		},
+		{
+			MethodName: "RecomputeRoundup",
+			Handler:    _ActivityService_RecomputeRoundup_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

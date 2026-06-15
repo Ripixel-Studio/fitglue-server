@@ -1755,6 +1755,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/roundup/{periodKey}/recompute:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_RecomputeRoundup
+            parameters:
+                - name: periodKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseRoundup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/showcases:
         get:
             tags:
@@ -3670,6 +3694,82 @@ components:
                 destination:
                     type: string
             description: Repost Variants
+        RoundupActivityTypeBreakdown:
+            type: object
+            properties:
+                activityType:
+                    enum:
+                        - ACTIVITY_TYPE_UNSPECIFIED
+                        - ACTIVITY_TYPE_ALPINE_SKI
+                        - ACTIVITY_TYPE_BACKCOUNTRY_SKI
+                        - ACTIVITY_TYPE_BADMINTON
+                        - ACTIVITY_TYPE_CANOEING
+                        - ACTIVITY_TYPE_CROSSFIT
+                        - ACTIVITY_TYPE_EBIKE_RIDE
+                        - ACTIVITY_TYPE_ELLIPTICAL
+                        - ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE
+                        - ACTIVITY_TYPE_GOLF
+                        - ACTIVITY_TYPE_GRAVEL_RIDE
+                        - ACTIVITY_TYPE_HANDCYCLE
+                        - ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING
+                        - ACTIVITY_TYPE_HIKE
+                        - ACTIVITY_TYPE_ICE_SKATE
+                        - ACTIVITY_TYPE_INLINE_SKATE
+                        - ACTIVITY_TYPE_KAYAKING
+                        - ACTIVITY_TYPE_KITESURF
+                        - ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE
+                        - ACTIVITY_TYPE_NORDIC_SKI
+                        - ACTIVITY_TYPE_PICKLEBALL
+                        - ACTIVITY_TYPE_PILATES
+                        - ACTIVITY_TYPE_RACQUETBALL
+                        - ACTIVITY_TYPE_RIDE
+                        - ACTIVITY_TYPE_ROCK_CLIMBING
+                        - ACTIVITY_TYPE_ROLLER_SKI
+                        - ACTIVITY_TYPE_ROWING
+                        - ACTIVITY_TYPE_RUN
+                        - ACTIVITY_TYPE_SAIL
+                        - ACTIVITY_TYPE_SKATEBOARD
+                        - ACTIVITY_TYPE_SNOWBOARD
+                        - ACTIVITY_TYPE_SNOWSHOE
+                        - ACTIVITY_TYPE_SOCCER
+                        - ACTIVITY_TYPE_SQUASH
+                        - ACTIVITY_TYPE_STAIR_STEPPER
+                        - ACTIVITY_TYPE_STAND_UP_PADDLING
+                        - ACTIVITY_TYPE_SURFING
+                        - ACTIVITY_TYPE_SWIM
+                        - ACTIVITY_TYPE_TABLE_TENNIS
+                        - ACTIVITY_TYPE_TENNIS
+                        - ACTIVITY_TYPE_TRAIL_RUN
+                        - ACTIVITY_TYPE_VELOMOBILE
+                        - ACTIVITY_TYPE_VIRTUAL_RIDE
+                        - ACTIVITY_TYPE_VIRTUAL_ROW
+                        - ACTIVITY_TYPE_VIRTUAL_RUN
+                        - ACTIVITY_TYPE_WALK
+                        - ACTIVITY_TYPE_WEIGHT_TRAINING
+                        - ACTIVITY_TYPE_WHEELCHAIR
+                        - ACTIVITY_TYPE_WINDSURF
+                        - ACTIVITY_TYPE_WORKOUT
+                        - ACTIVITY_TYPE_YOGA
+                    type: string
+                    format: enum
+                activityCount:
+                    type: integer
+                    format: int32
+                totalDistanceMeters:
+                    type: number
+                    format: double
+                totalDurationSeconds:
+                    type: number
+                    format: double
+                totalWeightKg:
+                    type: number
+                    format: double
+                totalSets:
+                    type: integer
+                    format: int32
+                totalReps:
+                    type: integer
+                    format: int32
         RoundupSettings:
             type: object
             properties:
@@ -3997,6 +4097,114 @@ components:
                 createdAt:
                     type: string
                     format: date-time
+        ShowcaseRoundup:
+            type: object
+            properties:
+                roundupId:
+                    type: string
+                slug:
+                    type: string
+                userId:
+                    type: string
+                periodType:
+                    enum:
+                        - ROUNDUP_PERIOD_TYPE_UNSPECIFIED
+                        - ROUNDUP_PERIOD_TYPE_WEEK
+                        - ROUNDUP_PERIOD_TYPE_MONTH
+                        - ROUNDUP_PERIOD_TYPE_YEAR
+                    type: string
+                    format: enum
+                periodKey:
+                    type: string
+                periodStart:
+                    type: string
+                    format: date-time
+                periodEnd:
+                    type: string
+                    format: date-time
+                generatedAt:
+                    type: string
+                    format: date-time
+                totalActivities:
+                    type: integer
+                    format: int32
+                totalDurationSeconds:
+                    type: number
+                    format: double
+                totalDistanceMeters:
+                    type: number
+                    format: double
+                totalElevationGainMeters:
+                    type: number
+                    format: double
+                totalCaloriesKcal:
+                    type: integer
+                    format: int32
+                activityTypeBreakdowns:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RoundupActivityTypeBreakdown'
+                hrZoneMinutes:
+                    type: array
+                    items:
+                        type: integer
+                        format: int32
+                prsAchieved:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseTopPR'
+                sources:
+                    type: array
+                    items:
+                        enum:
+                            - SOURCE_UNSPECIFIED
+                            - SOURCE_HEVY
+                            - SOURCE_FITBIT
+                            - SOURCE_PARKRUN_RESULTS
+                            - SOURCE_FILE_UPLOAD
+                            - SOURCE_STRAVA
+                            - SOURCE_APPLE_HEALTH
+                            - SOURCE_HEALTH_CONNECT
+                            - SOURCE_OURA
+                            - SOURCE_POLAR
+                            - SOURCE_WAHOO
+                            - SOURCE_INTERVALS
+                            - SOURCE_TRAININGPEAKS
+                            - SOURCE_GOOGLESHEETS
+                            - SOURCE_GITHUB
+                            - SOURCE_TEST
+                        type: string
+                        format: enum
+                effortEasyCount:
+                    type: integer
+                    format: int32
+                effortModerateCount:
+                    type: integer
+                    format: int32
+                effortHardCount:
+                    type: integer
+                    format: int32
+                ownerDisplayName:
+                    type: string
+                ownerProfilePictureUrl:
+                    type: string
+                ownerProfileSlug:
+                    type: string
+                longestActivityDurationSeconds:
+                    type: number
+                    description: Highlight stats — best single activity across the period
+                    format: double
+                highestSingleLiftKg:
+                    type: number
+                    format: double
+                highestCaloriesPerHourKcal:
+                    type: number
+                    format: double
+                highestAvgBpmActivityTitle:
+                    type: string
+                highestAvgBpm:
+                    type: integer
+                    format: int32
         ShowcaseTheme:
             type: object
             properties:

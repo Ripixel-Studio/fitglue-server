@@ -2,6 +2,10 @@ package activity
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
@@ -38,6 +42,84 @@ func (s *Service) GetRecentPublicRoundups(ctx context.Context, req *pbsvc.GetRec
 		return nil, status.Error(codes.Internal, "failed to list roundups")
 	}
 	return &pbsvc.GetRecentPublicRoundupsResponse{Roundups: roundups}, nil
+}
+
+func (s *Service) RecomputeRoundup(ctx context.Context, req *pbsvc.RecomputeRoundupRequest) (*pbactivity.ShowcaseRoundup, error) {
+	if req.UserId == "" || req.PeriodKey == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and period_key are required")
+	}
+	periodType, periodStart, periodEnd, err := parsePeriodKey(req.PeriodKey)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid period_key: %v", err))
+	}
+	roundup, err := s.generateRoundup(ctx, req.UserId, periodType, periodStart, periodEnd)
+	if err != nil {
+		s.logger.Error(ctx, "failed to recompute roundup", "error", err)
+		return nil, status.Error(codes.Internal, "failed to recompute roundup")
+	}
+	if roundup == nil {
+		return nil, status.Error(codes.NotFound, "no activities found for this period or roundups not enabled")
+	}
+	return roundup, nil
+}
+
+func parsePeriodKey(key string) (pbactivity.RoundupPeriodType, time.Time, time.Time, error) {
+	parts := strings.Split(key, "-")
+	switch parts[0] {
+	case "week":
+		// week-WW-YYYY
+		if len(parts) != 3 {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("expected week-WW-YYYY")
+		}
+		week, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("invalid week: %w", err)
+		}
+		year, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("invalid year: %w", err)
+		}
+		// ISO week 1 Monday: Jan 4 is always in week 1
+		jan4 := time.Date(year, 1, 4, 0, 0, 0, 0, time.UTC)
+		wd := int(jan4.Weekday())
+		if wd == 0 {
+			wd = 7
+		}
+		weekOneMonday := jan4.AddDate(0, 0, -(wd - 1))
+		start := weekOneMonday.AddDate(0, 0, (week-1)*7)
+		end := start.AddDate(0, 0, 7)
+		return pbactivity.RoundupPeriodType_ROUNDUP_PERIOD_TYPE_WEEK, start, end, nil
+	case "month":
+		// month-MM-YYYY
+		if len(parts) != 3 {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("expected month-MM-YYYY")
+		}
+		month, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("invalid month: %w", err)
+		}
+		year, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("invalid year: %w", err)
+		}
+		start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+		end := start.AddDate(0, 1, 0)
+		return pbactivity.RoundupPeriodType_ROUNDUP_PERIOD_TYPE_MONTH, start, end, nil
+	case "year":
+		// year-YYYY
+		if len(parts) != 2 {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("expected year-YYYY")
+		}
+		year, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, time.Time{}, time.Time{}, fmt.Errorf("invalid year: %w", err)
+		}
+		start := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+		end := time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC)
+		return pbactivity.RoundupPeriodType_ROUNDUP_PERIOD_TYPE_YEAR, start, end, nil
+	default:
+		return 0, time.Time{}, time.Time{}, fmt.Errorf("unknown prefix %q", parts[0])
+	}
 }
 
 func (s *Service) UpdateRoundupSettings(ctx context.Context, req *pbsvc.UpdateRoundupSettingsRequest) (*pbactivity.ShowcaseProfile, error) {

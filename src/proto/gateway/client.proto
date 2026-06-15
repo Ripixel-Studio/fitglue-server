@@ -15,6 +15,7 @@ import "models/plugin/manifest.proto";
 import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
 
+import "models/activity/roundup.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
 
@@ -392,6 +393,11 @@ service ClientGatewayService {
       body: "*"
     };
   }
+  rpc RecomputeRoundup(RecomputeRoundupGatewayRequest) returns (fitglue.models.activity.ShowcaseRoundup) {
+    option (google.api.http) = {
+      post: "/users/me/showcase-management/roundup/{period_key}/recompute"
+    };
+  }
   rpc GetActivityPhotoUploadUrl(GetActivityPhotoUploadUrlGatewayRequest) returns (GetActivityPhotoUploadUrlGatewayResponse) {
     option (google.api.http) = {
       post: "/users/me/activity-photos/upload-url"
@@ -743,6 +749,9 @@ message UpdateShowcaseSlugGatewayRequest {
 }
 message UpdateRoundupSettingsGatewayRequest {
   fitglue.models.activity.RoundupSettings settings = 1;
+}
+message RecomputeRoundupGatewayRequest {
+  string period_key = 1;
 }
 message UpdateShowcaseSlugGatewayResponse {
   string slug = 1;

@@ -157,6 +157,11 @@ service ActivityService {
       body: "settings"
     };
   }
+  rpc RecomputeRoundup(RecomputeRoundupRequest) returns (fitglue.models.activity.ShowcaseRoundup) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/showcase-management/roundup/{period_key}/recompute"
+    };
+  }
 }
 
 message GetActivityRequest {
@@ -364,4 +369,8 @@ message GetRecentPublicRoundupsResponse {
 message UpdateRoundupSettingsRequest {
   string user_id = 1;
   fitglue.models.activity.RoundupSettings settings = 2;
+}
+message RecomputeRoundupRequest {
+  string user_id = 1;
+  string period_key = 2;
 }

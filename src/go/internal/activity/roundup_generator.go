@@ -93,6 +93,23 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 	for src := range sourcesSeen {
 		roundup.Sources = append(roundup.Sources, src)
 	}
+
+	// Highlight stats — single best across the period
+	for _, e := range entries {
+		if e.DurationSeconds > roundup.LongestActivityDurationSeconds {
+			roundup.LongestActivityDurationSeconds = e.DurationSeconds
+		}
+		if e.AvgHeartRate != nil && *e.AvgHeartRate > roundup.HighestAvgBpm {
+			roundup.HighestAvgBpm = *e.AvgHeartRate
+			roundup.HighestAvgBpmActivityTitle = e.Title
+		}
+		if e.CaloriesKcal != nil && e.DurationSeconds > 0 {
+			cph := float64(*e.CaloriesKcal) / e.DurationSeconds * 3600.0
+			if cph > roundup.HighestCaloriesPerHourKcal {
+				roundup.HighestCaloriesPerHourKcal = cph
+			}
+		}
+	}
 	allPRs, err := s.store.ListUserPersonalRecords(ctx, userID)
 	if err == nil {
 		for _, pr := range allPRs {

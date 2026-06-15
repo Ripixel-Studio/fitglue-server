@@ -43,6 +43,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Post("/users/me/showcase-management/profile/picture", s.handleGetShowcaseProfilePictureUploadUrl)
 	r.Post("/users/me/activity-photos/upload-url", s.handleGetActivityPhotoUploadUrl)
 	r.Put("/users/me/showcase-management/roundup-settings", s.handleUpdateRoundupSettings)
+	r.Post("/users/me/showcase-management/roundup/{periodKey}/recompute", s.handleRecomputeRoundup)
 	r.Get("/users/me/exercise-library", s.handleGetExerciseLibrary)
 }
 
@@ -583,5 +584,27 @@ func (s *APIServer) handleUpdateRoundupSettings(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleRecomputeRoundup(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+	periodKey := chi.URLParam(r, "periodKey")
+	if periodKey == "" {
+		WriteError(w, statusError(http.StatusBadRequest, "period_key is required"))
+		return
+	}
+	res, err := s.activitySvc.RecomputeRoundup(r.Context(), &activitypb.RecomputeRoundupRequest{
+		UserId:    token.UID,
+		PeriodKey: periodKey,
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
 	WriteJSON(w, res)
 }

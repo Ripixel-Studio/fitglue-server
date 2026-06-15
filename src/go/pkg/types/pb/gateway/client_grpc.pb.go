@@ -86,6 +86,7 @@ const (
 	ClientGatewayService_RemoveShowcaseEntry_FullMethodName                = "/fitglue.gateway.ClientGatewayService/RemoveShowcaseEntry"
 	ClientGatewayService_GetShowcaseProfilePictureUploadUrl_FullMethodName = "/fitglue.gateway.ClientGatewayService/GetShowcaseProfilePictureUploadUrl"
 	ClientGatewayService_UpdateRoundupSettings_FullMethodName              = "/fitglue.gateway.ClientGatewayService/UpdateRoundupSettings"
+	ClientGatewayService_RecomputeRoundup_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/RecomputeRoundup"
 	ClientGatewayService_GetActivityPhotoUploadUrl_FullMethodName          = "/fitglue.gateway.ClientGatewayService/GetActivityPhotoUploadUrl"
 	ClientGatewayService_ExportData_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/ExportData"
 	ClientGatewayService_ParseFitFile_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/ParseFitFile"
@@ -196,6 +197,7 @@ type ClientGatewayServiceClient interface {
 	RemoveShowcaseEntry(ctx context.Context, in *ShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *GetPictureUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetPictureUploadUrlGatewayResponse, error)
 	UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
+	RecomputeRoundup(ctx context.Context, in *RecomputeRoundupGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
 	GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlGatewayResponse, error)
 	// ===================== Data Export =====================
 	ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error)
@@ -853,6 +855,16 @@ func (c *clientGatewayServiceClient) UpdateRoundupSettings(ctx context.Context, 
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) RecomputeRoundup(ctx context.Context, in *RecomputeRoundupGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseRoundup)
+	err := c.cc.Invoke(ctx, ClientGatewayService_RecomputeRoundup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlGatewayResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetActivityPhotoUploadUrlGatewayResponse)
@@ -1141,6 +1153,7 @@ type ClientGatewayServiceServer interface {
 	RemoveShowcaseEntry(context.Context, *ShowcaseEntryRequest) (*emptypb.Empty, error)
 	GetShowcaseProfilePictureUploadUrl(context.Context, *GetPictureUploadUrlGatewayRequest) (*GetPictureUploadUrlGatewayResponse, error)
 	UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsGatewayRequest) (*activity.ShowcaseProfile, error)
+	RecomputeRoundup(context.Context, *RecomputeRoundupGatewayRequest) (*activity.ShowcaseRoundup, error)
 	GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlGatewayRequest) (*GetActivityPhotoUploadUrlGatewayResponse, error)
 	// ===================== Data Export =====================
 	ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error)
@@ -1363,6 +1376,9 @@ func (UnimplementedClientGatewayServiceServer) GetShowcaseProfilePictureUploadUr
 }
 func (UnimplementedClientGatewayServiceServer) UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsGatewayRequest) (*activity.ShowcaseProfile, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateRoundupSettings not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) RecomputeRoundup(context.Context, *RecomputeRoundupGatewayRequest) (*activity.ShowcaseRoundup, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecomputeRoundup not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlGatewayRequest) (*GetActivityPhotoUploadUrlGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActivityPhotoUploadUrl not implemented")
@@ -2561,6 +2577,24 @@ func _ClientGatewayService_UpdateRoundupSettings_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_RecomputeRoundup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecomputeRoundupGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).RecomputeRoundup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_RecomputeRoundup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).RecomputeRoundup(ctx, req.(*RecomputeRoundupGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_GetActivityPhotoUploadUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetActivityPhotoUploadUrlGatewayRequest)
 	if err := dec(in); err != nil {
@@ -3175,6 +3209,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRoundupSettings",
 			Handler:    _ClientGatewayService_UpdateRoundupSettings_Handler,
+		},
+		{
+			MethodName: "RecomputeRoundup",
+			Handler:    _ClientGatewayService_RecomputeRoundup_Handler,
 		},
 		{
 			MethodName: "GetActivityPhotoUploadUrl",

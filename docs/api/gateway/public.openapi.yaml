@@ -1532,6 +1532,21 @@ components:
                     type: string
                 ownerProfileSlug:
                     type: string
+                longestActivityDurationSeconds:
+                    type: number
+                    description: Highlight stats — best single activity across the period
+                    format: double
+                highestSingleLiftKg:
+                    type: number
+                    format: double
+                highestCaloriesPerHourKcal:
+                    type: number
+                    format: double
+                highestAvgBpmActivityTitle:
+                    type: string
+                highestAvgBpm:
+                    type: integer
+                    format: int32
         ShowcaseTheme:
             type: object
             properties:

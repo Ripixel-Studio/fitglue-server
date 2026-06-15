@@ -191,8 +191,14 @@ type ShowcaseRoundup struct {
 	OwnerDisplayName         string                          `protobuf:"bytes,21,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
 	OwnerProfilePictureUrl   string                          `protobuf:"bytes,22,opt,name=owner_profile_picture_url,json=ownerProfilePictureUrl,proto3" json:"owner_profile_picture_url,omitempty"`
 	OwnerProfileSlug         string                          `protobuf:"bytes,23,opt,name=owner_profile_slug,json=ownerProfileSlug,proto3" json:"owner_profile_slug,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// Highlight stats — best single activity across the period
+	LongestActivityDurationSeconds float64 `protobuf:"fixed64,24,opt,name=longest_activity_duration_seconds,json=longestActivityDurationSeconds,proto3" json:"longest_activity_duration_seconds,omitempty"`
+	HighestSingleLiftKg            float64 `protobuf:"fixed64,25,opt,name=highest_single_lift_kg,json=highestSingleLiftKg,proto3" json:"highest_single_lift_kg,omitempty"`
+	HighestCaloriesPerHourKcal     float64 `protobuf:"fixed64,26,opt,name=highest_calories_per_hour_kcal,json=highestCaloriesPerHourKcal,proto3" json:"highest_calories_per_hour_kcal,omitempty"`
+	HighestAvgBpmActivityTitle     string  `protobuf:"bytes,27,opt,name=highest_avg_bpm_activity_title,json=highestAvgBpmActivityTitle,proto3" json:"highest_avg_bpm_activity_title,omitempty"`
+	HighestAvgBpm                  int32   `protobuf:"varint,28,opt,name=highest_avg_bpm,json=highestAvgBpm,proto3" json:"highest_avg_bpm,omitempty"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
 func (x *ShowcaseRoundup) Reset() {
@@ -386,6 +392,41 @@ func (x *ShowcaseRoundup) GetOwnerProfileSlug() string {
 	return ""
 }
 
+func (x *ShowcaseRoundup) GetLongestActivityDurationSeconds() float64 {
+	if x != nil {
+		return x.LongestActivityDurationSeconds
+	}
+	return 0
+}
+
+func (x *ShowcaseRoundup) GetHighestSingleLiftKg() float64 {
+	if x != nil {
+		return x.HighestSingleLiftKg
+	}
+	return 0
+}
+
+func (x *ShowcaseRoundup) GetHighestCaloriesPerHourKcal() float64 {
+	if x != nil {
+		return x.HighestCaloriesPerHourKcal
+	}
+	return 0
+}
+
+func (x *ShowcaseRoundup) GetHighestAvgBpmActivityTitle() string {
+	if x != nil {
+		return x.HighestAvgBpmActivityTitle
+	}
+	return ""
+}
+
+func (x *ShowcaseRoundup) GetHighestAvgBpm() int32 {
+	if x != nil {
+		return x.HighestAvgBpm
+	}
+	return 0
+}
+
 var File_models_activity_roundup_proto protoreflect.FileDescriptor
 
 const file_models_activity_roundup_proto_rawDesc = "" +
@@ -400,7 +441,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x06 \x01(\x05R\ttotalSets\x12\x1d\n" +
 	"\n" +
-	"total_reps\x18\a \x01(\x05R\ttotalReps\"\xd0\t\n" +
+	"total_reps\x18\a \x01(\x05R\ttotalReps\"\x80\f\n" +
 	"\x0fShowcaseRoundup\x12\x1d\n" +
 	"\n" +
 	"roundup_id\x18\x01 \x01(\tR\troundupId\x12\x12\n" +
@@ -429,7 +470,12 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x11effort_hard_count\x18\x14 \x01(\x05R\x0feffortHardCount\x12,\n" +
 	"\x12owner_display_name\x18\x15 \x01(\tR\x10ownerDisplayName\x129\n" +
 	"\x19owner_profile_picture_url\x18\x16 \x01(\tR\x16ownerProfilePictureUrl\x12,\n" +
-	"\x12owner_profile_slug\x18\x17 \x01(\tR\x10ownerProfileSlug*\x93\x01\n" +
+	"\x12owner_profile_slug\x18\x17 \x01(\tR\x10ownerProfileSlug\x12I\n" +
+	"!longest_activity_duration_seconds\x18\x18 \x01(\x01R\x1elongestActivityDurationSeconds\x123\n" +
+	"\x16highest_single_lift_kg\x18\x19 \x01(\x01R\x13highestSingleLiftKg\x12B\n" +
+	"\x1ehighest_calories_per_hour_kcal\x18\x1a \x01(\x01R\x1ahighestCaloriesPerHourKcal\x12B\n" +
+	"\x1ehighest_avg_bpm_activity_title\x18\x1b \x01(\tR\x1ahighestAvgBpmActivityTitle\x12&\n" +
+	"\x0fhighest_avg_bpm\x18\x1c \x01(\x05R\rhighestAvgBpm*\x93\x01\n" +
 	"\x11RoundupPeriodType\x12#\n" +
 	"\x1fROUNDUP_PERIOD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ROUNDUP_PERIOD_TYPE_WEEK\x10\x01\x12\x1d\n" +
