@@ -199,6 +199,10 @@ func (m *mockActivityServiceClient) UpdateRoundupSettings(ctx context.Context, i
 	return &pbactivity.ShowcaseProfile{}, nil
 }
 
+func (m *mockActivityServiceClient) RecomputeRoundup(ctx context.Context, in *activitypb.RecomputeRoundupRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseRoundup, error) {
+	return &pbactivity.ShowcaseRoundup{}, nil
+}
+
 func (m *mockActivityServiceClient) GetActivityPhotoUploadUrl(ctx context.Context, in *activitypb.GetActivityPhotoUploadUrlRequest, opts ...grpc.CallOption) (*activitypb.GetActivityPhotoUploadUrlResponse, error) {
 	return &activitypb.GetActivityPhotoUploadUrlResponse{}, nil
 }

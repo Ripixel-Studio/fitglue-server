@@ -155,6 +155,10 @@ func (m *mockActivityServiceClient) UpdateRoundupSettings(ctx context.Context, i
 	return &pbactivity.ShowcaseProfile{}, nil
 }
 
+func (m *mockActivityServiceClient) RecomputeRoundup(ctx context.Context, in *activitypb.RecomputeRoundupRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseRoundup, error) {
+	return &pbactivity.ShowcaseRoundup{}, nil
+}
+
 // =============================================================
 // Mock BillingServiceClient
 // =============================================================
