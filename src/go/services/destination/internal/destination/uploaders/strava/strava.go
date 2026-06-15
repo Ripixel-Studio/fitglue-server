@@ -154,8 +154,19 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	if uploadResp.Error != nil && strings.Contains(strings.ToLower(*uploadResp.Error), "duplicate") {
-		// Treat duplicate as skipped
-		return "", nil // or handle as specific error to skip
+		// Strava detected a duplicate FIT file. Try to recover the ExternalId from our subcollection
+		// so the pipeline run doesn't lose the real Strava activity ID.
+		if payload.PipelineExecutionId != nil && *payload.PipelineExecutionId != "" {
+			if outcomes, err := u.svc.DB.GetDestinationOutcomes(ctx, payload.UserId, *payload.PipelineExecutionId); err == nil {
+				for _, outcome := range outcomes {
+					if outcome.Destination == pbplugin.DestinationType_DESTINATION_STRAVA &&
+						outcome.ExternalId != nil && *outcome.ExternalId != "" {
+						return *outcome.ExternalId, nil
+					}
+				}
+			}
+		}
+		return "", nil
 	}
 
 	if uploadResp.ActivityId != nil && *uploadResp.ActivityId != 0 {
