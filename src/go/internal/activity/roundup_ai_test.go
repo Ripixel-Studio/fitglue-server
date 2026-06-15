@@ -183,3 +183,70 @@ func TestPeriodTypeName(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectRoundupMedia(t *testing.T) {
+	mkTime := func(day int) *timestamppb.Timestamp {
+		return timestamppb.New(time.Date(2025, 9, day, 8, 0, 0, 0, time.UTC))
+	}
+	entries := []*pbactivity.ShowcaseProfileEntry{
+		{
+			Title:             "Morning Run",
+			ActivityType:      pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+			StartTime:         mkTime(14),
+			DistanceMeters:    10000,
+			PhotoUrls:         []string{"https://cdn/p1.jpg", "", "https://cdn/p2.jpg"},
+			RouteThumbnailUrl: "https://cdn/route1.png",
+		},
+		{
+			Title:        "Leg Day",
+			ActivityType: pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+			StartTime:    mkTime(15),
+			PhotoUrls:    []string{"https://cdn/p3.jpg"},
+			// no route thumbnail
+		},
+	}
+
+	t.Run("gallery enabled collects photos and routes", func(t *testing.T) {
+		photos, routes := collectRoundupMedia(entries, true)
+		if len(photos) != 3 {
+			t.Fatalf("photos = %d, want 3 (empty url skipped)", len(photos))
+		}
+		if photos[0].Url != "https://cdn/p1.jpg" || photos[0].ActivityTitle != "Morning Run" || photos[0].Date != "14 Sep" {
+			t.Errorf("unexpected first photo: %+v", photos[0])
+		}
+		if photos[0].ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_RUN {
+			t.Errorf("photo activity type not carried: %v", photos[0].ActivityType)
+		}
+		if len(routes) != 1 {
+			t.Fatalf("routes = %d, want 1", len(routes))
+		}
+		if routes[0].ThumbnailUrl != "https://cdn/route1.png" || routes[0].DistanceMeters != 10000 || routes[0].Date != "14 Sep" {
+			t.Errorf("unexpected route: %+v", routes[0])
+		}
+	})
+
+	t.Run("gallery disabled omits photos but keeps routes", func(t *testing.T) {
+		photos, routes := collectRoundupMedia(entries, false)
+		if len(photos) != 0 {
+			t.Errorf("photos = %d, want 0 when gallery disabled", len(photos))
+		}
+		if len(routes) != 1 {
+			t.Errorf("routes = %d, want 1 (routes are not gated)", len(routes))
+		}
+	})
+
+	t.Run("photos are capped", func(t *testing.T) {
+		var many []*pbactivity.ShowcaseProfileEntry
+		for i := 0; i < 40; i++ {
+			many = append(many, &pbactivity.ShowcaseProfileEntry{
+				Title:     "x",
+				StartTime: mkTime(1),
+				PhotoUrls: []string{"https://cdn/a.jpg", "https://cdn/b.jpg"},
+			})
+		}
+		photos, _ := collectRoundupMedia(many, true)
+		if len(photos) != maxRoundupPhotos {
+			t.Errorf("photos = %d, want cap %d", len(photos), maxRoundupPhotos)
+		}
+	})
+}

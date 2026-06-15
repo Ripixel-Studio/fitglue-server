@@ -26,6 +26,21 @@ message ShowcaseCalloutActivity {
   string date = 6;          // e.g. "14 Sep"
   ActivityType activity_type = 7;
 }
+// A photo surfaced in the roundup photo mosaic.
+message RoundupPhoto {
+  string url = 1;
+  string activity_title = 2;
+  string date = 3;          // e.g. "14 Sep"
+  ActivityType activity_type = 4;
+}
+// A GPS route thumbnail surfaced in the roundup route wall.
+message RoundupRoute {
+  string thumbnail_url = 1;
+  string activity_title = 2;
+  string date = 3;          // e.g. "14 Sep"
+  double distance_meters = 4;
+  ActivityType activity_type = 5;
+}
 message RoundupActivityTypeBreakdown {
   ActivityType activity_type = 1;
   int32 activity_count = 2;
@@ -71,4 +86,8 @@ message ShowcaseRoundup {
   repeated ShowcaseCalloutActivity callout_activities = 30;
   // Per-day effort entries for the consistency calendar heatmap
   repeated RoundupDayEntry day_entries = 31;
+  // Photos collected from the period's activities (gated by show_photo_gallery)
+  repeated RoundupPhoto photos = 32;
+  // GPS route thumbnails collected from the period's activities
+  repeated RoundupRoute routes = 33;
 }

@@ -16,6 +16,50 @@ import (
 
 const roundupAISummaryTimeout = 10 * time.Second
 
+const (
+	maxRoundupPhotos = 24
+	maxRoundupRoutes = 12
+)
+
+// collectRoundupMedia gathers photo and GPS route-thumbnail assets from the
+// period's entries for the roundup photo mosaic and route wall. Photos are only
+// included when the owner has the public photo gallery enabled; both lists are
+// capped to keep the persisted roundup document small.
+func collectRoundupMedia(entries []*pbactivity.ShowcaseProfileEntry, galleryEnabled bool) (photos []*pbactivity.RoundupPhoto, routes []*pbactivity.RoundupRoute) {
+	for _, e := range entries {
+		dateStr := ""
+		if e.StartTime != nil {
+			dateStr = e.StartTime.AsTime().UTC().Format("2 Jan")
+		}
+		if galleryEnabled && len(photos) < maxRoundupPhotos {
+			for _, url := range e.PhotoUrls {
+				if url == "" {
+					continue
+				}
+				photos = append(photos, &pbactivity.RoundupPhoto{
+					Url:           url,
+					ActivityTitle: e.Title,
+					Date:          dateStr,
+					ActivityType:  e.ActivityType,
+				})
+				if len(photos) >= maxRoundupPhotos {
+					break
+				}
+			}
+		}
+		if e.RouteThumbnailUrl != "" && len(routes) < maxRoundupRoutes {
+			routes = append(routes, &pbactivity.RoundupRoute{
+				ThumbnailUrl:   e.RouteThumbnailUrl,
+				ActivityTitle:  e.Title,
+				Date:           dateStr,
+				DistanceMeters: e.DistanceMeters,
+				ActivityType:   e.ActivityType,
+			})
+		}
+	}
+	return photos, routes
+}
+
 // deriveEffortLevel maps a single showcase entry to a 0–4 effort level for
 // the consistency calendar heatmap (0=rest,1=easy,2=moderate,3=hard,4=peak).
 func deriveEffortLevel(e *pbactivity.ShowcaseProfileEntry) int32 {

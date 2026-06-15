@@ -95,6 +95,9 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 		roundup.Sources = append(roundup.Sources, src)
 	}
 
+	// Rich media — photo mosaic + GPS route wall, drawn from the period's entries.
+	roundup.Photos, roundup.Routes = collectRoundupMedia(entries, profile.ShowPhotoGallery)
+
 	// Highlight stats — single best across the period
 	for _, e := range entries {
 		if e.DurationSeconds > roundup.LongestActivityDurationSeconds {
