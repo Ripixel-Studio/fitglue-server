@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.44.1](https://github.com/FitGlue/server/compare/v16.44.0...v16.44.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **showcase:** add idempotency guard to Create to prevent Pub/Sub redelivery duplicates ([6bee6c5](https://github.com/FitGlue/server/commit/6bee6c59cff268a5399d3569b2fd989b8ee8fe4e))
+
 ## [16.44.0](https://github.com/FitGlue/server/compare/v16.43.2...v16.44.0) (2026-06-14)
 
 
