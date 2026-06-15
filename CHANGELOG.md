@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.47.0](https://github.com/FitGlue/server/compare/v16.46.0...v16.47.0) (2026-06-15)
+
+
+### Features
+
+* **showcase:** add AI-generated roundup summary via Gemini ([6e83484](https://github.com/FitGlue/server/commit/6e83484aaa3fb5e87960f288827d14cf59763831))
+
 ## [16.46.0](https://github.com/FitGlue/server/compare/v16.45.2...v16.46.0) (2026-06-15)
 
 
