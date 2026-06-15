@@ -49,4 +49,6 @@ message ShowcaseRoundup {
   double highest_calories_per_hour_kcal = 26;
   string highest_avg_bpm_activity_title = 27;
   int32 highest_avg_bpm = 28;
+  // AI-generated narrative summary of the period, empty if unavailable
+  string ai_summary = 29;
 }

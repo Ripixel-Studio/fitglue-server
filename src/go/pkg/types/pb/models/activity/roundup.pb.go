@@ -197,8 +197,10 @@ type ShowcaseRoundup struct {
 	HighestCaloriesPerHourKcal     float64 `protobuf:"fixed64,26,opt,name=highest_calories_per_hour_kcal,json=highestCaloriesPerHourKcal,proto3" json:"highest_calories_per_hour_kcal,omitempty"`
 	HighestAvgBpmActivityTitle     string  `protobuf:"bytes,27,opt,name=highest_avg_bpm_activity_title,json=highestAvgBpmActivityTitle,proto3" json:"highest_avg_bpm_activity_title,omitempty"`
 	HighestAvgBpm                  int32   `protobuf:"varint,28,opt,name=highest_avg_bpm,json=highestAvgBpm,proto3" json:"highest_avg_bpm,omitempty"`
-	unknownFields                  protoimpl.UnknownFields
-	sizeCache                      protoimpl.SizeCache
+	// AI-generated narrative summary of the period, empty if unavailable
+	AiSummary     string `protobuf:"bytes,29,opt,name=ai_summary,json=aiSummary,proto3" json:"ai_summary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShowcaseRoundup) Reset() {
@@ -427,6 +429,13 @@ func (x *ShowcaseRoundup) GetHighestAvgBpm() int32 {
 	return 0
 }
 
+func (x *ShowcaseRoundup) GetAiSummary() string {
+	if x != nil {
+		return x.AiSummary
+	}
+	return ""
+}
+
 var File_models_activity_roundup_proto protoreflect.FileDescriptor
 
 const file_models_activity_roundup_proto_rawDesc = "" +
@@ -441,7 +450,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x06 \x01(\x05R\ttotalSets\x12\x1d\n" +
 	"\n" +
-	"total_reps\x18\a \x01(\x05R\ttotalReps\"\x80\f\n" +
+	"total_reps\x18\a \x01(\x05R\ttotalReps\"\x9f\f\n" +
 	"\x0fShowcaseRoundup\x12\x1d\n" +
 	"\n" +
 	"roundup_id\x18\x01 \x01(\tR\troundupId\x12\x12\n" +
@@ -475,7 +484,9 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x16highest_single_lift_kg\x18\x19 \x01(\x01R\x13highestSingleLiftKg\x12B\n" +
 	"\x1ehighest_calories_per_hour_kcal\x18\x1a \x01(\x01R\x1ahighestCaloriesPerHourKcal\x12B\n" +
 	"\x1ehighest_avg_bpm_activity_title\x18\x1b \x01(\tR\x1ahighestAvgBpmActivityTitle\x12&\n" +
-	"\x0fhighest_avg_bpm\x18\x1c \x01(\x05R\rhighestAvgBpm*\x93\x01\n" +
+	"\x0fhighest_avg_bpm\x18\x1c \x01(\x05R\rhighestAvgBpm\x12\x1d\n" +
+	"\n" +
+	"ai_summary\x18\x1d \x01(\tR\taiSummary*\x93\x01\n" +
 	"\x11RoundupPeriodType\x12#\n" +
 	"\x1fROUNDUP_PERIOD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ROUNDUP_PERIOD_TYPE_WEEK\x10\x01\x12\x1d\n" +
