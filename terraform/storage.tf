@@ -21,6 +21,17 @@ resource "google_storage_bucket" "artifacts_bucket" {
   }
 }
 
+# The api-client gateway generates V4 signed download URLs for individual pipeline-run
+# payloads (GET /users/me/pipeline-runs/{runId}/payload). Signing only needs Token Creator,
+# but GCS also validates that the *signing identity* can read the object — so the api-client
+# SA must hold an object-read role on this bucket, otherwise every signed GET returns 403.
+# (The bundle export is signed by the activity SA, which already has project-level objectAdmin.)
+resource "google_storage_bucket_iam_member" "artifacts_api_client_read" {
+  bucket = google_storage_bucket.artifacts_bucket.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.cloud_run_sa["api-client"].email}"
+}
+
 # Version config bucket - stores unified FitGlue version across web/server repos
 resource "google_storage_bucket" "version_config_bucket" {
   name     = "${var.project_id}-version-config"
