@@ -381,7 +381,7 @@ func (s *APIServer) handleGetPipelineRunPayload(w http.ResponseWriter, r *http.R
 	}
 
 	var gcsURI string
-	if which == "enriched" {
+	if which == "PAYLOAD_KIND_ENRICHED" {
 		gcsURI = run.EnrichedEventUri
 	} else {
 		gcsURI = run.OriginalPayloadUri

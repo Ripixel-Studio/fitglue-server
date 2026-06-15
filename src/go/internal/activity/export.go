@@ -83,7 +83,7 @@ func (s *Service) ExportData(ctx context.Context, req *pbsvc.ExportDataRequest) 
 	}
 
 	// 5. Generate signed download URL (24-hour expiry)
-	signedURL, err := s.blobStore.SignedURL(ctx, s.bucketName, objectPath, "application/json", int64(len(data)), 24*time.Hour)
+	signedURL, err := s.blobStore.SignedURL(ctx, s.bucketName, objectPath, "", 0, 24*time.Hour)
 	if err != nil {
 		s.logger.Error(ctx, "ExportData: failed to generate signed URL", "error", err, "path", objectPath)
 		return nil, status.Error(codes.Internal, "failed to generate download link")

@@ -62,7 +62,7 @@ func TestExportData_WriteError(t *testing.T) {
 
 func TestExportData_SignedURLError(t *testing.T) {
 	blob := &MockBlobStore{
-		SignedURLFunc: func(_ context.Context, _, _, _ string, _ time.Duration) (string, error) {
+		SignedURLFunc: func(_ context.Context, _, _, _ string, _ int64, _ time.Duration) (string, error) {
 			return "", errors.New("signing error")
 		},
 	}

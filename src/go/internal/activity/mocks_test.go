@@ -249,7 +249,7 @@ type MockBlobStore struct {
 	GetFunc       func(ctx context.Context, bucket, object string) ([]byte, error)
 	DeleteFunc    func(ctx context.Context, bucket, object string) error
 	WriteFunc     func(ctx context.Context, bucket, object string, data []byte) error
-	SignedURLFunc func(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error)
+	SignedURLFunc func(ctx context.Context, bucket, path, contentType string, contentLength int64, expiry time.Duration) (string, error)
 }
 
 func (m *MockBlobStore) Get(ctx context.Context, bucket, object string) ([]byte, error) {
@@ -275,7 +275,7 @@ func (m *MockBlobStore) Write(ctx context.Context, bucket, object string, data [
 
 func (m *MockBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, contentLength int64, expiry time.Duration) (string, error) {
 	if m.SignedURLFunc != nil {
-		return m.SignedURLFunc(ctx, bucket, path, contentType, expiry)
+		return m.SignedURLFunc(ctx, bucket, path, contentType, contentLength, expiry)
 	}
 	return "https://storage.googleapis.com/test-signed-url", nil
 }
