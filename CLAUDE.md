@@ -246,10 +246,12 @@ npm run test:dev        # Jest integration tests vs dev deployment
 2. **IoC pattern** — Dependencies injected via constructor, no package-level globals.
 3. **Each service owns its Firestore data** — No cross-service Firestore writes.
 4. **Provider interfaces** — Sources, enrichers, destinations are pluggable via interfaces. Register via `init()`.
-5. **Structured logging** — Use `infra.NewLoggerWithComponent(name)` (slog + Sentry integration).
-6. **Error types** — Use `pkg/errors` for retryability classification.
-7. **gofmt required** — `make lint` fails if formatting is off. Run `gofmt -w pkg services cmd internal`.
-8. **Generated code** — Never manually edit `pkg/types/pb/`, `pkg/integrations/`, or `docs/api/`. Regenerate instead.
+5. **Structured logging** — Use `infra.NewLoggerWithComponent(name)` (slog + Sentry integration). Never import `github.com/getsentry/sentry-go` directly — only `pkg/infrastructure/sentry/sentry.go` and `pkg/framework/wrapper.go` may do so. The logger automatically captures `Error`-level calls to Sentry.
+6. **protojson** — Never use `encoding/json` on protobuf message types. Use `protojson.Marshal` / `protojson.Unmarshal` instead. Enforced by `scripts/lint-proto-json.sh` (suppress with `//nolint:proto-json` only when truly necessary).
+7. **Error types** — Use `pkg/errors` for retryability classification and structured error codes (e.g. `CodeUserNotFound`, `CodeIntegrationExpired`). Never return ad-hoc `errors.New` from domain logic.
+8. **gofmt required** — `make lint` fails if formatting is off. Run `gofmt -w pkg services cmd internal`.
+9. **Generated code** — Never manually edit `pkg/types/pb/`, `pkg/integrations/`, or `docs/api/`. Regenerate instead.
+10. **Coverage threshold** — `make test-coverage` enforces a 25% floor per package. This is a baseline to improve incrementally, not a target ceiling.
 
 ## Adding a New Enricher
 
