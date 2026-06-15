@@ -148,6 +148,13 @@ resource "google_cloud_run_v2_service" "backend" {
       dynamic "env" {
         for_each = each.key == "activity" ? [1] : []
         content {
+          name  = "ARTIFACT_BUCKET"
+          value = "${var.project_id}-artifacts"
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "activity" ? [1] : []
+        content {
           name  = "SHOWCASE_ASSETS_BUCKET"
           value = google_storage_bucket.showcase_assets_bucket.name
         }
