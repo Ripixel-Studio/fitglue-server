@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.46.0](https://github.com/FitGlue/server/compare/v16.45.2...v16.46.0) (2026-06-15)
+
+
+### Features
+
+* **roundup:** add recompute endpoint and highlight stats ([091631c](https://github.com/FitGlue/server/commit/091631cec565b61b179015b376e23a5643896dc5))
+
+
+### Bug Fixes
+
+* **roundup:** add RecomputeRoundup to mock ActivityServiceClient ([cd0e790](https://github.com/FitGlue/server/commit/cd0e790a5bd1053368729a6e2f480cae6097e9db))
+
 ### [16.45.2](https://github.com/FitGlue/server/compare/v16.45.1...v16.45.2) (2026-06-15)
 
 
