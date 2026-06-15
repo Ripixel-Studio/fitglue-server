@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.45.0](https://github.com/FitGlue/server/compare/v16.44.1...v16.45.0) (2026-06-15)
+
+
+### Features
+
+* **strava:** add idempotency guard to Create method to prevent duplicate uploads ([9adfb36](https://github.com/FitGlue/server/commit/9adfb3641e2e5c8fbaaa78b37cde8a80c0e5bc88))
+
+
+### Bug Fixes
+
+* **destinations:** add idempotency guards to Strava and Hevy uploaders ([2c88dd8](https://github.com/FitGlue/server/commit/2c88dd87a86f33077994243d8490ba9935f6a2e6))
+
 ### [16.44.1](https://github.com/FitGlue/server/compare/v16.44.0...v16.44.1) (2026-06-15)
 
 
