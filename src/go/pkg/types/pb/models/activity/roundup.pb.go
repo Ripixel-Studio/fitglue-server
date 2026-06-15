@@ -74,6 +74,160 @@ func (RoundupPeriodType) EnumDescriptor() ([]byte, []int) {
 	return file_models_activity_roundup_proto_rawDescGZIP(), []int{0}
 }
 
+// Per-day effort record for the consistency calendar heatmap.
+type RoundupDayEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Date          string                 `protobuf:"bytes,1,opt,name=date,proto3" json:"date,omitempty"`                                   // YYYY-MM-DD (UTC)
+	EffortLevel   int32                  `protobuf:"varint,2,opt,name=effort_level,json=effortLevel,proto3" json:"effort_level,omitempty"` // 0=rest 1=easy 2=moderate 3=hard 4=peak
+	ActivityCount int32                  `protobuf:"varint,3,opt,name=activity_count,json=activityCount,proto3" json:"activity_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoundupDayEntry) Reset() {
+	*x = RoundupDayEntry{}
+	mi := &file_models_activity_roundup_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoundupDayEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoundupDayEntry) ProtoMessage() {}
+
+func (x *RoundupDayEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_roundup_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoundupDayEntry.ProtoReflect.Descriptor instead.
+func (*RoundupDayEntry) Descriptor() ([]byte, []int) {
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RoundupDayEntry) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+func (x *RoundupDayEntry) GetEffortLevel() int32 {
+	if x != nil {
+		return x.EffortLevel
+	}
+	return 0
+}
+
+func (x *RoundupDayEntry) GetActivityCount() int32 {
+	if x != nil {
+		return x.ActivityCount
+	}
+	return 0
+}
+
+// Pre-computed spotlight card — biggest session, longest streak, peak PR day.
+type ShowcaseCalloutActivity struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"` // e.g. "BIGGEST SESSION"
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	StatValue     string                 `protobuf:"bytes,3,opt,name=stat_value,json=statValue,proto3" json:"stat_value,omitempty"` // pre-formatted primary stat, e.g. "5:42"
+	StatUnit      string                 `protobuf:"bytes,4,opt,name=stat_unit,json=statUnit,proto3" json:"stat_unit,omitempty"`    // unit/sub-stat line, e.g. "H:MM · 142 KM"
+	Sub           string                 `protobuf:"bytes,5,opt,name=sub,proto3" json:"sub,omitempty"`                              // second detail line
+	Date          string                 `protobuf:"bytes,6,opt,name=date,proto3" json:"date,omitempty"`                            // e.g. "14 Sep"
+	ActivityType  ActivityType           `protobuf:"varint,7,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseCalloutActivity) Reset() {
+	*x = ShowcaseCalloutActivity{}
+	mi := &file_models_activity_roundup_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseCalloutActivity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseCalloutActivity) ProtoMessage() {}
+
+func (x *ShowcaseCalloutActivity) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_roundup_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseCalloutActivity.ProtoReflect.Descriptor instead.
+func (*ShowcaseCalloutActivity) Descriptor() ([]byte, []int) {
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ShowcaseCalloutActivity) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ShowcaseCalloutActivity) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ShowcaseCalloutActivity) GetStatValue() string {
+	if x != nil {
+		return x.StatValue
+	}
+	return ""
+}
+
+func (x *ShowcaseCalloutActivity) GetStatUnit() string {
+	if x != nil {
+		return x.StatUnit
+	}
+	return ""
+}
+
+func (x *ShowcaseCalloutActivity) GetSub() string {
+	if x != nil {
+		return x.Sub
+	}
+	return ""
+}
+
+func (x *ShowcaseCalloutActivity) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+func (x *ShowcaseCalloutActivity) GetActivityType() ActivityType {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
 type RoundupActivityTypeBreakdown struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	ActivityType         ActivityType           `protobuf:"varint,1,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
@@ -89,7 +243,7 @@ type RoundupActivityTypeBreakdown struct {
 
 func (x *RoundupActivityTypeBreakdown) Reset() {
 	*x = RoundupActivityTypeBreakdown{}
-	mi := &file_models_activity_roundup_proto_msgTypes[0]
+	mi := &file_models_activity_roundup_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -101,7 +255,7 @@ func (x *RoundupActivityTypeBreakdown) String() string {
 func (*RoundupActivityTypeBreakdown) ProtoMessage() {}
 
 func (x *RoundupActivityTypeBreakdown) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_roundup_proto_msgTypes[0]
+	mi := &file_models_activity_roundup_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -114,7 +268,7 @@ func (x *RoundupActivityTypeBreakdown) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundupActivityTypeBreakdown.ProtoReflect.Descriptor instead.
 func (*RoundupActivityTypeBreakdown) Descriptor() ([]byte, []int) {
-	return file_models_activity_roundup_proto_rawDescGZIP(), []int{0}
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RoundupActivityTypeBreakdown) GetActivityType() ActivityType {
@@ -198,14 +352,18 @@ type ShowcaseRoundup struct {
 	HighestAvgBpmActivityTitle     string  `protobuf:"bytes,27,opt,name=highest_avg_bpm_activity_title,json=highestAvgBpmActivityTitle,proto3" json:"highest_avg_bpm_activity_title,omitempty"`
 	HighestAvgBpm                  int32   `protobuf:"varint,28,opt,name=highest_avg_bpm,json=highestAvgBpm,proto3" json:"highest_avg_bpm,omitempty"`
 	// AI-generated narrative summary of the period, empty if unavailable
-	AiSummary     string `protobuf:"bytes,29,opt,name=ai_summary,json=aiSummary,proto3" json:"ai_summary,omitempty"`
+	AiSummary string `protobuf:"bytes,29,opt,name=ai_summary,json=aiSummary,proto3" json:"ai_summary,omitempty"`
+	// Pre-computed spotlight callouts (biggest session, longest streak, peak PR day)
+	CalloutActivities []*ShowcaseCalloutActivity `protobuf:"bytes,30,rep,name=callout_activities,json=calloutActivities,proto3" json:"callout_activities,omitempty"`
+	// Per-day effort entries for the consistency calendar heatmap
+	DayEntries    []*RoundupDayEntry `protobuf:"bytes,31,rep,name=day_entries,json=dayEntries,proto3" json:"day_entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShowcaseRoundup) Reset() {
 	*x = ShowcaseRoundup{}
-	mi := &file_models_activity_roundup_proto_msgTypes[1]
+	mi := &file_models_activity_roundup_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -217,7 +375,7 @@ func (x *ShowcaseRoundup) String() string {
 func (*ShowcaseRoundup) ProtoMessage() {}
 
 func (x *ShowcaseRoundup) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_roundup_proto_msgTypes[1]
+	mi := &file_models_activity_roundup_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -230,7 +388,7 @@ func (x *ShowcaseRoundup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShowcaseRoundup.ProtoReflect.Descriptor instead.
 func (*ShowcaseRoundup) Descriptor() ([]byte, []int) {
-	return file_models_activity_roundup_proto_rawDescGZIP(), []int{1}
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ShowcaseRoundup) GetRoundupId() string {
@@ -436,11 +594,38 @@ func (x *ShowcaseRoundup) GetAiSummary() string {
 	return ""
 }
 
+func (x *ShowcaseRoundup) GetCalloutActivities() []*ShowcaseCalloutActivity {
+	if x != nil {
+		return x.CalloutActivities
+	}
+	return nil
+}
+
+func (x *ShowcaseRoundup) GetDayEntries() []*RoundupDayEntry {
+	if x != nil {
+		return x.DayEntries
+	}
+	return nil
+}
+
 var File_models_activity_roundup_proto protoreflect.FileDescriptor
 
 const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
-	"\x1dmodels/activity/roundup.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1emodels/activity/uploaded.proto\"\xe1\x02\n" +
+	"\x1dmodels/activity/roundup.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1emodels/activity/uploaded.proto\"o\n" +
+	"\x0fRoundupDayEntry\x12\x12\n" +
+	"\x04date\x18\x01 \x01(\tR\x04date\x12!\n" +
+	"\feffort_level\x18\x02 \x01(\x05R\veffortLevel\x12%\n" +
+	"\x0eactivity_count\x18\x03 \x01(\x05R\ractivityCount\"\xf1\x01\n" +
+	"\x17ShowcaseCalloutActivity\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1d\n" +
+	"\n" +
+	"stat_value\x18\x03 \x01(\tR\tstatValue\x12\x1b\n" +
+	"\tstat_unit\x18\x04 \x01(\tR\bstatUnit\x12\x10\n" +
+	"\x03sub\x18\x05 \x01(\tR\x03sub\x12\x12\n" +
+	"\x04date\x18\x06 \x01(\tR\x04date\x12J\n" +
+	"\ractivity_type\x18\a \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\"\xe1\x02\n" +
 	"\x1cRoundupActivityTypeBreakdown\x12J\n" +
 	"\ractivity_type\x18\x01 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12%\n" +
 	"\x0eactivity_count\x18\x02 \x01(\x05R\ractivityCount\x122\n" +
@@ -450,7 +635,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x06 \x01(\x05R\ttotalSets\x12\x1d\n" +
 	"\n" +
-	"total_reps\x18\a \x01(\x05R\ttotalReps\"\x9f\f\n" +
+	"total_reps\x18\a \x01(\x05R\ttotalReps\"\xcb\r\n" +
 	"\x0fShowcaseRoundup\x12\x1d\n" +
 	"\n" +
 	"roundup_id\x18\x01 \x01(\tR\troundupId\x12\x12\n" +
@@ -486,7 +671,10 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x1ehighest_avg_bpm_activity_title\x18\x1b \x01(\tR\x1ahighestAvgBpmActivityTitle\x12&\n" +
 	"\x0fhighest_avg_bpm\x18\x1c \x01(\x05R\rhighestAvgBpm\x12\x1d\n" +
 	"\n" +
-	"ai_summary\x18\x1d \x01(\tR\taiSummary*\x93\x01\n" +
+	"ai_summary\x18\x1d \x01(\tR\taiSummary\x12_\n" +
+	"\x12callout_activities\x18\x1e \x03(\v20.fitglue.models.activity.ShowcaseCalloutActivityR\x11calloutActivities\x12I\n" +
+	"\vday_entries\x18\x1f \x03(\v2(.fitglue.models.activity.RoundupDayEntryR\n" +
+	"dayEntries*\x93\x01\n" +
 	"\x11RoundupPeriodType\x12#\n" +
 	"\x1fROUNDUP_PERIOD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ROUNDUP_PERIOD_TYPE_WEEK\x10\x01\x12\x1d\n" +
@@ -506,30 +694,35 @@ func file_models_activity_roundup_proto_rawDescGZIP() []byte {
 }
 
 var file_models_activity_roundup_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_models_activity_roundup_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_models_activity_roundup_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_models_activity_roundup_proto_goTypes = []any{
 	(RoundupPeriodType)(0),               // 0: fitglue.models.activity.RoundupPeriodType
-	(*RoundupActivityTypeBreakdown)(nil), // 1: fitglue.models.activity.RoundupActivityTypeBreakdown
-	(*ShowcaseRoundup)(nil),              // 2: fitglue.models.activity.ShowcaseRoundup
-	(ActivityType)(0),                    // 3: fitglue.models.activity.ActivityType
-	(*timestamppb.Timestamp)(nil),        // 4: google.protobuf.Timestamp
-	(*ShowcaseTopPR)(nil),                // 5: fitglue.models.activity.ShowcaseTopPR
-	(ActivitySource)(0),                  // 6: fitglue.models.activity.ActivitySource
+	(*RoundupDayEntry)(nil),              // 1: fitglue.models.activity.RoundupDayEntry
+	(*ShowcaseCalloutActivity)(nil),      // 2: fitglue.models.activity.ShowcaseCalloutActivity
+	(*RoundupActivityTypeBreakdown)(nil), // 3: fitglue.models.activity.RoundupActivityTypeBreakdown
+	(*ShowcaseRoundup)(nil),              // 4: fitglue.models.activity.ShowcaseRoundup
+	(ActivityType)(0),                    // 5: fitglue.models.activity.ActivityType
+	(*timestamppb.Timestamp)(nil),        // 6: google.protobuf.Timestamp
+	(*ShowcaseTopPR)(nil),                // 7: fitglue.models.activity.ShowcaseTopPR
+	(ActivitySource)(0),                  // 8: fitglue.models.activity.ActivitySource
 }
 var file_models_activity_roundup_proto_depIdxs = []int32{
-	3, // 0: fitglue.models.activity.RoundupActivityTypeBreakdown.activity_type:type_name -> fitglue.models.activity.ActivityType
-	0, // 1: fitglue.models.activity.ShowcaseRoundup.period_type:type_name -> fitglue.models.activity.RoundupPeriodType
-	4, // 2: fitglue.models.activity.ShowcaseRoundup.period_start:type_name -> google.protobuf.Timestamp
-	4, // 3: fitglue.models.activity.ShowcaseRoundup.period_end:type_name -> google.protobuf.Timestamp
-	4, // 4: fitglue.models.activity.ShowcaseRoundup.generated_at:type_name -> google.protobuf.Timestamp
-	1, // 5: fitglue.models.activity.ShowcaseRoundup.activity_type_breakdowns:type_name -> fitglue.models.activity.RoundupActivityTypeBreakdown
-	5, // 6: fitglue.models.activity.ShowcaseRoundup.prs_achieved:type_name -> fitglue.models.activity.ShowcaseTopPR
-	6, // 7: fitglue.models.activity.ShowcaseRoundup.sources:type_name -> fitglue.models.activity.ActivitySource
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	5,  // 0: fitglue.models.activity.ShowcaseCalloutActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
+	5,  // 1: fitglue.models.activity.RoundupActivityTypeBreakdown.activity_type:type_name -> fitglue.models.activity.ActivityType
+	0,  // 2: fitglue.models.activity.ShowcaseRoundup.period_type:type_name -> fitglue.models.activity.RoundupPeriodType
+	6,  // 3: fitglue.models.activity.ShowcaseRoundup.period_start:type_name -> google.protobuf.Timestamp
+	6,  // 4: fitglue.models.activity.ShowcaseRoundup.period_end:type_name -> google.protobuf.Timestamp
+	6,  // 5: fitglue.models.activity.ShowcaseRoundup.generated_at:type_name -> google.protobuf.Timestamp
+	3,  // 6: fitglue.models.activity.ShowcaseRoundup.activity_type_breakdowns:type_name -> fitglue.models.activity.RoundupActivityTypeBreakdown
+	7,  // 7: fitglue.models.activity.ShowcaseRoundup.prs_achieved:type_name -> fitglue.models.activity.ShowcaseTopPR
+	8,  // 8: fitglue.models.activity.ShowcaseRoundup.sources:type_name -> fitglue.models.activity.ActivitySource
+	2,  // 9: fitglue.models.activity.ShowcaseRoundup.callout_activities:type_name -> fitglue.models.activity.ShowcaseCalloutActivity
+	1,  // 10: fitglue.models.activity.ShowcaseRoundup.day_entries:type_name -> fitglue.models.activity.RoundupDayEntry
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_roundup_proto_init() }
@@ -545,7 +738,7 @@ func file_models_activity_roundup_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_roundup_proto_rawDesc), len(file_models_activity_roundup_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

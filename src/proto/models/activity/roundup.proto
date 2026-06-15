@@ -10,6 +10,22 @@ enum RoundupPeriodType {
   ROUNDUP_PERIOD_TYPE_MONTH = 2;
   ROUNDUP_PERIOD_TYPE_YEAR = 3;
 }
+// Per-day effort record for the consistency calendar heatmap.
+message RoundupDayEntry {
+  string date = 1;          // YYYY-MM-DD (UTC)
+  int32 effort_level = 2;   // 0=rest 1=easy 2=moderate 3=hard 4=peak
+  int32 activity_count = 3;
+}
+// Pre-computed spotlight card — biggest session, longest streak, peak PR day.
+message ShowcaseCalloutActivity {
+  string kind = 1;          // e.g. "BIGGEST SESSION"
+  string title = 2;
+  string stat_value = 3;    // pre-formatted primary stat, e.g. "5:42"
+  string stat_unit = 4;     // unit/sub-stat line, e.g. "H:MM · 142 KM"
+  string sub = 5;           // second detail line
+  string date = 6;          // e.g. "14 Sep"
+  ActivityType activity_type = 7;
+}
 message RoundupActivityTypeBreakdown {
   ActivityType activity_type = 1;
   int32 activity_count = 2;
@@ -51,4 +67,8 @@ message ShowcaseRoundup {
   int32 highest_avg_bpm = 28;
   // AI-generated narrative summary of the period, empty if unavailable
   string ai_summary = 29;
+  // Pre-computed spotlight callouts (biggest session, longest streak, peak PR day)
+  repeated ShowcaseCalloutActivity callout_activities = 30;
+  // Per-day effort entries for the consistency calendar heatmap
+  repeated RoundupDayEntry day_entries = 31;
 }

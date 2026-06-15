@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -122,6 +123,160 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 			}
 		}
 	}
+	// Consistency calendar — build per-day effort entries
+	type dayKey struct{ y, m, d int }
+	type dayData struct {
+		effortLevel   int32
+		activityCount int32
+	}
+	dayMap := make(map[dayKey]*dayData)
+	for _, e := range entries {
+		if e.StartTime == nil {
+			continue
+		}
+		t := e.StartTime.AsTime().UTC()
+		k := dayKey{t.Year(), int(t.Month()), t.Day()}
+		if _, ok := dayMap[k]; !ok {
+			dayMap[k] = &dayData{}
+		}
+		dayMap[k].activityCount++
+		if lvl := deriveEffortLevel(e); lvl > dayMap[k].effortLevel {
+			dayMap[k].effortLevel = lvl
+		}
+	}
+	type sortedDay struct {
+		key  dayKey
+		data *dayData
+	}
+	var sortedDays []sortedDay
+	for k, d := range dayMap {
+		sortedDays = append(sortedDays, sortedDay{k, d})
+	}
+	sort.Slice(sortedDays, func(i, j int) bool {
+		a, b := sortedDays[i].key, sortedDays[j].key
+		if a.y != b.y {
+			return a.y < b.y
+		}
+		if a.m != b.m {
+			return a.m < b.m
+		}
+		return a.d < b.d
+	})
+	for _, sd := range sortedDays {
+		roundup.DayEntries = append(roundup.DayEntries, &pbactivity.RoundupDayEntry{
+			Date:          fmt.Sprintf("%04d-%02d-%02d", sd.key.y, sd.key.m, sd.key.d),
+			EffortLevel:   sd.data.effortLevel,
+			ActivityCount: sd.data.activityCount,
+		})
+	}
+
+	// Callout activities — biggest session, longest streak, peak PR day
+	var biggestEntry *pbactivity.ShowcaseProfileEntry
+	for _, e := range entries {
+		if biggestEntry == nil || e.DurationSeconds > biggestEntry.DurationSeconds {
+			biggestEntry = e
+		}
+	}
+	if biggestEntry != nil && biggestEntry.DurationSeconds > 0 {
+		h := int(biggestEntry.DurationSeconds) / 3600
+		m := (int(biggestEntry.DurationSeconds) % 3600) / 60
+		statVal := fmt.Sprintf("%d:%02d", h, m)
+		statUnit := "H:MM"
+		if biggestEntry.DistanceMeters > 500 {
+			statUnit = fmt.Sprintf("H:MM · %.0f KM", biggestEntry.DistanceMeters/1000)
+		}
+		dateStr := ""
+		if biggestEntry.StartTime != nil {
+			dateStr = biggestEntry.StartTime.AsTime().UTC().Format("2 Jan")
+		}
+		roundup.CalloutActivities = append(roundup.CalloutActivities, &pbactivity.ShowcaseCalloutActivity{
+			Kind:         "BIGGEST SESSION",
+			Title:        biggestEntry.Title,
+			StatValue:    statVal,
+			StatUnit:     statUnit,
+			Date:         dateStr,
+			ActivityType: biggestEntry.ActivityType,
+		})
+	}
+
+	// Longest streak from day entries
+	if len(sortedDays) > 0 {
+		longestStreak, curStreak := 0, 0
+		var bestStart, bestEnd, curStart time.Time
+		var prevDay time.Time
+		for _, sd := range sortedDays {
+			day := time.Date(sd.key.y, time.Month(sd.key.m), sd.key.d, 0, 0, 0, 0, time.UTC)
+			if !prevDay.IsZero() && day.Sub(prevDay) == 24*time.Hour {
+				curStreak++
+			} else {
+				curStreak = 1
+				curStart = day
+			}
+			if curStreak > longestStreak {
+				longestStreak = curStreak
+				bestStart = curStart
+				bestEnd = day
+			}
+			prevDay = day
+		}
+		if longestStreak >= 3 {
+			sub := ""
+			if !bestStart.IsZero() {
+				sub = bestStart.Format("2 Jan") + " — " + bestEnd.Format("2 Jan") + " · no zeros"
+			}
+			roundup.CalloutActivities = append(roundup.CalloutActivities, &pbactivity.ShowcaseCalloutActivity{
+				Kind:      "LONGEST STREAK",
+				Title:     fmt.Sprintf("%d Days Unbroken", longestStreak),
+				StatValue: fmt.Sprintf("%d", longestStreak),
+				StatUnit:  "CONSECUTIVE DAYS",
+				Sub:       sub,
+				Date:      "STREAK",
+			})
+		}
+	}
+
+	// Peak PR day
+	if len(roundup.PrsAchieved) > 0 {
+		prsByDate := make(map[string]int)
+		for _, pr := range roundup.PrsAchieved {
+			if pr.AchievedAt != nil {
+				d := pr.AchievedAt.AsTime().UTC().Format("2006-01-02")
+				prsByDate[d]++
+			}
+		}
+		peakDate, peakCount := "", 0
+		for d, count := range prsByDate {
+			if count > peakCount {
+				peakCount = count
+				peakDate = d
+			}
+		}
+		dateLabel := ""
+		if peakDate != "" {
+			if parsed, err2 := time.Parse("2006-01-02", peakDate); err2 == nil {
+				dateLabel = parsed.Format("2 Jan")
+			}
+		}
+		statVal := fmt.Sprintf("%d", len(roundup.PrsAchieved))
+		statUnit := "RECORDS THIS PERIOD"
+		sub := ""
+		if peakCount >= 2 {
+			statVal = fmt.Sprintf("%d", peakCount)
+			statUnit = "RECORDS IN ONE SESSION"
+			sub = fmt.Sprintf("%d total PRs this period", len(roundup.PrsAchieved))
+		} else {
+			dateLabel = ""
+		}
+		roundup.CalloutActivities = append(roundup.CalloutActivities, &pbactivity.ShowcaseCalloutActivity{
+			Kind:      "PERSONAL RECORDS",
+			Title:     "Records Broken",
+			StatValue: statVal,
+			StatUnit:  statUnit,
+			Sub:       sub,
+			Date:      dateLabel,
+		})
+	}
+
 	roundup.AiSummary = generateRoundupAISummary(ctx, s.logger, roundup)
 
 	if err := s.store.SetRoundup(ctx, roundup); err != nil {

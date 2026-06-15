@@ -16,6 +16,46 @@ import (
 
 const roundupAISummaryTimeout = 10 * time.Second
 
+// deriveEffortLevel maps a single showcase entry to a 0–4 effort level for
+// the consistency calendar heatmap (0=rest,1=easy,2=moderate,3=hard,4=peak).
+func deriveEffortLevel(e *pbactivity.ShowcaseProfileEntry) int32 {
+	if len(e.HrZoneMinutes) >= 6 {
+		var total int32
+		for i := 1; i <= 5; i++ {
+			total += e.HrZoneMinutes[i]
+		}
+		if total > 10 {
+			z5 := e.HrZoneMinutes[5]
+			z45 := e.HrZoneMinutes[4] + z5
+			z12 := e.HrZoneMinutes[1] + e.HrZoneMinutes[2]
+			switch {
+			case z5*100 > total*15:
+				return 4 // >15 % in Z5 → peak
+			case z45*100 > total*25:
+				return 3 // >25 % in Z4+Z5 → hard
+			case z12*100 > total*70:
+				return 1 // >70 % in Z1+Z2 → easy
+			default:
+				return 2
+			}
+		}
+	}
+	// duration-based fallback
+	mins := int32(e.DurationSeconds / 60)
+	switch {
+	case mins >= 120:
+		return 4
+	case mins >= 75:
+		return 3
+	case mins >= 30:
+		return 2
+	case mins > 0:
+		return 1
+	default:
+		return 0
+	}
+}
+
 // generateRoundupAISummary calls Gemini to produce a one-paragraph narrative
 // for the period. Returns an empty string if the API key is absent or the
 // call fails — callers should treat an empty string as "not available".

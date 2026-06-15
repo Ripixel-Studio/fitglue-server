@@ -6,16 +6,23 @@ World-class weekly/monthly/yearly roundup page. Reference: Spotify Wrapped × St
 
 | Section | Design | Backend data | Frontend |
 |---|---|---|---|
-| 1. Hero / Crown | ⏳ Design in progress | ✅ done | ✅ existing |
-| 2. AI Summary | ✅ done | ✅ done | ✅ done |
-| 3. Comparison Band | ⏳ Design in progress | ⬜ todo | ⬜ todo |
-| 4. Callout Activities | ⏳ Design in progress | ⬜ todo | ⬜ todo |
-| 5. Sport Breakdown (donut + stacked bar) | ⏳ Design in progress | ✅ data exists | ⬜ needs charts |
-| 6. Consistency Calendar | ⏳ Design in progress | ⬜ needs per-day endpoint | ⬜ todo |
-| 7. Effort Deep Dive | ⏳ Design in progress | ✅ data exists | ✅ basic bar exists |
+| 1. Hero / Crown | ✅ done | ✅ done | ✅ done (adaptive anchors, avatar ring) |
+| 2. AI Summary | ✅ done | ✅ done | ✅ done (pull-quote) |
+| 3. Comparison Band | ✅ done | ✅ done (prev period via existing endpoint) | ✅ done (client-side deltas ticker) |
+| 4. Callout Activities | ✅ done | ✅ done (`callout_activities` field 30) | ✅ done (spotlight cards) |
+| 5. Sport Breakdown (donut + stacked bar) | ✅ done | ✅ done | ✅ done (pure SVG donut + stacked bar) |
+| 6. Consistency Calendar | ✅ done | ✅ done (`day_entries` field 31) | ✅ done (GitHub-style heatmap) |
+| 7. Effort Deep Dive | ✅ done | ✅ done | ✅ done (concentric HR rings + legend) |
 | 8. Highlights Band | ✅ done | ✅ done | ✅ done |
-| 9. Personal Records Wall | ⏳ Design in progress | ✅ data exists | ✅ basic exists |
-| 10. Sticky Share Bar | ⏳ Design in progress | n/a | ⬜ todo |
+| 9. Personal Records Wall | ✅ done | ✅ done | ✅ done (dense grid + delta badges) |
+| 10. Sticky Share Bar | ✅ done | n/a | ✅ done (Share Card / Copy Link / Create Reel [Soon]) |
+
+**Implemented as a full rewrite of `web/src/showcase/pages/ShowcaseRoundupPage.tsx`** using the
+`rp-*` class system (CSS in `web/src/showcase/showcase.css`). All chart components are pure SVG
+(no chart library). Pure data-transform helpers live in `web/src/showcase/utils/roundup.ts`
+(unit-tested in `__tests__/roundup.test.ts`). The share modal keeps the
+landscape/square/story shapes (`ShowcaseRoundupExportModal`) — **not** the design's 1080×1080
+squares — and the sticky bar retains the future "Create Reel" video affordance.
 
 ## Sections
 
