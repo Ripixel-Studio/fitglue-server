@@ -345,10 +345,20 @@ type ShowcaseProfileEntry struct {
 	// Populated at entry creation time from the HR zones enrichment; absent means no zone data.
 	HrZoneMinutes []int32 `protobuf:"varint,18,rep,packed,name=hr_zone_minutes,json=hrZoneMinutes,proto3" json:"hr_zone_minutes,omitempty"`
 	// Photo URLs for activities with attached images; populated from ShowcasedActivity.photo_urls.
-	PhotoUrls     []string               `protobuf:"bytes,19,rep,name=photo_urls,json=photoUrls,proto3" json:"photo_urls,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	PhotoUrls []string               `protobuf:"bytes,19,rep,name=photo_urls,json=photoUrls,proto3" json:"photo_urls,omitempty"`
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Enrichment summaries projected at entry creation time (from the hydrated
+	// ActivityEnrichments) so roundups can aggregate them without re-reading GCS.
+	// All optional; absent means the source enrichment did not run for this activity.
+	ElevationGainM     *float64      `protobuf:"fixed64,21,opt,name=elevation_gain_m,json=elevationGainM,proto3,oneof" json:"elevation_gain_m,omitempty"`
+	LocationName       *string       `protobuf:"bytes,22,opt,name=location_name,json=locationName,proto3,oneof" json:"location_name,omitempty"` // e.g. "Bushy Park, London"
+	Country            *string       `protobuf:"bytes,23,opt,name=country,proto3,oneof" json:"country,omitempty"`
+	TempC              *float64      `protobuf:"fixed64,24,opt,name=temp_c,json=tempC,proto3,oneof" json:"temp_c,omitempty"`
+	WeatherDescription *string       `protobuf:"bytes,25,opt,name=weather_description,json=weatherDescription,proto3,oneof" json:"weather_description,omitempty"` // "Clear", "Rain", etc.
+	BestEfforts        []*BestEffort `protobuf:"bytes,26,rep,name=best_efforts,json=bestEfforts,proto3" json:"best_efforts,omitempty"`                            // reuse enrichments.BestEffort
+	PrimaryMuscles     []string      `protobuf:"bytes,27,rep,name=primary_muscles,json=primaryMuscles,proto3" json:"primary_muscles,omitempty"`                   // primary muscles worked (strength)
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ShowcaseProfileEntry) Reset() {
@@ -517,6 +527,55 @@ func (x *ShowcaseProfileEntry) GetPhotoUrls() []string {
 func (x *ShowcaseProfileEntry) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *ShowcaseProfileEntry) GetElevationGainM() float64 {
+	if x != nil && x.ElevationGainM != nil {
+		return *x.ElevationGainM
+	}
+	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetLocationName() string {
+	if x != nil && x.LocationName != nil {
+		return *x.LocationName
+	}
+	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetCountry() string {
+	if x != nil && x.Country != nil {
+		return *x.Country
+	}
+	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetTempC() float64 {
+	if x != nil && x.TempC != nil {
+		return *x.TempC
+	}
+	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetWeatherDescription() string {
+	if x != nil && x.WeatherDescription != nil {
+		return *x.WeatherDescription
+	}
+	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetBestEfforts() []*BestEffort {
+	if x != nil {
+		return x.BestEfforts
+	}
+	return nil
+}
+
+func (x *ShowcaseProfileEntry) GetPrimaryMuscles() []string {
+	if x != nil {
+		return x.PrimaryMuscles
 	}
 	return nil
 }
@@ -1289,7 +1348,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"photo_urls\x18\x15 \x03(\tR\tphotoUrls\x12N\n" +
 	"\venrichments\x18\x16 \x01(\v2,.fitglue.models.activity.ActivityEnrichmentsR\venrichmentsB\x18\n" +
-	"\x16_pipeline_execution_idJ\x04\b\x03\x10\x04J\x04\b\f\x10\rR\auser_id\"\xd4\a\n" +
+	"\x16_pipeline_execution_idJ\x04\b\x03\x10\x04J\x04\b\f\x10\rR\auser_id\"\xe5\n" +
+	"\n" +
 	"\x14ShowcaseProfileEntry\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x14\n" +
@@ -1317,12 +1377,25 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"photo_urls\x18\x13 \x03(\tR\tphotoUrls\x129\n" +
 	"\n" +
-	"created_at\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\f\n" +
+	"created_at\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12-\n" +
+	"\x10elevation_gain_m\x18\x15 \x01(\x01H\x04R\x0eelevationGainM\x88\x01\x01\x12(\n" +
+	"\rlocation_name\x18\x16 \x01(\tH\x05R\flocationName\x88\x01\x01\x12\x1d\n" +
+	"\acountry\x18\x17 \x01(\tH\x06R\acountry\x88\x01\x01\x12\x1a\n" +
+	"\x06temp_c\x18\x18 \x01(\x01H\aR\x05tempC\x88\x01\x01\x124\n" +
+	"\x13weather_description\x18\x19 \x01(\tH\bR\x12weatherDescription\x88\x01\x01\x12F\n" +
+	"\fbest_efforts\x18\x1a \x03(\v2#.fitglue.models.activity.BestEffortR\vbestEfforts\x12'\n" +
+	"\x0fprimary_muscles\x18\x1b \x03(\tR\x0eprimaryMusclesB\f\n" +
 	"\n" +
 	"_sparklineB\x11\n" +
 	"\x0f_avg_heart_rateB\x10\n" +
 	"\x0e_calories_kcalB\v\n" +
-	"\t_pr_label\"@\n" +
+	"\t_pr_labelB\x13\n" +
+	"\x11_elevation_gain_mB\x10\n" +
+	"\x0e_location_nameB\n" +
+	"\n" +
+	"\b_countryB\t\n" +
+	"\a_temp_cB\x16\n" +
+	"\x14_weather_description\"@\n" +
 	"\x0eEntrySparkline\x12\x16\n" +
 	"\x06metric\x18\x01 \x01(\tR\x06metric\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\x01R\x06values\"\x9c\x01\n" +
@@ -1430,7 +1503,8 @@ var file_models_activity_uploaded_proto_goTypes = []any{
 	(ActivityType)(0),              // 15: fitglue.models.activity.ActivityType
 	(*StandardizedActivity)(nil),   // 16: fitglue.models.activity.StandardizedActivity
 	(*ActivityEnrichments)(nil),    // 17: fitglue.models.activity.ActivityEnrichments
-	(*HeartRateZoneBucket)(nil),    // 18: fitglue.models.activity.HeartRateZoneBucket
+	(*BestEffort)(nil),             // 18: fitglue.models.activity.BestEffort
+	(*HeartRateZoneBucket)(nil),    // 19: fitglue.models.activity.HeartRateZoneBucket
 }
 var file_models_activity_uploaded_proto_depIdxs = []int32{
 	12, // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
@@ -1449,25 +1523,26 @@ var file_models_activity_uploaded_proto_depIdxs = []int32{
 	13, // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
 	3,  // 14: fitglue.models.activity.ShowcaseProfileEntry.sparkline:type_name -> fitglue.models.activity.EntrySparkline
 	13, // 15: fitglue.models.activity.ShowcaseProfileEntry.created_at:type_name -> google.protobuf.Timestamp
-	2,  // 16: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	13, // 17: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
-	13, // 18: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
-	13, // 19: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 20: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
-	5,  // 21: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
-	6,  // 22: fitglue.models.activity.ShowcaseProfile.callouts:type_name -> fitglue.models.activity.ShowcaseBioCallout
-	10, // 23: fitglue.models.activity.ShowcaseProfile.zone_split:type_name -> fitglue.models.activity.LifetimeZoneSplit
-	11, // 24: fitglue.models.activity.ShowcaseProfile.streak_history:type_name -> fitglue.models.activity.WeeklyStreakHistory
-	9,  // 25: fitglue.models.activity.ShowcaseProfile.top_prs:type_name -> fitglue.models.activity.ShowcaseTopPR
-	8,  // 26: fitglue.models.activity.ShowcaseProfile.roundup_settings:type_name -> fitglue.models.activity.RoundupSettings
-	13, // 27: fitglue.models.activity.ShowcaseTopPR.achieved_at:type_name -> google.protobuf.Timestamp
-	18, // 28: fitglue.models.activity.LifetimeZoneSplit.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
-	13, // 29: fitglue.models.activity.LifetimeZoneSplit.computed_at:type_name -> google.protobuf.Timestamp
-	30, // [30:30] is the sub-list for method output_type
-	30, // [30:30] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	18, // 16: fitglue.models.activity.ShowcaseProfileEntry.best_efforts:type_name -> fitglue.models.activity.BestEffort
+	2,  // 17: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
+	13, // 18: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
+	13, // 19: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
+	13, // 20: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
+	4,  // 21: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
+	5,  // 22: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
+	6,  // 23: fitglue.models.activity.ShowcaseProfile.callouts:type_name -> fitglue.models.activity.ShowcaseBioCallout
+	10, // 24: fitglue.models.activity.ShowcaseProfile.zone_split:type_name -> fitglue.models.activity.LifetimeZoneSplit
+	11, // 25: fitglue.models.activity.ShowcaseProfile.streak_history:type_name -> fitglue.models.activity.WeeklyStreakHistory
+	9,  // 26: fitglue.models.activity.ShowcaseProfile.top_prs:type_name -> fitglue.models.activity.ShowcaseTopPR
+	8,  // 27: fitglue.models.activity.ShowcaseProfile.roundup_settings:type_name -> fitglue.models.activity.RoundupSettings
+	13, // 28: fitglue.models.activity.ShowcaseTopPR.achieved_at:type_name -> google.protobuf.Timestamp
+	19, // 29: fitglue.models.activity.LifetimeZoneSplit.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
+	13, // 30: fitglue.models.activity.LifetimeZoneSplit.computed_at:type_name -> google.protobuf.Timestamp
+	31, // [31:31] is the sub-list for method output_type
+	31, // [31:31] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_uploaded_proto_init() }

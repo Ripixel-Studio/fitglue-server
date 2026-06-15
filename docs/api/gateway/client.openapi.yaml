@@ -3782,6 +3782,15 @@ components:
                     type: integer
                     format: int32
             description: Per-day effort record for the consistency calendar heatmap.
+        RoundupMuscle:
+            type: object
+            properties:
+                name:
+                    type: string
+                count:
+                    type: integer
+                    format: int32
+            description: A muscle group worked across the period, with frequency (from MuscleHeatmapSummary).
         RoundupPhoto:
             type: object
             properties:
@@ -3847,6 +3856,17 @@ components:
                     type: string
                     format: enum
             description: A photo surfaced in the roundup photo mosaic.
+        RoundupPlace:
+            type: object
+            properties:
+                name:
+                    type: string
+                country:
+                    type: string
+                activityCount:
+                    type: integer
+                    format: int32
+            description: A place trained at during the period (from LocationSummary).
         RoundupRoute:
             type: object
             properties:
@@ -3927,6 +3947,22 @@ components:
             description: |-
                 RoundupSettings controls auto-generation of showcase roundup pages.
                  Athlete-tier only; all fields default to false.
+        RoundupWeather:
+            type: object
+            properties:
+                sessionCount:
+                    type: integer
+                    format: int32
+                rainCount:
+                    type: integer
+                    format: int32
+                coldestTempC:
+                    type: number
+                    format: double
+                hottestTempC:
+                    type: number
+                    format: double
+            description: Aggregate weather grit over the period (from WeatherSummary).
         RunningDynamicsSummary:
             type: object
             properties:
@@ -4313,6 +4349,30 @@ components:
                 createdAt:
                     type: string
                     format: date-time
+                elevationGainM:
+                    type: number
+                    description: |-
+                        Enrichment summaries projected at entry creation time (from the hydrated
+                         ActivityEnrichments) so roundups can aggregate them without re-reading GCS.
+                         All optional; absent means the source enrichment did not run for this activity.
+                    format: double
+                locationName:
+                    type: string
+                country:
+                    type: string
+                tempC:
+                    type: number
+                    format: double
+                weatherDescription:
+                    type: string
+                bestEfforts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BestEffort'
+                primaryMuscles:
+                    type: array
+                    items:
+                        type: string
         ShowcaseRoundup:
             type: object
             properties:
@@ -4444,6 +4504,21 @@ components:
                     items:
                         $ref: '#/components/schemas/RoundupRoute'
                     description: GPS route thumbnails collected from the period's activities
+                places:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RoundupPlace'
+                    description: Enrichment aggregates (elevation feeds total_elevation_gain_meters above)
+                weather:
+                    $ref: '#/components/schemas/RoundupWeather'
+                bestEfforts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BestEffort'
+                muscles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RoundupMuscle'
         ShowcaseTheme:
             type: object
             properties:

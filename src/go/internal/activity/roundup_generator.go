@@ -69,6 +69,9 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 		if e.CaloriesKcal != nil {
 			roundup.TotalCaloriesKcal += *e.CaloriesKcal
 		}
+		if e.ElevationGainM != nil {
+			roundup.TotalElevationGainMeters += *e.ElevationGainM
+		}
 		for i, mins := range e.HrZoneMinutes {
 			if i < 6 {
 				zoneMinutes[i] += mins
@@ -97,6 +100,9 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 
 	// Rich media — photo mosaic + GPS route wall, drawn from the period's entries.
 	roundup.Photos, roundup.Routes = collectRoundupMedia(entries, profile.ShowPhotoGallery)
+
+	// Enrichment aggregates — places, weather grit, best efforts, muscles worked.
+	roundup.Places, roundup.Weather, roundup.BestEfforts, roundup.Muscles = aggregateRoundupEnrichments(entries)
 
 	// Highlight stats — single best across the period
 	for _, e := range entries {

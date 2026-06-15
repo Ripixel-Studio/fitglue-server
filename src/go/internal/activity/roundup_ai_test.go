@@ -250,3 +250,100 @@ func TestCollectRoundupMedia(t *testing.T) {
 		}
 	})
 }
+
+func TestIsWetWeather(t *testing.T) {
+	wet := []string{"Rain", "Light drizzle", "Heavy Showers", "Snow", "Thunderstorm"}
+	dry := []string{"Clear", "Partly Cloudy", "Sunny", ""}
+	for _, d := range wet {
+		if !isWetWeather(d) {
+			t.Errorf("isWetWeather(%q) = false, want true", d)
+		}
+	}
+	for _, d := range dry {
+		if isWetWeather(d) {
+			t.Errorf("isWetWeather(%q) = true, want false", d)
+		}
+	}
+}
+
+func TestAggregateRoundupEnrichments(t *testing.T) {
+	strptr := func(s string) *string { return &s }
+	fptr := func(f float64) *float64 { return &f }
+
+	entries := []*pbactivity.ShowcaseProfileEntry{
+		{
+			LocationName:       strptr("Bushy Park, London"),
+			Country:            strptr("United Kingdom"),
+			TempC:              fptr(8),
+			WeatherDescription: strptr("Light Rain"),
+			BestEfforts: []*pbactivity.BestEffort{
+				{DistanceKey: "5k", Display: "5K", DistanceM: 5000, TimeSeconds: 1400},
+			},
+			PrimaryMuscles: []string{"quads", "glutes"},
+		},
+		{
+			LocationName:       strptr("Bushy Park, London"),
+			Country:            strptr("United Kingdom"),
+			TempC:              fptr(-2),
+			WeatherDescription: strptr("Clear"),
+			BestEfforts: []*pbactivity.BestEffort{
+				{DistanceKey: "5k", Display: "5K", DistanceM: 5000, TimeSeconds: 1360}, // faster
+				{DistanceKey: "10k", Display: "10K", DistanceM: 10000, TimeSeconds: 2900},
+			},
+			PrimaryMuscles: []string{"quads"},
+		},
+		{
+			LocationName:   strptr("Richmond Park"),
+			Country:        strptr("United Kingdom"),
+			TempC:          fptr(15),
+			PrimaryMuscles: []string{"chest"},
+		},
+	}
+
+	places, weather, efforts, muscles := aggregateRoundupEnrichments(entries)
+
+	// Places: Bushy Park (2) ahead of Richmond (1)
+	if len(places) != 2 {
+		t.Fatalf("places = %d, want 2", len(places))
+	}
+	if places[0].Name != "Bushy Park, London" || places[0].ActivityCount != 2 {
+		t.Errorf("top place = %+v, want Bushy Park x2", places[0])
+	}
+	if places[0].Country != "United Kingdom" {
+		t.Errorf("place country = %q", places[0].Country)
+	}
+
+	// Weather: 3 sessions w/ temp, 1 rainy, coldest -2, hottest 15
+	if weather == nil {
+		t.Fatal("weather is nil, want populated")
+	}
+	if weather.SessionCount != 3 || weather.RainCount != 1 {
+		t.Errorf("weather counts = session %d rain %d, want 3/1", weather.SessionCount, weather.RainCount)
+	}
+	if weather.ColdestTempC != -2 || weather.HottestTempC != 15 {
+		t.Errorf("weather temps = cold %v hot %v, want -2/15", weather.ColdestTempC, weather.HottestTempC)
+	}
+
+	// Best efforts: 5k fastest is 1360, sorted by distance asc (5k before 10k)
+	if len(efforts) != 2 {
+		t.Fatalf("efforts = %d, want 2", len(efforts))
+	}
+	if efforts[0].DistanceKey != "5k" || efforts[0].TimeSeconds != 1360 {
+		t.Errorf("fastest 5k = %+v, want 1360s", efforts[0])
+	}
+	if efforts[1].DistanceKey != "10k" {
+		t.Errorf("second effort = %s, want 10k", efforts[1].DistanceKey)
+	}
+
+	// Muscles: quads (2) ahead of glutes/chest (1)
+	if len(muscles) != 3 || muscles[0].Name != "quads" || muscles[0].Count != 2 {
+		t.Errorf("top muscle = %+v (n=%d), want quads x2", muscles[0], len(muscles))
+	}
+}
+
+func TestAggregateRoundupEnrichments_Empty(t *testing.T) {
+	places, weather, efforts, muscles := aggregateRoundupEnrichments(nil)
+	if places != nil || weather != nil || efforts != nil || muscles != nil {
+		t.Errorf("empty input should yield all nil, got places=%v weather=%v efforts=%v muscles=%v", places, weather, efforts, muscles)
+	}
+}

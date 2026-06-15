@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,9 +18,132 @@ import (
 const roundupAISummaryTimeout = 10 * time.Second
 
 const (
-	maxRoundupPhotos = 24
-	maxRoundupRoutes = 12
+	maxRoundupPhotos  = 24
+	maxRoundupRoutes  = 12
+	maxRoundupPlaces  = 8
+	maxRoundupMuscles = 6
 )
+
+// wetWeatherKeywords flag a weather description as "grit" weather for the roundup.
+var wetWeatherKeywords = []string{"rain", "drizzle", "shower", "snow", "sleet", "thunder"}
+
+func isWetWeather(desc string) bool {
+	d := strings.ToLower(desc)
+	for _, k := range wetWeatherKeywords {
+		if strings.Contains(d, k) {
+			return true
+		}
+	}
+	return false
+}
+
+// aggregateRoundupEnrichments rolls the per-entry enrichment summaries up into
+// the period-level place list, weather grit, best efforts and muscles worked.
+func aggregateRoundupEnrichments(entries []*pbactivity.ShowcaseProfileEntry) (
+	places []*pbactivity.RoundupPlace,
+	weather *pbactivity.RoundupWeather,
+	bestEfforts []*pbactivity.BestEffort,
+	muscles []*pbactivity.RoundupMuscle,
+) {
+	placeData := map[string]*pbactivity.RoundupPlace{}
+	var placeOrder []string
+	muscleData := map[string]*pbactivity.RoundupMuscle{}
+	var muscleOrder []string
+	effortByKey := map[string]*pbactivity.BestEffort{}
+	var effortOrder []string
+
+	var w pbactivity.RoundupWeather
+	weatherSeen, coldSet, hotSet := false, false, false
+
+	for _, e := range entries {
+		// Places trained
+		if e.LocationName != nil && *e.LocationName != "" {
+			name := *e.LocationName
+			p, ok := placeData[name]
+			if !ok {
+				p = &pbactivity.RoundupPlace{Name: name}
+				if e.Country != nil {
+					p.Country = *e.Country
+				}
+				placeData[name] = p
+				placeOrder = append(placeOrder, name)
+			}
+			p.ActivityCount++
+		}
+
+		// Weather grit
+		if e.TempC != nil {
+			weatherSeen = true
+			w.SessionCount++
+			t := *e.TempC
+			if !coldSet || t < w.ColdestTempC {
+				w.ColdestTempC = t
+				coldSet = true
+			}
+			if !hotSet || t > w.HottestTempC {
+				w.HottestTempC = t
+				hotSet = true
+			}
+		}
+		if e.WeatherDescription != nil && isWetWeather(*e.WeatherDescription) {
+			w.RainCount++
+		}
+
+		// Best efforts — fastest per distance key
+		for _, be := range e.BestEfforts {
+			if be == nil || be.DistanceKey == "" || be.TimeSeconds <= 0 {
+				continue
+			}
+			cur, ok := effortByKey[be.DistanceKey]
+			if !ok {
+				effortByKey[be.DistanceKey] = be
+				effortOrder = append(effortOrder, be.DistanceKey)
+			} else if be.TimeSeconds < cur.TimeSeconds {
+				effortByKey[be.DistanceKey] = be
+			}
+		}
+
+		// Muscles worked
+		for _, m := range e.PrimaryMuscles {
+			if m == "" {
+				continue
+			}
+			md, ok := muscleData[m]
+			if !ok {
+				md = &pbactivity.RoundupMuscle{Name: m}
+				muscleData[m] = md
+				muscleOrder = append(muscleOrder, m)
+			}
+			md.Count++
+		}
+	}
+
+	for _, name := range placeOrder {
+		places = append(places, placeData[name])
+	}
+	sort.SliceStable(places, func(i, j int) bool { return places[i].ActivityCount > places[j].ActivityCount })
+	if len(places) > maxRoundupPlaces {
+		places = places[:maxRoundupPlaces]
+	}
+
+	for _, name := range muscleOrder {
+		muscles = append(muscles, muscleData[name])
+	}
+	sort.SliceStable(muscles, func(i, j int) bool { return muscles[i].Count > muscles[j].Count })
+	if len(muscles) > maxRoundupMuscles {
+		muscles = muscles[:maxRoundupMuscles]
+	}
+
+	for _, k := range effortOrder {
+		bestEfforts = append(bestEfforts, effortByKey[k])
+	}
+	sort.SliceStable(bestEfforts, func(i, j int) bool { return bestEfforts[i].DistanceM < bestEfforts[j].DistanceM })
+
+	if weatherSeen {
+		weather = &w
+	}
+	return places, weather, bestEfforts, muscles
+}
 
 // collectRoundupMedia gathers photo and GPS route-thumbnail assets from the
 // period's entries for the roundup photo mosaic and route wall. Photos are only

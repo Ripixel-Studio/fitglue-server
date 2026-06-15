@@ -348,6 +348,39 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		newEntry.HrZoneMinutes = zoneMinutes
 	}
 
+	// Enrichment summaries projected for roundup aggregation. All guarded — an
+	// absent enrichment simply leaves the corresponding entry field unset.
+	if hydratedEnrichments != nil {
+		if el := hydratedEnrichments.Elevation; el != nil && el.TotalGainM > 0 {
+			v := el.TotalGainM
+			newEntry.ElevationGainM = &v
+		}
+		if loc := hydratedEnrichments.Location; loc != nil {
+			if loc.LocationName != "" {
+				v := loc.LocationName
+				newEntry.LocationName = &v
+			}
+			if loc.Country != "" {
+				v := loc.Country
+				newEntry.Country = &v
+			}
+		}
+		if w := hydratedEnrichments.Weather; w != nil {
+			temp := w.TempC
+			newEntry.TempC = &temp
+			if w.WeatherDescription != "" {
+				desc := w.WeatherDescription
+				newEntry.WeatherDescription = &desc
+			}
+		}
+		if be := hydratedEnrichments.BestEfforts; be != nil && len(be.Efforts) > 0 {
+			newEntry.BestEfforts = be.Efforts
+		}
+		if mh := hydratedEnrichments.MuscleHeatmap; mh != nil && len(mh.Primary) > 0 {
+			newEntry.PrimaryMuscles = mh.Primary
+		}
+	}
+
 	// Write entry to sub-collection (idempotent via MergeAll)
 	if err := s.store.SetShowcaseProfileEntry(ctx, req.UserId, newEntry); err != nil {
 		s.logger.Error(ctx, "failed to set showcase profile entry", "error", err)

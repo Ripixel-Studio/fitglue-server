@@ -88,6 +88,17 @@ message ShowcaseProfileEntry {
   repeated string photo_urls = 19;
 
   google.protobuf.Timestamp created_at = 20;
+
+  // Enrichment summaries projected at entry creation time (from the hydrated
+  // ActivityEnrichments) so roundups can aggregate them without re-reading GCS.
+  // All optional; absent means the source enrichment did not run for this activity.
+  optional double elevation_gain_m = 21;
+  optional string location_name = 22;       // e.g. "Bushy Park, London"
+  optional string country = 23;
+  optional double temp_c = 24;
+  optional string weather_description = 25;  // "Clear", "Rain", etc.
+  repeated BestEffort best_efforts = 26;     // reuse enrichments.BestEffort
+  repeated string primary_muscles = 27;      // primary muscles worked (strength)
 }
 
 // EntrySparkline is a downsampled timeseries for card-level sparklines.

@@ -3,6 +3,7 @@ package fitglue.models.activity;
 import "google/protobuf/timestamp.proto";
 import "models/activity/source.proto";
 import "models/activity/uploaded.proto";
+import "models/activity/enrichments.proto";
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
 enum RoundupPeriodType {
   ROUNDUP_PERIOD_TYPE_UNSPECIFIED = 0;
@@ -40,6 +41,24 @@ message RoundupRoute {
   string date = 3;          // e.g. "14 Sep"
   double distance_meters = 4;
   ActivityType activity_type = 5;
+}
+// A place trained at during the period (from LocationSummary).
+message RoundupPlace {
+  string name = 1;
+  string country = 2;
+  int32 activity_count = 3;
+}
+// Aggregate weather grit over the period (from WeatherSummary).
+message RoundupWeather {
+  int32 session_count = 1;   // sessions that carried weather data
+  int32 rain_count = 2;      // sessions in rain/drizzle/snow
+  double coldest_temp_c = 3;
+  double hottest_temp_c = 4;
+}
+// A muscle group worked across the period, with frequency (from MuscleHeatmapSummary).
+message RoundupMuscle {
+  string name = 1;
+  int32 count = 2;
 }
 message RoundupActivityTypeBreakdown {
   ActivityType activity_type = 1;
@@ -90,4 +109,9 @@ message ShowcaseRoundup {
   repeated RoundupPhoto photos = 32;
   // GPS route thumbnails collected from the period's activities
   repeated RoundupRoute routes = 33;
+  // Enrichment aggregates (elevation feeds total_elevation_gain_meters above)
+  repeated RoundupPlace places = 34;
+  optional RoundupWeather weather = 35;
+  repeated BestEffort best_efforts = 36;   // fastest per distance across the period
+  repeated RoundupMuscle muscles = 37;
 }

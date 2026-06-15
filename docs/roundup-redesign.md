@@ -121,8 +121,37 @@ Export modal already ships with:
 
 ## Phasing
 
-**Phase 1 (now):** AI Summary, Highlights, proto field foundations — ✅ done
-**Phase 2 (post-design output):** Redesign Hero, Comparison Band, Sticky Share Bar — UI work
-**Phase 3:** Charts (donut, stacked bar), Consistency Calendar — data + chart lib
-**Phase 4:** Callout Activities, per-section share cards — new proto fields + generator work
-**Phase 5:** Roundup Reel video export, 3D card tilt — polish
+**Phase 1:** AI Summary, Highlights, proto field foundations — ✅ done
+**Phase 2:** Redesign Hero, Comparison Band, Sticky Share Bar — ✅ done
+**Phase 3:** Charts (donut, stacked bar), Consistency Calendar — ✅ done (pure SVG)
+**Phase 4:** Callout Activities, per-section share buttons — ✅ done
+**Phase 5:** Roundup Reel video export, 3D card tilt — polish (deferred)
+
+## Rich-data phases (6–8)
+
+Using the data already flowing through showcase entries + enrichments.
+
+**Phase 6 — Rich media — ✅ done**
+- `photos` (field 32) + `routes` (field 33) on `ShowcaseRoundup`, collected in
+  `generateRoundup` from each entry's `photo_urls` / `route_thumbnail_url`
+  (photos gated by `show_photo_gallery`; capped 24/12).
+- Frontend: Photo Mosaic (first photo featured 2×2) + Route Wall sections.
+
+**Phase 7 — Enrichment sections — ✅ done**
+- Enrichment summaries projected onto `ShowcaseProfileEntry` (fields 21–27:
+  `elevation_gain_m`, `location_name`, `country`, `temp_c`,
+  `weather_description`, `best_efforts`, `primary_muscles`) at entry-creation
+  time in `AddShowcaseEntry`, from the GCS-hydrated `ActivityEnrichments`.
+- `generateRoundup` aggregates these into: `total_elevation_gain_meters`
+  (now populated), `places` (34), `weather` (35), `best_efforts` (36),
+  `muscles` (37).
+- Frontend sections: Muscles under load, Places trained, Weather grit, Fastest
+  known times, and a Total Vertical highlight with a landmark comparison.
+- **Caveat:** enrichment data accrues forward — it only appears on activities
+  synced after this shipped (no backfill of historical entries).
+
+**Phase 8 — Shareables v2 — ⬜ next**
+- Restyle the export modal into the `rp-*` language and add card templates from
+  the new sections (Sport, Calendar, HR, Comparison, Route, Photo). Wire the
+  per-section `ShareStat` ghost buttons to open the modal pre-targeted to that
+  card. Keep landscape/square/story shapes + Create Reel [Soon].

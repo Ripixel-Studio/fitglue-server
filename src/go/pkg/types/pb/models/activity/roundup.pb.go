@@ -374,6 +374,189 @@ func (x *RoundupRoute) GetActivityType() ActivityType {
 	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 }
 
+// A place trained at during the period (from LocationSummary).
+type RoundupPlace struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Country       string                 `protobuf:"bytes,2,opt,name=country,proto3" json:"country,omitempty"`
+	ActivityCount int32                  `protobuf:"varint,3,opt,name=activity_count,json=activityCount,proto3" json:"activity_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoundupPlace) Reset() {
+	*x = RoundupPlace{}
+	mi := &file_models_activity_roundup_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoundupPlace) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoundupPlace) ProtoMessage() {}
+
+func (x *RoundupPlace) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_roundup_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoundupPlace.ProtoReflect.Descriptor instead.
+func (*RoundupPlace) Descriptor() ([]byte, []int) {
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RoundupPlace) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *RoundupPlace) GetCountry() string {
+	if x != nil {
+		return x.Country
+	}
+	return ""
+}
+
+func (x *RoundupPlace) GetActivityCount() int32 {
+	if x != nil {
+		return x.ActivityCount
+	}
+	return 0
+}
+
+// Aggregate weather grit over the period (from WeatherSummary).
+type RoundupWeather struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionCount  int32                  `protobuf:"varint,1,opt,name=session_count,json=sessionCount,proto3" json:"session_count,omitempty"` // sessions that carried weather data
+	RainCount     int32                  `protobuf:"varint,2,opt,name=rain_count,json=rainCount,proto3" json:"rain_count,omitempty"`          // sessions in rain/drizzle/snow
+	ColdestTempC  float64                `protobuf:"fixed64,3,opt,name=coldest_temp_c,json=coldestTempC,proto3" json:"coldest_temp_c,omitempty"`
+	HottestTempC  float64                `protobuf:"fixed64,4,opt,name=hottest_temp_c,json=hottestTempC,proto3" json:"hottest_temp_c,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoundupWeather) Reset() {
+	*x = RoundupWeather{}
+	mi := &file_models_activity_roundup_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoundupWeather) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoundupWeather) ProtoMessage() {}
+
+func (x *RoundupWeather) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_roundup_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoundupWeather.ProtoReflect.Descriptor instead.
+func (*RoundupWeather) Descriptor() ([]byte, []int) {
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *RoundupWeather) GetSessionCount() int32 {
+	if x != nil {
+		return x.SessionCount
+	}
+	return 0
+}
+
+func (x *RoundupWeather) GetRainCount() int32 {
+	if x != nil {
+		return x.RainCount
+	}
+	return 0
+}
+
+func (x *RoundupWeather) GetColdestTempC() float64 {
+	if x != nil {
+		return x.ColdestTempC
+	}
+	return 0
+}
+
+func (x *RoundupWeather) GetHottestTempC() float64 {
+	if x != nil {
+		return x.HottestTempC
+	}
+	return 0
+}
+
+// A muscle group worked across the period, with frequency (from MuscleHeatmapSummary).
+type RoundupMuscle struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Count         int32                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoundupMuscle) Reset() {
+	*x = RoundupMuscle{}
+	mi := &file_models_activity_roundup_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoundupMuscle) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoundupMuscle) ProtoMessage() {}
+
+func (x *RoundupMuscle) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_roundup_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoundupMuscle.ProtoReflect.Descriptor instead.
+func (*RoundupMuscle) Descriptor() ([]byte, []int) {
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *RoundupMuscle) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *RoundupMuscle) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
 type RoundupActivityTypeBreakdown struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	ActivityType         ActivityType           `protobuf:"varint,1,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
@@ -389,7 +572,7 @@ type RoundupActivityTypeBreakdown struct {
 
 func (x *RoundupActivityTypeBreakdown) Reset() {
 	*x = RoundupActivityTypeBreakdown{}
-	mi := &file_models_activity_roundup_proto_msgTypes[4]
+	mi := &file_models_activity_roundup_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -401,7 +584,7 @@ func (x *RoundupActivityTypeBreakdown) String() string {
 func (*RoundupActivityTypeBreakdown) ProtoMessage() {}
 
 func (x *RoundupActivityTypeBreakdown) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_roundup_proto_msgTypes[4]
+	mi := &file_models_activity_roundup_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +597,7 @@ func (x *RoundupActivityTypeBreakdown) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundupActivityTypeBreakdown.ProtoReflect.Descriptor instead.
 func (*RoundupActivityTypeBreakdown) Descriptor() ([]byte, []int) {
-	return file_models_activity_roundup_proto_rawDescGZIP(), []int{4}
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *RoundupActivityTypeBreakdown) GetActivityType() ActivityType {
@@ -506,14 +689,19 @@ type ShowcaseRoundup struct {
 	// Photos collected from the period's activities (gated by show_photo_gallery)
 	Photos []*RoundupPhoto `protobuf:"bytes,32,rep,name=photos,proto3" json:"photos,omitempty"`
 	// GPS route thumbnails collected from the period's activities
-	Routes        []*RoundupRoute `protobuf:"bytes,33,rep,name=routes,proto3" json:"routes,omitempty"`
+	Routes []*RoundupRoute `protobuf:"bytes,33,rep,name=routes,proto3" json:"routes,omitempty"`
+	// Enrichment aggregates (elevation feeds total_elevation_gain_meters above)
+	Places        []*RoundupPlace  `protobuf:"bytes,34,rep,name=places,proto3" json:"places,omitempty"`
+	Weather       *RoundupWeather  `protobuf:"bytes,35,opt,name=weather,proto3,oneof" json:"weather,omitempty"`
+	BestEfforts   []*BestEffort    `protobuf:"bytes,36,rep,name=best_efforts,json=bestEfforts,proto3" json:"best_efforts,omitempty"` // fastest per distance across the period
+	Muscles       []*RoundupMuscle `protobuf:"bytes,37,rep,name=muscles,proto3" json:"muscles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShowcaseRoundup) Reset() {
 	*x = ShowcaseRoundup{}
-	mi := &file_models_activity_roundup_proto_msgTypes[5]
+	mi := &file_models_activity_roundup_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -525,7 +713,7 @@ func (x *ShowcaseRoundup) String() string {
 func (*ShowcaseRoundup) ProtoMessage() {}
 
 func (x *ShowcaseRoundup) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_roundup_proto_msgTypes[5]
+	mi := &file_models_activity_roundup_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -538,7 +726,7 @@ func (x *ShowcaseRoundup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShowcaseRoundup.ProtoReflect.Descriptor instead.
 func (*ShowcaseRoundup) Descriptor() ([]byte, []int) {
-	return file_models_activity_roundup_proto_rawDescGZIP(), []int{5}
+	return file_models_activity_roundup_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ShowcaseRoundup) GetRoundupId() string {
@@ -772,11 +960,39 @@ func (x *ShowcaseRoundup) GetRoutes() []*RoundupRoute {
 	return nil
 }
 
+func (x *ShowcaseRoundup) GetPlaces() []*RoundupPlace {
+	if x != nil {
+		return x.Places
+	}
+	return nil
+}
+
+func (x *ShowcaseRoundup) GetWeather() *RoundupWeather {
+	if x != nil {
+		return x.Weather
+	}
+	return nil
+}
+
+func (x *ShowcaseRoundup) GetBestEfforts() []*BestEffort {
+	if x != nil {
+		return x.BestEfforts
+	}
+	return nil
+}
+
+func (x *ShowcaseRoundup) GetMuscles() []*RoundupMuscle {
+	if x != nil {
+		return x.Muscles
+	}
+	return nil
+}
+
 var File_models_activity_roundup_proto protoreflect.FileDescriptor
 
 const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
-	"\x1dmodels/activity/roundup.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1emodels/activity/uploaded.proto\"o\n" +
+	"\x1dmodels/activity/roundup.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1emodels/activity/uploaded.proto\x1a!models/activity/enrichments.proto\"o\n" +
 	"\x0fRoundupDayEntry\x12\x12\n" +
 	"\x04date\x18\x01 \x01(\tR\x04date\x12!\n" +
 	"\feffort_level\x18\x02 \x01(\x05R\veffortLevel\x12%\n" +
@@ -800,7 +1016,20 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x0eactivity_title\x18\x02 \x01(\tR\ractivityTitle\x12\x12\n" +
 	"\x04date\x18\x03 \x01(\tR\x04date\x12'\n" +
 	"\x0fdistance_meters\x18\x04 \x01(\x01R\x0edistanceMeters\x12J\n" +
-	"\ractivity_type\x18\x05 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\"\xe1\x02\n" +
+	"\ractivity_type\x18\x05 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\"c\n" +
+	"\fRoundupPlace\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\acountry\x18\x02 \x01(\tR\acountry\x12%\n" +
+	"\x0eactivity_count\x18\x03 \x01(\x05R\ractivityCount\"\xa0\x01\n" +
+	"\x0eRoundupWeather\x12#\n" +
+	"\rsession_count\x18\x01 \x01(\x05R\fsessionCount\x12\x1d\n" +
+	"\n" +
+	"rain_count\x18\x02 \x01(\x05R\trainCount\x12$\n" +
+	"\x0ecoldest_temp_c\x18\x03 \x01(\x01R\fcoldestTempC\x12$\n" +
+	"\x0ehottest_temp_c\x18\x04 \x01(\x01R\fhottestTempC\"9\n" +
+	"\rRoundupMuscle\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\"\xe1\x02\n" +
 	"\x1cRoundupActivityTypeBreakdown\x12J\n" +
 	"\ractivity_type\x18\x01 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12%\n" +
 	"\x0eactivity_count\x18\x02 \x01(\x05R\ractivityCount\x122\n" +
@@ -810,7 +1039,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x06 \x01(\x05R\ttotalSets\x12\x1d\n" +
 	"\n" +
-	"total_reps\x18\a \x01(\x05R\ttotalReps\"\xc9\x0e\n" +
+	"total_reps\x18\a \x01(\x05R\ttotalReps\"\xe6\x10\n" +
 	"\x0fShowcaseRoundup\x12\x1d\n" +
 	"\n" +
 	"roundup_id\x18\x01 \x01(\tR\troundupId\x12\x12\n" +
@@ -851,7 +1080,13 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\vday_entries\x18\x1f \x03(\v2(.fitglue.models.activity.RoundupDayEntryR\n" +
 	"dayEntries\x12=\n" +
 	"\x06photos\x18  \x03(\v2%.fitglue.models.activity.RoundupPhotoR\x06photos\x12=\n" +
-	"\x06routes\x18! \x03(\v2%.fitglue.models.activity.RoundupRouteR\x06routes*\x93\x01\n" +
+	"\x06routes\x18! \x03(\v2%.fitglue.models.activity.RoundupRouteR\x06routes\x12=\n" +
+	"\x06places\x18\" \x03(\v2%.fitglue.models.activity.RoundupPlaceR\x06places\x12F\n" +
+	"\aweather\x18# \x01(\v2'.fitglue.models.activity.RoundupWeatherH\x00R\aweather\x88\x01\x01\x12F\n" +
+	"\fbest_efforts\x18$ \x03(\v2#.fitglue.models.activity.BestEffortR\vbestEfforts\x12@\n" +
+	"\amuscles\x18% \x03(\v2&.fitglue.models.activity.RoundupMuscleR\amusclesB\n" +
+	"\n" +
+	"\b_weather*\x93\x01\n" +
 	"\x11RoundupPeriodType\x12#\n" +
 	"\x1fROUNDUP_PERIOD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ROUNDUP_PERIOD_TYPE_WEEK\x10\x01\x12\x1d\n" +
@@ -871,41 +1106,49 @@ func file_models_activity_roundup_proto_rawDescGZIP() []byte {
 }
 
 var file_models_activity_roundup_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_models_activity_roundup_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_models_activity_roundup_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_models_activity_roundup_proto_goTypes = []any{
 	(RoundupPeriodType)(0),               // 0: fitglue.models.activity.RoundupPeriodType
 	(*RoundupDayEntry)(nil),              // 1: fitglue.models.activity.RoundupDayEntry
 	(*ShowcaseCalloutActivity)(nil),      // 2: fitglue.models.activity.ShowcaseCalloutActivity
 	(*RoundupPhoto)(nil),                 // 3: fitglue.models.activity.RoundupPhoto
 	(*RoundupRoute)(nil),                 // 4: fitglue.models.activity.RoundupRoute
-	(*RoundupActivityTypeBreakdown)(nil), // 5: fitglue.models.activity.RoundupActivityTypeBreakdown
-	(*ShowcaseRoundup)(nil),              // 6: fitglue.models.activity.ShowcaseRoundup
-	(ActivityType)(0),                    // 7: fitglue.models.activity.ActivityType
-	(*timestamppb.Timestamp)(nil),        // 8: google.protobuf.Timestamp
-	(*ShowcaseTopPR)(nil),                // 9: fitglue.models.activity.ShowcaseTopPR
-	(ActivitySource)(0),                  // 10: fitglue.models.activity.ActivitySource
+	(*RoundupPlace)(nil),                 // 5: fitglue.models.activity.RoundupPlace
+	(*RoundupWeather)(nil),               // 6: fitglue.models.activity.RoundupWeather
+	(*RoundupMuscle)(nil),                // 7: fitglue.models.activity.RoundupMuscle
+	(*RoundupActivityTypeBreakdown)(nil), // 8: fitglue.models.activity.RoundupActivityTypeBreakdown
+	(*ShowcaseRoundup)(nil),              // 9: fitglue.models.activity.ShowcaseRoundup
+	(ActivityType)(0),                    // 10: fitglue.models.activity.ActivityType
+	(*timestamppb.Timestamp)(nil),        // 11: google.protobuf.Timestamp
+	(*ShowcaseTopPR)(nil),                // 12: fitglue.models.activity.ShowcaseTopPR
+	(ActivitySource)(0),                  // 13: fitglue.models.activity.ActivitySource
+	(*BestEffort)(nil),                   // 14: fitglue.models.activity.BestEffort
 }
 var file_models_activity_roundup_proto_depIdxs = []int32{
-	7,  // 0: fitglue.models.activity.ShowcaseCalloutActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
-	7,  // 1: fitglue.models.activity.RoundupPhoto.activity_type:type_name -> fitglue.models.activity.ActivityType
-	7,  // 2: fitglue.models.activity.RoundupRoute.activity_type:type_name -> fitglue.models.activity.ActivityType
-	7,  // 3: fitglue.models.activity.RoundupActivityTypeBreakdown.activity_type:type_name -> fitglue.models.activity.ActivityType
+	10, // 0: fitglue.models.activity.ShowcaseCalloutActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
+	10, // 1: fitglue.models.activity.RoundupPhoto.activity_type:type_name -> fitglue.models.activity.ActivityType
+	10, // 2: fitglue.models.activity.RoundupRoute.activity_type:type_name -> fitglue.models.activity.ActivityType
+	10, // 3: fitglue.models.activity.RoundupActivityTypeBreakdown.activity_type:type_name -> fitglue.models.activity.ActivityType
 	0,  // 4: fitglue.models.activity.ShowcaseRoundup.period_type:type_name -> fitglue.models.activity.RoundupPeriodType
-	8,  // 5: fitglue.models.activity.ShowcaseRoundup.period_start:type_name -> google.protobuf.Timestamp
-	8,  // 6: fitglue.models.activity.ShowcaseRoundup.period_end:type_name -> google.protobuf.Timestamp
-	8,  // 7: fitglue.models.activity.ShowcaseRoundup.generated_at:type_name -> google.protobuf.Timestamp
-	5,  // 8: fitglue.models.activity.ShowcaseRoundup.activity_type_breakdowns:type_name -> fitglue.models.activity.RoundupActivityTypeBreakdown
-	9,  // 9: fitglue.models.activity.ShowcaseRoundup.prs_achieved:type_name -> fitglue.models.activity.ShowcaseTopPR
-	10, // 10: fitglue.models.activity.ShowcaseRoundup.sources:type_name -> fitglue.models.activity.ActivitySource
+	11, // 5: fitglue.models.activity.ShowcaseRoundup.period_start:type_name -> google.protobuf.Timestamp
+	11, // 6: fitglue.models.activity.ShowcaseRoundup.period_end:type_name -> google.protobuf.Timestamp
+	11, // 7: fitglue.models.activity.ShowcaseRoundup.generated_at:type_name -> google.protobuf.Timestamp
+	8,  // 8: fitglue.models.activity.ShowcaseRoundup.activity_type_breakdowns:type_name -> fitglue.models.activity.RoundupActivityTypeBreakdown
+	12, // 9: fitglue.models.activity.ShowcaseRoundup.prs_achieved:type_name -> fitglue.models.activity.ShowcaseTopPR
+	13, // 10: fitglue.models.activity.ShowcaseRoundup.sources:type_name -> fitglue.models.activity.ActivitySource
 	2,  // 11: fitglue.models.activity.ShowcaseRoundup.callout_activities:type_name -> fitglue.models.activity.ShowcaseCalloutActivity
 	1,  // 12: fitglue.models.activity.ShowcaseRoundup.day_entries:type_name -> fitglue.models.activity.RoundupDayEntry
 	3,  // 13: fitglue.models.activity.ShowcaseRoundup.photos:type_name -> fitglue.models.activity.RoundupPhoto
 	4,  // 14: fitglue.models.activity.ShowcaseRoundup.routes:type_name -> fitglue.models.activity.RoundupRoute
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	5,  // 15: fitglue.models.activity.ShowcaseRoundup.places:type_name -> fitglue.models.activity.RoundupPlace
+	6,  // 16: fitglue.models.activity.ShowcaseRoundup.weather:type_name -> fitglue.models.activity.RoundupWeather
+	14, // 17: fitglue.models.activity.ShowcaseRoundup.best_efforts:type_name -> fitglue.models.activity.BestEffort
+	7,  // 18: fitglue.models.activity.ShowcaseRoundup.muscles:type_name -> fitglue.models.activity.RoundupMuscle
+	19, // [19:19] is the sub-list for method output_type
+	19, // [19:19] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_roundup_proto_init() }
@@ -915,13 +1158,15 @@ func file_models_activity_roundup_proto_init() {
 	}
 	file_models_activity_source_proto_init()
 	file_models_activity_uploaded_proto_init()
+	file_models_activity_enrichments_proto_init()
+	file_models_activity_roundup_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_roundup_proto_rawDesc), len(file_models_activity_roundup_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
