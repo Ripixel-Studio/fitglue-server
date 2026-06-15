@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.48.0](https://github.com/FitGlue/server/compare/v16.47.0...v16.48.0) (2026-06-15)
+
+
+### Features
+
+* **roundup:** add callout activities and consistency calendar data ([39d0e49](https://github.com/FitGlue/server/commit/39d0e49308d010711c14382afbb6c6115e16a919))
+* **storage:** add IAM member for api-client to access artifacts bucket ([67e1ef8](https://github.com/FitGlue/server/commit/67e1ef837a3f2587932741133601292dcd1065e2))
+
 ## [16.47.0](https://github.com/FitGlue/server/compare/v16.46.0...v16.47.0) (2026-06-15)
 
 
