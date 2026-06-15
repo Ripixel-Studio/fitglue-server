@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.45.1](https://github.com/FitGlue/server/compare/v16.45.0...v16.45.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **ai_companion:** increase MaxOutputTokens for improved summary generation ([72900f2](https://github.com/FitGlue/server/commit/72900f286ebb438301fdd436bc25de1c30064b6d))
+
 ## [16.45.0](https://github.com/FitGlue/server/compare/v16.44.1...v16.45.0) (2026-06-15)
 
 
