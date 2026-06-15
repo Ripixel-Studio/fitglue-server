@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.45.2](https://github.com/FitGlue/server/compare/v16.45.1...v16.45.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* **export:** update SignedURL parameters to remove content type and length for improved functionality ([d73a761](https://github.com/FitGlue/server/commit/d73a7617edb47645ccfe56ad13feb267ae06bf1e))
+
 ### [16.45.1](https://github.com/FitGlue/server/compare/v16.45.0...v16.45.1) (2026-06-15)
 
 
