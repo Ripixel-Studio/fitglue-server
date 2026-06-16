@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.50.0](https://github.com/FitGlue/server/compare/v16.49.0...v16.50.0) (2026-06-16)
+
+
+### Features
+
+* **roundup:** aggregate enrichment data for new roundup sections ([f1cf530](https://github.com/FitGlue/server/commit/f1cf530034ca5aa3c9647c9c8dd9c1af281c078f))
+
+
+### Bug Fixes
+
+* **activity:** set ARTIFACT_BUCKET env for activity Cloud Run service ([1a27603](https://github.com/FitGlue/server/commit/1a27603e91db466a7ef0ed27f587142b9c482494))
+
 ## [16.49.0](https://github.com/FitGlue/server/compare/v16.48.0...v16.49.0) (2026-06-15)
 
 
