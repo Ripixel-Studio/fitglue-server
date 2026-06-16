@@ -330,6 +330,9 @@ func (s *notificationService) renderEmail(req *pbnotification.NotificationReques
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRED:
 		return "Your FitGlue Athlete trial has ended", emaildomain.TrialExpiredTemplate(s.baseURL)
 
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_DATA_EXPORT_READY:
+		return "Your FitGlue data export is ready", emaildomain.DataExportTemplate(req.Data["download_url"], s.baseURL)
+
 	// ── Pipeline activity ───────────────────────────────────────────────────
 	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS:
 		activityName := trimPrefix(req.Title, "Activity Synced: ")

@@ -93,6 +93,7 @@ const (
 	ClientGatewayService_GetShowcaseRoundupViewStats_FullMethodName        = "/fitglue.gateway.ClientGatewayService/GetShowcaseRoundupViewStats"
 	ClientGatewayService_ListShowcaseViewStats_FullMethodName              = "/fitglue.gateway.ClientGatewayService/ListShowcaseViewStats"
 	ClientGatewayService_ExportData_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/ExportData"
+	ClientGatewayService_GetExportJob_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/GetExportJob"
 	ClientGatewayService_ParseFitFile_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/ParseFitFile"
 	ClientGatewayService_GetExerciseLibrary_FullMethodName                 = "/fitglue.gateway.ClientGatewayService/GetExerciseLibrary"
 	ClientGatewayService_RepostMissedDestination_FullMethodName            = "/fitglue.gateway.ClientGatewayService/RepostMissedDestination"
@@ -105,6 +106,7 @@ const (
 	ClientGatewayService_StartTrial_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/StartTrial"
 	ClientGatewayService_CreateBillingPortal_FullMethodName                = "/fitglue.gateway.ClientGatewayService/CreateBillingPortal"
 	ClientGatewayService_GetPipelineRunPayload_FullMethodName              = "/fitglue.gateway.ClientGatewayService/GetPipelineRunPayload"
+	ClientGatewayService_ExportPipelineRun_FullMethodName                  = "/fitglue.gateway.ClientGatewayService/ExportPipelineRun"
 	ClientGatewayService_GetPluginRegistry_FullMethodName                  = "/fitglue.gateway.ClientGatewayService/GetPluginRegistry"
 	ClientGatewayService_GetPluginRegistryPlugins_FullMethodName           = "/fitglue.gateway.ClientGatewayService/GetPluginRegistryPlugins"
 	ClientGatewayService_GetPlugin_FullMethodName                          = "/fitglue.gateway.ClientGatewayService/GetPlugin"
@@ -209,7 +211,10 @@ type ClientGatewayServiceClient interface {
 	GetShowcaseRoundupViewStats(ctx context.Context, in *GetShowcaseRoundupViewStatsGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error)
 	ListShowcaseViewStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ListShowcaseViewStatsGatewayResponse, error)
 	// ===================== Data Export =====================
-	ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error)
+	// Enqueue an asynchronous whole-account export; returns the job. Poll
+	// GetExportJob until status is READY (download_url set) or FAILED.
+	ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportJobGatewayResponse, error)
+	GetExportJob(ctx context.Context, in *GetExportJobGatewayRequest, opts ...grpc.CallOption) (*ExportJobGatewayResponse, error)
 	// ===================== FIT File Parse =====================
 	ParseFitFile(ctx context.Context, in *ParseFitFileGatewayRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
 	// ===================== Exercise Library =====================
@@ -227,6 +232,10 @@ type ClientGatewayServiceClient interface {
 	CreateBillingPortal(ctx context.Context, in *CreateBillingPortalGatewayRequest, opts ...grpc.CallOption) (*CreateBillingPortalGatewayResponse, error)
 	// ===================== Pipeline Run Payloads =====================
 	GetPipelineRunPayload(ctx context.Context, in *GetPipelineRunPayloadGatewayRequest, opts ...grpc.CallOption) (*GetPipelineRunPayloadGatewayResponse, error)
+	// ExportPipelineRun returns a signed URL to a per-run ZIP (enriched + payload
+	// JSON and the raw FIT file, where still retained). Replaces the single-JSON
+	// payload download used by the activity detail page's Export button.
+	ExportPipelineRun(ctx context.Context, in *ExportPipelineRunGatewayRequest, opts ...grpc.CallOption) (*ExportPipelineRunGatewayResponse, error)
 	// ===================== Registry (Unauthenticated, but on api-client) =====================
 	GetPluginRegistry(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error)
 	GetPluginRegistryPlugins(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error)
@@ -924,10 +933,20 @@ func (c *clientGatewayServiceClient) ListShowcaseViewStats(ctx context.Context, 
 	return out, nil
 }
 
-func (c *clientGatewayServiceClient) ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error) {
+func (c *clientGatewayServiceClient) ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportJobGatewayResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ExportDataGatewayResponse)
+	out := new(ExportJobGatewayResponse)
 	err := c.cc.Invoke(ctx, ClientGatewayService_ExportData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) GetExportJob(ctx context.Context, in *GetExportJobGatewayRequest, opts ...grpc.CallOption) (*ExportJobGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportJobGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_GetExportJob_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1048,6 +1067,16 @@ func (c *clientGatewayServiceClient) GetPipelineRunPayload(ctx context.Context, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPipelineRunPayloadGatewayResponse)
 	err := c.cc.Invoke(ctx, ClientGatewayService_GetPipelineRunPayload_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) ExportPipelineRun(ctx context.Context, in *ExportPipelineRunGatewayRequest, opts ...grpc.CallOption) (*ExportPipelineRunGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportPipelineRunGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_ExportPipelineRun_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1210,7 +1239,10 @@ type ClientGatewayServiceServer interface {
 	GetShowcaseRoundupViewStats(context.Context, *GetShowcaseRoundupViewStatsGatewayRequest) (*activity.ShowcaseViewStats, error)
 	ListShowcaseViewStats(context.Context, *EmptyRequest) (*ListShowcaseViewStatsGatewayResponse, error)
 	// ===================== Data Export =====================
-	ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error)
+	// Enqueue an asynchronous whole-account export; returns the job. Poll
+	// GetExportJob until status is READY (download_url set) or FAILED.
+	ExportData(context.Context, *EmptyRequest) (*ExportJobGatewayResponse, error)
+	GetExportJob(context.Context, *GetExportJobGatewayRequest) (*ExportJobGatewayResponse, error)
 	// ===================== FIT File Parse =====================
 	ParseFitFile(context.Context, *ParseFitFileGatewayRequest) (*activity.StandardizedActivity, error)
 	// ===================== Exercise Library =====================
@@ -1228,6 +1260,10 @@ type ClientGatewayServiceServer interface {
 	CreateBillingPortal(context.Context, *CreateBillingPortalGatewayRequest) (*CreateBillingPortalGatewayResponse, error)
 	// ===================== Pipeline Run Payloads =====================
 	GetPipelineRunPayload(context.Context, *GetPipelineRunPayloadGatewayRequest) (*GetPipelineRunPayloadGatewayResponse, error)
+	// ExportPipelineRun returns a signed URL to a per-run ZIP (enriched + payload
+	// JSON and the raw FIT file, where still retained). Replaces the single-JSON
+	// payload download used by the activity detail page's Export button.
+	ExportPipelineRun(context.Context, *ExportPipelineRunGatewayRequest) (*ExportPipelineRunGatewayResponse, error)
 	// ===================== Registry (Unauthenticated, but on api-client) =====================
 	GetPluginRegistry(context.Context, *EmptyRequest) (*plugin.PluginRegistryResponse, error)
 	GetPluginRegistryPlugins(context.Context, *EmptyRequest) (*plugin.PluginRegistryResponse, error)
@@ -1449,8 +1485,11 @@ func (UnimplementedClientGatewayServiceServer) GetShowcaseRoundupViewStats(conte
 func (UnimplementedClientGatewayServiceServer) ListShowcaseViewStats(context.Context, *EmptyRequest) (*ListShowcaseViewStatsGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListShowcaseViewStats not implemented")
 }
-func (UnimplementedClientGatewayServiceServer) ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error) {
+func (UnimplementedClientGatewayServiceServer) ExportData(context.Context, *EmptyRequest) (*ExportJobGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExportData not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) GetExportJob(context.Context, *GetExportJobGatewayRequest) (*ExportJobGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetExportJob not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) ParseFitFile(context.Context, *ParseFitFileGatewayRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method ParseFitFile not implemented")
@@ -1487,6 +1526,9 @@ func (UnimplementedClientGatewayServiceServer) CreateBillingPortal(context.Conte
 }
 func (UnimplementedClientGatewayServiceServer) GetPipelineRunPayload(context.Context, *GetPipelineRunPayloadGatewayRequest) (*GetPipelineRunPayloadGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPipelineRunPayload not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) ExportPipelineRun(context.Context, *ExportPipelineRunGatewayRequest) (*ExportPipelineRunGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExportPipelineRun not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) GetPluginRegistry(context.Context, *EmptyRequest) (*plugin.PluginRegistryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPluginRegistry not implemented")
@@ -2769,6 +2811,24 @@ func _ClientGatewayService_ExportData_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_GetExportJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExportJobGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).GetExportJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_GetExportJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).GetExportJob(ctx, req.(*GetExportJobGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_ParseFitFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ParseFitFileGatewayRequest)
 	if err := dec(in); err != nil {
@@ -2981,6 +3041,24 @@ func _ClientGatewayService_GetPipelineRunPayload_Handler(srv interface{}, ctx co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClientGatewayServiceServer).GetPipelineRunPayload(ctx, req.(*GetPipelineRunPayloadGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_ExportPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportPipelineRunGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).ExportPipelineRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_ExportPipelineRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).ExportPipelineRun(ctx, req.(*ExportPipelineRunGatewayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3377,6 +3455,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClientGatewayService_ExportData_Handler,
 		},
 		{
+			MethodName: "GetExportJob",
+			Handler:    _ClientGatewayService_GetExportJob_Handler,
+		},
+		{
 			MethodName: "ParseFitFile",
 			Handler:    _ClientGatewayService_ParseFitFile_Handler,
 		},
@@ -3423,6 +3505,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPipelineRunPayload",
 			Handler:    _ClientGatewayService_GetPipelineRunPayload_Handler,
+		},
+		{
+			MethodName: "ExportPipelineRun",
+			Handler:    _ClientGatewayService_ExportPipelineRun_Handler,
 		},
 		{
 			MethodName: "GetPluginRegistry",

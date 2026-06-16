@@ -827,7 +827,10 @@ paths:
         post:
             tags:
                 - ClientGatewayService
-            description: ===================== Data Export =====================
+            description: |-
+                ===================== Data Export =====================
+                 Enqueue an asynchronous whole-account export; returns the job. Poll
+                 GetExportJob until status is READY (download_url set) or FAILED.
             operationId: ClientGatewayService_ExportData
             responses:
                 "200":
@@ -835,7 +838,31 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ExportDataGatewayResponse'
+                                $ref: '#/components/schemas/ExportJobGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/export/{jobId}:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetExportJob
+            parameters:
+                - name: jobId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportJobGatewayResponse'
                 default:
                     description: Default error response
                     content:
@@ -1204,6 +1231,34 @@ paths:
                 "200":
                     description: OK
                     content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/pipeline-runs/{runId}/export:
+        get:
+            tags:
+                - ClientGatewayService
+            description: |-
+                ExportPipelineRun returns a signed URL to a per-run ZIP (enriched + payload
+                 JSON and the raw FIT file, where still retained). Replaces the single-JSON
+                 payload download used by the activity detail page's Export button.
+            operationId: ClientGatewayService_ExportPipelineRun
+            parameters:
+                - name: runId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportPipelineRunGatewayResponse'
                 default:
                     description: Default error response
                     content:
@@ -2538,12 +2593,33 @@ components:
                     type: string
                 source:
                     type: string
-        ExportDataGatewayResponse:
+        ExportJobGatewayResponse:
+            type: object
+            properties:
+                jobId:
+                    type: string
+                status:
+                    type: string
+                downloadUrl:
+                    type: string
+                sizeBytes:
+                    type: string
+                expiresAt:
+                    type: string
+                error:
+                    type: string
+                createdAt:
+                    type: string
+            description: 'status is one of: PENDING | PROCESSING | READY | FAILED'
+        ExportPipelineRunGatewayResponse:
             type: object
             properties:
                 downloadUrl:
                     type: string
-            description: Data Export
+                sizeBytes:
+                    type: string
+                expiresAt:
+                    type: string
         FitbitIntegration:
             type: object
             properties:

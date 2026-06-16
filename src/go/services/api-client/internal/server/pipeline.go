@@ -31,6 +31,7 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 	r.Post("/users/me/connections/{provider}/backfill", s.handleBackfillConnectionActivities)
 
 	r.Get("/users/me/pipeline-runs/{runId}/payload", s.handleGetPipelineRunPayload)
+	r.Get("/users/me/pipeline-runs/{runId}/export", s.handleExportPipelineRun)
 
 	r.Post("/users/me/pending-inputs/{inputId}/submit", s.handleSubmitInput)
 	r.Post("/users/me/pending-inputs/{inputId}/cancel", s.handleCancelPipeline)

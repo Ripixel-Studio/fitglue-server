@@ -62,4 +62,33 @@ type ActivityStore interface {
 	// Roundup — generation inputs
 	ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error)
 	ListAllShowcaseUserIDs(ctx context.Context) ([]string, error)
+
+	// Data export jobs (users/{userId}/export_jobs/{jobId})
+	CreateExportJob(ctx context.Context, userID string, job *ExportJobRecord) error
+	GetExportJob(ctx context.Context, userID, jobID string) (*ExportJobRecord, error)
+	UpdateExportJob(ctx context.Context, userID, jobID string, fields map[string]interface{}) error
+	// LatestActiveExportJob returns the most recent PENDING/PROCESSING job, or nil
+	// if none — used to de-duplicate concurrent export requests.
+	LatestActiveExportJob(ctx context.Context, userID string) (*ExportJobRecord, error)
+}
+
+// Export job status values (stored in Firestore, surfaced via the API).
+const (
+	ExportStatusPending    = "PENDING"
+	ExportStatusProcessing = "PROCESSING"
+	ExportStatusReady      = "READY"
+	ExportStatusFailed     = "FAILED"
+)
+
+// ExportJobRecord is the Firestore representation of a whole-account export job
+// stored at users/{userId}/export_jobs/{jobId}. ObjectPath holds the built ZIP's
+// path within the artifacts bucket once READY; the signed URL is minted on read.
+type ExportJobRecord struct {
+	JobID      string
+	Status     string
+	ObjectPath string
+	SizeBytes  int64
+	Error      string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }

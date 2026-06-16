@@ -24,6 +24,61 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ExportJobStatus int32
+
+const (
+	ExportJobStatus_EXPORT_JOB_STATUS_UNSPECIFIED ExportJobStatus = 0
+	ExportJobStatus_EXPORT_JOB_STATUS_PENDING     ExportJobStatus = 1
+	ExportJobStatus_EXPORT_JOB_STATUS_PROCESSING  ExportJobStatus = 2
+	ExportJobStatus_EXPORT_JOB_STATUS_READY       ExportJobStatus = 3
+	ExportJobStatus_EXPORT_JOB_STATUS_FAILED      ExportJobStatus = 4
+)
+
+// Enum value maps for ExportJobStatus.
+var (
+	ExportJobStatus_name = map[int32]string{
+		0: "EXPORT_JOB_STATUS_UNSPECIFIED",
+		1: "EXPORT_JOB_STATUS_PENDING",
+		2: "EXPORT_JOB_STATUS_PROCESSING",
+		3: "EXPORT_JOB_STATUS_READY",
+		4: "EXPORT_JOB_STATUS_FAILED",
+	}
+	ExportJobStatus_value = map[string]int32{
+		"EXPORT_JOB_STATUS_UNSPECIFIED": 0,
+		"EXPORT_JOB_STATUS_PENDING":     1,
+		"EXPORT_JOB_STATUS_PROCESSING":  2,
+		"EXPORT_JOB_STATUS_READY":       3,
+		"EXPORT_JOB_STATUS_FAILED":      4,
+	}
+)
+
+func (x ExportJobStatus) Enum() *ExportJobStatus {
+	p := new(ExportJobStatus)
+	*p = x
+	return p
+}
+
+func (x ExportJobStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExportJobStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_services_activity_activity_proto_enumTypes[0].Descriptor()
+}
+
+func (ExportJobStatus) Type() protoreflect.EnumType {
+	return &file_services_activity_activity_proto_enumTypes[0]
+}
+
+func (x ExportJobStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExportJobStatus.Descriptor instead.
+func (ExportJobStatus) EnumDescriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{0}
+}
+
 type GetActivityRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -588,16 +643,108 @@ func (x *ExportDataRequest) GetUserId() string {
 	return ""
 }
 
+type ExportJob struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	Status        ExportJobStatus        `protobuf:"varint,2,opt,name=status,proto3,enum=fitglue.services.activity.ExportJobStatus" json:"status,omitempty"`
+	DownloadUrl   string                 `protobuf:"bytes,3,opt,name=download_url,json=downloadUrl,proto3" json:"download_url,omitempty"` // populated when status == READY
+	SizeBytes     int64                  `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`      // ZIP size, populated when READY
+	ExpiresAt     string                 `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`       // RFC3339; when the signed download URL expires
+	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`                                // populated when status == FAILED
+	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`       // RFC3339
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportJob) Reset() {
+	*x = ExportJob{}
+	mi := &file_services_activity_activity_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportJob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportJob) ProtoMessage() {}
+
+func (x *ExportJob) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportJob.ProtoReflect.Descriptor instead.
+func (*ExportJob) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ExportJob) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *ExportJob) GetStatus() ExportJobStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ExportJobStatus_EXPORT_JOB_STATUS_UNSPECIFIED
+}
+
+func (x *ExportJob) GetDownloadUrl() string {
+	if x != nil {
+		return x.DownloadUrl
+	}
+	return ""
+}
+
+func (x *ExportJob) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *ExportJob) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+func (x *ExportJob) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ExportJob) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
 type ExportDataResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	DownloadUrl   string                 `protobuf:"bytes,1,opt,name=download_url,json=downloadUrl,proto3" json:"download_url,omitempty"`
+	Job           *ExportJob             `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ExportDataResponse) Reset() {
 	*x = ExportDataResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[11]
+	mi := &file_services_activity_activity_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -609,7 +756,7 @@ func (x *ExportDataResponse) String() string {
 func (*ExportDataResponse) ProtoMessage() {}
 
 func (x *ExportDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[11]
+	mi := &file_services_activity_activity_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -622,12 +769,176 @@ func (x *ExportDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportDataResponse.ProtoReflect.Descriptor instead.
 func (*ExportDataResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{11}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *ExportDataResponse) GetDownloadUrl() string {
+func (x *ExportDataResponse) GetJob() *ExportJob {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+type GetExportJobRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetExportJobRequest) Reset() {
+	*x = GetExportJobRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetExportJobRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetExportJobRequest) ProtoMessage() {}
+
+func (x *GetExportJobRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetExportJobRequest.ProtoReflect.Descriptor instead.
+func (*GetExportJobRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetExportJobRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GetExportJobRequest) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+type ExportPipelineRunRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportPipelineRunRequest) Reset() {
+	*x = ExportPipelineRunRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportPipelineRunRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportPipelineRunRequest) ProtoMessage() {}
+
+func (x *ExportPipelineRunRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportPipelineRunRequest.ProtoReflect.Descriptor instead.
+func (*ExportPipelineRunRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ExportPipelineRunRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *ExportPipelineRunRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type ExportPipelineRunResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DownloadUrl   string                 `protobuf:"bytes,1,opt,name=download_url,json=downloadUrl,proto3" json:"download_url,omitempty"`
+	SizeBytes     int64                  `protobuf:"varint,2,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // RFC3339
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportPipelineRunResponse) Reset() {
+	*x = ExportPipelineRunResponse{}
+	mi := &file_services_activity_activity_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportPipelineRunResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportPipelineRunResponse) ProtoMessage() {}
+
+func (x *ExportPipelineRunResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportPipelineRunResponse.ProtoReflect.Descriptor instead.
+func (*ExportPipelineRunResponse) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ExportPipelineRunResponse) GetDownloadUrl() string {
 	if x != nil {
 		return x.DownloadUrl
+	}
+	return ""
+}
+
+func (x *ExportPipelineRunResponse) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *ExportPipelineRunResponse) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
 	}
 	return ""
 }
@@ -645,7 +956,7 @@ type ParseFitFileRequest struct {
 
 func (x *ParseFitFileRequest) Reset() {
 	*x = ParseFitFileRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[12]
+	mi := &file_services_activity_activity_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +968,7 @@ func (x *ParseFitFileRequest) String() string {
 func (*ParseFitFileRequest) ProtoMessage() {}
 
 func (x *ParseFitFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[12]
+	mi := &file_services_activity_activity_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +981,7 @@ func (x *ParseFitFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseFitFileRequest.ProtoReflect.Descriptor instead.
 func (*ParseFitFileRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{12}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ParseFitFileRequest) GetUserId() string {
@@ -717,7 +1028,7 @@ type GetShowcasePreferencesRequest struct {
 
 func (x *GetShowcasePreferencesRequest) Reset() {
 	*x = GetShowcasePreferencesRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[13]
+	mi := &file_services_activity_activity_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -729,7 +1040,7 @@ func (x *GetShowcasePreferencesRequest) String() string {
 func (*GetShowcasePreferencesRequest) ProtoMessage() {}
 
 func (x *GetShowcasePreferencesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[13]
+	mi := &file_services_activity_activity_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -742,7 +1053,7 @@ func (x *GetShowcasePreferencesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetShowcasePreferencesRequest.ProtoReflect.Descriptor instead.
 func (*GetShowcasePreferencesRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{13}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetShowcasePreferencesRequest) GetUserId() string {
@@ -762,7 +1073,7 @@ type UpdateShowcasePreferencesRequest struct {
 
 func (x *UpdateShowcasePreferencesRequest) Reset() {
 	*x = UpdateShowcasePreferencesRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[14]
+	mi := &file_services_activity_activity_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +1085,7 @@ func (x *UpdateShowcasePreferencesRequest) String() string {
 func (*UpdateShowcasePreferencesRequest) ProtoMessage() {}
 
 func (x *UpdateShowcasePreferencesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[14]
+	mi := &file_services_activity_activity_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +1098,7 @@ func (x *UpdateShowcasePreferencesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateShowcasePreferencesRequest.ProtoReflect.Descriptor instead.
 func (*UpdateShowcasePreferencesRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{14}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UpdateShowcasePreferencesRequest) GetUserId() string {
@@ -814,7 +1125,7 @@ type GenerateShowcaseImagesRequest struct {
 
 func (x *GenerateShowcaseImagesRequest) Reset() {
 	*x = GenerateShowcaseImagesRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[15]
+	mi := &file_services_activity_activity_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -826,7 +1137,7 @@ func (x *GenerateShowcaseImagesRequest) String() string {
 func (*GenerateShowcaseImagesRequest) ProtoMessage() {}
 
 func (x *GenerateShowcaseImagesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[15]
+	mi := &file_services_activity_activity_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -839,7 +1150,7 @@ func (x *GenerateShowcaseImagesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateShowcaseImagesRequest.ProtoReflect.Descriptor instead.
 func (*GenerateShowcaseImagesRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{15}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GenerateShowcaseImagesRequest) GetUserId() string {
@@ -865,7 +1176,7 @@ type GetPublicShowcaseRequest struct {
 
 func (x *GetPublicShowcaseRequest) Reset() {
 	*x = GetPublicShowcaseRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[16]
+	mi := &file_services_activity_activity_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -877,7 +1188,7 @@ func (x *GetPublicShowcaseRequest) String() string {
 func (*GetPublicShowcaseRequest) ProtoMessage() {}
 
 func (x *GetPublicShowcaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[16]
+	mi := &file_services_activity_activity_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -890,7 +1201,7 @@ func (x *GetPublicShowcaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPublicShowcaseRequest.ProtoReflect.Descriptor instead.
 func (*GetPublicShowcaseRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{16}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetPublicShowcaseRequest) GetShowcaseId() string {
@@ -910,7 +1221,7 @@ type GetShowcaseSettingsRequest struct {
 
 func (x *GetShowcaseSettingsRequest) Reset() {
 	*x = GetShowcaseSettingsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[17]
+	mi := &file_services_activity_activity_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -922,7 +1233,7 @@ func (x *GetShowcaseSettingsRequest) String() string {
 func (*GetShowcaseSettingsRequest) ProtoMessage() {}
 
 func (x *GetShowcaseSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[17]
+	mi := &file_services_activity_activity_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -935,7 +1246,7 @@ func (x *GetShowcaseSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetShowcaseSettingsRequest.ProtoReflect.Descriptor instead.
 func (*GetShowcaseSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{17}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetShowcaseSettingsRequest) GetUserId() string {
@@ -955,7 +1266,7 @@ type GetShowcaseSettingsResponse struct {
 
 func (x *GetShowcaseSettingsResponse) Reset() {
 	*x = GetShowcaseSettingsResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[18]
+	mi := &file_services_activity_activity_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -967,7 +1278,7 @@ func (x *GetShowcaseSettingsResponse) String() string {
 func (*GetShowcaseSettingsResponse) ProtoMessage() {}
 
 func (x *GetShowcaseSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[18]
+	mi := &file_services_activity_activity_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -980,7 +1291,7 @@ func (x *GetShowcaseSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetShowcaseSettingsResponse.ProtoReflect.Descriptor instead.
 func (*GetShowcaseSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{18}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GetShowcaseSettingsResponse) GetProfile() *activity.ShowcaseProfile {
@@ -1012,7 +1323,7 @@ type ShowcaseActivityEntry struct {
 
 func (x *ShowcaseActivityEntry) Reset() {
 	*x = ShowcaseActivityEntry{}
-	mi := &file_services_activity_activity_proto_msgTypes[19]
+	mi := &file_services_activity_activity_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1024,7 +1335,7 @@ func (x *ShowcaseActivityEntry) String() string {
 func (*ShowcaseActivityEntry) ProtoMessage() {}
 
 func (x *ShowcaseActivityEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[19]
+	mi := &file_services_activity_activity_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1037,7 +1348,7 @@ func (x *ShowcaseActivityEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShowcaseActivityEntry.ProtoReflect.Descriptor instead.
 func (*ShowcaseActivityEntry) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{19}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ShowcaseActivityEntry) GetShowcaseId() string {
@@ -1099,7 +1410,7 @@ type UpdateShowcaseSettingsRequest struct {
 
 func (x *UpdateShowcaseSettingsRequest) Reset() {
 	*x = UpdateShowcaseSettingsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[20]
+	mi := &file_services_activity_activity_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1111,7 +1422,7 @@ func (x *UpdateShowcaseSettingsRequest) String() string {
 func (*UpdateShowcaseSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateShowcaseSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[20]
+	mi := &file_services_activity_activity_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1124,7 +1435,7 @@ func (x *UpdateShowcaseSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateShowcaseSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateShowcaseSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{20}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *UpdateShowcaseSettingsRequest) GetUserId() string {
@@ -1151,7 +1462,7 @@ type UpdateShowcaseSlugRequest struct {
 
 func (x *UpdateShowcaseSlugRequest) Reset() {
 	*x = UpdateShowcaseSlugRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[21]
+	mi := &file_services_activity_activity_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1163,7 +1474,7 @@ func (x *UpdateShowcaseSlugRequest) String() string {
 func (*UpdateShowcaseSlugRequest) ProtoMessage() {}
 
 func (x *UpdateShowcaseSlugRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[21]
+	mi := &file_services_activity_activity_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1176,7 +1487,7 @@ func (x *UpdateShowcaseSlugRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateShowcaseSlugRequest.ProtoReflect.Descriptor instead.
 func (*UpdateShowcaseSlugRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{21}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *UpdateShowcaseSlugRequest) GetUserId() string {
@@ -1202,7 +1513,7 @@ type UpdateShowcaseSlugResponse struct {
 
 func (x *UpdateShowcaseSlugResponse) Reset() {
 	*x = UpdateShowcaseSlugResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[22]
+	mi := &file_services_activity_activity_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1214,7 +1525,7 @@ func (x *UpdateShowcaseSlugResponse) String() string {
 func (*UpdateShowcaseSlugResponse) ProtoMessage() {}
 
 func (x *UpdateShowcaseSlugResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[22]
+	mi := &file_services_activity_activity_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1227,7 +1538,7 @@ func (x *UpdateShowcaseSlugResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateShowcaseSlugResponse.ProtoReflect.Descriptor instead.
 func (*UpdateShowcaseSlugResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{22}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *UpdateShowcaseSlugResponse) GetSlug() string {
@@ -1253,7 +1564,7 @@ type AddShowcaseEntryRequest struct {
 
 func (x *AddShowcaseEntryRequest) Reset() {
 	*x = AddShowcaseEntryRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[23]
+	mi := &file_services_activity_activity_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1265,7 +1576,7 @@ func (x *AddShowcaseEntryRequest) String() string {
 func (*AddShowcaseEntryRequest) ProtoMessage() {}
 
 func (x *AddShowcaseEntryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[23]
+	mi := &file_services_activity_activity_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1278,7 +1589,7 @@ func (x *AddShowcaseEntryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddShowcaseEntryRequest.ProtoReflect.Descriptor instead.
 func (*AddShowcaseEntryRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{23}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AddShowcaseEntryRequest) GetUserId() string {
@@ -1319,7 +1630,7 @@ type RemoveShowcaseEntryRequest struct {
 
 func (x *RemoveShowcaseEntryRequest) Reset() {
 	*x = RemoveShowcaseEntryRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[24]
+	mi := &file_services_activity_activity_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1331,7 +1642,7 @@ func (x *RemoveShowcaseEntryRequest) String() string {
 func (*RemoveShowcaseEntryRequest) ProtoMessage() {}
 
 func (x *RemoveShowcaseEntryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[24]
+	mi := &file_services_activity_activity_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1344,7 +1655,7 @@ func (x *RemoveShowcaseEntryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveShowcaseEntryRequest.ProtoReflect.Descriptor instead.
 func (*RemoveShowcaseEntryRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{24}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RemoveShowcaseEntryRequest) GetUserId() string {
@@ -1371,7 +1682,7 @@ type GetShowcaseProfilePictureUploadUrlRequest struct {
 
 func (x *GetShowcaseProfilePictureUploadUrlRequest) Reset() {
 	*x = GetShowcaseProfilePictureUploadUrlRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[25]
+	mi := &file_services_activity_activity_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1383,7 +1694,7 @@ func (x *GetShowcaseProfilePictureUploadUrlRequest) String() string {
 func (*GetShowcaseProfilePictureUploadUrlRequest) ProtoMessage() {}
 
 func (x *GetShowcaseProfilePictureUploadUrlRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[25]
+	mi := &file_services_activity_activity_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1396,7 +1707,7 @@ func (x *GetShowcaseProfilePictureUploadUrlRequest) ProtoReflect() protoreflect.
 
 // Deprecated: Use GetShowcaseProfilePictureUploadUrlRequest.ProtoReflect.Descriptor instead.
 func (*GetShowcaseProfilePictureUploadUrlRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{25}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetShowcaseProfilePictureUploadUrlRequest) GetUserId() string {
@@ -1425,7 +1736,7 @@ type GetShowcaseProfilePictureUploadUrlResponse struct {
 
 func (x *GetShowcaseProfilePictureUploadUrlResponse) Reset() {
 	*x = GetShowcaseProfilePictureUploadUrlResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[26]
+	mi := &file_services_activity_activity_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1437,7 +1748,7 @@ func (x *GetShowcaseProfilePictureUploadUrlResponse) String() string {
 func (*GetShowcaseProfilePictureUploadUrlResponse) ProtoMessage() {}
 
 func (x *GetShowcaseProfilePictureUploadUrlResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[26]
+	mi := &file_services_activity_activity_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1450,7 +1761,7 @@ func (x *GetShowcaseProfilePictureUploadUrlResponse) ProtoReflect() protoreflect
 
 // Deprecated: Use GetShowcaseProfilePictureUploadUrlResponse.ProtoReflect.Descriptor instead.
 func (*GetShowcaseProfilePictureUploadUrlResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{26}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetShowcaseProfilePictureUploadUrlResponse) GetUploadUrl() string {
@@ -1493,7 +1804,7 @@ type GetActivityPhotoUploadUrlRequest struct {
 
 func (x *GetActivityPhotoUploadUrlRequest) Reset() {
 	*x = GetActivityPhotoUploadUrlRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[27]
+	mi := &file_services_activity_activity_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1505,7 +1816,7 @@ func (x *GetActivityPhotoUploadUrlRequest) String() string {
 func (*GetActivityPhotoUploadUrlRequest) ProtoMessage() {}
 
 func (x *GetActivityPhotoUploadUrlRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[27]
+	mi := &file_services_activity_activity_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1518,7 +1829,7 @@ func (x *GetActivityPhotoUploadUrlRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActivityPhotoUploadUrlRequest.ProtoReflect.Descriptor instead.
 func (*GetActivityPhotoUploadUrlRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{27}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GetActivityPhotoUploadUrlRequest) GetUserId() string {
@@ -1561,7 +1872,7 @@ type GetActivityPhotoUploadUrlResponse struct {
 
 func (x *GetActivityPhotoUploadUrlResponse) Reset() {
 	*x = GetActivityPhotoUploadUrlResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[28]
+	mi := &file_services_activity_activity_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1573,7 +1884,7 @@ func (x *GetActivityPhotoUploadUrlResponse) String() string {
 func (*GetActivityPhotoUploadUrlResponse) ProtoMessage() {}
 
 func (x *GetActivityPhotoUploadUrlResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[28]
+	mi := &file_services_activity_activity_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1586,7 +1897,7 @@ func (x *GetActivityPhotoUploadUrlResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use GetActivityPhotoUploadUrlResponse.ProtoReflect.Descriptor instead.
 func (*GetActivityPhotoUploadUrlResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{28}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetActivityPhotoUploadUrlResponse) GetUploadUrl() string {
@@ -1627,7 +1938,7 @@ type GetPublicShowcaseProfileRequest struct {
 
 func (x *GetPublicShowcaseProfileRequest) Reset() {
 	*x = GetPublicShowcaseProfileRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[29]
+	mi := &file_services_activity_activity_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1639,7 +1950,7 @@ func (x *GetPublicShowcaseProfileRequest) String() string {
 func (*GetPublicShowcaseProfileRequest) ProtoMessage() {}
 
 func (x *GetPublicShowcaseProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[29]
+	mi := &file_services_activity_activity_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1652,7 +1963,7 @@ func (x *GetPublicShowcaseProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPublicShowcaseProfileRequest.ProtoReflect.Descriptor instead.
 func (*GetPublicShowcaseProfileRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{29}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetPublicShowcaseProfileRequest) GetSlug() string {
@@ -1681,7 +1992,7 @@ type GetPublicShowcaseProfileResponse struct {
 
 func (x *GetPublicShowcaseProfileResponse) Reset() {
 	*x = GetPublicShowcaseProfileResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[30]
+	mi := &file_services_activity_activity_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1693,7 +2004,7 @@ func (x *GetPublicShowcaseProfileResponse) String() string {
 func (*GetPublicShowcaseProfileResponse) ProtoMessage() {}
 
 func (x *GetPublicShowcaseProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[30]
+	mi := &file_services_activity_activity_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1706,7 +2017,7 @@ func (x *GetPublicShowcaseProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPublicShowcaseProfileResponse.ProtoReflect.Descriptor instead.
 func (*GetPublicShowcaseProfileResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{30}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetPublicShowcaseProfileResponse) GetProfile() *activity.ShowcaseProfile {
@@ -1746,7 +2057,7 @@ type GetActivityStatsRequest struct {
 
 func (x *GetActivityStatsRequest) Reset() {
 	*x = GetActivityStatsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[31]
+	mi := &file_services_activity_activity_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1758,7 +2069,7 @@ func (x *GetActivityStatsRequest) String() string {
 func (*GetActivityStatsRequest) ProtoMessage() {}
 
 func (x *GetActivityStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[31]
+	mi := &file_services_activity_activity_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1771,7 +2082,7 @@ func (x *GetActivityStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActivityStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetActivityStatsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{31}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GetActivityStatsRequest) GetUserId() string {
@@ -1798,7 +2109,7 @@ type GetActivityStatsResponse struct {
 
 func (x *GetActivityStatsResponse) Reset() {
 	*x = GetActivityStatsResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[32]
+	mi := &file_services_activity_activity_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1810,7 +2121,7 @@ func (x *GetActivityStatsResponse) String() string {
 func (*GetActivityStatsResponse) ProtoMessage() {}
 
 func (x *GetActivityStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[32]
+	mi := &file_services_activity_activity_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1823,7 +2134,7 @@ func (x *GetActivityStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActivityStatsResponse.ProtoReflect.Descriptor instead.
 func (*GetActivityStatsResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{32}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GetActivityStatsResponse) GetTotalActivities() int32 {
@@ -1899,7 +2210,7 @@ type GetPublicRoundupRequest struct {
 
 func (x *GetPublicRoundupRequest) Reset() {
 	*x = GetPublicRoundupRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[33]
+	mi := &file_services_activity_activity_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1911,7 +2222,7 @@ func (x *GetPublicRoundupRequest) String() string {
 func (*GetPublicRoundupRequest) ProtoMessage() {}
 
 func (x *GetPublicRoundupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[33]
+	mi := &file_services_activity_activity_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1924,7 +2235,7 @@ func (x *GetPublicRoundupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPublicRoundupRequest.ProtoReflect.Descriptor instead.
 func (*GetPublicRoundupRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{33}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetPublicRoundupRequest) GetSlug() string {
@@ -1951,7 +2262,7 @@ type GetRecentPublicRoundupsRequest struct {
 
 func (x *GetRecentPublicRoundupsRequest) Reset() {
 	*x = GetRecentPublicRoundupsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[34]
+	mi := &file_services_activity_activity_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1963,7 +2274,7 @@ func (x *GetRecentPublicRoundupsRequest) String() string {
 func (*GetRecentPublicRoundupsRequest) ProtoMessage() {}
 
 func (x *GetRecentPublicRoundupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[34]
+	mi := &file_services_activity_activity_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1976,7 +2287,7 @@ func (x *GetRecentPublicRoundupsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRecentPublicRoundupsRequest.ProtoReflect.Descriptor instead.
 func (*GetRecentPublicRoundupsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{34}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetRecentPublicRoundupsRequest) GetSlug() string {
@@ -2002,7 +2313,7 @@ type GetRecentPublicRoundupsResponse struct {
 
 func (x *GetRecentPublicRoundupsResponse) Reset() {
 	*x = GetRecentPublicRoundupsResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[35]
+	mi := &file_services_activity_activity_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2014,7 +2325,7 @@ func (x *GetRecentPublicRoundupsResponse) String() string {
 func (*GetRecentPublicRoundupsResponse) ProtoMessage() {}
 
 func (x *GetRecentPublicRoundupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[35]
+	mi := &file_services_activity_activity_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2027,7 +2338,7 @@ func (x *GetRecentPublicRoundupsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRecentPublicRoundupsResponse.ProtoReflect.Descriptor instead.
 func (*GetRecentPublicRoundupsResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{35}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetRecentPublicRoundupsResponse) GetRoundups() []*activity.ShowcaseRoundup {
@@ -2047,7 +2358,7 @@ type UpdateRoundupSettingsRequest struct {
 
 func (x *UpdateRoundupSettingsRequest) Reset() {
 	*x = UpdateRoundupSettingsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[36]
+	mi := &file_services_activity_activity_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2059,7 +2370,7 @@ func (x *UpdateRoundupSettingsRequest) String() string {
 func (*UpdateRoundupSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateRoundupSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[36]
+	mi := &file_services_activity_activity_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2072,7 +2383,7 @@ func (x *UpdateRoundupSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRoundupSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRoundupSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{36}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *UpdateRoundupSettingsRequest) GetUserId() string {
@@ -2099,7 +2410,7 @@ type RecomputeRoundupRequest struct {
 
 func (x *RecomputeRoundupRequest) Reset() {
 	*x = RecomputeRoundupRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[37]
+	mi := &file_services_activity_activity_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2111,7 +2422,7 @@ func (x *RecomputeRoundupRequest) String() string {
 func (*RecomputeRoundupRequest) ProtoMessage() {}
 
 func (x *RecomputeRoundupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[37]
+	mi := &file_services_activity_activity_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2124,7 +2435,7 @@ func (x *RecomputeRoundupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecomputeRoundupRequest.ProtoReflect.Descriptor instead.
 func (*RecomputeRoundupRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{37}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *RecomputeRoundupRequest) GetUserId() string {
@@ -2156,7 +2467,7 @@ type RecordShowcaseViewRequest struct {
 
 func (x *RecordShowcaseViewRequest) Reset() {
 	*x = RecordShowcaseViewRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[38]
+	mi := &file_services_activity_activity_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2168,7 +2479,7 @@ func (x *RecordShowcaseViewRequest) String() string {
 func (*RecordShowcaseViewRequest) ProtoMessage() {}
 
 func (x *RecordShowcaseViewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[38]
+	mi := &file_services_activity_activity_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2181,7 +2492,7 @@ func (x *RecordShowcaseViewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordShowcaseViewRequest.ProtoReflect.Descriptor instead.
 func (*RecordShowcaseViewRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{38}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *RecordShowcaseViewRequest) GetTargetKey() string {
@@ -2210,7 +2521,7 @@ type GetShowcaseViewStatsRequest struct {
 
 func (x *GetShowcaseViewStatsRequest) Reset() {
 	*x = GetShowcaseViewStatsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[39]
+	mi := &file_services_activity_activity_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2222,7 +2533,7 @@ func (x *GetShowcaseViewStatsRequest) String() string {
 func (*GetShowcaseViewStatsRequest) ProtoMessage() {}
 
 func (x *GetShowcaseViewStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[39]
+	mi := &file_services_activity_activity_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2235,7 +2546,7 @@ func (x *GetShowcaseViewStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetShowcaseViewStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetShowcaseViewStatsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{39}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *GetShowcaseViewStatsRequest) GetUserId() string {
@@ -2275,7 +2586,7 @@ type ListShowcaseViewStatsRequest struct {
 
 func (x *ListShowcaseViewStatsRequest) Reset() {
 	*x = ListShowcaseViewStatsRequest{}
-	mi := &file_services_activity_activity_proto_msgTypes[40]
+	mi := &file_services_activity_activity_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2287,7 +2598,7 @@ func (x *ListShowcaseViewStatsRequest) String() string {
 func (*ListShowcaseViewStatsRequest) ProtoMessage() {}
 
 func (x *ListShowcaseViewStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[40]
+	mi := &file_services_activity_activity_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2300,7 +2611,7 @@ func (x *ListShowcaseViewStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListShowcaseViewStatsRequest.ProtoReflect.Descriptor instead.
 func (*ListShowcaseViewStatsRequest) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{40}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *ListShowcaseViewStatsRequest) GetUserId() string {
@@ -2323,7 +2634,7 @@ type ListShowcaseViewStatsResponse struct {
 
 func (x *ListShowcaseViewStatsResponse) Reset() {
 	*x = ListShowcaseViewStatsResponse{}
-	mi := &file_services_activity_activity_proto_msgTypes[41]
+	mi := &file_services_activity_activity_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2335,7 +2646,7 @@ func (x *ListShowcaseViewStatsResponse) String() string {
 func (*ListShowcaseViewStatsResponse) ProtoMessage() {}
 
 func (x *ListShowcaseViewStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_activity_activity_proto_msgTypes[41]
+	mi := &file_services_activity_activity_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2348,7 +2659,7 @@ func (x *ListShowcaseViewStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListShowcaseViewStatsResponse.ProtoReflect.Descriptor instead.
 func (*ListShowcaseViewStatsResponse) Descriptor() ([]byte, []int) {
-	return file_services_activity_activity_proto_rawDescGZIP(), []int{41}
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *ListShowcaseViewStatsResponse) GetProfile() *activity.ShowcaseViewStats {
@@ -2430,9 +2741,32 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\vshowcase_id\x18\x02 \x01(\tR\n" +
 	"showcaseId\",\n" +
 	"\x11ExportDataRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"7\n" +
-	"\x12ExportDataResponse\x12!\n" +
-	"\fdownload_url\x18\x01 \x01(\tR\vdownloadUrl\"\xb1\x01\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xfc\x01\n" +
+	"\tExportJob\x12\x15\n" +
+	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12B\n" +
+	"\x06status\x18\x02 \x01(\x0e2*.fitglue.services.activity.ExportJobStatusR\x06status\x12!\n" +
+	"\fdownload_url\x18\x03 \x01(\tR\vdownloadUrl\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x04 \x01(\x03R\tsizeBytes\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x05 \x01(\tR\texpiresAt\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\"L\n" +
+	"\x12ExportDataResponse\x126\n" +
+	"\x03job\x18\x01 \x01(\v2$.fitglue.services.activity.ExportJobR\x03job\"E\n" +
+	"\x13GetExportJobRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\tR\x05jobId\"J\n" +
+	"\x18ExportPipelineRunRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"|\n" +
+	"\x19ExportPipelineRunResponse\x12!\n" +
+	"\fdownload_url\x18\x01 \x01(\tR\vdownloadUrl\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x02 \x01(\x03R\tsizeBytes\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\tR\texpiresAt\"\xb1\x01\n" +
 	"\x13ParseFitFileRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12(\n" +
 	"\x10fit_file_content\x18\x02 \x01(\fR\x0efitFileContent\x12\x14\n" +
@@ -2568,7 +2902,13 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\vtotal_views\x18\x03 \x01(\x03R\n" +
 	"totalViews\x12%\n" +
 	"\x0etotal_visitors\x18\x04 \x01(\x03R\rtotalVisitors\x12F\n" +
-	"\broundups\x18\x05 \x03(\v2*.fitglue.models.activity.ShowcaseViewStatsR\broundups2\xed)\n" +
+	"\broundups\x18\x05 \x03(\v2*.fitglue.models.activity.ShowcaseViewStatsR\broundups*\xb0\x01\n" +
+	"\x0fExportJobStatus\x12!\n" +
+	"\x1dEXPORT_JOB_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19EXPORT_JOB_STATUS_PENDING\x10\x01\x12 \n" +
+	"\x1cEXPORT_JOB_STATUS_PROCESSING\x10\x02\x12\x1b\n" +
+	"\x17EXPORT_JOB_STATUS_READY\x10\x03\x12\x1c\n" +
+	"\x18EXPORT_JOB_STATUS_FAILED\x10\x042\xc2,\n" +
 	"\x0fActivityService\x12\xa1\x01\n" +
 	"\vGetActivity\x12-.fitglue.services.activity.GetActivityRequest\x1a-.fitglue.models.activity.StandardizedActivity\"4\x82\xd3\xe4\x93\x02.\x12,/v2/users/{user_id}/activities/{activity_id}\x12\x9d\x01\n" +
 	"\x0eListActivities\x120.fitglue.services.activity.ListActivitiesRequest\x1a1.fitglue.services.activity.ListActivitiesResponse\"&\x82\xd3\xe4\x93\x02 \x12\x1e/v2/users/{user_id}/activities\x12\x90\x01\n" +
@@ -2579,7 +2919,9 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\x0eUpdateShowcase\x120.fitglue.services.activity.UpdateShowcaseRequest\x1a*.fitglue.models.activity.ShowcasedActivity\"=\x82\xd3\xe4\x93\x027:\bshowcase2+/v2/users/{user_id}/showcases/{showcase_id}\x12\x8f\x01\n" +
 	"\x0eDeleteShowcase\x120.fitglue.services.activity.DeleteShowcaseRequest\x1a\x16.google.protobuf.Empty\"3\x82\xd3\xe4\x93\x02-*+/v2/users/{user_id}/showcases/{showcase_id}\x12\x95\x01\n" +
 	"\n" +
-	"ExportData\x12,.fitglue.services.activity.ExportDataRequest\x1a-.fitglue.services.activity.ExportDataResponse\"*\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v2/users/{user_id}/export-data\x12\x97\x01\n" +
+	"ExportData\x12,.fitglue.services.activity.ExportDataRequest\x1a-.fitglue.services.activity.ExportDataResponse\"*\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v2/users/{user_id}/export-data\x12\x96\x01\n" +
+	"\fGetExportJob\x12..fitglue.services.activity.GetExportJobRequest\x1a$.fitglue.services.activity.ExportJob\"0\x82\xd3\xe4\x93\x02*\x12(/v2/users/{user_id}/export-jobs/{job_id}\x12\xb9\x01\n" +
+	"\x11ExportPipelineRun\x123.fitglue.services.activity.ExportPipelineRunRequest\x1a4.fitglue.services.activity.ExportPipelineRunResponse\"9\x82\xd3\xe4\x93\x023\x121/v2/users/{user_id}/pipeline-runs/{run_id}/export\x12\x97\x01\n" +
 	"\fParseFitFile\x12..fitglue.services.activity.ParseFitFileRequest\x1a-.fitglue.models.activity.StandardizedActivity\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v2/users/{user_id}/parse-fit\x12\xb9\x01\n" +
 	"\x16GetShowcasePreferences\x128.fitglue.services.activity.GetShowcasePreferencesRequest\x1a(.fitglue.models.activity.ShowcaseProfile\";\x82\xd3\xe4\x93\x025\x123/v2/users/{user_id}/showcase-management/preferences\x12\xcc\x01\n" +
 	"\x19UpdateShowcasePreferences\x12;.fitglue.services.activity.UpdateShowcasePreferencesRequest\x1a(.fitglue.models.activity.ShowcaseProfile\"H\x82\xd3\xe4\x93\x02B:\vpreferences\x1a3/v2/users/{user_id}/showcase-management/preferences\x12\xab\x01\n" +
@@ -2614,142 +2956,154 @@ func file_services_activity_activity_proto_rawDescGZIP() []byte {
 	return file_services_activity_activity_proto_rawDescData
 }
 
-var file_services_activity_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
+var file_services_activity_activity_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_services_activity_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_services_activity_activity_proto_goTypes = []any{
-	(*GetActivityRequest)(nil),                         // 0: fitglue.services.activity.GetActivityRequest
-	(*ListActivitiesRequest)(nil),                      // 1: fitglue.services.activity.ListActivitiesRequest
-	(*ListActivitiesResponse)(nil),                     // 2: fitglue.services.activity.ListActivitiesResponse
-	(*DeleteActivityRequest)(nil),                      // 3: fitglue.services.activity.DeleteActivityRequest
-	(*GetShowcaseRequest)(nil),                         // 4: fitglue.services.activity.GetShowcaseRequest
-	(*ListShowcasesRequest)(nil),                       // 5: fitglue.services.activity.ListShowcasesRequest
-	(*ListShowcasesResponse)(nil),                      // 6: fitglue.services.activity.ListShowcasesResponse
-	(*CreateShowcaseRequest)(nil),                      // 7: fitglue.services.activity.CreateShowcaseRequest
-	(*UpdateShowcaseRequest)(nil),                      // 8: fitglue.services.activity.UpdateShowcaseRequest
-	(*DeleteShowcaseRequest)(nil),                      // 9: fitglue.services.activity.DeleteShowcaseRequest
-	(*ExportDataRequest)(nil),                          // 10: fitglue.services.activity.ExportDataRequest
-	(*ExportDataResponse)(nil),                         // 11: fitglue.services.activity.ExportDataResponse
-	(*ParseFitFileRequest)(nil),                        // 12: fitglue.services.activity.ParseFitFileRequest
-	(*GetShowcasePreferencesRequest)(nil),              // 13: fitglue.services.activity.GetShowcasePreferencesRequest
-	(*UpdateShowcasePreferencesRequest)(nil),           // 14: fitglue.services.activity.UpdateShowcasePreferencesRequest
-	(*GenerateShowcaseImagesRequest)(nil),              // 15: fitglue.services.activity.GenerateShowcaseImagesRequest
-	(*GetPublicShowcaseRequest)(nil),                   // 16: fitglue.services.activity.GetPublicShowcaseRequest
-	(*GetShowcaseSettingsRequest)(nil),                 // 17: fitglue.services.activity.GetShowcaseSettingsRequest
-	(*GetShowcaseSettingsResponse)(nil),                // 18: fitglue.services.activity.GetShowcaseSettingsResponse
-	(*ShowcaseActivityEntry)(nil),                      // 19: fitglue.services.activity.ShowcaseActivityEntry
-	(*UpdateShowcaseSettingsRequest)(nil),              // 20: fitglue.services.activity.UpdateShowcaseSettingsRequest
-	(*UpdateShowcaseSlugRequest)(nil),                  // 21: fitglue.services.activity.UpdateShowcaseSlugRequest
-	(*UpdateShowcaseSlugResponse)(nil),                 // 22: fitglue.services.activity.UpdateShowcaseSlugResponse
-	(*AddShowcaseEntryRequest)(nil),                    // 23: fitglue.services.activity.AddShowcaseEntryRequest
-	(*RemoveShowcaseEntryRequest)(nil),                 // 24: fitglue.services.activity.RemoveShowcaseEntryRequest
-	(*GetShowcaseProfilePictureUploadUrlRequest)(nil),  // 25: fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
-	(*GetShowcaseProfilePictureUploadUrlResponse)(nil), // 26: fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
-	(*GetActivityPhotoUploadUrlRequest)(nil),           // 27: fitglue.services.activity.GetActivityPhotoUploadUrlRequest
-	(*GetActivityPhotoUploadUrlResponse)(nil),          // 28: fitglue.services.activity.GetActivityPhotoUploadUrlResponse
-	(*GetPublicShowcaseProfileRequest)(nil),            // 29: fitglue.services.activity.GetPublicShowcaseProfileRequest
-	(*GetPublicShowcaseProfileResponse)(nil),           // 30: fitglue.services.activity.GetPublicShowcaseProfileResponse
-	(*GetActivityStatsRequest)(nil),                    // 31: fitglue.services.activity.GetActivityStatsRequest
-	(*GetActivityStatsResponse)(nil),                   // 32: fitglue.services.activity.GetActivityStatsResponse
-	(*GetPublicRoundupRequest)(nil),                    // 33: fitglue.services.activity.GetPublicRoundupRequest
-	(*GetRecentPublicRoundupsRequest)(nil),             // 34: fitglue.services.activity.GetRecentPublicRoundupsRequest
-	(*GetRecentPublicRoundupsResponse)(nil),            // 35: fitglue.services.activity.GetRecentPublicRoundupsResponse
-	(*UpdateRoundupSettingsRequest)(nil),               // 36: fitglue.services.activity.UpdateRoundupSettingsRequest
-	(*RecomputeRoundupRequest)(nil),                    // 37: fitglue.services.activity.RecomputeRoundupRequest
-	(*RecordShowcaseViewRequest)(nil),                  // 38: fitglue.services.activity.RecordShowcaseViewRequest
-	(*GetShowcaseViewStatsRequest)(nil),                // 39: fitglue.services.activity.GetShowcaseViewStatsRequest
-	(*ListShowcaseViewStatsRequest)(nil),               // 40: fitglue.services.activity.ListShowcaseViewStatsRequest
-	(*ListShowcaseViewStatsResponse)(nil),              // 41: fitglue.services.activity.ListShowcaseViewStatsResponse
-	(*activity.StandardizedActivity)(nil),              // 42: fitglue.models.activity.StandardizedActivity
-	(*activity.ShowcaseProfileEntry)(nil),              // 43: fitglue.models.activity.ShowcaseProfileEntry
-	(*activity.ShowcasedActivity)(nil),                 // 44: fitglue.models.activity.ShowcasedActivity
-	(*activity.ShowcaseProfile)(nil),                   // 45: fitglue.models.activity.ShowcaseProfile
-	(*activity.ShowcaseRoundup)(nil),                   // 46: fitglue.models.activity.ShowcaseRoundup
-	(*activity.RoundupSettings)(nil),                   // 47: fitglue.models.activity.RoundupSettings
-	(activity.ShowcaseViewTarget)(0),                   // 48: fitglue.models.activity.ShowcaseViewTarget
-	(*activity.ShowcaseViewStats)(nil),                 // 49: fitglue.models.activity.ShowcaseViewStats
-	(*emptypb.Empty)(nil),                              // 50: google.protobuf.Empty
+	(ExportJobStatus)(0),                               // 0: fitglue.services.activity.ExportJobStatus
+	(*GetActivityRequest)(nil),                         // 1: fitglue.services.activity.GetActivityRequest
+	(*ListActivitiesRequest)(nil),                      // 2: fitglue.services.activity.ListActivitiesRequest
+	(*ListActivitiesResponse)(nil),                     // 3: fitglue.services.activity.ListActivitiesResponse
+	(*DeleteActivityRequest)(nil),                      // 4: fitglue.services.activity.DeleteActivityRequest
+	(*GetShowcaseRequest)(nil),                         // 5: fitglue.services.activity.GetShowcaseRequest
+	(*ListShowcasesRequest)(nil),                       // 6: fitglue.services.activity.ListShowcasesRequest
+	(*ListShowcasesResponse)(nil),                      // 7: fitglue.services.activity.ListShowcasesResponse
+	(*CreateShowcaseRequest)(nil),                      // 8: fitglue.services.activity.CreateShowcaseRequest
+	(*UpdateShowcaseRequest)(nil),                      // 9: fitglue.services.activity.UpdateShowcaseRequest
+	(*DeleteShowcaseRequest)(nil),                      // 10: fitglue.services.activity.DeleteShowcaseRequest
+	(*ExportDataRequest)(nil),                          // 11: fitglue.services.activity.ExportDataRequest
+	(*ExportJob)(nil),                                  // 12: fitglue.services.activity.ExportJob
+	(*ExportDataResponse)(nil),                         // 13: fitglue.services.activity.ExportDataResponse
+	(*GetExportJobRequest)(nil),                        // 14: fitglue.services.activity.GetExportJobRequest
+	(*ExportPipelineRunRequest)(nil),                   // 15: fitglue.services.activity.ExportPipelineRunRequest
+	(*ExportPipelineRunResponse)(nil),                  // 16: fitglue.services.activity.ExportPipelineRunResponse
+	(*ParseFitFileRequest)(nil),                        // 17: fitglue.services.activity.ParseFitFileRequest
+	(*GetShowcasePreferencesRequest)(nil),              // 18: fitglue.services.activity.GetShowcasePreferencesRequest
+	(*UpdateShowcasePreferencesRequest)(nil),           // 19: fitglue.services.activity.UpdateShowcasePreferencesRequest
+	(*GenerateShowcaseImagesRequest)(nil),              // 20: fitglue.services.activity.GenerateShowcaseImagesRequest
+	(*GetPublicShowcaseRequest)(nil),                   // 21: fitglue.services.activity.GetPublicShowcaseRequest
+	(*GetShowcaseSettingsRequest)(nil),                 // 22: fitglue.services.activity.GetShowcaseSettingsRequest
+	(*GetShowcaseSettingsResponse)(nil),                // 23: fitglue.services.activity.GetShowcaseSettingsResponse
+	(*ShowcaseActivityEntry)(nil),                      // 24: fitglue.services.activity.ShowcaseActivityEntry
+	(*UpdateShowcaseSettingsRequest)(nil),              // 25: fitglue.services.activity.UpdateShowcaseSettingsRequest
+	(*UpdateShowcaseSlugRequest)(nil),                  // 26: fitglue.services.activity.UpdateShowcaseSlugRequest
+	(*UpdateShowcaseSlugResponse)(nil),                 // 27: fitglue.services.activity.UpdateShowcaseSlugResponse
+	(*AddShowcaseEntryRequest)(nil),                    // 28: fitglue.services.activity.AddShowcaseEntryRequest
+	(*RemoveShowcaseEntryRequest)(nil),                 // 29: fitglue.services.activity.RemoveShowcaseEntryRequest
+	(*GetShowcaseProfilePictureUploadUrlRequest)(nil),  // 30: fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
+	(*GetShowcaseProfilePictureUploadUrlResponse)(nil), // 31: fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
+	(*GetActivityPhotoUploadUrlRequest)(nil),           // 32: fitglue.services.activity.GetActivityPhotoUploadUrlRequest
+	(*GetActivityPhotoUploadUrlResponse)(nil),          // 33: fitglue.services.activity.GetActivityPhotoUploadUrlResponse
+	(*GetPublicShowcaseProfileRequest)(nil),            // 34: fitglue.services.activity.GetPublicShowcaseProfileRequest
+	(*GetPublicShowcaseProfileResponse)(nil),           // 35: fitglue.services.activity.GetPublicShowcaseProfileResponse
+	(*GetActivityStatsRequest)(nil),                    // 36: fitglue.services.activity.GetActivityStatsRequest
+	(*GetActivityStatsResponse)(nil),                   // 37: fitglue.services.activity.GetActivityStatsResponse
+	(*GetPublicRoundupRequest)(nil),                    // 38: fitglue.services.activity.GetPublicRoundupRequest
+	(*GetRecentPublicRoundupsRequest)(nil),             // 39: fitglue.services.activity.GetRecentPublicRoundupsRequest
+	(*GetRecentPublicRoundupsResponse)(nil),            // 40: fitglue.services.activity.GetRecentPublicRoundupsResponse
+	(*UpdateRoundupSettingsRequest)(nil),               // 41: fitglue.services.activity.UpdateRoundupSettingsRequest
+	(*RecomputeRoundupRequest)(nil),                    // 42: fitglue.services.activity.RecomputeRoundupRequest
+	(*RecordShowcaseViewRequest)(nil),                  // 43: fitglue.services.activity.RecordShowcaseViewRequest
+	(*GetShowcaseViewStatsRequest)(nil),                // 44: fitglue.services.activity.GetShowcaseViewStatsRequest
+	(*ListShowcaseViewStatsRequest)(nil),               // 45: fitglue.services.activity.ListShowcaseViewStatsRequest
+	(*ListShowcaseViewStatsResponse)(nil),              // 46: fitglue.services.activity.ListShowcaseViewStatsResponse
+	(*activity.StandardizedActivity)(nil),              // 47: fitglue.models.activity.StandardizedActivity
+	(*activity.ShowcaseProfileEntry)(nil),              // 48: fitglue.models.activity.ShowcaseProfileEntry
+	(*activity.ShowcasedActivity)(nil),                 // 49: fitglue.models.activity.ShowcasedActivity
+	(*activity.ShowcaseProfile)(nil),                   // 50: fitglue.models.activity.ShowcaseProfile
+	(*activity.ShowcaseRoundup)(nil),                   // 51: fitglue.models.activity.ShowcaseRoundup
+	(*activity.RoundupSettings)(nil),                   // 52: fitglue.models.activity.RoundupSettings
+	(activity.ShowcaseViewTarget)(0),                   // 53: fitglue.models.activity.ShowcaseViewTarget
+	(*activity.ShowcaseViewStats)(nil),                 // 54: fitglue.models.activity.ShowcaseViewStats
+	(*emptypb.Empty)(nil),                              // 55: google.protobuf.Empty
 }
 var file_services_activity_activity_proto_depIdxs = []int32{
-	42, // 0: fitglue.services.activity.ListActivitiesResponse.activities:type_name -> fitglue.models.activity.StandardizedActivity
-	43, // 1: fitglue.services.activity.ListShowcasesResponse.showcases:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	44, // 2: fitglue.services.activity.CreateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
-	44, // 3: fitglue.services.activity.UpdateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
-	45, // 4: fitglue.services.activity.UpdateShowcasePreferencesRequest.preferences:type_name -> fitglue.models.activity.ShowcaseProfile
-	45, // 5: fitglue.services.activity.GetShowcaseSettingsResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
-	19, // 6: fitglue.services.activity.GetShowcaseSettingsResponse.activities:type_name -> fitglue.services.activity.ShowcaseActivityEntry
-	45, // 7: fitglue.services.activity.UpdateShowcaseSettingsRequest.settings:type_name -> fitglue.models.activity.ShowcaseProfile
-	45, // 8: fitglue.services.activity.GetPublicShowcaseProfileResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
-	44, // 9: fitglue.services.activity.GetPublicShowcaseProfileResponse.showcases:type_name -> fitglue.models.activity.ShowcasedActivity
-	46, // 10: fitglue.services.activity.GetRecentPublicRoundupsResponse.roundups:type_name -> fitglue.models.activity.ShowcaseRoundup
-	47, // 11: fitglue.services.activity.UpdateRoundupSettingsRequest.settings:type_name -> fitglue.models.activity.RoundupSettings
-	48, // 12: fitglue.services.activity.GetShowcaseViewStatsRequest.target:type_name -> fitglue.models.activity.ShowcaseViewTarget
-	49, // 13: fitglue.services.activity.ListShowcaseViewStatsResponse.profile:type_name -> fitglue.models.activity.ShowcaseViewStats
-	49, // 14: fitglue.services.activity.ListShowcaseViewStatsResponse.showcases:type_name -> fitglue.models.activity.ShowcaseViewStats
-	49, // 15: fitglue.services.activity.ListShowcaseViewStatsResponse.roundups:type_name -> fitglue.models.activity.ShowcaseViewStats
-	0,  // 16: fitglue.services.activity.ActivityService.GetActivity:input_type -> fitglue.services.activity.GetActivityRequest
-	1,  // 17: fitglue.services.activity.ActivityService.ListActivities:input_type -> fitglue.services.activity.ListActivitiesRequest
-	3,  // 18: fitglue.services.activity.ActivityService.DeleteActivity:input_type -> fitglue.services.activity.DeleteActivityRequest
-	4,  // 19: fitglue.services.activity.ActivityService.GetShowcase:input_type -> fitglue.services.activity.GetShowcaseRequest
-	5,  // 20: fitglue.services.activity.ActivityService.ListShowcases:input_type -> fitglue.services.activity.ListShowcasesRequest
-	7,  // 21: fitglue.services.activity.ActivityService.CreateShowcase:input_type -> fitglue.services.activity.CreateShowcaseRequest
-	8,  // 22: fitglue.services.activity.ActivityService.UpdateShowcase:input_type -> fitglue.services.activity.UpdateShowcaseRequest
-	9,  // 23: fitglue.services.activity.ActivityService.DeleteShowcase:input_type -> fitglue.services.activity.DeleteShowcaseRequest
-	10, // 24: fitglue.services.activity.ActivityService.ExportData:input_type -> fitglue.services.activity.ExportDataRequest
-	12, // 25: fitglue.services.activity.ActivityService.ParseFitFile:input_type -> fitglue.services.activity.ParseFitFileRequest
-	13, // 26: fitglue.services.activity.ActivityService.GetShowcasePreferences:input_type -> fitglue.services.activity.GetShowcasePreferencesRequest
-	14, // 27: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:input_type -> fitglue.services.activity.UpdateShowcasePreferencesRequest
-	15, // 28: fitglue.services.activity.ActivityService.GenerateShowcaseImages:input_type -> fitglue.services.activity.GenerateShowcaseImagesRequest
-	16, // 29: fitglue.services.activity.ActivityService.GetPublicShowcase:input_type -> fitglue.services.activity.GetPublicShowcaseRequest
-	29, // 30: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:input_type -> fitglue.services.activity.GetPublicShowcaseProfileRequest
-	31, // 31: fitglue.services.activity.ActivityService.GetActivityStats:input_type -> fitglue.services.activity.GetActivityStatsRequest
-	17, // 32: fitglue.services.activity.ActivityService.GetShowcaseSettings:input_type -> fitglue.services.activity.GetShowcaseSettingsRequest
-	20, // 33: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:input_type -> fitglue.services.activity.UpdateShowcaseSettingsRequest
-	21, // 34: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:input_type -> fitglue.services.activity.UpdateShowcaseSlugRequest
-	23, // 35: fitglue.services.activity.ActivityService.AddShowcaseEntry:input_type -> fitglue.services.activity.AddShowcaseEntryRequest
-	24, // 36: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:input_type -> fitglue.services.activity.RemoveShowcaseEntryRequest
-	25, // 37: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:input_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
-	27, // 38: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:input_type -> fitglue.services.activity.GetActivityPhotoUploadUrlRequest
-	33, // 39: fitglue.services.activity.ActivityService.GetPublicRoundup:input_type -> fitglue.services.activity.GetPublicRoundupRequest
-	34, // 40: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:input_type -> fitglue.services.activity.GetRecentPublicRoundupsRequest
-	36, // 41: fitglue.services.activity.ActivityService.UpdateRoundupSettings:input_type -> fitglue.services.activity.UpdateRoundupSettingsRequest
-	37, // 42: fitglue.services.activity.ActivityService.RecomputeRoundup:input_type -> fitglue.services.activity.RecomputeRoundupRequest
-	38, // 43: fitglue.services.activity.ActivityService.RecordShowcaseView:input_type -> fitglue.services.activity.RecordShowcaseViewRequest
-	39, // 44: fitglue.services.activity.ActivityService.GetShowcaseViewStats:input_type -> fitglue.services.activity.GetShowcaseViewStatsRequest
-	40, // 45: fitglue.services.activity.ActivityService.ListShowcaseViewStats:input_type -> fitglue.services.activity.ListShowcaseViewStatsRequest
-	42, // 46: fitglue.services.activity.ActivityService.GetActivity:output_type -> fitglue.models.activity.StandardizedActivity
-	2,  // 47: fitglue.services.activity.ActivityService.ListActivities:output_type -> fitglue.services.activity.ListActivitiesResponse
-	50, // 48: fitglue.services.activity.ActivityService.DeleteActivity:output_type -> google.protobuf.Empty
-	44, // 49: fitglue.services.activity.ActivityService.GetShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	6,  // 50: fitglue.services.activity.ActivityService.ListShowcases:output_type -> fitglue.services.activity.ListShowcasesResponse
-	44, // 51: fitglue.services.activity.ActivityService.CreateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	44, // 52: fitglue.services.activity.ActivityService.UpdateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	50, // 53: fitglue.services.activity.ActivityService.DeleteShowcase:output_type -> google.protobuf.Empty
-	11, // 54: fitglue.services.activity.ActivityService.ExportData:output_type -> fitglue.services.activity.ExportDataResponse
-	42, // 55: fitglue.services.activity.ActivityService.ParseFitFile:output_type -> fitglue.models.activity.StandardizedActivity
-	45, // 56: fitglue.services.activity.ActivityService.GetShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
-	45, // 57: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
-	50, // 58: fitglue.services.activity.ActivityService.GenerateShowcaseImages:output_type -> google.protobuf.Empty
-	44, // 59: fitglue.services.activity.ActivityService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	30, // 60: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:output_type -> fitglue.services.activity.GetPublicShowcaseProfileResponse
-	32, // 61: fitglue.services.activity.ActivityService.GetActivityStats:output_type -> fitglue.services.activity.GetActivityStatsResponse
-	18, // 62: fitglue.services.activity.ActivityService.GetShowcaseSettings:output_type -> fitglue.services.activity.GetShowcaseSettingsResponse
-	45, // 63: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:output_type -> fitglue.models.activity.ShowcaseProfile
-	22, // 64: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:output_type -> fitglue.services.activity.UpdateShowcaseSlugResponse
-	50, // 65: fitglue.services.activity.ActivityService.AddShowcaseEntry:output_type -> google.protobuf.Empty
-	50, // 66: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:output_type -> google.protobuf.Empty
-	26, // 67: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:output_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
-	28, // 68: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:output_type -> fitglue.services.activity.GetActivityPhotoUploadUrlResponse
-	46, // 69: fitglue.services.activity.ActivityService.GetPublicRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
-	35, // 70: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:output_type -> fitglue.services.activity.GetRecentPublicRoundupsResponse
-	45, // 71: fitglue.services.activity.ActivityService.UpdateRoundupSettings:output_type -> fitglue.models.activity.ShowcaseProfile
-	46, // 72: fitglue.services.activity.ActivityService.RecomputeRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
-	50, // 73: fitglue.services.activity.ActivityService.RecordShowcaseView:output_type -> google.protobuf.Empty
-	49, // 74: fitglue.services.activity.ActivityService.GetShowcaseViewStats:output_type -> fitglue.models.activity.ShowcaseViewStats
-	41, // 75: fitglue.services.activity.ActivityService.ListShowcaseViewStats:output_type -> fitglue.services.activity.ListShowcaseViewStatsResponse
-	46, // [46:76] is the sub-list for method output_type
-	16, // [16:46] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	47, // 0: fitglue.services.activity.ListActivitiesResponse.activities:type_name -> fitglue.models.activity.StandardizedActivity
+	48, // 1: fitglue.services.activity.ListShowcasesResponse.showcases:type_name -> fitglue.models.activity.ShowcaseProfileEntry
+	49, // 2: fitglue.services.activity.CreateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
+	49, // 3: fitglue.services.activity.UpdateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
+	0,  // 4: fitglue.services.activity.ExportJob.status:type_name -> fitglue.services.activity.ExportJobStatus
+	12, // 5: fitglue.services.activity.ExportDataResponse.job:type_name -> fitglue.services.activity.ExportJob
+	50, // 6: fitglue.services.activity.UpdateShowcasePreferencesRequest.preferences:type_name -> fitglue.models.activity.ShowcaseProfile
+	50, // 7: fitglue.services.activity.GetShowcaseSettingsResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
+	24, // 8: fitglue.services.activity.GetShowcaseSettingsResponse.activities:type_name -> fitglue.services.activity.ShowcaseActivityEntry
+	50, // 9: fitglue.services.activity.UpdateShowcaseSettingsRequest.settings:type_name -> fitglue.models.activity.ShowcaseProfile
+	50, // 10: fitglue.services.activity.GetPublicShowcaseProfileResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
+	49, // 11: fitglue.services.activity.GetPublicShowcaseProfileResponse.showcases:type_name -> fitglue.models.activity.ShowcasedActivity
+	51, // 12: fitglue.services.activity.GetRecentPublicRoundupsResponse.roundups:type_name -> fitglue.models.activity.ShowcaseRoundup
+	52, // 13: fitglue.services.activity.UpdateRoundupSettingsRequest.settings:type_name -> fitglue.models.activity.RoundupSettings
+	53, // 14: fitglue.services.activity.GetShowcaseViewStatsRequest.target:type_name -> fitglue.models.activity.ShowcaseViewTarget
+	54, // 15: fitglue.services.activity.ListShowcaseViewStatsResponse.profile:type_name -> fitglue.models.activity.ShowcaseViewStats
+	54, // 16: fitglue.services.activity.ListShowcaseViewStatsResponse.showcases:type_name -> fitglue.models.activity.ShowcaseViewStats
+	54, // 17: fitglue.services.activity.ListShowcaseViewStatsResponse.roundups:type_name -> fitglue.models.activity.ShowcaseViewStats
+	1,  // 18: fitglue.services.activity.ActivityService.GetActivity:input_type -> fitglue.services.activity.GetActivityRequest
+	2,  // 19: fitglue.services.activity.ActivityService.ListActivities:input_type -> fitglue.services.activity.ListActivitiesRequest
+	4,  // 20: fitglue.services.activity.ActivityService.DeleteActivity:input_type -> fitglue.services.activity.DeleteActivityRequest
+	5,  // 21: fitglue.services.activity.ActivityService.GetShowcase:input_type -> fitglue.services.activity.GetShowcaseRequest
+	6,  // 22: fitglue.services.activity.ActivityService.ListShowcases:input_type -> fitglue.services.activity.ListShowcasesRequest
+	8,  // 23: fitglue.services.activity.ActivityService.CreateShowcase:input_type -> fitglue.services.activity.CreateShowcaseRequest
+	9,  // 24: fitglue.services.activity.ActivityService.UpdateShowcase:input_type -> fitglue.services.activity.UpdateShowcaseRequest
+	10, // 25: fitglue.services.activity.ActivityService.DeleteShowcase:input_type -> fitglue.services.activity.DeleteShowcaseRequest
+	11, // 26: fitglue.services.activity.ActivityService.ExportData:input_type -> fitglue.services.activity.ExportDataRequest
+	14, // 27: fitglue.services.activity.ActivityService.GetExportJob:input_type -> fitglue.services.activity.GetExportJobRequest
+	15, // 28: fitglue.services.activity.ActivityService.ExportPipelineRun:input_type -> fitglue.services.activity.ExportPipelineRunRequest
+	17, // 29: fitglue.services.activity.ActivityService.ParseFitFile:input_type -> fitglue.services.activity.ParseFitFileRequest
+	18, // 30: fitglue.services.activity.ActivityService.GetShowcasePreferences:input_type -> fitglue.services.activity.GetShowcasePreferencesRequest
+	19, // 31: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:input_type -> fitglue.services.activity.UpdateShowcasePreferencesRequest
+	20, // 32: fitglue.services.activity.ActivityService.GenerateShowcaseImages:input_type -> fitglue.services.activity.GenerateShowcaseImagesRequest
+	21, // 33: fitglue.services.activity.ActivityService.GetPublicShowcase:input_type -> fitglue.services.activity.GetPublicShowcaseRequest
+	34, // 34: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:input_type -> fitglue.services.activity.GetPublicShowcaseProfileRequest
+	36, // 35: fitglue.services.activity.ActivityService.GetActivityStats:input_type -> fitglue.services.activity.GetActivityStatsRequest
+	22, // 36: fitglue.services.activity.ActivityService.GetShowcaseSettings:input_type -> fitglue.services.activity.GetShowcaseSettingsRequest
+	25, // 37: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:input_type -> fitglue.services.activity.UpdateShowcaseSettingsRequest
+	26, // 38: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:input_type -> fitglue.services.activity.UpdateShowcaseSlugRequest
+	28, // 39: fitglue.services.activity.ActivityService.AddShowcaseEntry:input_type -> fitglue.services.activity.AddShowcaseEntryRequest
+	29, // 40: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:input_type -> fitglue.services.activity.RemoveShowcaseEntryRequest
+	30, // 41: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:input_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
+	32, // 42: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:input_type -> fitglue.services.activity.GetActivityPhotoUploadUrlRequest
+	38, // 43: fitglue.services.activity.ActivityService.GetPublicRoundup:input_type -> fitglue.services.activity.GetPublicRoundupRequest
+	39, // 44: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:input_type -> fitglue.services.activity.GetRecentPublicRoundupsRequest
+	41, // 45: fitglue.services.activity.ActivityService.UpdateRoundupSettings:input_type -> fitglue.services.activity.UpdateRoundupSettingsRequest
+	42, // 46: fitglue.services.activity.ActivityService.RecomputeRoundup:input_type -> fitglue.services.activity.RecomputeRoundupRequest
+	43, // 47: fitglue.services.activity.ActivityService.RecordShowcaseView:input_type -> fitglue.services.activity.RecordShowcaseViewRequest
+	44, // 48: fitglue.services.activity.ActivityService.GetShowcaseViewStats:input_type -> fitglue.services.activity.GetShowcaseViewStatsRequest
+	45, // 49: fitglue.services.activity.ActivityService.ListShowcaseViewStats:input_type -> fitglue.services.activity.ListShowcaseViewStatsRequest
+	47, // 50: fitglue.services.activity.ActivityService.GetActivity:output_type -> fitglue.models.activity.StandardizedActivity
+	3,  // 51: fitglue.services.activity.ActivityService.ListActivities:output_type -> fitglue.services.activity.ListActivitiesResponse
+	55, // 52: fitglue.services.activity.ActivityService.DeleteActivity:output_type -> google.protobuf.Empty
+	49, // 53: fitglue.services.activity.ActivityService.GetShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	7,  // 54: fitglue.services.activity.ActivityService.ListShowcases:output_type -> fitglue.services.activity.ListShowcasesResponse
+	49, // 55: fitglue.services.activity.ActivityService.CreateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	49, // 56: fitglue.services.activity.ActivityService.UpdateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	55, // 57: fitglue.services.activity.ActivityService.DeleteShowcase:output_type -> google.protobuf.Empty
+	13, // 58: fitglue.services.activity.ActivityService.ExportData:output_type -> fitglue.services.activity.ExportDataResponse
+	12, // 59: fitglue.services.activity.ActivityService.GetExportJob:output_type -> fitglue.services.activity.ExportJob
+	16, // 60: fitglue.services.activity.ActivityService.ExportPipelineRun:output_type -> fitglue.services.activity.ExportPipelineRunResponse
+	47, // 61: fitglue.services.activity.ActivityService.ParseFitFile:output_type -> fitglue.models.activity.StandardizedActivity
+	50, // 62: fitglue.services.activity.ActivityService.GetShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
+	50, // 63: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
+	55, // 64: fitglue.services.activity.ActivityService.GenerateShowcaseImages:output_type -> google.protobuf.Empty
+	49, // 65: fitglue.services.activity.ActivityService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	35, // 66: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:output_type -> fitglue.services.activity.GetPublicShowcaseProfileResponse
+	37, // 67: fitglue.services.activity.ActivityService.GetActivityStats:output_type -> fitglue.services.activity.GetActivityStatsResponse
+	23, // 68: fitglue.services.activity.ActivityService.GetShowcaseSettings:output_type -> fitglue.services.activity.GetShowcaseSettingsResponse
+	50, // 69: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:output_type -> fitglue.models.activity.ShowcaseProfile
+	27, // 70: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:output_type -> fitglue.services.activity.UpdateShowcaseSlugResponse
+	55, // 71: fitglue.services.activity.ActivityService.AddShowcaseEntry:output_type -> google.protobuf.Empty
+	55, // 72: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:output_type -> google.protobuf.Empty
+	31, // 73: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:output_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
+	33, // 74: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:output_type -> fitglue.services.activity.GetActivityPhotoUploadUrlResponse
+	51, // 75: fitglue.services.activity.ActivityService.GetPublicRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
+	40, // 76: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:output_type -> fitglue.services.activity.GetRecentPublicRoundupsResponse
+	50, // 77: fitglue.services.activity.ActivityService.UpdateRoundupSettings:output_type -> fitglue.models.activity.ShowcaseProfile
+	51, // 78: fitglue.services.activity.ActivityService.RecomputeRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
+	55, // 79: fitglue.services.activity.ActivityService.RecordShowcaseView:output_type -> google.protobuf.Empty
+	54, // 80: fitglue.services.activity.ActivityService.GetShowcaseViewStats:output_type -> fitglue.models.activity.ShowcaseViewStats
+	46, // 81: fitglue.services.activity.ActivityService.ListShowcaseViewStats:output_type -> fitglue.services.activity.ListShowcaseViewStatsResponse
+	50, // [50:82] is the sub-list for method output_type
+	18, // [18:50] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_services_activity_activity_proto_init() }
@@ -2762,13 +3116,14 @@ func file_services_activity_activity_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_activity_activity_proto_rawDesc), len(file_services_activity_activity_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   42,
+			NumEnums:      1,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_services_activity_activity_proto_goTypes,
 		DependencyIndexes: file_services_activity_activity_proto_depIdxs,
+		EnumInfos:         file_services_activity_activity_proto_enumTypes,
 		MessageInfos:      file_services_activity_activity_proto_msgTypes,
 	}.Build()
 	File_services_activity_activity_proto = out.File

@@ -30,6 +30,8 @@ const (
 	ActivityService_UpdateShowcase_FullMethodName                     = "/fitglue.services.activity.ActivityService/UpdateShowcase"
 	ActivityService_DeleteShowcase_FullMethodName                     = "/fitglue.services.activity.ActivityService/DeleteShowcase"
 	ActivityService_ExportData_FullMethodName                         = "/fitglue.services.activity.ActivityService/ExportData"
+	ActivityService_GetExportJob_FullMethodName                       = "/fitglue.services.activity.ActivityService/GetExportJob"
+	ActivityService_ExportPipelineRun_FullMethodName                  = "/fitglue.services.activity.ActivityService/ExportPipelineRun"
 	ActivityService_ParseFitFile_FullMethodName                       = "/fitglue.services.activity.ActivityService/ParseFitFile"
 	ActivityService_GetShowcasePreferences_FullMethodName             = "/fitglue.services.activity.ActivityService/GetShowcasePreferences"
 	ActivityService_UpdateShowcasePreferences_FullMethodName          = "/fitglue.services.activity.ActivityService/UpdateShowcasePreferences"
@@ -65,7 +67,15 @@ type ActivityServiceClient interface {
 	CreateShowcase(ctx context.Context, in *CreateShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
 	UpdateShowcase(ctx context.Context, in *UpdateShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
 	DeleteShowcase(ctx context.Context, in *DeleteShowcaseRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// ExportData enqueues an asynchronous whole-account GDPR export job and returns
+	// it immediately. A background worker builds the ZIP and updates the job; poll
+	// GetExportJob until status is READY (download_url populated) or FAILED.
 	ExportData(ctx context.Context, in *ExportDataRequest, opts ...grpc.CallOption) (*ExportDataResponse, error)
+	// GetExportJob returns the current state of a whole-account export job.
+	GetExportJob(ctx context.Context, in *GetExportJobRequest, opts ...grpc.CallOption) (*ExportJob, error)
+	// ExportPipelineRun synchronously builds a per-run ZIP (enriched + payload JSON
+	// and the raw FIT file, where still retained) and returns a signed download URL.
+	ExportPipelineRun(ctx context.Context, in *ExportPipelineRunRequest, opts ...grpc.CallOption) (*ExportPipelineRunResponse, error)
 	ParseFitFile(ctx context.Context, in *ParseFitFileRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
 	GetShowcasePreferences(ctx context.Context, in *GetShowcasePreferencesRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
 	UpdateShowcasePreferences(ctx context.Context, in *UpdateShowcasePreferencesRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
@@ -191,6 +201,26 @@ func (c *activityServiceClient) ExportData(ctx context.Context, in *ExportDataRe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExportDataResponse)
 	err := c.cc.Invoke(ctx, ActivityService_ExportData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetExportJob(ctx context.Context, in *GetExportJobRequest, opts ...grpc.CallOption) (*ExportJob, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportJob)
+	err := c.cc.Invoke(ctx, ActivityService_GetExportJob_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) ExportPipelineRun(ctx context.Context, in *ExportPipelineRunRequest, opts ...grpc.CallOption) (*ExportPipelineRunResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportPipelineRunResponse)
+	err := c.cc.Invoke(ctx, ActivityService_ExportPipelineRun_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +449,15 @@ type ActivityServiceServer interface {
 	CreateShowcase(context.Context, *CreateShowcaseRequest) (*activity.ShowcasedActivity, error)
 	UpdateShowcase(context.Context, *UpdateShowcaseRequest) (*activity.ShowcasedActivity, error)
 	DeleteShowcase(context.Context, *DeleteShowcaseRequest) (*emptypb.Empty, error)
+	// ExportData enqueues an asynchronous whole-account GDPR export job and returns
+	// it immediately. A background worker builds the ZIP and updates the job; poll
+	// GetExportJob until status is READY (download_url populated) or FAILED.
 	ExportData(context.Context, *ExportDataRequest) (*ExportDataResponse, error)
+	// GetExportJob returns the current state of a whole-account export job.
+	GetExportJob(context.Context, *GetExportJobRequest) (*ExportJob, error)
+	// ExportPipelineRun synchronously builds a per-run ZIP (enriched + payload JSON
+	// and the raw FIT file, where still retained) and returns a signed download URL.
+	ExportPipelineRun(context.Context, *ExportPipelineRunRequest) (*ExportPipelineRunResponse, error)
 	ParseFitFile(context.Context, *ParseFitFileRequest) (*activity.StandardizedActivity, error)
 	GetShowcasePreferences(context.Context, *GetShowcasePreferencesRequest) (*activity.ShowcaseProfile, error)
 	UpdateShowcasePreferences(context.Context, *UpdateShowcasePreferencesRequest) (*activity.ShowcaseProfile, error)
@@ -487,6 +525,12 @@ func (UnimplementedActivityServiceServer) DeleteShowcase(context.Context, *Delet
 }
 func (UnimplementedActivityServiceServer) ExportData(context.Context, *ExportDataRequest) (*ExportDataResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExportData not implemented")
+}
+func (UnimplementedActivityServiceServer) GetExportJob(context.Context, *GetExportJobRequest) (*ExportJob, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetExportJob not implemented")
+}
+func (UnimplementedActivityServiceServer) ExportPipelineRun(context.Context, *ExportPipelineRunRequest) (*ExportPipelineRunResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExportPipelineRun not implemented")
 }
 func (UnimplementedActivityServiceServer) ParseFitFile(context.Context, *ParseFitFileRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method ParseFitFile not implemented")
@@ -730,6 +774,42 @@ func _ActivityService_ExportData_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ActivityServiceServer).ExportData(ctx, req.(*ExportDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetExportJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExportJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetExportJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetExportJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetExportJob(ctx, req.(*GetExportJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_ExportPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportPipelineRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).ExportPipelineRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_ExportPipelineRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).ExportPipelineRun(ctx, req.(*ExportPipelineRunRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1154,6 +1234,14 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportData",
 			Handler:    _ActivityService_ExportData_Handler,
+		},
+		{
+			MethodName: "GetExportJob",
+			Handler:    _ActivityService_GetExportJob_Handler,
+		},
+		{
+			MethodName: "ExportPipelineRun",
+			Handler:    _ActivityService_ExportPipelineRun_Handler,
 		},
 		{
 			MethodName: "ParseFitFile",

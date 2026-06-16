@@ -232,6 +232,37 @@ resource "google_pubsub_subscription" "roundup_trigger_sub" {
   }
 }
 
+# Data export — ExportData (activity service) publishes here to kick off async
+# whole-account GDPR export builds; the activity worker consumes via push.
+resource "google_pubsub_topic" "data_export" {
+  name    = "topic-data-export"
+  project = var.project_id
+
+  message_retention_duration = "7200s"
+}
+
+resource "google_pubsub_subscription" "data_export_sub" {
+  name    = "sub-data-export"
+  topic   = google_pubsub_topic.data_export.name
+  project = var.project_id
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["activity"].uri}/pubsub/data-export"
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["activity"].email
+    }
+  }
+
+  # Building a full account ZIP (FIT files + images) can take a while.
+  ack_deadline_seconds       = 600
+  message_retention_duration = "7200s"
+
+  retry_policy {
+    minimum_backoff = "60s"
+    maximum_backoff = "600s"
+  }
+}
+
 # Trial check trigger — Cloud Scheduler publishes here daily to sweep trial expirations.
 resource "google_pubsub_topic" "trial_check_trigger" {
   name    = "topic-trial-check-trigger"

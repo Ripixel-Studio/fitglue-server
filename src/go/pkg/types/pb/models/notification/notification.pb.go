@@ -37,6 +37,9 @@ const (
 	NotificationType_NOTIFICATION_TYPE_SUBSCRIPTION_ENDED   NotificationType = 9
 	NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRING       NotificationType = 10
 	NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRED        NotificationType = 11
+	// Whole-account data export is ready to download. data["download_url"] carries
+	// the signed link. Transactional — always delivered via email.
+	NotificationType_NOTIFICATION_TYPE_DATA_EXPORT_READY NotificationType = 12
 )
 
 // Enum value maps for NotificationType.
@@ -54,6 +57,7 @@ var (
 		9:  "NOTIFICATION_TYPE_SUBSCRIPTION_ENDED",
 		10: "NOTIFICATION_TYPE_TRIAL_EXPIRING",
 		11: "NOTIFICATION_TYPE_TRIAL_EXPIRED",
+		12: "NOTIFICATION_TYPE_DATA_EXPORT_READY",
 	}
 	NotificationType_value = map[string]int32{
 		"NOTIFICATION_TYPE_UNSPECIFIED":          0,
@@ -68,6 +72,7 @@ var (
 		"NOTIFICATION_TYPE_SUBSCRIPTION_ENDED":   9,
 		"NOTIFICATION_TYPE_TRIAL_EXPIRING":       10,
 		"NOTIFICATION_TYPE_TRIAL_EXPIRED":        11,
+		"NOTIFICATION_TYPE_DATA_EXPORT_READY":    12,
 	}
 )
 
@@ -191,7 +196,7 @@ const file_models_notification_notification_proto_rawDesc = "" +
 	"\x04data\x18\x05 \x03(\v2:.fitglue.models.notification.NotificationRequest.DataEntryR\x04data\x1a7\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xec\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x95\x04\n" +
 	"\x10NotificationType\x12!\n" +
 	"\x1dNOTIFICATION_TYPE_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fNOTIFICATION_TYPE_PENDING_INPUT\x10\x01\x12&\n" +
@@ -205,7 +210,8 @@ const file_models_notification_notification_proto_rawDesc = "" +
 	"$NOTIFICATION_TYPE_SUBSCRIPTION_ENDED\x10\t\x12$\n" +
 	" NOTIFICATION_TYPE_TRIAL_EXPIRING\x10\n" +
 	"\x12#\n" +
-	"\x1fNOTIFICATION_TYPE_TRIAL_EXPIRED\x10\vBCZAgithub.com/fitglue/server/src/go/pkg/types/pb/models/notificationb\x06proto3"
+	"\x1fNOTIFICATION_TYPE_TRIAL_EXPIRED\x10\v\x12'\n" +
+	"#NOTIFICATION_TYPE_DATA_EXPORT_READY\x10\fBCZAgithub.com/fitglue/server/src/go/pkg/types/pb/models/notificationb\x06proto3"
 
 var (
 	file_models_notification_notification_proto_rawDescOnce sync.Once

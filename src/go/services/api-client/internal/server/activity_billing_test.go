@@ -93,6 +93,12 @@ func (m *mockActivityServiceClient) ExportData(ctx context.Context, in *activity
 	}
 	return &activitypb.ExportDataResponse{}, nil
 }
+func (m *mockActivityServiceClient) GetExportJob(ctx context.Context, in *activitypb.GetExportJobRequest, opts ...grpc.CallOption) (*activitypb.ExportJob, error) {
+	return &activitypb.ExportJob{}, nil
+}
+func (m *mockActivityServiceClient) ExportPipelineRun(ctx context.Context, in *activitypb.ExportPipelineRunRequest, opts ...grpc.CallOption) (*activitypb.ExportPipelineRunResponse, error) {
+	return &activitypb.ExportPipelineRunResponse{}, nil
+}
 func (m *mockActivityServiceClient) ParseFitFile(ctx context.Context, in *activitypb.ParseFitFileRequest, opts ...grpc.CallOption) (*pbactivity.StandardizedActivity, error) {
 	return &pbactivity.StandardizedActivity{}, nil
 }

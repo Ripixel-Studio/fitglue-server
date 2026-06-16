@@ -31,6 +31,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Post("/users/me/showcases/{id}/generate", s.handleGenerateShowcaseImages)
 
 	r.Post("/users/me/export", s.handleExportData)
+	r.Get("/users/me/export/{jobId}", s.handleGetExportJob)
 
 	r.Post("/users/me/parse-fit", s.handleParseFitFile)
 
@@ -247,17 +248,77 @@ func (s *APIServer) handleExportData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := &activitypb.ExportDataRequest{
-		UserId: token.UID,
-	}
-
-	res, err := s.activitySvc.ExportData(r.Context(), req)
+	res, err := s.activitySvc.ExportData(r.Context(), &activitypb.ExportDataRequest{UserId: token.UID})
 	if err != nil {
 		WriteError(w, err)
 		return
 	}
 
-	WriteJSON(w, res)
+	WriteJSON(w, exportJobToGateway(res.GetJob()))
+}
+
+// handleGetExportJob returns the current state of a whole-account export job so
+// the client can poll until it is READY (download_url populated) or FAILED.
+func (s *APIServer) handleGetExportJob(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	job, err := s.activitySvc.GetExportJob(r.Context(), &activitypb.GetExportJobRequest{
+		UserId: token.UID,
+		JobId:  chi.URLParam(r, "jobId"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, exportJobToGateway(job))
+}
+
+// handleExportPipelineRun synchronously builds a per-run ZIP and returns a signed
+// download URL (replaces the single-JSON payload download).
+func (s *APIServer) handleExportPipelineRun(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.activitySvc.ExportPipelineRun(r.Context(), &activitypb.ExportPipelineRunRequest{
+		UserId: token.UID,
+		RunId:  chi.URLParam(r, "runId"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, map[string]interface{}{
+		"download_url": res.GetDownloadUrl(),
+		"size_bytes":   res.GetSizeBytes(),
+		"expires_at":   res.GetExpiresAt(),
+	})
+}
+
+// exportJobToGateway renders the activity-service job into the gateway response
+// shape, mapping the enum status to the friendly string the web expects.
+func exportJobToGateway(job *activitypb.ExportJob) map[string]interface{} {
+	if job == nil {
+		return map[string]interface{}{}
+	}
+	status := strings.TrimPrefix(job.GetStatus().String(), "EXPORT_JOB_STATUS_")
+	return map[string]interface{}{
+		"job_id":       job.GetJobId(),
+		"status":       status,
+		"download_url": job.GetDownloadUrl(),
+		"size_bytes":   job.GetSizeBytes(),
+		"expires_at":   job.GetExpiresAt(),
+		"error":        job.GetError(),
+		"created_at":   job.GetCreatedAt(),
+	}
 }
 
 func (s *APIServer) handleGetShowcasePreferences(w http.ResponseWriter, r *http.Request) {

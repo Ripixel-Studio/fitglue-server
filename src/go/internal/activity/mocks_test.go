@@ -42,6 +42,39 @@ type MockActivityStore struct {
 
 	RecordShowcaseViewFunc   func(ctx context.Context, targetKey, visitorHash string) error
 	GetShowcaseViewStatsFunc func(ctx context.Context, targetKey string) (*pbactivity.ShowcaseViewStats, error)
+
+	CreateExportJobFunc       func(ctx context.Context, userID string, job *ExportJobRecord) error
+	GetExportJobFunc          func(ctx context.Context, userID, jobID string) (*ExportJobRecord, error)
+	UpdateExportJobFunc       func(ctx context.Context, userID, jobID string, fields map[string]interface{}) error
+	LatestActiveExportJobFunc func(ctx context.Context, userID string) (*ExportJobRecord, error)
+}
+
+func (m *MockActivityStore) CreateExportJob(ctx context.Context, userID string, job *ExportJobRecord) error {
+	if m.CreateExportJobFunc != nil {
+		return m.CreateExportJobFunc(ctx, userID, job)
+	}
+	return nil
+}
+
+func (m *MockActivityStore) GetExportJob(ctx context.Context, userID, jobID string) (*ExportJobRecord, error) {
+	if m.GetExportJobFunc != nil {
+		return m.GetExportJobFunc(ctx, userID, jobID)
+	}
+	return nil, nil
+}
+
+func (m *MockActivityStore) UpdateExportJob(ctx context.Context, userID, jobID string, fields map[string]interface{}) error {
+	if m.UpdateExportJobFunc != nil {
+		return m.UpdateExportJobFunc(ctx, userID, jobID, fields)
+	}
+	return nil
+}
+
+func (m *MockActivityStore) LatestActiveExportJob(ctx context.Context, userID string) (*ExportJobRecord, error) {
+	if m.LatestActiveExportJobFunc != nil {
+		return m.LatestActiveExportJobFunc(ctx, userID)
+	}
+	return nil, nil
 }
 
 func (m *MockActivityStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {

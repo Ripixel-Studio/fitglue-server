@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-const roundupAISummaryTimeout = 10 * time.Second
+const roundupAISummaryTimeout = 20 * time.Second
 
 const (
 	maxRoundupPhotos  = 24
@@ -262,9 +262,12 @@ func generateRoundupAISummary(ctx context.Context, logger infra.Logger, roundup 
 	defer client.Close()
 
 	model := client.GenerativeModel("gemini-2.5-flash")
-	model.SetTemperature(0.7)
-	model.SetTopP(0.9)
-	model.SetMaxOutputTokens(512)
+	model.SetTemperature(0.9)
+	model.SetTopP(0.95)
+	// gemini-2.5-flash spends part of the output budget on hidden "thinking"
+	// tokens; 512 left almost nothing for the paragraph and it truncated
+	// mid-sentence. Give generous headroom — the prompt caps the visible length.
+	model.SetMaxOutputTokens(2048)
 	model.SystemInstruction = genai.NewUserContent(genai.Text(roundupSystemInstruction))
 
 	periodCtx := buildRoundupSummaryContext(roundup)
@@ -286,17 +289,19 @@ func generateRoundupAISummary(ctx context.Context, logger infra.Logger, roundup 
 	return strings.TrimSpace(raw)
 }
 
-const roundupSystemInstruction = `You are a sports journalist writing brief training period summaries.
+const roundupSystemInstruction = `You are a world-class sports feature writer — think The Athletic or a Nike campaign — composing a short, vivid recap of one athlete's training period for their public profile.
 
-Guidelines:
-- Write exactly one paragraph, 2–4 sentences.
-- DO NOT address the athlete directly (no "you", "your"). Write in third person or impersonal voice.
-- Avoid motivational coach clichés ("crushed it", "smashed", "killed it", "great work", "keep it up").
-- Reference specific numbers and details from the data.
-- Tone: casual, analytical, objective. Like a match report, not a pep talk.
-- No emojis. No markdown.`
+Voice & rules:
+- Refer to the athlete by FIRST NAME only (it is given to you). Never use their surname or full name — full names read like a press release, not a story.
+- Write ONE paragraph, 4–6 sentences. Confident, specific, evocative.
+- Find a through-line — the story the numbers tell (a sport that dominated, a streak that held, strength that quietly climbed) — and build toward it. Don't just list stats; make them mean something.
+- Weave in exact figures and standout moments from the data (a big session, the longest streak, PR count, a peak distance or climb). Numbers are the evidence; the narrative is the point.
+- Land on a single strong, declarative closing line — the kind people screenshot.
+- Casual and human, never corporate. Third person, no "you"/"your". No emojis, no markdown, no headings, no lists.
+- Skip hollow gym clichés ("crushed it", "smashed", "beast mode", "keep it up", "great work"). Earn the energy through specifics, not hype words.
+- Use ONLY facts present in the data below. Never invent numbers, places, sports, or events. Omit anything not given.`
 
-const roundupUserPrompt = `Write a brief summary paragraph of this athlete's training period.`
+const roundupUserPrompt = `Write the recap paragraph now. One paragraph, first name only, ending on a strong closing line.`
 
 // sanitiseRoundupString truncates user-controlled strings and strips prompt-injection
 // delimiters before they are embedded in the Gemini prompt.
@@ -323,8 +328,8 @@ func buildRoundupSummaryContext(roundup *pbactivity.ShowcaseRoundup) string {
 		lines = append(lines, fmt.Sprintf("Date range: %s – %s", start, end))
 	}
 
-	if name := sanitiseRoundupString(roundup.OwnerDisplayName); name != "" {
-		lines = append(lines, fmt.Sprintf("Athlete: %s", name))
+	if name := sanitiseRoundupString(firstNameOnly(roundup.OwnerDisplayName)); name != "" {
+		lines = append(lines, fmt.Sprintf("Athlete first name (refer to them as this — never the surname): %s", name))
 	}
 
 	lines = append(lines, fmt.Sprintf("Sessions: %d", roundup.TotalActivities))
@@ -392,7 +397,96 @@ func buildRoundupSummaryContext(roundup *pbactivity.ShowcaseRoundup) string {
 		lines = append(lines, fmt.Sprintf("Effort distribution: %d easy, %d moderate, %d hard", easy, mod, hard))
 	}
 
+	// Standout moments (pre-computed callouts)
+	for _, c := range roundup.CalloutActivities {
+		kind := strings.ToUpper(c.Kind)
+		switch {
+		case strings.Contains(kind, "STREAK"):
+			if title := sanitiseRoundupString(c.Title); title != "" {
+				lines = append(lines, fmt.Sprintf("Longest streak: %s", title))
+			}
+		case strings.Contains(kind, "BIGGEST"):
+			if title := sanitiseRoundupString(c.Title); title != "" {
+				lines = append(lines, fmt.Sprintf("Biggest single session: %s (%s)", title, sanitiseRoundupString(c.StatValue)))
+			}
+		}
+	}
+
+	if roundup.TotalElevationGainMeters > 50 {
+		lines = append(lines, fmt.Sprintf("Total elevation gain: %.0f m", roundup.TotalElevationGainMeters))
+	}
+
+	// Places trained
+	if len(roundup.Places) > 0 {
+		countries := map[string]struct{}{}
+		var names []string
+		for _, p := range roundup.Places {
+			if n := sanitiseRoundupString(p.Name); n != "" {
+				names = append(names, n)
+			}
+			if p.Country != "" {
+				countries[p.Country] = struct{}{}
+			}
+		}
+		if len(names) > 0 {
+			line := fmt.Sprintf("Trained at: %s", strings.Join(names, ", "))
+			if len(countries) > 1 {
+				line += fmt.Sprintf(" (%d countries)", len(countries))
+			}
+			lines = append(lines, line)
+		}
+	}
+
+	// Best efforts
+	if len(roundup.BestEfforts) > 0 {
+		var efforts []string
+		for _, be := range roundup.BestEfforts {
+			label := sanitiseRoundupString(be.Display)
+			if label == "" {
+				label = sanitiseRoundupString(be.DistanceKey)
+			}
+			if label != "" && be.TimeSeconds > 0 {
+				efforts = append(efforts, fmt.Sprintf("%s in %s", label, formatEffortClock(be.TimeSeconds)))
+			}
+		}
+		if len(efforts) > 0 {
+			lines = append(lines, fmt.Sprintf("Best efforts: %s", strings.Join(efforts, ", ")))
+		}
+	}
+
+	// Muscles worked most (strength)
+	if len(roundup.Muscles) > 0 {
+		var ms []string
+		for _, m := range roundup.Muscles {
+			if n := sanitiseRoundupString(m.Name); n != "" {
+				ms = append(ms, n)
+			}
+		}
+		if len(ms) > 0 {
+			lines = append(lines, fmt.Sprintf("Most-worked muscles: %s", strings.Join(ms, ", ")))
+		}
+	}
+
 	return strings.Join(lines, "\n")
+}
+
+// firstNameOnly returns the first whitespace-delimited token of a display name,
+// so the AI summary can address the athlete informally rather than by full name.
+func firstNameOnly(displayName string) string {
+	fields := strings.Fields(displayName)
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}
+
+// formatEffortClock renders a duration in seconds as m:ss (or h:mm:ss).
+func formatEffortClock(sec float64) string {
+	s := int(sec)
+	if s >= 3600 {
+		return fmt.Sprintf("%d:%02d:%02d", s/3600, (s%3600)/60, s%60)
+	}
+	return fmt.Sprintf("%d:%02d", s/60, s%60)
 }
 
 func periodTypeName(t pbactivity.RoundupPeriodType) string {

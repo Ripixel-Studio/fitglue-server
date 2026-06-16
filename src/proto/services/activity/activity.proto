@@ -55,10 +55,26 @@ service ActivityService {
     };
   }
   
+  // ExportData enqueues an asynchronous whole-account GDPR export job and returns
+  // it immediately. A background worker builds the ZIP and updates the job; poll
+  // GetExportJob until status is READY (download_url populated) or FAILED.
   rpc ExportData(ExportDataRequest) returns (ExportDataResponse) {
     option (google.api.http) = {
       post: "/v2/users/{user_id}/export-data"
       body: "*"
+    };
+  }
+  // GetExportJob returns the current state of a whole-account export job.
+  rpc GetExportJob(GetExportJobRequest) returns (ExportJob) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/export-jobs/{job_id}"
+    };
+  }
+  // ExportPipelineRun synchronously builds a per-run ZIP (enriched + payload JSON
+  // and the raw FIT file, where still retained) and returns a signed download URL.
+  rpc ExportPipelineRun(ExportPipelineRunRequest) returns (ExportPipelineRunResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pipeline-runs/{run_id}/export"
     };
   }
   rpc ParseFitFile(ParseFitFileRequest) returns (fitglue.models.activity.StandardizedActivity) {
@@ -244,8 +260,42 @@ message ExportDataRequest {
   string user_id = 1;
 }
 
+enum ExportJobStatus {
+  EXPORT_JOB_STATUS_UNSPECIFIED = 0;
+  EXPORT_JOB_STATUS_PENDING = 1;
+  EXPORT_JOB_STATUS_PROCESSING = 2;
+  EXPORT_JOB_STATUS_READY = 3;
+  EXPORT_JOB_STATUS_FAILED = 4;
+}
+
+message ExportJob {
+  string job_id = 1;
+  ExportJobStatus status = 2;
+  string download_url = 3;   // populated when status == READY
+  int64 size_bytes = 4;      // ZIP size, populated when READY
+  string expires_at = 5;     // RFC3339; when the signed download URL expires
+  string error = 6;          // populated when status == FAILED
+  string created_at = 7;     // RFC3339
+}
+
 message ExportDataResponse {
+  ExportJob job = 1;
+}
+
+message GetExportJobRequest {
+  string user_id = 1;
+  string job_id = 2;
+}
+
+message ExportPipelineRunRequest {
+  string user_id = 1;
+  string run_id = 2;
+}
+
+message ExportPipelineRunResponse {
   string download_url = 1;
+  int64 size_bytes = 2;
+  string expires_at = 3;     // RFC3339
 }
 
 message ParseFitFileRequest {

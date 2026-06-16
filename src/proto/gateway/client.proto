@@ -428,9 +428,16 @@ service ClientGatewayService {
   }
 
   // ===================== Data Export =====================
-  rpc ExportData(EmptyRequest) returns (ExportDataGatewayResponse) {
+  // Enqueue an asynchronous whole-account export; returns the job. Poll
+  // GetExportJob until status is READY (download_url set) or FAILED.
+  rpc ExportData(EmptyRequest) returns (ExportJobGatewayResponse) {
     option (google.api.http) = {
       post: "/users/me/export"
+    };
+  }
+  rpc GetExportJob(GetExportJobGatewayRequest) returns (ExportJobGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/export/{job_id}"
     };
   }
 
@@ -507,6 +514,14 @@ service ClientGatewayService {
   rpc GetPipelineRunPayload(GetPipelineRunPayloadGatewayRequest) returns (GetPipelineRunPayloadGatewayResponse) {
     option (google.api.http) = {
       get: "/users/me/pipeline-runs/{run_id}/payload"
+    };
+  }
+  // ExportPipelineRun returns a signed URL to a per-run ZIP (enriched + payload
+  // JSON and the raw FIT file, where still retained). Replaces the single-JSON
+  // payload download used by the activity detail page's Export button.
+  rpc ExportPipelineRun(ExportPipelineRunGatewayRequest) returns (ExportPipelineRunGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/pipeline-runs/{run_id}/export"
     };
   }
 
@@ -812,6 +827,27 @@ message GetActivityPhotoUploadUrlGatewayResponse {
 // Data Export
 message ExportDataGatewayResponse {
   string download_url = 1;
+}
+// status is one of: PENDING | PROCESSING | READY | FAILED
+message ExportJobGatewayResponse {
+  string job_id = 1;
+  string status = 2;
+  string download_url = 3;   // populated when status == READY
+  int64 size_bytes = 4;
+  string expires_at = 5;     // RFC3339; signed-URL expiry
+  string error = 6;          // populated when status == FAILED
+  string created_at = 7;     // RFC3339
+}
+message GetExportJobGatewayRequest {
+  string job_id = 1;
+}
+message ExportPipelineRunGatewayRequest {
+  string run_id = 1;
+}
+message ExportPipelineRunGatewayResponse {
+  string download_url = 1;
+  int64 size_bytes = 2;
+  string expires_at = 3;     // RFC3339
 }
 
 // FIT File Parse
