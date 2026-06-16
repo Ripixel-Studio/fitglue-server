@@ -14,6 +14,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
+	firebaseAuth "firebase.google.com/go/v4/auth"
 	"github.com/fitglue/server/src/go/internal/infra"
 	emaildomain "github.com/fitglue/server/src/go/pkg/domain/email"
 	emailinfra "github.com/fitglue/server/src/go/pkg/infrastructure/email"
@@ -49,6 +50,14 @@ func main() {
 		log.Fatalf("FCM init: %v", err)
 	}
 
+	// Firebase Auth is the source of truth for a user's email address. The
+	// users/{uid}.email doc field is not reliably populated, so the email channel
+	// falls back to an Auth lookup when it's empty.
+	authClient, err := fbApp.Auth(ctx)
+	if err != nil {
+		log.Fatalf("firebase auth init: %v", err)
+	}
+
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
 		baseURL = "https://fitglue.tech"
@@ -78,6 +87,7 @@ func main() {
 	svc := &notificationService{
 		fs:          fsClient,
 		fcm:         fcmAdapter,
+		auth:        authClient,
 		emailSender: emailSender,
 		baseURL:     baseURL,
 		logger:      logger,
@@ -99,9 +109,16 @@ func main() {
 	}
 }
 
+// authEmailLookup resolves a user's email address from Firebase Auth. Satisfied
+// by *auth.Client; narrowed to one method so it can be faked in tests.
+type authEmailLookup interface {
+	GetUser(ctx context.Context, uid string) (*firebaseAuth.UserRecord, error)
+}
+
 type notificationService struct {
 	fs          *firestore.Client
 	fcm         *notifications.FCMAdapter
+	auth        authEmailLookup
 	emailSender emailinfra.Sender
 	baseURL     string
 	logger      infra.Logger
@@ -175,13 +192,24 @@ func (s *notificationService) dispatch(ctx context.Context, req *pbnotification.
 		}
 	}
 
-	// Read user email for email channel
-	userEmail, _ := doc.Data()["email"].(string)
+	// The denormalized users/{uid}.email field is usually empty; treat it as a hint.
+	docEmail, _ := doc.Data()["email"].(string)
 
 	channels := activeChannels(&prefs, req.Type)
 	if len(channels) == 0 {
 		s.logger.Info(ctx, "notification suppressed by user prefs", "user_id", req.UserId, "type", req.Type.String())
 		return nil
+	}
+
+	// Resolve the recipient address lazily — only when an email channel is active —
+	// falling back to Firebase Auth when the doc field is empty. This avoids an Auth
+	// round-trip on the common push-only path.
+	var userEmail string
+	for _, ch := range channels {
+		if ch == pbuser.NotificationChannel_NOTIFICATION_CHANNEL_EMAIL {
+			userEmail = s.resolveEmail(ctx, req.UserId, docEmail)
+			break
+		}
 	}
 
 	// Fan-out: dispatch to each channel concurrently
@@ -250,6 +278,24 @@ func (s *notificationService) dispatchEmail(ctx context.Context, req *pbnotifica
 	if err := s.emailSender.SendEmail(ctx, toEmail, subject, html); err != nil {
 		s.logger.Error(ctx, "email send failed", "error", err, "user_id", req.UserId, "to", toEmail)
 	}
+}
+
+// resolveEmail returns the user's email address. It prefers the denormalized
+// users/{uid}.email doc field, but that is not reliably populated, so it falls
+// back to Firebase Auth (the source of truth). Returns "" if it cannot be found.
+func (s *notificationService) resolveEmail(ctx context.Context, userID, docEmail string) string {
+	if docEmail != "" {
+		return docEmail
+	}
+	if s.auth == nil {
+		return ""
+	}
+	u, err := s.auth.GetUser(ctx, userID)
+	if err != nil {
+		s.logger.Warn(ctx, "failed to resolve user email from auth", "error", err, "user_id", userID)
+		return ""
+	}
+	return u.Email
 }
 
 // renderEmail returns the subject and HTML body for a given notification.

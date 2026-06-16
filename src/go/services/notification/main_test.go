@@ -1,10 +1,70 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"testing"
 
+	firebaseAuth "firebase.google.com/go/v4/auth"
+	"github.com/fitglue/server/src/go/internal/infra"
 	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 )
+
+// fakeAuth is a test double for authEmailLookup.
+type fakeAuth struct {
+	email  string
+	err    error
+	called bool
+}
+
+func (f *fakeAuth) GetUser(_ context.Context, _ string) (*firebaseAuth.UserRecord, error) {
+	f.called = true
+	if f.err != nil {
+		return nil, f.err
+	}
+	return &firebaseAuth.UserRecord{UserInfo: &firebaseAuth.UserInfo{Email: f.email}}, nil
+}
+
+func TestResolveEmail(t *testing.T) {
+	logger := infra.NewLoggerWithComponent("test")
+
+	t.Run("doc email present is preferred and auth is not consulted", func(t *testing.T) {
+		auth := &fakeAuth{email: "fromauth@example.com"}
+		s := &notificationService{auth: auth, logger: logger}
+		if got := s.resolveEmail(context.Background(), "u1", "fromdoc@example.com"); got != "fromdoc@example.com" {
+			t.Errorf("resolveEmail() = %q, want %q", got, "fromdoc@example.com")
+		}
+		if auth.called {
+			t.Error("auth was consulted even though the doc email was present")
+		}
+	})
+
+	t.Run("falls back to auth when doc email is empty", func(t *testing.T) {
+		auth := &fakeAuth{email: "fromauth@example.com"}
+		s := &notificationService{auth: auth, logger: logger}
+		if got := s.resolveEmail(context.Background(), "u1", ""); got != "fromauth@example.com" {
+			t.Errorf("resolveEmail() = %q, want %q", got, "fromauth@example.com")
+		}
+		if !auth.called {
+			t.Error("auth was not consulted for an empty doc email")
+		}
+	})
+
+	t.Run("returns empty when auth lookup fails", func(t *testing.T) {
+		auth := &fakeAuth{err: errors.New("user not found")}
+		s := &notificationService{auth: auth, logger: logger}
+		if got := s.resolveEmail(context.Background(), "u1", ""); got != "" {
+			t.Errorf("resolveEmail() = %q, want empty string", got)
+		}
+	})
+
+	t.Run("returns empty when auth client is unavailable", func(t *testing.T) {
+		s := &notificationService{auth: nil, logger: logger}
+		if got := s.resolveEmail(context.Background(), "u1", ""); got != "" {
+			t.Errorf("resolveEmail() = %q, want empty string", got)
+		}
+	})
+}
 
 func TestPushDeepLinkPath(t *testing.T) {
 	tests := []struct {
