@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.53.0](https://github.com/FitGlue/server/compare/v16.52.0...v16.53.0) (2026-06-16)
+
+
+### Features
+
+* **activity:** add data export functionality with job management ([b70cc7c](https://github.com/FitGlue/server/commit/b70cc7c18e52364843e972a4bb9c90b1326381eb))
+
 ## [16.52.0](https://github.com/FitGlue/server/compare/v16.51.0...v16.52.0) (2026-06-16)
 
 
