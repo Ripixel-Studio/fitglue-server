@@ -247,45 +247,55 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 		}
 	}
 
-	// Peak PR day
+	// Personal records — ideally the single session that set the most PRs.
+	// PRs carry only a timestamp (no activity id), so we attribute each PR to
+	// the session whose time window contains it. When the timestamps can't
+	// disambiguate (e.g. date-only), we fall back to the period aggregate with
+	// NO link rather than guess a wrong session.
 	if len(roundup.PrsAchieved) > 0 {
-		prsByDate := make(map[string]int)
+		const grace = 5 * time.Minute
+		prsBySession := make(map[string]int) // showcase_id -> attributed PRs
 		for _, pr := range roundup.PrsAchieved {
-			if pr.AchievedAt != nil {
-				d := pr.AchievedAt.AsTime().UTC().Format("2006-01-02")
-				prsByDate[d]++
+			if pr.AchievedAt == nil {
+				continue
+			}
+			at := pr.AchievedAt.AsTime().UTC()
+			for _, e := range entries {
+				if e.StartTime == nil || e.ShowcaseId == "" {
+					continue
+				}
+				start := e.StartTime.AsTime().UTC()
+				end := start.Add(time.Duration(e.DurationSeconds)*time.Second + grace)
+				if !at.Before(start.Add(-grace)) && at.Before(end) {
+					prsBySession[e.ShowcaseId]++
+					break
+				}
 			}
 		}
-		peakDate, peakCount := "", 0
-		for d, count := range prsByDate {
+		peakShowcaseID, peakCount := "", 0
+		for id, count := range prsBySession {
 			if count > peakCount {
 				peakCount = count
-				peakDate = d
+				peakShowcaseID = id
 			}
 		}
-		dateLabel := ""
-		if peakDate != "" {
-			if parsed, err2 := time.Parse("2006-01-02", peakDate); err2 == nil {
-				dateLabel = parsed.Format("2 Jan")
-			}
-		}
+
 		statVal := fmt.Sprintf("%d", len(roundup.PrsAchieved))
 		statUnit := "RECORDS THIS PERIOD"
 		sub := ""
-		peakShowcaseID := ""
-		if peakCount >= 2 {
+		dateLabel := ""
+		if peakCount >= 2 && peakShowcaseID != "" {
 			statVal = fmt.Sprintf("%d", peakCount)
 			statUnit = "RECORDS IN ONE SESSION"
 			sub = fmt.Sprintf("%d total PRs this period", len(roundup.PrsAchieved))
-			// Link to a session logged on the peak-PR day, if we can find one.
 			for _, e := range entries {
-				if e.StartTime != nil && e.StartTime.AsTime().UTC().Format("2006-01-02") == peakDate {
-					peakShowcaseID = e.ShowcaseId
+				if e.ShowcaseId == peakShowcaseID && e.StartTime != nil {
+					dateLabel = e.StartTime.AsTime().UTC().Format("2 Jan")
 					break
 				}
 			}
 		} else {
-			dateLabel = ""
+			peakShowcaseID = "" // aggregate across sessions — nothing single to link to
 		}
 		roundup.CalloutActivities = append(roundup.CalloutActivities, &pbactivity.ShowcaseCalloutActivity{
 			Kind:       "PERSONAL RECORDS",
