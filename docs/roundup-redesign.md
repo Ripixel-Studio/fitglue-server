@@ -150,8 +150,17 @@ Using the data already flowing through showcase entries + enrichments.
 - **Caveat:** enrichment data accrues forward — it only appears on activities
   synced after this shipped (no backfill of historical entries).
 
-**Phase 8 — Shareables v2 — ⬜ next**
-- Restyle the export modal into the `rp-*` language and add card templates from
-  the new sections (Sport, Calendar, HR, Comparison, Route, Photo). Wire the
-  per-section `ShareStat` ghost buttons to open the modal pre-targeted to that
-  card. Keep landscape/square/story shapes + Create Reel [Soon].
+**Phase 8 — Shareables v2 — ✅ done**
+- Chart components extracted to `web/src/showcase/components/RoundupCharts.tsx`,
+  made size/colour configurable (center labels moved into the SVG viewBox) so
+  the same charts serve the page and the exporter.
+- New 1080px export cards in `RoundupExportCards.tsx`: Sport (donut), HR (rings),
+  Calendar (heatmap), Vs (comparison), Photo and Route — each honouring the
+  shared background/shape/accent/text config, shown as tabs only when the data
+  exists. The existing Overview / PR Wall / Story (9:16 Instagram) cards remain.
+- Per-section Share buttons open the modal pre-targeted to the matching card
+  (`initialCard`); the page passes the previous roundup through for the Vs card.
+- Shapes (landscape/square/story) + Create Reel [Soon] retained.
+- **Known limit:** `html-to-image` only embeds cross-origin photos/routes when
+  the asset host allows CORS; the preview always renders, the PNG may omit the
+  image otherwise (surfaced as a modal hint). Verify against real asset URLs.
