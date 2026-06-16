@@ -13,6 +13,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -21,15 +22,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PublicGatewayService_GetPluginRegistry_FullMethodName        = "/fitglue.gateway.PublicGatewayService/GetPluginRegistry"
-	PublicGatewayService_ListPlugins_FullMethodName              = "/fitglue.gateway.PublicGatewayService/ListPlugins"
-	PublicGatewayService_GetPlugin_FullMethodName                = "/fitglue.gateway.PublicGatewayService/GetPlugin"
-	PublicGatewayService_ListCategories_FullMethodName           = "/fitglue.gateway.PublicGatewayService/ListCategories"
-	PublicGatewayService_ListSources_FullMethodName              = "/fitglue.gateway.PublicGatewayService/ListSources"
-	PublicGatewayService_GetPublicShowcase_FullMethodName        = "/fitglue.gateway.PublicGatewayService/GetPublicShowcase"
-	PublicGatewayService_GetPublicShowcaseProfile_FullMethodName = "/fitglue.gateway.PublicGatewayService/GetPublicShowcaseProfile"
-	PublicGatewayService_GetPublicRoundup_FullMethodName         = "/fitglue.gateway.PublicGatewayService/GetPublicRoundup"
-	PublicGatewayService_GetRecentPublicRoundups_FullMethodName  = "/fitglue.gateway.PublicGatewayService/GetRecentPublicRoundups"
+	PublicGatewayService_GetPluginRegistry_FullMethodName          = "/fitglue.gateway.PublicGatewayService/GetPluginRegistry"
+	PublicGatewayService_ListPlugins_FullMethodName                = "/fitglue.gateway.PublicGatewayService/ListPlugins"
+	PublicGatewayService_GetPlugin_FullMethodName                  = "/fitglue.gateway.PublicGatewayService/GetPlugin"
+	PublicGatewayService_ListCategories_FullMethodName             = "/fitglue.gateway.PublicGatewayService/ListCategories"
+	PublicGatewayService_ListSources_FullMethodName                = "/fitglue.gateway.PublicGatewayService/ListSources"
+	PublicGatewayService_GetPublicShowcase_FullMethodName          = "/fitglue.gateway.PublicGatewayService/GetPublicShowcase"
+	PublicGatewayService_GetPublicShowcaseProfile_FullMethodName   = "/fitglue.gateway.PublicGatewayService/GetPublicShowcaseProfile"
+	PublicGatewayService_GetPublicRoundup_FullMethodName           = "/fitglue.gateway.PublicGatewayService/GetPublicRoundup"
+	PublicGatewayService_GetRecentPublicRoundups_FullMethodName    = "/fitglue.gateway.PublicGatewayService/GetRecentPublicRoundups"
+	PublicGatewayService_RecordShowcaseActivityView_FullMethodName = "/fitglue.gateway.PublicGatewayService/RecordShowcaseActivityView"
+	PublicGatewayService_RecordShowcaseProfileView_FullMethodName  = "/fitglue.gateway.PublicGatewayService/RecordShowcaseProfileView"
+	PublicGatewayService_RecordShowcaseRoundupView_FullMethodName  = "/fitglue.gateway.PublicGatewayService/RecordShowcaseRoundupView"
 )
 
 // PublicGatewayServiceClient is the client API for PublicGatewayService service.
@@ -53,6 +57,12 @@ type PublicGatewayServiceClient interface {
 	GetPublicShowcaseProfile(ctx context.Context, in *GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*GetPublicShowcaseProfileResponse, error)
 	GetPublicRoundup(ctx context.Context, in *GetPublicRoundupGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
 	GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsGatewayRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsGatewayResponse, error)
+	// ===================== Showcase View Beacons =====================
+	// Fire-and-forget view beacons fired by the public showcase SPA on page load.
+	// Always respond 204; counts are never returned here.
+	RecordShowcaseActivityView(ctx context.Context, in *RecordShowcaseActivityViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RecordShowcaseProfileView(ctx context.Context, in *RecordShowcaseProfileViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RecordShowcaseRoundupView(ctx context.Context, in *RecordShowcaseRoundupViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type publicGatewayServiceClient struct {
@@ -153,6 +163,36 @@ func (c *publicGatewayServiceClient) GetRecentPublicRoundups(ctx context.Context
 	return out, nil
 }
 
+func (c *publicGatewayServiceClient) RecordShowcaseActivityView(ctx context.Context, in *RecordShowcaseActivityViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PublicGatewayService_RecordShowcaseActivityView_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *publicGatewayServiceClient) RecordShowcaseProfileView(ctx context.Context, in *RecordShowcaseProfileViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PublicGatewayService_RecordShowcaseProfileView_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *publicGatewayServiceClient) RecordShowcaseRoundupView(ctx context.Context, in *RecordShowcaseRoundupViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PublicGatewayService_RecordShowcaseRoundupView_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PublicGatewayServiceServer is the server API for PublicGatewayService service.
 // All implementations must embed UnimplementedPublicGatewayServiceServer
 // for forward compatibility.
@@ -174,6 +214,12 @@ type PublicGatewayServiceServer interface {
 	GetPublicShowcaseProfile(context.Context, *GetPublicShowcaseProfileRequest) (*GetPublicShowcaseProfileResponse, error)
 	GetPublicRoundup(context.Context, *GetPublicRoundupGatewayRequest) (*activity.ShowcaseRoundup, error)
 	GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsGatewayRequest) (*GetRecentPublicRoundupsGatewayResponse, error)
+	// ===================== Showcase View Beacons =====================
+	// Fire-and-forget view beacons fired by the public showcase SPA on page load.
+	// Always respond 204; counts are never returned here.
+	RecordShowcaseActivityView(context.Context, *RecordShowcaseActivityViewRequest) (*emptypb.Empty, error)
+	RecordShowcaseProfileView(context.Context, *RecordShowcaseProfileViewRequest) (*emptypb.Empty, error)
+	RecordShowcaseRoundupView(context.Context, *RecordShowcaseRoundupViewRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedPublicGatewayServiceServer()
 }
 
@@ -210,6 +256,15 @@ func (UnimplementedPublicGatewayServiceServer) GetPublicRoundup(context.Context,
 }
 func (UnimplementedPublicGatewayServiceServer) GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsGatewayRequest) (*GetRecentPublicRoundupsGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRecentPublicRoundups not implemented")
+}
+func (UnimplementedPublicGatewayServiceServer) RecordShowcaseActivityView(context.Context, *RecordShowcaseActivityViewRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordShowcaseActivityView not implemented")
+}
+func (UnimplementedPublicGatewayServiceServer) RecordShowcaseProfileView(context.Context, *RecordShowcaseProfileViewRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordShowcaseProfileView not implemented")
+}
+func (UnimplementedPublicGatewayServiceServer) RecordShowcaseRoundupView(context.Context, *RecordShowcaseRoundupViewRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordShowcaseRoundupView not implemented")
 }
 func (UnimplementedPublicGatewayServiceServer) mustEmbedUnimplementedPublicGatewayServiceServer() {}
 func (UnimplementedPublicGatewayServiceServer) testEmbeddedByValue()                              {}
@@ -394,6 +449,60 @@ func _PublicGatewayService_GetRecentPublicRoundups_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PublicGatewayService_RecordShowcaseActivityView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordShowcaseActivityViewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicGatewayServiceServer).RecordShowcaseActivityView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PublicGatewayService_RecordShowcaseActivityView_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicGatewayServiceServer).RecordShowcaseActivityView(ctx, req.(*RecordShowcaseActivityViewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PublicGatewayService_RecordShowcaseProfileView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordShowcaseProfileViewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicGatewayServiceServer).RecordShowcaseProfileView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PublicGatewayService_RecordShowcaseProfileView_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicGatewayServiceServer).RecordShowcaseProfileView(ctx, req.(*RecordShowcaseProfileViewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PublicGatewayService_RecordShowcaseRoundupView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordShowcaseRoundupViewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicGatewayServiceServer).RecordShowcaseRoundupView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PublicGatewayService_RecordShowcaseRoundupView_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicGatewayServiceServer).RecordShowcaseRoundupView(ctx, req.(*RecordShowcaseRoundupViewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PublicGatewayService_ServiceDesc is the grpc.ServiceDesc for PublicGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -436,6 +545,18 @@ var PublicGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRecentPublicRoundups",
 			Handler:    _PublicGatewayService_GetRecentPublicRoundups_Handler,
+		},
+		{
+			MethodName: "RecordShowcaseActivityView",
+			Handler:    _PublicGatewayService_RecordShowcaseActivityView_Handler,
+		},
+		{
+			MethodName: "RecordShowcaseProfileView",
+			Handler:    _PublicGatewayService_RecordShowcaseProfileView_Handler,
+		},
+		{
+			MethodName: "RecordShowcaseRoundupView",
+			Handler:    _PublicGatewayService_RecordShowcaseRoundupView_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

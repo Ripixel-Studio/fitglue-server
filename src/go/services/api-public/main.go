@@ -44,10 +44,15 @@ func main() {
 	registryClient := registrypb.NewRegistryServiceClient(registryConn)
 
 	// 2. Initialize the HTTP Gateway Server
+	viewSalt := os.Getenv("VIEW_SALT_SECRET")
+	if viewSalt == "" {
+		logger.Warn(ctx, "VIEW_SALT_SECRET is not set — showcase view de-duplication is disabled")
+	}
 	apiServer := server.NewAPIServer(
 		logger,
 		activityClient,
 		registryClient,
+		viewSalt,
 	)
 
 	port := os.Getenv("PORT")

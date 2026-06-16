@@ -143,6 +143,27 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /showcase/profile/{slug}/view:
+        post:
+            tags:
+                - PublicGatewayService
+            operationId: PublicGatewayService_RecordShowcaseProfileView
+            parameters:
+                - name: slug
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /showcase/{id}:
         get:
             tags:
@@ -162,6 +183,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /showcase/{id}/view:
+        post:
+            tags:
+                - PublicGatewayService
+            description: |-
+                ===================== Showcase View Beacons =====================
+                 Fire-and-forget view beacons fired by the public showcase SPA on page load.
+                 Always respond 204; counts are never returned here.
+            operationId: PublicGatewayService_RecordShowcaseActivityView
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
                 default:
                     description: Default error response
                     content:
@@ -191,6 +237,32 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ShowcaseRoundup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /showcase/{slug}/roundup/{periodKey}/view:
+        post:
+            tags:
+                - PublicGatewayService
+            operationId: PublicGatewayService_RecordShowcaseRoundupView
+            parameters:
+                - name: slug
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: periodKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
                 default:
                     description: Default error response
                     content:

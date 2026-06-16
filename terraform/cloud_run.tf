@@ -588,6 +588,20 @@ resource "google_cloud_run_v2_service" "frontend" {
         value = google_cloud_run_v2_service.backend["registry"].uri
       }
 
+      # ── api-public: showcase view de-dup salt ──
+      dynamic "env" {
+        for_each = each.key == "api-public" ? [1] : []
+        content {
+          name = "VIEW_SALT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.showcase_view_salt.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
       # ── api-client: OAuth base URLs ──
       dynamic "env" {
         for_each = each.key == "api-client" ? [1] : []

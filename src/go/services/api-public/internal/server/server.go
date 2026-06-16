@@ -18,6 +18,9 @@ type APIServer struct {
 	logger      infra.Logger
 	activitySvc activitypb.ActivityServiceClient
 	registrySvc registrypb.RegistryServiceClient
+	// viewSalt is the secret used to derive the daily-rotating visitor hash for
+	// showcase view de-duplication. Empty disables visitor de-dup (views still count).
+	viewSalt string
 }
 
 // NewAPIServer constructs the application routing and API middleware stack
@@ -25,12 +28,14 @@ func NewAPIServer(
 	logger infra.Logger,
 	activitySvc activitypb.ActivityServiceClient,
 	registrySvc registrypb.RegistryServiceClient,
+	viewSalt string,
 ) *APIServer {
 	s := &APIServer{
 		router:      chi.NewRouter(),
 		logger:      logger,
 		activitySvc: activitySvc,
 		registrySvc: registrySvc,
+		viewSalt:    viewSalt,
 	}
 
 	s.setupRoutes()
@@ -87,6 +92,11 @@ func (s *APIServer) registerShowcaseRoutes(r chi.Router) {
 	r.Get("/showcase/profile/{slug}", s.handleGetPublicShowcaseProfile)
 	r.Get("/showcase/{slug}/roundup/{periodKey}", s.handleGetPublicRoundup)
 	r.Get("/showcase/{slug}/roundups/recent", s.handleGetRecentPublicRoundups)
+
+	// View beacons (fire-and-forget; always respond 204)
+	r.Post("/showcase/{id}/view", s.handleRecordShowcaseActivityView)
+	r.Post("/showcase/profile/{slug}/view", s.handleRecordShowcaseProfileView)
+	r.Post("/showcase/{slug}/roundup/{periodKey}/view", s.handleRecordShowcaseRoundupView)
 }
 
 func (s *APIServer) handleListPlugins(w http.ResponseWriter, r *http.Request) {

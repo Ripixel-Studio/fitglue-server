@@ -66,6 +66,7 @@ func TestRouteCoverage(t *testing.T) {
 		infra.NewLogger(),
 		nil, // activitySvc — only need router structure, not handler logic
 		nil, // registrySvc
+		"",  // viewSalt — unused for route structure
 	)
 
 	registeredRoutes := make(map[string]bool)

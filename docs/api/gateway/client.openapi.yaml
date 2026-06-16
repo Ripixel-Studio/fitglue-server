@@ -1731,6 +1731,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/profile/views:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetShowcaseProfileViewStats
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseViewStats'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/showcase-management/roundup-settings:
         put:
             tags:
@@ -1773,6 +1791,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ShowcaseRoundup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/views:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_ListShowcaseViewStats
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListShowcaseViewStatsGatewayResponse'
                 default:
                     description: Default error response
                     content:
@@ -1909,6 +1945,31 @@ paths:
                 "200":
                     description: OK
                     content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcases/{id}/views:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Showcase View Metrics (owner-facing) =====================
+            operationId: ClientGatewayService_GetShowcaseViewStats
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseViewStats'
                 default:
                     description: Default error response
                     content:
@@ -3020,6 +3081,19 @@ components:
                     additionalProperties:
                         type: object
             description: Plugin Defaults
+        ListShowcaseViewStatsGatewayResponse:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/ShowcaseViewStats'
+                showcases:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseViewStats'
+                totalViews:
+                    type: string
+                totalVisitors:
+                    type: string
         ListShowcasesGatewayResponse:
             type: object
             properties:
@@ -4131,6 +4205,16 @@ components:
                     type: string
                     format: enum
             description: Pre-computed spotlight card — biggest session, longest streak, peak PR day.
+        ShowcaseDailyViewCount:
+            type: object
+            properties:
+                day:
+                    type: string
+                views:
+                    type: string
+                visitors:
+                    type: string
+            description: ShowcaseDailyViewCount is one day's view/visitor counts for a sparkline/trend.
         ShowcaseLink:
             type: object
             properties:
@@ -4547,6 +4631,26 @@ components:
                     type: number
                     format: double
             description: ShowcaseTopPR is a lightweight personal record for display on the profile medal wall.
+        ShowcaseViewStats:
+            type: object
+            properties:
+                targetKey:
+                    type: string
+                views:
+                    type: string
+                visitors:
+                    type: string
+                lastViewedAt:
+                    type: string
+                    format: date-time
+                daily:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseDailyViewCount'
+            description: |-
+                ShowcaseViewStats holds de-duplicated view metrics for one public showcase
+                 surface. `views` is total pageviews (bot-filtered, owner's own visits excluded);
+                 `visitors` is unique visitors deduped per (visitor, day) via a daily-salted hash.
         ShowcasedActivity:
             type: object
             properties:

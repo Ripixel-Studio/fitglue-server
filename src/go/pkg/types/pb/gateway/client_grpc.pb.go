@@ -88,6 +88,9 @@ const (
 	ClientGatewayService_UpdateRoundupSettings_FullMethodName              = "/fitglue.gateway.ClientGatewayService/UpdateRoundupSettings"
 	ClientGatewayService_RecomputeRoundup_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/RecomputeRoundup"
 	ClientGatewayService_GetActivityPhotoUploadUrl_FullMethodName          = "/fitglue.gateway.ClientGatewayService/GetActivityPhotoUploadUrl"
+	ClientGatewayService_GetShowcaseViewStats_FullMethodName               = "/fitglue.gateway.ClientGatewayService/GetShowcaseViewStats"
+	ClientGatewayService_GetShowcaseProfileViewStats_FullMethodName        = "/fitglue.gateway.ClientGatewayService/GetShowcaseProfileViewStats"
+	ClientGatewayService_ListShowcaseViewStats_FullMethodName              = "/fitglue.gateway.ClientGatewayService/ListShowcaseViewStats"
 	ClientGatewayService_ExportData_FullMethodName                         = "/fitglue.gateway.ClientGatewayService/ExportData"
 	ClientGatewayService_ParseFitFile_FullMethodName                       = "/fitglue.gateway.ClientGatewayService/ParseFitFile"
 	ClientGatewayService_GetExerciseLibrary_FullMethodName                 = "/fitglue.gateway.ClientGatewayService/GetExerciseLibrary"
@@ -199,6 +202,10 @@ type ClientGatewayServiceClient interface {
 	UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
 	RecomputeRoundup(ctx context.Context, in *RecomputeRoundupGatewayRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
 	GetActivityPhotoUploadUrl(ctx context.Context, in *GetActivityPhotoUploadUrlGatewayRequest, opts ...grpc.CallOption) (*GetActivityPhotoUploadUrlGatewayResponse, error)
+	// ===================== Showcase View Metrics (owner-facing) =====================
+	GetShowcaseViewStats(ctx context.Context, in *ShowcaseIdRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error)
+	GetShowcaseProfileViewStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error)
+	ListShowcaseViewStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ListShowcaseViewStatsGatewayResponse, error)
 	// ===================== Data Export =====================
 	ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error)
 	// ===================== FIT File Parse =====================
@@ -875,6 +882,36 @@ func (c *clientGatewayServiceClient) GetActivityPhotoUploadUrl(ctx context.Conte
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) GetShowcaseViewStats(ctx context.Context, in *ShowcaseIdRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseViewStats)
+	err := c.cc.Invoke(ctx, ClientGatewayService_GetShowcaseViewStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) GetShowcaseProfileViewStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseViewStats)
+	err := c.cc.Invoke(ctx, ClientGatewayService_GetShowcaseProfileViewStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) ListShowcaseViewStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ListShowcaseViewStatsGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListShowcaseViewStatsGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_ListShowcaseViewStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) ExportData(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ExportDataGatewayResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExportDataGatewayResponse)
@@ -1155,6 +1192,10 @@ type ClientGatewayServiceServer interface {
 	UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsGatewayRequest) (*activity.ShowcaseProfile, error)
 	RecomputeRoundup(context.Context, *RecomputeRoundupGatewayRequest) (*activity.ShowcaseRoundup, error)
 	GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlGatewayRequest) (*GetActivityPhotoUploadUrlGatewayResponse, error)
+	// ===================== Showcase View Metrics (owner-facing) =====================
+	GetShowcaseViewStats(context.Context, *ShowcaseIdRequest) (*activity.ShowcaseViewStats, error)
+	GetShowcaseProfileViewStats(context.Context, *EmptyRequest) (*activity.ShowcaseViewStats, error)
+	ListShowcaseViewStats(context.Context, *EmptyRequest) (*ListShowcaseViewStatsGatewayResponse, error)
 	// ===================== Data Export =====================
 	ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error)
 	// ===================== FIT File Parse =====================
@@ -1382,6 +1423,15 @@ func (UnimplementedClientGatewayServiceServer) RecomputeRoundup(context.Context,
 }
 func (UnimplementedClientGatewayServiceServer) GetActivityPhotoUploadUrl(context.Context, *GetActivityPhotoUploadUrlGatewayRequest) (*GetActivityPhotoUploadUrlGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActivityPhotoUploadUrl not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) GetShowcaseViewStats(context.Context, *ShowcaseIdRequest) (*activity.ShowcaseViewStats, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetShowcaseViewStats not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) GetShowcaseProfileViewStats(context.Context, *EmptyRequest) (*activity.ShowcaseViewStats, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetShowcaseProfileViewStats not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) ListShowcaseViewStats(context.Context, *EmptyRequest) (*ListShowcaseViewStatsGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListShowcaseViewStats not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) ExportData(context.Context, *EmptyRequest) (*ExportDataGatewayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExportData not implemented")
@@ -2613,6 +2663,60 @@ func _ClientGatewayService_GetActivityPhotoUploadUrl_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_GetShowcaseViewStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShowcaseIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).GetShowcaseViewStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_GetShowcaseViewStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).GetShowcaseViewStats(ctx, req.(*ShowcaseIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_GetShowcaseProfileViewStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).GetShowcaseProfileViewStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_GetShowcaseProfileViewStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).GetShowcaseProfileViewStats(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_ListShowcaseViewStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).ListShowcaseViewStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_ListShowcaseViewStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).ListShowcaseViewStats(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_ExportData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyRequest)
 	if err := dec(in); err != nil {
@@ -3217,6 +3321,18 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActivityPhotoUploadUrl",
 			Handler:    _ClientGatewayService_GetActivityPhotoUploadUrl_Handler,
+		},
+		{
+			MethodName: "GetShowcaseViewStats",
+			Handler:    _ClientGatewayService_GetShowcaseViewStats_Handler,
+		},
+		{
+			MethodName: "GetShowcaseProfileViewStats",
+			Handler:    _ClientGatewayService_GetShowcaseProfileViewStats_Handler,
+		},
+		{
+			MethodName: "ListShowcaseViewStats",
+			Handler:    _ClientGatewayService_ListShowcaseViewStats_Handler,
 		},
 		{
 			MethodName: "ExportData",

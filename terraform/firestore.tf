@@ -73,6 +73,17 @@ resource "google_firestore_field" "showcased_activities_expires_at" {
   ttl_config {}
 }
 
+# Showcase view de-duplication markers self-expire (~48h). The daily-salted
+# visitor hash already rotates daily; TTL just reclaims the storage.
+resource "google_firestore_field" "showcase_view_dedup_expires_at" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "showcase_view_dedup"
+  field      = "expires_at"
+
+  ttl_config {}
+}
+
 resource "google_firestore_index" "pending_inputs_user_status_created" {
   project    = var.project_id
   database   = google_firestore_database.database.name

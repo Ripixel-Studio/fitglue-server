@@ -28,6 +28,25 @@ resource "google_secret_manager_secret_version" "oauth_state_secret_initial" {
 }
 
 # =============================================================================
+# Showcase View Salt (rotating-salt source for privacy-friendly visitor hashing)
+# =============================================================================
+resource "google_secret_manager_secret" "showcase_view_salt" {
+  secret_id = "showcase-view-salt"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "showcase_view_salt_initial" {
+  secret      = google_secret_manager_secret.showcase_view_salt.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # Strava OAuth Credentials
 # =============================================================================
 resource "google_secret_manager_secret" "strava_client_id" {

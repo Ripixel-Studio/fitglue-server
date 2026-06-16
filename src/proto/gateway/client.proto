@@ -405,6 +405,23 @@ service ClientGatewayService {
     };
   }
 
+  // ===================== Showcase View Metrics (owner-facing) =====================
+  rpc GetShowcaseViewStats(ShowcaseIdRequest) returns (fitglue.models.activity.ShowcaseViewStats) {
+    option (google.api.http) = {
+      get: "/users/me/showcases/{id}/views"
+    };
+  }
+  rpc GetShowcaseProfileViewStats(EmptyRequest) returns (fitglue.models.activity.ShowcaseViewStats) {
+    option (google.api.http) = {
+      get: "/users/me/showcase-management/profile/views"
+    };
+  }
+  rpc ListShowcaseViewStats(EmptyRequest) returns (ListShowcaseViewStatsGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/showcase-management/views"
+    };
+  }
+
   // ===================== Data Export =====================
   rpc ExportData(EmptyRequest) returns (ExportDataGatewayResponse) {
     option (google.api.http) = {
@@ -752,6 +769,12 @@ message UpdateRoundupSettingsGatewayRequest {
 }
 message RecomputeRoundupGatewayRequest {
   string period_key = 1;
+}
+message ListShowcaseViewStatsGatewayResponse {
+  fitglue.models.activity.ShowcaseViewStats profile = 1;
+  repeated fitglue.models.activity.ShowcaseViewStats showcases = 2;
+  int64 total_views = 3;
+  int64 total_visitors = 4;
 }
 message UpdateShowcaseSlugGatewayResponse {
   string slug = 1;

@@ -191,3 +191,30 @@ message WeeklyStreakHistory {
   int32 missed_weeks = 2;         // count of weeks with zero qualifying activities
   repeated bool weekly_active = 3; // most-recent-last; true = had at least one activity
 }
+
+// ShowcaseViewTarget identifies which kind of public showcase surface a view
+// metric belongs to. Used by the owner-facing stats read path.
+enum ShowcaseViewTarget {
+  SHOWCASE_VIEW_TARGET_UNSPECIFIED = 0;
+  SHOWCASE_VIEW_TARGET_ACTIVITY = 1;  // a single showcased activity page
+  SHOWCASE_VIEW_TARGET_PROFILE = 2;   // the athlete's profile page
+  SHOWCASE_VIEW_TARGET_ROUNDUP = 3;   // a roundup page
+}
+
+// ShowcaseDailyViewCount is one day's view/visitor counts for a sparkline/trend.
+message ShowcaseDailyViewCount {
+  string day = 1;       // YYYY-MM-DD (UTC)
+  int64 views = 2;
+  int64 visitors = 3;
+}
+
+// ShowcaseViewStats holds de-duplicated view metrics for one public showcase
+// surface. `views` is total pageviews (bot-filtered, owner's own visits excluded);
+// `visitors` is unique visitors deduped per (visitor, day) via a daily-salted hash.
+message ShowcaseViewStats {
+  string target_key = 1;            // "activity:{showcaseId}" | "profile:{slug}" | "roundup:{slug}:{periodKey}"
+  int64 views = 2;
+  int64 visitors = 3;
+  google.protobuf.Timestamp last_viewed_at = 4;
+  repeated ShowcaseDailyViewCount daily = 5;  // recent daily timeseries (most-recent-last)
+}

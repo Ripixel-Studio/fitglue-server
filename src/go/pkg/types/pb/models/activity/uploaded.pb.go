@@ -23,6 +23,60 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ShowcaseViewTarget identifies which kind of public showcase surface a view
+// metric belongs to. Used by the owner-facing stats read path.
+type ShowcaseViewTarget int32
+
+const (
+	ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_UNSPECIFIED ShowcaseViewTarget = 0
+	ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ACTIVITY    ShowcaseViewTarget = 1 // a single showcased activity page
+	ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_PROFILE     ShowcaseViewTarget = 2 // the athlete's profile page
+	ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ROUNDUP     ShowcaseViewTarget = 3 // a roundup page
+)
+
+// Enum value maps for ShowcaseViewTarget.
+var (
+	ShowcaseViewTarget_name = map[int32]string{
+		0: "SHOWCASE_VIEW_TARGET_UNSPECIFIED",
+		1: "SHOWCASE_VIEW_TARGET_ACTIVITY",
+		2: "SHOWCASE_VIEW_TARGET_PROFILE",
+		3: "SHOWCASE_VIEW_TARGET_ROUNDUP",
+	}
+	ShowcaseViewTarget_value = map[string]int32{
+		"SHOWCASE_VIEW_TARGET_UNSPECIFIED": 0,
+		"SHOWCASE_VIEW_TARGET_ACTIVITY":    1,
+		"SHOWCASE_VIEW_TARGET_PROFILE":     2,
+		"SHOWCASE_VIEW_TARGET_ROUNDUP":     3,
+	}
+)
+
+func (x ShowcaseViewTarget) Enum() *ShowcaseViewTarget {
+	p := new(ShowcaseViewTarget)
+	*p = x
+	return p
+}
+
+func (x ShowcaseViewTarget) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ShowcaseViewTarget) Descriptor() protoreflect.EnumDescriptor {
+	return file_models_activity_uploaded_proto_enumTypes[0].Descriptor()
+}
+
+func (ShowcaseViewTarget) Type() protoreflect.EnumType {
+	return &file_models_activity_uploaded_proto_enumTypes[0]
+}
+
+func (x ShowcaseViewTarget) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ShowcaseViewTarget.Descriptor instead.
+func (ShowcaseViewTarget) EnumDescriptor() ([]byte, []int) {
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{0}
+}
+
 type UploadedActivityRecord struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1302,6 +1356,146 @@ func (x *WeeklyStreakHistory) GetWeeklyActive() []bool {
 	return nil
 }
 
+// ShowcaseDailyViewCount is one day's view/visitor counts for a sparkline/trend.
+type ShowcaseDailyViewCount struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Day           string                 `protobuf:"bytes,1,opt,name=day,proto3" json:"day,omitempty"` // YYYY-MM-DD (UTC)
+	Views         int64                  `protobuf:"varint,2,opt,name=views,proto3" json:"views,omitempty"`
+	Visitors      int64                  `protobuf:"varint,3,opt,name=visitors,proto3" json:"visitors,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseDailyViewCount) Reset() {
+	*x = ShowcaseDailyViewCount{}
+	mi := &file_models_activity_uploaded_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseDailyViewCount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseDailyViewCount) ProtoMessage() {}
+
+func (x *ShowcaseDailyViewCount) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_uploaded_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseDailyViewCount.ProtoReflect.Descriptor instead.
+func (*ShowcaseDailyViewCount) Descriptor() ([]byte, []int) {
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ShowcaseDailyViewCount) GetDay() string {
+	if x != nil {
+		return x.Day
+	}
+	return ""
+}
+
+func (x *ShowcaseDailyViewCount) GetViews() int64 {
+	if x != nil {
+		return x.Views
+	}
+	return 0
+}
+
+func (x *ShowcaseDailyViewCount) GetVisitors() int64 {
+	if x != nil {
+		return x.Visitors
+	}
+	return 0
+}
+
+// ShowcaseViewStats holds de-duplicated view metrics for one public showcase
+// surface. `views` is total pageviews (bot-filtered, owner's own visits excluded);
+// `visitors` is unique visitors deduped per (visitor, day) via a daily-salted hash.
+type ShowcaseViewStats struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	TargetKey     string                    `protobuf:"bytes,1,opt,name=target_key,json=targetKey,proto3" json:"target_key,omitempty"` // "activity:{showcaseId}" | "profile:{slug}" | "roundup:{slug}:{periodKey}"
+	Views         int64                     `protobuf:"varint,2,opt,name=views,proto3" json:"views,omitempty"`
+	Visitors      int64                     `protobuf:"varint,3,opt,name=visitors,proto3" json:"visitors,omitempty"`
+	LastViewedAt  *timestamppb.Timestamp    `protobuf:"bytes,4,opt,name=last_viewed_at,json=lastViewedAt,proto3" json:"last_viewed_at,omitempty"`
+	Daily         []*ShowcaseDailyViewCount `protobuf:"bytes,5,rep,name=daily,proto3" json:"daily,omitempty"` // recent daily timeseries (most-recent-last)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseViewStats) Reset() {
+	*x = ShowcaseViewStats{}
+	mi := &file_models_activity_uploaded_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseViewStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseViewStats) ProtoMessage() {}
+
+func (x *ShowcaseViewStats) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_uploaded_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseViewStats.ProtoReflect.Descriptor instead.
+func (*ShowcaseViewStats) Descriptor() ([]byte, []int) {
+	return file_models_activity_uploaded_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ShowcaseViewStats) GetTargetKey() string {
+	if x != nil {
+		return x.TargetKey
+	}
+	return ""
+}
+
+func (x *ShowcaseViewStats) GetViews() int64 {
+	if x != nil {
+		return x.Views
+	}
+	return 0
+}
+
+func (x *ShowcaseViewStats) GetVisitors() int64 {
+	if x != nil {
+		return x.Visitors
+	}
+	return 0
+}
+
+func (x *ShowcaseViewStats) GetLastViewedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastViewedAt
+	}
+	return nil
+}
+
+func (x *ShowcaseViewStats) GetDaily() []*ShowcaseDailyViewCount {
+	if x != nil {
+		return x.Daily
+	}
+	return nil
+}
+
 var File_models_activity_uploaded_proto protoreflect.FileDescriptor
 
 const file_models_activity_uploaded_proto_rawDesc = "" +
@@ -1469,7 +1663,23 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x13WeeklyStreakHistory\x12#\n" +
 	"\rweeks_tracked\x18\x01 \x01(\x05R\fweeksTracked\x12!\n" +
 	"\fmissed_weeks\x18\x02 \x01(\x05R\vmissedWeeks\x12#\n" +
-	"\rweekly_active\x18\x03 \x03(\bR\fweeklyActiveB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
+	"\rweekly_active\x18\x03 \x03(\bR\fweeklyActive\"\\\n" +
+	"\x16ShowcaseDailyViewCount\x12\x10\n" +
+	"\x03day\x18\x01 \x01(\tR\x03day\x12\x14\n" +
+	"\x05views\x18\x02 \x01(\x03R\x05views\x12\x1a\n" +
+	"\bvisitors\x18\x03 \x01(\x03R\bvisitors\"\xed\x01\n" +
+	"\x11ShowcaseViewStats\x12\x1d\n" +
+	"\n" +
+	"target_key\x18\x01 \x01(\tR\ttargetKey\x12\x14\n" +
+	"\x05views\x18\x02 \x01(\x03R\x05views\x12\x1a\n" +
+	"\bvisitors\x18\x03 \x01(\x03R\bvisitors\x12@\n" +
+	"\x0elast_viewed_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\flastViewedAt\x12E\n" +
+	"\x05daily\x18\x05 \x03(\v2/.fitglue.models.activity.ShowcaseDailyViewCountR\x05daily*\xa1\x01\n" +
+	"\x12ShowcaseViewTarget\x12$\n" +
+	" SHOWCASE_VIEW_TARGET_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dSHOWCASE_VIEW_TARGET_ACTIVITY\x10\x01\x12 \n" +
+	"\x1cSHOWCASE_VIEW_TARGET_PROFILE\x10\x02\x12 \n" +
+	"\x1cSHOWCASE_VIEW_TARGET_ROUNDUP\x10\x03B?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
 
 var (
 	file_models_activity_uploaded_proto_rawDescOnce sync.Once
@@ -1483,66 +1693,72 @@ func file_models_activity_uploaded_proto_rawDescGZIP() []byte {
 	return file_models_activity_uploaded_proto_rawDescData
 }
 
-var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_models_activity_uploaded_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_models_activity_uploaded_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_models_activity_uploaded_proto_goTypes = []any{
-	(*UploadedActivityRecord)(nil), // 0: fitglue.models.activity.UploadedActivityRecord
-	(*ShowcasedActivity)(nil),      // 1: fitglue.models.activity.ShowcasedActivity
-	(*ShowcaseProfileEntry)(nil),   // 2: fitglue.models.activity.ShowcaseProfileEntry
-	(*EntrySparkline)(nil),         // 3: fitglue.models.activity.EntrySparkline
-	(*ShowcaseTheme)(nil),          // 4: fitglue.models.activity.ShowcaseTheme
-	(*ShowcaseLink)(nil),           // 5: fitglue.models.activity.ShowcaseLink
-	(*ShowcaseBioCallout)(nil),     // 6: fitglue.models.activity.ShowcaseBioCallout
-	(*ShowcaseProfile)(nil),        // 7: fitglue.models.activity.ShowcaseProfile
-	(*RoundupSettings)(nil),        // 8: fitglue.models.activity.RoundupSettings
-	(*ShowcaseTopPR)(nil),          // 9: fitglue.models.activity.ShowcaseTopPR
-	(*LifetimeZoneSplit)(nil),      // 10: fitglue.models.activity.LifetimeZoneSplit
-	(*WeeklyStreakHistory)(nil),    // 11: fitglue.models.activity.WeeklyStreakHistory
-	(ActivitySource)(0),            // 12: fitglue.models.activity.ActivitySource
-	(*timestamppb.Timestamp)(nil),  // 13: google.protobuf.Timestamp
-	(plugin.DestinationType)(0),    // 14: fitglue.models.plugin.DestinationType
-	(ActivityType)(0),              // 15: fitglue.models.activity.ActivityType
-	(*StandardizedActivity)(nil),   // 16: fitglue.models.activity.StandardizedActivity
-	(*ActivityEnrichments)(nil),    // 17: fitglue.models.activity.ActivityEnrichments
-	(*BestEffort)(nil),             // 18: fitglue.models.activity.BestEffort
-	(*HeartRateZoneBucket)(nil),    // 19: fitglue.models.activity.HeartRateZoneBucket
+	(ShowcaseViewTarget)(0),        // 0: fitglue.models.activity.ShowcaseViewTarget
+	(*UploadedActivityRecord)(nil), // 1: fitglue.models.activity.UploadedActivityRecord
+	(*ShowcasedActivity)(nil),      // 2: fitglue.models.activity.ShowcasedActivity
+	(*ShowcaseProfileEntry)(nil),   // 3: fitglue.models.activity.ShowcaseProfileEntry
+	(*EntrySparkline)(nil),         // 4: fitglue.models.activity.EntrySparkline
+	(*ShowcaseTheme)(nil),          // 5: fitglue.models.activity.ShowcaseTheme
+	(*ShowcaseLink)(nil),           // 6: fitglue.models.activity.ShowcaseLink
+	(*ShowcaseBioCallout)(nil),     // 7: fitglue.models.activity.ShowcaseBioCallout
+	(*ShowcaseProfile)(nil),        // 8: fitglue.models.activity.ShowcaseProfile
+	(*RoundupSettings)(nil),        // 9: fitglue.models.activity.RoundupSettings
+	(*ShowcaseTopPR)(nil),          // 10: fitglue.models.activity.ShowcaseTopPR
+	(*LifetimeZoneSplit)(nil),      // 11: fitglue.models.activity.LifetimeZoneSplit
+	(*WeeklyStreakHistory)(nil),    // 12: fitglue.models.activity.WeeklyStreakHistory
+	(*ShowcaseDailyViewCount)(nil), // 13: fitglue.models.activity.ShowcaseDailyViewCount
+	(*ShowcaseViewStats)(nil),      // 14: fitglue.models.activity.ShowcaseViewStats
+	(ActivitySource)(0),            // 15: fitglue.models.activity.ActivitySource
+	(*timestamppb.Timestamp)(nil),  // 16: google.protobuf.Timestamp
+	(plugin.DestinationType)(0),    // 17: fitglue.models.plugin.DestinationType
+	(ActivityType)(0),              // 18: fitglue.models.activity.ActivityType
+	(*StandardizedActivity)(nil),   // 19: fitglue.models.activity.StandardizedActivity
+	(*ActivityEnrichments)(nil),    // 20: fitglue.models.activity.ActivityEnrichments
+	(*BestEffort)(nil),             // 21: fitglue.models.activity.BestEffort
+	(*HeartRateZoneBucket)(nil),    // 22: fitglue.models.activity.HeartRateZoneBucket
 }
 var file_models_activity_uploaded_proto_depIdxs = []int32{
-	12, // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
-	13, // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
-	14, // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
-	13, // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
-	15, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
-	12, // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
-	13, // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	16, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
-	13, // 8: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	13, // 9: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	17, // 10: fitglue.models.activity.ShowcasedActivity.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
-	15, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
-	12, // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
-	13, // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
-	3,  // 14: fitglue.models.activity.ShowcaseProfileEntry.sparkline:type_name -> fitglue.models.activity.EntrySparkline
-	13, // 15: fitglue.models.activity.ShowcaseProfileEntry.created_at:type_name -> google.protobuf.Timestamp
-	18, // 16: fitglue.models.activity.ShowcaseProfileEntry.best_efforts:type_name -> fitglue.models.activity.BestEffort
-	2,  // 17: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	13, // 18: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
-	13, // 19: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
-	13, // 20: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 21: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
-	5,  // 22: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
-	6,  // 23: fitglue.models.activity.ShowcaseProfile.callouts:type_name -> fitglue.models.activity.ShowcaseBioCallout
-	10, // 24: fitglue.models.activity.ShowcaseProfile.zone_split:type_name -> fitglue.models.activity.LifetimeZoneSplit
-	11, // 25: fitglue.models.activity.ShowcaseProfile.streak_history:type_name -> fitglue.models.activity.WeeklyStreakHistory
-	9,  // 26: fitglue.models.activity.ShowcaseProfile.top_prs:type_name -> fitglue.models.activity.ShowcaseTopPR
-	8,  // 27: fitglue.models.activity.ShowcaseProfile.roundup_settings:type_name -> fitglue.models.activity.RoundupSettings
-	13, // 28: fitglue.models.activity.ShowcaseTopPR.achieved_at:type_name -> google.protobuf.Timestamp
-	19, // 29: fitglue.models.activity.LifetimeZoneSplit.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
-	13, // 30: fitglue.models.activity.LifetimeZoneSplit.computed_at:type_name -> google.protobuf.Timestamp
-	31, // [31:31] is the sub-list for method output_type
-	31, // [31:31] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	15, // 0: fitglue.models.activity.UploadedActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
+	16, // 1: fitglue.models.activity.UploadedActivityRecord.start_time:type_name -> google.protobuf.Timestamp
+	17, // 2: fitglue.models.activity.UploadedActivityRecord.destination:type_name -> fitglue.models.plugin.DestinationType
+	16, // 3: fitglue.models.activity.UploadedActivityRecord.uploaded_at:type_name -> google.protobuf.Timestamp
+	18, // 4: fitglue.models.activity.ShowcasedActivity.activity_type:type_name -> fitglue.models.activity.ActivityType
+	15, // 5: fitglue.models.activity.ShowcasedActivity.source:type_name -> fitglue.models.activity.ActivitySource
+	16, // 6: fitglue.models.activity.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	19, // 7: fitglue.models.activity.ShowcasedActivity.activity_data:type_name -> fitglue.models.activity.StandardizedActivity
+	16, // 8: fitglue.models.activity.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	16, // 9: fitglue.models.activity.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	20, // 10: fitglue.models.activity.ShowcasedActivity.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
+	18, // 11: fitglue.models.activity.ShowcaseProfileEntry.activity_type:type_name -> fitglue.models.activity.ActivityType
+	15, // 12: fitglue.models.activity.ShowcaseProfileEntry.source:type_name -> fitglue.models.activity.ActivitySource
+	16, // 13: fitglue.models.activity.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
+	4,  // 14: fitglue.models.activity.ShowcaseProfileEntry.sparkline:type_name -> fitglue.models.activity.EntrySparkline
+	16, // 15: fitglue.models.activity.ShowcaseProfileEntry.created_at:type_name -> google.protobuf.Timestamp
+	21, // 16: fitglue.models.activity.ShowcaseProfileEntry.best_efforts:type_name -> fitglue.models.activity.BestEffort
+	3,  // 17: fitglue.models.activity.ShowcaseProfile.entries:type_name -> fitglue.models.activity.ShowcaseProfileEntry
+	16, // 18: fitglue.models.activity.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
+	16, // 19: fitglue.models.activity.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
+	16, // 20: fitglue.models.activity.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 21: fitglue.models.activity.ShowcaseProfile.theme:type_name -> fitglue.models.activity.ShowcaseTheme
+	6,  // 22: fitglue.models.activity.ShowcaseProfile.links:type_name -> fitglue.models.activity.ShowcaseLink
+	7,  // 23: fitglue.models.activity.ShowcaseProfile.callouts:type_name -> fitglue.models.activity.ShowcaseBioCallout
+	11, // 24: fitglue.models.activity.ShowcaseProfile.zone_split:type_name -> fitglue.models.activity.LifetimeZoneSplit
+	12, // 25: fitglue.models.activity.ShowcaseProfile.streak_history:type_name -> fitglue.models.activity.WeeklyStreakHistory
+	10, // 26: fitglue.models.activity.ShowcaseProfile.top_prs:type_name -> fitglue.models.activity.ShowcaseTopPR
+	9,  // 27: fitglue.models.activity.ShowcaseProfile.roundup_settings:type_name -> fitglue.models.activity.RoundupSettings
+	16, // 28: fitglue.models.activity.ShowcaseTopPR.achieved_at:type_name -> google.protobuf.Timestamp
+	22, // 29: fitglue.models.activity.LifetimeZoneSplit.zones:type_name -> fitglue.models.activity.HeartRateZoneBucket
+	16, // 30: fitglue.models.activity.LifetimeZoneSplit.computed_at:type_name -> google.protobuf.Timestamp
+	16, // 31: fitglue.models.activity.ShowcaseViewStats.last_viewed_at:type_name -> google.protobuf.Timestamp
+	13, // 32: fitglue.models.activity.ShowcaseViewStats.daily:type_name -> fitglue.models.activity.ShowcaseDailyViewCount
+	33, // [33:33] is the sub-list for method output_type
+	33, // [33:33] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_uploaded_proto_init() }
@@ -1562,13 +1778,14 @@ func file_models_activity_uploaded_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_uploaded_proto_rawDesc), len(file_models_activity_uploaded_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   12,
+			NumEnums:      1,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_models_activity_uploaded_proto_goTypes,
 		DependencyIndexes: file_models_activity_uploaded_proto_depIdxs,
+		EnumInfos:         file_models_activity_uploaded_proto_enumTypes,
 		MessageInfos:      file_models_activity_uploaded_proto_msgTypes,
 	}.Build()
 	File_models_activity_uploaded_proto = out.File

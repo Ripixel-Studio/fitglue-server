@@ -3,6 +3,7 @@ syntax = "proto3";
 package fitglue.gateway;
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
 // Shared model types
 import "models/plugin/manifest.proto";
@@ -68,6 +69,25 @@ service PublicGatewayService {
       get: "/showcase/{slug}/roundups/recent"
     };
   }
+
+  // ===================== Showcase View Beacons =====================
+  // Fire-and-forget view beacons fired by the public showcase SPA on page load.
+  // Always respond 204; counts are never returned here.
+  rpc RecordShowcaseActivityView(RecordShowcaseActivityViewRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/showcase/{id}/view"
+    };
+  }
+  rpc RecordShowcaseProfileView(RecordShowcaseProfileViewRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/showcase/profile/{slug}/view"
+    };
+  }
+  rpc RecordShowcaseRoundupView(RecordShowcaseRoundupViewRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/showcase/{slug}/roundup/{period_key}/view"
+    };
+  }
 }
 
 // =====================================================================
@@ -118,4 +138,16 @@ message GetRecentPublicRoundupsGatewayRequest {
 }
 message GetRecentPublicRoundupsGatewayResponse {
   repeated fitglue.models.activity.ShowcaseRoundup roundups = 1;
+}
+
+// Showcase view beacons (visitor identity is derived server-side from IP/UA)
+message RecordShowcaseActivityViewRequest {
+  string id = 1;
+}
+message RecordShowcaseProfileViewRequest {
+  string slug = 1;
+}
+message RecordShowcaseRoundupViewRequest {
+  string slug = 1;
+  string period_key = 2;
 }

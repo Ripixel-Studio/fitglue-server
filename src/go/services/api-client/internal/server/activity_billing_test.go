@@ -159,6 +159,16 @@ func (m *mockActivityServiceClient) RecomputeRoundup(ctx context.Context, in *ac
 	return &pbactivity.ShowcaseRoundup{}, nil
 }
 
+func (m *mockActivityServiceClient) RecordShowcaseView(ctx context.Context, in *activitypb.RecordShowcaseViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockActivityServiceClient) GetShowcaseViewStats(ctx context.Context, in *activitypb.GetShowcaseViewStatsRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseViewStats, error) {
+	return &pbactivity.ShowcaseViewStats{}, nil
+}
+func (m *mockActivityServiceClient) ListShowcaseViewStats(ctx context.Context, in *activitypb.ListShowcaseViewStatsRequest, opts ...grpc.CallOption) (*activitypb.ListShowcaseViewStatsResponse, error) {
+	return &activitypb.ListShowcaseViewStatsResponse{}, nil
+}
+
 // =============================================================
 // Mock BillingServiceClient
 // =============================================================

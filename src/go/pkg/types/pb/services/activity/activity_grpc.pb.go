@@ -48,6 +48,9 @@ const (
 	ActivityService_GetRecentPublicRoundups_FullMethodName            = "/fitglue.services.activity.ActivityService/GetRecentPublicRoundups"
 	ActivityService_UpdateRoundupSettings_FullMethodName              = "/fitglue.services.activity.ActivityService/UpdateRoundupSettings"
 	ActivityService_RecomputeRoundup_FullMethodName                   = "/fitglue.services.activity.ActivityService/RecomputeRoundup"
+	ActivityService_RecordShowcaseView_FullMethodName                 = "/fitglue.services.activity.ActivityService/RecordShowcaseView"
+	ActivityService_GetShowcaseViewStats_FullMethodName               = "/fitglue.services.activity.ActivityService/GetShowcaseViewStats"
+	ActivityService_ListShowcaseViewStats_FullMethodName              = "/fitglue.services.activity.ActivityService/ListShowcaseViewStats"
 )
 
 // ActivityServiceClient is the client API for ActivityService service.
@@ -82,6 +85,18 @@ type ActivityServiceClient interface {
 	GetRecentPublicRoundups(ctx context.Context, in *GetRecentPublicRoundupsRequest, opts ...grpc.CallOption) (*GetRecentPublicRoundupsResponse, error)
 	UpdateRoundupSettings(ctx context.Context, in *UpdateRoundupSettingsRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
 	RecomputeRoundup(ctx context.Context, in *RecomputeRoundupRequest, opts ...grpc.CallOption) (*activity.ShowcaseRoundup, error)
+	// ===================== Showcase View Metrics =====================
+	// RecordShowcaseView increments view/visitor counters for a public showcase
+	// surface. The caller (api-public gateway) is responsible for bot filtering
+	// and computing the daily-salted visitor_hash; this RPC does the de-duplicated
+	// counting transactionally.
+	RecordShowcaseView(ctx context.Context, in *RecordShowcaseViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// GetShowcaseViewStats returns metrics for a single showcase surface. Ownership
+	// is enforced against user_id.
+	GetShowcaseViewStats(ctx context.Context, in *GetShowcaseViewStatsRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error)
+	// ListShowcaseViewStats returns per-showcase + profile metrics and aggregate
+	// totals for all of a user's showcased activities.
+	ListShowcaseViewStats(ctx context.Context, in *ListShowcaseViewStatsRequest, opts ...grpc.CallOption) (*ListShowcaseViewStatsResponse, error)
 }
 
 type activityServiceClient struct {
@@ -362,6 +377,36 @@ func (c *activityServiceClient) RecomputeRoundup(ctx context.Context, in *Recomp
 	return out, nil
 }
 
+func (c *activityServiceClient) RecordShowcaseView(ctx context.Context, in *RecordShowcaseViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ActivityService_RecordShowcaseView_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetShowcaseViewStats(ctx context.Context, in *GetShowcaseViewStatsRequest, opts ...grpc.CallOption) (*activity.ShowcaseViewStats, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseViewStats)
+	err := c.cc.Invoke(ctx, ActivityService_GetShowcaseViewStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) ListShowcaseViewStats(ctx context.Context, in *ListShowcaseViewStatsRequest, opts ...grpc.CallOption) (*ListShowcaseViewStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListShowcaseViewStatsResponse)
+	err := c.cc.Invoke(ctx, ActivityService_ListShowcaseViewStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActivityServiceServer is the server API for ActivityService service.
 // All implementations must embed UnimplementedActivityServiceServer
 // for forward compatibility.
@@ -394,6 +439,18 @@ type ActivityServiceServer interface {
 	GetRecentPublicRoundups(context.Context, *GetRecentPublicRoundupsRequest) (*GetRecentPublicRoundupsResponse, error)
 	UpdateRoundupSettings(context.Context, *UpdateRoundupSettingsRequest) (*activity.ShowcaseProfile, error)
 	RecomputeRoundup(context.Context, *RecomputeRoundupRequest) (*activity.ShowcaseRoundup, error)
+	// ===================== Showcase View Metrics =====================
+	// RecordShowcaseView increments view/visitor counters for a public showcase
+	// surface. The caller (api-public gateway) is responsible for bot filtering
+	// and computing the daily-salted visitor_hash; this RPC does the de-duplicated
+	// counting transactionally.
+	RecordShowcaseView(context.Context, *RecordShowcaseViewRequest) (*emptypb.Empty, error)
+	// GetShowcaseViewStats returns metrics for a single showcase surface. Ownership
+	// is enforced against user_id.
+	GetShowcaseViewStats(context.Context, *GetShowcaseViewStatsRequest) (*activity.ShowcaseViewStats, error)
+	// ListShowcaseViewStats returns per-showcase + profile metrics and aggregate
+	// totals for all of a user's showcased activities.
+	ListShowcaseViewStats(context.Context, *ListShowcaseViewStatsRequest) (*ListShowcaseViewStatsResponse, error)
 	mustEmbedUnimplementedActivityServiceServer()
 }
 
@@ -484,6 +541,15 @@ func (UnimplementedActivityServiceServer) UpdateRoundupSettings(context.Context,
 }
 func (UnimplementedActivityServiceServer) RecomputeRoundup(context.Context, *RecomputeRoundupRequest) (*activity.ShowcaseRoundup, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecomputeRoundup not implemented")
+}
+func (UnimplementedActivityServiceServer) RecordShowcaseView(context.Context, *RecordShowcaseViewRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordShowcaseView not implemented")
+}
+func (UnimplementedActivityServiceServer) GetShowcaseViewStats(context.Context, *GetShowcaseViewStatsRequest) (*activity.ShowcaseViewStats, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetShowcaseViewStats not implemented")
+}
+func (UnimplementedActivityServiceServer) ListShowcaseViewStats(context.Context, *ListShowcaseViewStatsRequest) (*ListShowcaseViewStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListShowcaseViewStats not implemented")
 }
 func (UnimplementedActivityServiceServer) mustEmbedUnimplementedActivityServiceServer() {}
 func (UnimplementedActivityServiceServer) testEmbeddedByValue()                         {}
@@ -992,6 +1058,60 @@ func _ActivityService_RecomputeRoundup_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActivityService_RecordShowcaseView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordShowcaseViewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).RecordShowcaseView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_RecordShowcaseView_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).RecordShowcaseView(ctx, req.(*RecordShowcaseViewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetShowcaseViewStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShowcaseViewStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetShowcaseViewStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetShowcaseViewStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetShowcaseViewStats(ctx, req.(*GetShowcaseViewStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_ListShowcaseViewStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListShowcaseViewStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).ListShowcaseViewStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_ListShowcaseViewStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).ListShowcaseViewStats(ctx, req.(*ListShowcaseViewStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActivityService_ServiceDesc is the grpc.ServiceDesc for ActivityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1106,6 +1226,18 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecomputeRoundup",
 			Handler:    _ActivityService_RecomputeRoundup_Handler,
+		},
+		{
+			MethodName: "RecordShowcaseView",
+			Handler:    _ActivityService_RecordShowcaseView_Handler,
+		},
+		{
+			MethodName: "GetShowcaseViewStats",
+			Handler:    _ActivityService_GetShowcaseViewStats_Handler,
+		},
+		{
+			MethodName: "ListShowcaseViewStats",
+			Handler:    _ActivityService_ListShowcaseViewStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

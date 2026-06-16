@@ -39,6 +39,9 @@ type MockActivityStore struct {
 	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
 	DeleteShowcaseProfileEntryFunc func(ctx context.Context, userID, showcaseID string) error
 	PatchShowcaseProfileFunc       func(ctx context.Context, userID string, fields map[string]interface{}) (*pbactivity.ShowcaseProfile, error)
+
+	RecordShowcaseViewFunc   func(ctx context.Context, targetKey, visitorHash string) error
+	GetShowcaseViewStatsFunc func(ctx context.Context, targetKey string) (*pbactivity.ShowcaseViewStats, error)
 }
 
 func (m *MockActivityStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {
@@ -137,6 +140,20 @@ func (m *MockActivityStore) GetShowcaseProfileBySlug(ctx context.Context, slug s
 		return m.GetShowcaseProfileBySlugFunc(ctx, slug)
 	}
 	return nil, nil
+}
+
+func (m *MockActivityStore) RecordShowcaseView(ctx context.Context, targetKey, visitorHash string) error {
+	if m.RecordShowcaseViewFunc != nil {
+		return m.RecordShowcaseViewFunc(ctx, targetKey, visitorHash)
+	}
+	return nil
+}
+
+func (m *MockActivityStore) GetShowcaseViewStats(ctx context.Context, targetKey string) (*pbactivity.ShowcaseViewStats, error) {
+	if m.GetShowcaseViewStatsFunc != nil {
+		return m.GetShowcaseViewStatsFunc(ctx, targetKey)
+	}
+	return &pbactivity.ShowcaseViewStats{TargetKey: targetKey}, nil
 }
 
 func (m *MockActivityStore) ListShowcasedActivitiesByUser(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error) {

@@ -31,6 +31,12 @@ type ActivityStore interface {
 	GetShowcaseProfileBySlug(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
 	ListShowcasedActivitiesByUser(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
 
+	// Showcase View Metrics — de-duplicated public view counting.
+	// RecordShowcaseView increments total views (always) and unique visitors
+	// (only when visitorHash is seen for the first time) for targetKey.
+	RecordShowcaseView(ctx context.Context, targetKey, visitorHash string) error
+	GetShowcaseViewStats(ctx context.Context, targetKey string) (*pbactivity.ShowcaseViewStats, error)
+
 	// Showcase Profile Entries (sub-collection: users/{userId}/settings/showcase_profile_entries/{showcaseId})
 	ListShowcaseProfileEntries(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
 	SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error

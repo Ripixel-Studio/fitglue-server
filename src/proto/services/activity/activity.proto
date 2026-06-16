@@ -162,6 +162,32 @@ service ActivityService {
       post: "/v2/users/{user_id}/showcase-management/roundup/{period_key}/recompute"
     };
   }
+
+  // ===================== Showcase View Metrics =====================
+  // RecordShowcaseView increments view/visitor counters for a public showcase
+  // surface. The caller (api-public gateway) is responsible for bot filtering
+  // and computing the daily-salted visitor_hash; this RPC does the de-duplicated
+  // counting transactionally.
+  rpc RecordShowcaseView(RecordShowcaseViewRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/public/showcase-views"
+      body: "*"
+    };
+  }
+  // GetShowcaseViewStats returns metrics for a single showcase surface. Ownership
+  // is enforced against user_id.
+  rpc GetShowcaseViewStats(GetShowcaseViewStatsRequest) returns (fitglue.models.activity.ShowcaseViewStats) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/showcase-views"
+    };
+  }
+  // ListShowcaseViewStats returns per-showcase + profile metrics and aggregate
+  // totals for all of a user's showcased activities.
+  rpc ListShowcaseViewStats(ListShowcaseViewStatsRequest) returns (ListShowcaseViewStatsResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/showcase-views/all"
+    };
+  }
 }
 
 message GetActivityRequest {
@@ -373,4 +399,31 @@ message UpdateRoundupSettingsRequest {
 message RecomputeRoundupRequest {
   string user_id = 1;
   string period_key = 2;
+}
+
+// Showcase View Metrics messages
+message RecordShowcaseViewRequest {
+  // target_key is resolved by the gateway: "activity:{showcaseId}",
+  // "profile:{slug}" or "roundup:{slug}:{periodKey}".
+  string target_key = 1;
+  // visitor_hash is the daily-salted SHA-256 of (salt|ip|user-agent|target_key)
+  // computed at the gateway, so raw IPs never reach this service.
+  string visitor_hash = 2;
+}
+
+message GetShowcaseViewStatsRequest {
+  string user_id = 1;  // authed owner — ownership is enforced
+  fitglue.models.activity.ShowcaseViewTarget target = 2;
+  string target_id = 3; // showcase_id (ACTIVITY) or slug (PROFILE)
+}
+
+message ListShowcaseViewStatsRequest {
+  string user_id = 1;
+}
+
+message ListShowcaseViewStatsResponse {
+  fitglue.models.activity.ShowcaseViewStats profile = 1;            // profile-page metrics (may be empty)
+  repeated fitglue.models.activity.ShowcaseViewStats showcases = 2; // one per showcased activity
+  int64 total_views = 3;
+  int64 total_visitors = 4;
 }
