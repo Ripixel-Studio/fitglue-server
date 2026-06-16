@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.50.1](https://github.com/FitGlue/server/compare/v16.50.0...v16.50.1) (2026-06-16)
+
 ## [16.50.0](https://github.com/FitGlue/server/compare/v16.49.0...v16.50.0) (2026-06-16)
 
 
