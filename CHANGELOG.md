@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.51.0](https://github.com/FitGlue/server/compare/v16.50.1...v16.51.0) (2026-06-16)
+
+
+### Features
+
+* **notifications:** emit deep-link path for mobile push navigation ([313c874](https://github.com/FitGlue/server/commit/313c87420e6b60f178911c44ec7ee0538bd9f1e9))
+* **showcase:** add privacy-preserving view & visitor metrics ([1f42c5f](https://github.com/FitGlue/server/commit/1f42c5f622184856f016c667f8c5f0fb1b531c74))
+
+
+### Bug Fixes
+
+* **destination:** stop duplicate sync notifications on non-blocking input updates ([a9a0c75](https://github.com/FitGlue/server/commit/a9a0c754f311572ac3ecfa7b88b44ce2da623218))
+* **notification:** resolve recipient email from Firebase Auth when user doc is empty ([4f93f95](https://github.com/FitGlue/server/commit/4f93f9514875d1a36c45bf39b78b05c091351283))
+
 ### [16.50.1](https://github.com/FitGlue/server/compare/v16.50.0...v16.50.1) (2026-06-16)
 
 ## [16.50.0](https://github.com/FitGlue/server/compare/v16.49.0...v16.50.0) (2026-06-16)
