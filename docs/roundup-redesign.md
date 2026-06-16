@@ -125,7 +125,13 @@ Export modal already ships with:
 **Phase 2:** Redesign Hero, Comparison Band, Sticky Share Bar — ✅ done
 **Phase 3:** Charts (donut, stacked bar), Consistency Calendar — ✅ done (pure SVG)
 **Phase 4:** Callout Activities, per-section share buttons — ✅ done
-**Phase 5:** Roundup Reel video export, 3D card tilt — polish (deferred)
+**Phase 5:** Roundup Reel video export, 3D card tilt — ✅ done
+- 3D tilt on the share-card preview (perspective + rotateX/Y, respects
+  prefers-reduced-motion).
+- Roundup Reel: a 12s 9:16 clip built client-side (canvas 2D + MediaRecorder →
+  WebM, no server cost) — `web/src/showcase/utils/roundupReel.ts` +
+  `RoundupReelPanel.tsx`, surfaced as a "Reel ▶" tab and the sticky-bar Create
+  Reel button. Needs real-browser verification (MediaRecorder/captureStream).
 
 ## Rich-data phases (6–8)
 
