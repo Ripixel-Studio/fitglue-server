@@ -49,6 +49,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	// Showcase view metrics (owner-facing, ownership-scoped server-side)
 	r.Get("/users/me/showcases/{id}/views", s.handleGetShowcaseViewStats)
 	r.Get("/users/me/showcase-management/profile/views", s.handleGetShowcaseProfileViewStats)
+	r.Get("/users/me/showcase-management/roundup/{periodKey}/views", s.handleGetShowcaseRoundupViewStats)
 	r.Get("/users/me/showcase-management/views", s.handleListShowcaseViewStats)
 }
 

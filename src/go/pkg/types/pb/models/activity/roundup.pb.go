@@ -145,6 +145,7 @@ type ShowcaseCalloutActivity struct {
 	Sub           string                 `protobuf:"bytes,5,opt,name=sub,proto3" json:"sub,omitempty"`                              // second detail line
 	Date          string                 `protobuf:"bytes,6,opt,name=date,proto3" json:"date,omitempty"`                            // e.g. "14 Sep"
 	ActivityType  ActivityType           `protobuf:"varint,7,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
+	ShowcaseId    string                 `protobuf:"bytes,8,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"` // source showcase activity, if this callout maps to one
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -226,6 +227,13 @@ func (x *ShowcaseCalloutActivity) GetActivityType() ActivityType {
 		return x.ActivityType
 	}
 	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
+func (x *ShowcaseCalloutActivity) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
 }
 
 // A photo surfaced in the roundup photo mosaic.
@@ -691,12 +699,16 @@ type ShowcaseRoundup struct {
 	// GPS route thumbnails collected from the period's activities
 	Routes []*RoundupRoute `protobuf:"bytes,33,rep,name=routes,proto3" json:"routes,omitempty"`
 	// Enrichment aggregates (elevation feeds total_elevation_gain_meters above)
-	Places        []*RoundupPlace  `protobuf:"bytes,34,rep,name=places,proto3" json:"places,omitempty"`
-	Weather       *RoundupWeather  `protobuf:"bytes,35,opt,name=weather,proto3,oneof" json:"weather,omitempty"`
-	BestEfforts   []*BestEffort    `protobuf:"bytes,36,rep,name=best_efforts,json=bestEfforts,proto3" json:"best_efforts,omitempty"` // fastest per distance across the period
-	Muscles       []*RoundupMuscle `protobuf:"bytes,37,rep,name=muscles,proto3" json:"muscles,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Places      []*RoundupPlace  `protobuf:"bytes,34,rep,name=places,proto3" json:"places,omitempty"`
+	Weather     *RoundupWeather  `protobuf:"bytes,35,opt,name=weather,proto3,oneof" json:"weather,omitempty"`
+	BestEfforts []*BestEffort    `protobuf:"bytes,36,rep,name=best_efforts,json=bestEfforts,proto3" json:"best_efforts,omitempty"` // fastest per distance across the period
+	Muscles     []*RoundupMuscle `protobuf:"bytes,37,rep,name=muscles,proto3" json:"muscles,omitempty"`
+	// More single-session peaks for the "ceiling raised" highlights band
+	FurthestActivityMeters float64 `protobuf:"fixed64,38,opt,name=furthest_activity_meters,json=furthestActivityMeters,proto3" json:"furthest_activity_meters,omitempty"`   // longest single distance
+	MostCaloriesSingleKcal int32   `protobuf:"varint,39,opt,name=most_calories_single_kcal,json=mostCaloriesSingleKcal,proto3" json:"most_calories_single_kcal,omitempty"`  // most calories burned in one session
+	BiggestSessionVolumeKg float64 `protobuf:"fixed64,40,opt,name=biggest_session_volume_kg,json=biggestSessionVolumeKg,proto3" json:"biggest_session_volume_kg,omitempty"` // heaviest single strength session (reps × weight)
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *ShowcaseRoundup) Reset() {
@@ -988,6 +1000,27 @@ func (x *ShowcaseRoundup) GetMuscles() []*RoundupMuscle {
 	return nil
 }
 
+func (x *ShowcaseRoundup) GetFurthestActivityMeters() float64 {
+	if x != nil {
+		return x.FurthestActivityMeters
+	}
+	return 0
+}
+
+func (x *ShowcaseRoundup) GetMostCaloriesSingleKcal() int32 {
+	if x != nil {
+		return x.MostCaloriesSingleKcal
+	}
+	return 0
+}
+
+func (x *ShowcaseRoundup) GetBiggestSessionVolumeKg() float64 {
+	if x != nil {
+		return x.BiggestSessionVolumeKg
+	}
+	return 0
+}
+
 var File_models_activity_roundup_proto protoreflect.FileDescriptor
 
 const file_models_activity_roundup_proto_rawDesc = "" +
@@ -996,7 +1029,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x0fRoundupDayEntry\x12\x12\n" +
 	"\x04date\x18\x01 \x01(\tR\x04date\x12!\n" +
 	"\feffort_level\x18\x02 \x01(\x05R\veffortLevel\x12%\n" +
-	"\x0eactivity_count\x18\x03 \x01(\x05R\ractivityCount\"\xf1\x01\n" +
+	"\x0eactivity_count\x18\x03 \x01(\x05R\ractivityCount\"\x92\x02\n" +
 	"\x17ShowcaseCalloutActivity\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1d\n" +
@@ -1005,7 +1038,9 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\tstat_unit\x18\x04 \x01(\tR\bstatUnit\x12\x10\n" +
 	"\x03sub\x18\x05 \x01(\tR\x03sub\x12\x12\n" +
 	"\x04date\x18\x06 \x01(\tR\x04date\x12J\n" +
-	"\ractivity_type\x18\a \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\"\xa7\x01\n" +
+	"\ractivity_type\x18\a \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12\x1f\n" +
+	"\vshowcase_id\x18\b \x01(\tR\n" +
+	"showcaseId\"\xa7\x01\n" +
 	"\fRoundupPhoto\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12%\n" +
 	"\x0eactivity_title\x18\x02 \x01(\tR\ractivityTitle\x12\x12\n" +
@@ -1039,7 +1074,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x06 \x01(\x05R\ttotalSets\x12\x1d\n" +
 	"\n" +
-	"total_reps\x18\a \x01(\x05R\ttotalReps\"\xe6\x10\n" +
+	"total_reps\x18\a \x01(\x05R\ttotalReps\"\x96\x12\n" +
 	"\x0fShowcaseRoundup\x12\x1d\n" +
 	"\n" +
 	"roundup_id\x18\x01 \x01(\tR\troundupId\x12\x12\n" +
@@ -1084,7 +1119,10 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x06places\x18\" \x03(\v2%.fitglue.models.activity.RoundupPlaceR\x06places\x12F\n" +
 	"\aweather\x18# \x01(\v2'.fitglue.models.activity.RoundupWeatherH\x00R\aweather\x88\x01\x01\x12F\n" +
 	"\fbest_efforts\x18$ \x03(\v2#.fitglue.models.activity.BestEffortR\vbestEfforts\x12@\n" +
-	"\amuscles\x18% \x03(\v2&.fitglue.models.activity.RoundupMuscleR\amusclesB\n" +
+	"\amuscles\x18% \x03(\v2&.fitglue.models.activity.RoundupMuscleR\amuscles\x128\n" +
+	"\x18furthest_activity_meters\x18& \x01(\x01R\x16furthestActivityMeters\x129\n" +
+	"\x19most_calories_single_kcal\x18' \x01(\x05R\x16mostCaloriesSingleKcal\x129\n" +
+	"\x19biggest_session_volume_kg\x18( \x01(\x01R\x16biggestSessionVolumeKgB\n" +
 	"\n" +
 	"\b_weather*\x93\x01\n" +
 	"\x11RoundupPeriodType\x12#\n" +

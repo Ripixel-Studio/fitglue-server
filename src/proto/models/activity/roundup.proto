@@ -26,6 +26,7 @@ message ShowcaseCalloutActivity {
   string sub = 5;           // second detail line
   string date = 6;          // e.g. "14 Sep"
   ActivityType activity_type = 7;
+  string showcase_id = 8;   // source showcase activity, if this callout maps to one
 }
 // A photo surfaced in the roundup photo mosaic.
 message RoundupPhoto {
@@ -114,4 +115,8 @@ message ShowcaseRoundup {
   optional RoundupWeather weather = 35;
   repeated BestEffort best_efforts = 36;   // fastest per distance across the period
   repeated RoundupMuscle muscles = 37;
+  // More single-session peaks for the "ceiling raised" highlights band
+  double furthest_activity_meters = 38;     // longest single distance
+  int32 most_calories_single_kcal = 39;     // most calories burned in one session
+  double biggest_session_volume_kg = 40;    // heaviest single strength session (reps × weight)
 }

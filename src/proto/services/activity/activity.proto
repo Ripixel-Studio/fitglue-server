@@ -414,7 +414,8 @@ message RecordShowcaseViewRequest {
 message GetShowcaseViewStatsRequest {
   string user_id = 1;  // authed owner — ownership is enforced
   fitglue.models.activity.ShowcaseViewTarget target = 2;
-  string target_id = 3; // showcase_id (ACTIVITY) or slug (PROFILE)
+  string target_id = 3;  // showcase_id (ACTIVITY); ignored for PROFILE/ROUNDUP (owner's own slug is used)
+  string period_key = 4; // required for ROUNDUP
 }
 
 message ListShowcaseViewStatsRequest {
@@ -426,4 +427,5 @@ message ListShowcaseViewStatsResponse {
   repeated fitglue.models.activity.ShowcaseViewStats showcases = 2; // one per showcased activity
   int64 total_views = 3;
   int64 total_visitors = 4;
+  repeated fitglue.models.activity.ShowcaseViewStats roundups = 5;  // one per recent roundup
 }

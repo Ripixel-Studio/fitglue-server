@@ -347,3 +347,28 @@ func TestAggregateRoundupEnrichments_Empty(t *testing.T) {
 		t.Errorf("empty input should yield all nil, got places=%v weather=%v efforts=%v muscles=%v", places, weather, efforts, muscles)
 	}
 }
+
+func TestComputeSessionPeaks(t *testing.T) {
+	cal := func(v int32) *int32 { return &v }
+	entries := []*pbactivity.ShowcaseProfileEntry{
+		{DistanceMeters: 10000, CaloriesKcal: cal(600), TotalWeightKg: 0},
+		{DistanceMeters: 42195, CaloriesKcal: cal(2800), TotalWeightKg: 0},
+		{DistanceMeters: 0, CaloriesKcal: cal(450), TotalWeightKg: 4800},
+		{DistanceMeters: 5000, TotalWeightKg: 6200},
+	}
+	furthest, mostCal, biggestVol := computeSessionPeaks(entries)
+	if furthest != 42195 {
+		t.Errorf("furthest = %v, want 42195", furthest)
+	}
+	if mostCal != 2800 {
+		t.Errorf("mostCal = %d, want 2800", mostCal)
+	}
+	if biggestVol != 6200 {
+		t.Errorf("biggestVol = %v, want 6200", biggestVol)
+	}
+
+	f, c, v := computeSessionPeaks(nil)
+	if f != 0 || c != 0 || v != 0 {
+		t.Errorf("empty input should be zero, got %v/%d/%v", f, c, v)
+	}
+}

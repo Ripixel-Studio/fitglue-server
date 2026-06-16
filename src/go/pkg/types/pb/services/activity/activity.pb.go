@@ -2202,7 +2202,8 @@ type GetShowcaseViewStatsRequest struct {
 	state         protoimpl.MessageState      `protogen:"open.v1"`
 	UserId        string                      `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // authed owner — ownership is enforced
 	Target        activity.ShowcaseViewTarget `protobuf:"varint,2,opt,name=target,proto3,enum=fitglue.models.activity.ShowcaseViewTarget" json:"target,omitempty"`
-	TargetId      string                      `protobuf:"bytes,3,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"` // showcase_id (ACTIVITY) or slug (PROFILE)
+	TargetId      string                      `protobuf:"bytes,3,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`    // showcase_id (ACTIVITY); ignored for PROFILE/ROUNDUP (owner's own slug is used)
+	PeriodKey     string                      `protobuf:"bytes,4,opt,name=period_key,json=periodKey,proto3" json:"period_key,omitempty"` // required for ROUNDUP
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2258,6 +2259,13 @@ func (x *GetShowcaseViewStatsRequest) GetTargetId() string {
 	return ""
 }
 
+func (x *GetShowcaseViewStatsRequest) GetPeriodKey() string {
+	if x != nil {
+		return x.PeriodKey
+	}
+	return ""
+}
+
 type ListShowcaseViewStatsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -2308,6 +2316,7 @@ type ListShowcaseViewStatsResponse struct {
 	Showcases     []*activity.ShowcaseViewStats `protobuf:"bytes,2,rep,name=showcases,proto3" json:"showcases,omitempty"` // one per showcased activity
 	TotalViews    int64                         `protobuf:"varint,3,opt,name=total_views,json=totalViews,proto3" json:"total_views,omitempty"`
 	TotalVisitors int64                         `protobuf:"varint,4,opt,name=total_visitors,json=totalVisitors,proto3" json:"total_visitors,omitempty"`
+	Roundups      []*activity.ShowcaseViewStats `protobuf:"bytes,5,rep,name=roundups,proto3" json:"roundups,omitempty"` // one per recent roundup
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2368,6 +2377,13 @@ func (x *ListShowcaseViewStatsResponse) GetTotalVisitors() int64 {
 		return x.TotalVisitors
 	}
 	return 0
+}
+
+func (x *ListShowcaseViewStatsResponse) GetRoundups() []*activity.ShowcaseViewStats {
+	if x != nil {
+		return x.Roundups
+	}
+	return nil
 }
 
 var File_services_activity_activity_proto protoreflect.FileDescriptor
@@ -2537,19 +2553,22 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\x19RecordShowcaseViewRequest\x12\x1d\n" +
 	"\n" +
 	"target_key\x18\x01 \x01(\tR\ttargetKey\x12!\n" +
-	"\fvisitor_hash\x18\x02 \x01(\tR\vvisitorHash\"\x98\x01\n" +
+	"\fvisitor_hash\x18\x02 \x01(\tR\vvisitorHash\"\xb7\x01\n" +
 	"\x1bGetShowcaseViewStatsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12C\n" +
 	"\x06target\x18\x02 \x01(\x0e2+.fitglue.models.activity.ShowcaseViewTargetR\x06target\x12\x1b\n" +
-	"\ttarget_id\x18\x03 \x01(\tR\btargetId\"7\n" +
+	"\ttarget_id\x18\x03 \x01(\tR\btargetId\x12\x1d\n" +
+	"\n" +
+	"period_key\x18\x04 \x01(\tR\tperiodKey\"7\n" +
 	"\x1cListShowcaseViewStatsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xf7\x01\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xbf\x02\n" +
 	"\x1dListShowcaseViewStatsResponse\x12D\n" +
 	"\aprofile\x18\x01 \x01(\v2*.fitglue.models.activity.ShowcaseViewStatsR\aprofile\x12H\n" +
 	"\tshowcases\x18\x02 \x03(\v2*.fitglue.models.activity.ShowcaseViewStatsR\tshowcases\x12\x1f\n" +
 	"\vtotal_views\x18\x03 \x01(\x03R\n" +
 	"totalViews\x12%\n" +
-	"\x0etotal_visitors\x18\x04 \x01(\x03R\rtotalVisitors2\xed)\n" +
+	"\x0etotal_visitors\x18\x04 \x01(\x03R\rtotalVisitors\x12F\n" +
+	"\broundups\x18\x05 \x03(\v2*.fitglue.models.activity.ShowcaseViewStatsR\broundups2\xed)\n" +
 	"\x0fActivityService\x12\xa1\x01\n" +
 	"\vGetActivity\x12-.fitglue.services.activity.GetActivityRequest\x1a-.fitglue.models.activity.StandardizedActivity\"4\x82\xd3\xe4\x93\x02.\x12,/v2/users/{user_id}/activities/{activity_id}\x12\x9d\x01\n" +
 	"\x0eListActivities\x120.fitglue.services.activity.ListActivitiesRequest\x1a1.fitglue.services.activity.ListActivitiesResponse\"&\x82\xd3\xe4\x93\x02 \x12\x1e/v2/users/{user_id}/activities\x12\x90\x01\n" +
@@ -2665,71 +2684,72 @@ var file_services_activity_activity_proto_depIdxs = []int32{
 	48, // 12: fitglue.services.activity.GetShowcaseViewStatsRequest.target:type_name -> fitglue.models.activity.ShowcaseViewTarget
 	49, // 13: fitglue.services.activity.ListShowcaseViewStatsResponse.profile:type_name -> fitglue.models.activity.ShowcaseViewStats
 	49, // 14: fitglue.services.activity.ListShowcaseViewStatsResponse.showcases:type_name -> fitglue.models.activity.ShowcaseViewStats
-	0,  // 15: fitglue.services.activity.ActivityService.GetActivity:input_type -> fitglue.services.activity.GetActivityRequest
-	1,  // 16: fitglue.services.activity.ActivityService.ListActivities:input_type -> fitglue.services.activity.ListActivitiesRequest
-	3,  // 17: fitglue.services.activity.ActivityService.DeleteActivity:input_type -> fitglue.services.activity.DeleteActivityRequest
-	4,  // 18: fitglue.services.activity.ActivityService.GetShowcase:input_type -> fitglue.services.activity.GetShowcaseRequest
-	5,  // 19: fitglue.services.activity.ActivityService.ListShowcases:input_type -> fitglue.services.activity.ListShowcasesRequest
-	7,  // 20: fitglue.services.activity.ActivityService.CreateShowcase:input_type -> fitglue.services.activity.CreateShowcaseRequest
-	8,  // 21: fitglue.services.activity.ActivityService.UpdateShowcase:input_type -> fitglue.services.activity.UpdateShowcaseRequest
-	9,  // 22: fitglue.services.activity.ActivityService.DeleteShowcase:input_type -> fitglue.services.activity.DeleteShowcaseRequest
-	10, // 23: fitglue.services.activity.ActivityService.ExportData:input_type -> fitglue.services.activity.ExportDataRequest
-	12, // 24: fitglue.services.activity.ActivityService.ParseFitFile:input_type -> fitglue.services.activity.ParseFitFileRequest
-	13, // 25: fitglue.services.activity.ActivityService.GetShowcasePreferences:input_type -> fitglue.services.activity.GetShowcasePreferencesRequest
-	14, // 26: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:input_type -> fitglue.services.activity.UpdateShowcasePreferencesRequest
-	15, // 27: fitglue.services.activity.ActivityService.GenerateShowcaseImages:input_type -> fitglue.services.activity.GenerateShowcaseImagesRequest
-	16, // 28: fitglue.services.activity.ActivityService.GetPublicShowcase:input_type -> fitglue.services.activity.GetPublicShowcaseRequest
-	29, // 29: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:input_type -> fitglue.services.activity.GetPublicShowcaseProfileRequest
-	31, // 30: fitglue.services.activity.ActivityService.GetActivityStats:input_type -> fitglue.services.activity.GetActivityStatsRequest
-	17, // 31: fitglue.services.activity.ActivityService.GetShowcaseSettings:input_type -> fitglue.services.activity.GetShowcaseSettingsRequest
-	20, // 32: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:input_type -> fitglue.services.activity.UpdateShowcaseSettingsRequest
-	21, // 33: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:input_type -> fitglue.services.activity.UpdateShowcaseSlugRequest
-	23, // 34: fitglue.services.activity.ActivityService.AddShowcaseEntry:input_type -> fitglue.services.activity.AddShowcaseEntryRequest
-	24, // 35: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:input_type -> fitglue.services.activity.RemoveShowcaseEntryRequest
-	25, // 36: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:input_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
-	27, // 37: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:input_type -> fitglue.services.activity.GetActivityPhotoUploadUrlRequest
-	33, // 38: fitglue.services.activity.ActivityService.GetPublicRoundup:input_type -> fitglue.services.activity.GetPublicRoundupRequest
-	34, // 39: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:input_type -> fitglue.services.activity.GetRecentPublicRoundupsRequest
-	36, // 40: fitglue.services.activity.ActivityService.UpdateRoundupSettings:input_type -> fitglue.services.activity.UpdateRoundupSettingsRequest
-	37, // 41: fitglue.services.activity.ActivityService.RecomputeRoundup:input_type -> fitglue.services.activity.RecomputeRoundupRequest
-	38, // 42: fitglue.services.activity.ActivityService.RecordShowcaseView:input_type -> fitglue.services.activity.RecordShowcaseViewRequest
-	39, // 43: fitglue.services.activity.ActivityService.GetShowcaseViewStats:input_type -> fitglue.services.activity.GetShowcaseViewStatsRequest
-	40, // 44: fitglue.services.activity.ActivityService.ListShowcaseViewStats:input_type -> fitglue.services.activity.ListShowcaseViewStatsRequest
-	42, // 45: fitglue.services.activity.ActivityService.GetActivity:output_type -> fitglue.models.activity.StandardizedActivity
-	2,  // 46: fitglue.services.activity.ActivityService.ListActivities:output_type -> fitglue.services.activity.ListActivitiesResponse
-	50, // 47: fitglue.services.activity.ActivityService.DeleteActivity:output_type -> google.protobuf.Empty
-	44, // 48: fitglue.services.activity.ActivityService.GetShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	6,  // 49: fitglue.services.activity.ActivityService.ListShowcases:output_type -> fitglue.services.activity.ListShowcasesResponse
-	44, // 50: fitglue.services.activity.ActivityService.CreateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	44, // 51: fitglue.services.activity.ActivityService.UpdateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	50, // 52: fitglue.services.activity.ActivityService.DeleteShowcase:output_type -> google.protobuf.Empty
-	11, // 53: fitglue.services.activity.ActivityService.ExportData:output_type -> fitglue.services.activity.ExportDataResponse
-	42, // 54: fitglue.services.activity.ActivityService.ParseFitFile:output_type -> fitglue.models.activity.StandardizedActivity
-	45, // 55: fitglue.services.activity.ActivityService.GetShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
-	45, // 56: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
-	50, // 57: fitglue.services.activity.ActivityService.GenerateShowcaseImages:output_type -> google.protobuf.Empty
-	44, // 58: fitglue.services.activity.ActivityService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	30, // 59: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:output_type -> fitglue.services.activity.GetPublicShowcaseProfileResponse
-	32, // 60: fitglue.services.activity.ActivityService.GetActivityStats:output_type -> fitglue.services.activity.GetActivityStatsResponse
-	18, // 61: fitglue.services.activity.ActivityService.GetShowcaseSettings:output_type -> fitglue.services.activity.GetShowcaseSettingsResponse
-	45, // 62: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:output_type -> fitglue.models.activity.ShowcaseProfile
-	22, // 63: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:output_type -> fitglue.services.activity.UpdateShowcaseSlugResponse
-	50, // 64: fitglue.services.activity.ActivityService.AddShowcaseEntry:output_type -> google.protobuf.Empty
-	50, // 65: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:output_type -> google.protobuf.Empty
-	26, // 66: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:output_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
-	28, // 67: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:output_type -> fitglue.services.activity.GetActivityPhotoUploadUrlResponse
-	46, // 68: fitglue.services.activity.ActivityService.GetPublicRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
-	35, // 69: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:output_type -> fitglue.services.activity.GetRecentPublicRoundupsResponse
-	45, // 70: fitglue.services.activity.ActivityService.UpdateRoundupSettings:output_type -> fitglue.models.activity.ShowcaseProfile
-	46, // 71: fitglue.services.activity.ActivityService.RecomputeRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
-	50, // 72: fitglue.services.activity.ActivityService.RecordShowcaseView:output_type -> google.protobuf.Empty
-	49, // 73: fitglue.services.activity.ActivityService.GetShowcaseViewStats:output_type -> fitglue.models.activity.ShowcaseViewStats
-	41, // 74: fitglue.services.activity.ActivityService.ListShowcaseViewStats:output_type -> fitglue.services.activity.ListShowcaseViewStatsResponse
-	45, // [45:75] is the sub-list for method output_type
-	15, // [15:45] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	49, // 15: fitglue.services.activity.ListShowcaseViewStatsResponse.roundups:type_name -> fitglue.models.activity.ShowcaseViewStats
+	0,  // 16: fitglue.services.activity.ActivityService.GetActivity:input_type -> fitglue.services.activity.GetActivityRequest
+	1,  // 17: fitglue.services.activity.ActivityService.ListActivities:input_type -> fitglue.services.activity.ListActivitiesRequest
+	3,  // 18: fitglue.services.activity.ActivityService.DeleteActivity:input_type -> fitglue.services.activity.DeleteActivityRequest
+	4,  // 19: fitglue.services.activity.ActivityService.GetShowcase:input_type -> fitglue.services.activity.GetShowcaseRequest
+	5,  // 20: fitglue.services.activity.ActivityService.ListShowcases:input_type -> fitglue.services.activity.ListShowcasesRequest
+	7,  // 21: fitglue.services.activity.ActivityService.CreateShowcase:input_type -> fitglue.services.activity.CreateShowcaseRequest
+	8,  // 22: fitglue.services.activity.ActivityService.UpdateShowcase:input_type -> fitglue.services.activity.UpdateShowcaseRequest
+	9,  // 23: fitglue.services.activity.ActivityService.DeleteShowcase:input_type -> fitglue.services.activity.DeleteShowcaseRequest
+	10, // 24: fitglue.services.activity.ActivityService.ExportData:input_type -> fitglue.services.activity.ExportDataRequest
+	12, // 25: fitglue.services.activity.ActivityService.ParseFitFile:input_type -> fitglue.services.activity.ParseFitFileRequest
+	13, // 26: fitglue.services.activity.ActivityService.GetShowcasePreferences:input_type -> fitglue.services.activity.GetShowcasePreferencesRequest
+	14, // 27: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:input_type -> fitglue.services.activity.UpdateShowcasePreferencesRequest
+	15, // 28: fitglue.services.activity.ActivityService.GenerateShowcaseImages:input_type -> fitglue.services.activity.GenerateShowcaseImagesRequest
+	16, // 29: fitglue.services.activity.ActivityService.GetPublicShowcase:input_type -> fitglue.services.activity.GetPublicShowcaseRequest
+	29, // 30: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:input_type -> fitglue.services.activity.GetPublicShowcaseProfileRequest
+	31, // 31: fitglue.services.activity.ActivityService.GetActivityStats:input_type -> fitglue.services.activity.GetActivityStatsRequest
+	17, // 32: fitglue.services.activity.ActivityService.GetShowcaseSettings:input_type -> fitglue.services.activity.GetShowcaseSettingsRequest
+	20, // 33: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:input_type -> fitglue.services.activity.UpdateShowcaseSettingsRequest
+	21, // 34: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:input_type -> fitglue.services.activity.UpdateShowcaseSlugRequest
+	23, // 35: fitglue.services.activity.ActivityService.AddShowcaseEntry:input_type -> fitglue.services.activity.AddShowcaseEntryRequest
+	24, // 36: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:input_type -> fitglue.services.activity.RemoveShowcaseEntryRequest
+	25, // 37: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:input_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
+	27, // 38: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:input_type -> fitglue.services.activity.GetActivityPhotoUploadUrlRequest
+	33, // 39: fitglue.services.activity.ActivityService.GetPublicRoundup:input_type -> fitglue.services.activity.GetPublicRoundupRequest
+	34, // 40: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:input_type -> fitglue.services.activity.GetRecentPublicRoundupsRequest
+	36, // 41: fitglue.services.activity.ActivityService.UpdateRoundupSettings:input_type -> fitglue.services.activity.UpdateRoundupSettingsRequest
+	37, // 42: fitglue.services.activity.ActivityService.RecomputeRoundup:input_type -> fitglue.services.activity.RecomputeRoundupRequest
+	38, // 43: fitglue.services.activity.ActivityService.RecordShowcaseView:input_type -> fitglue.services.activity.RecordShowcaseViewRequest
+	39, // 44: fitglue.services.activity.ActivityService.GetShowcaseViewStats:input_type -> fitglue.services.activity.GetShowcaseViewStatsRequest
+	40, // 45: fitglue.services.activity.ActivityService.ListShowcaseViewStats:input_type -> fitglue.services.activity.ListShowcaseViewStatsRequest
+	42, // 46: fitglue.services.activity.ActivityService.GetActivity:output_type -> fitglue.models.activity.StandardizedActivity
+	2,  // 47: fitglue.services.activity.ActivityService.ListActivities:output_type -> fitglue.services.activity.ListActivitiesResponse
+	50, // 48: fitglue.services.activity.ActivityService.DeleteActivity:output_type -> google.protobuf.Empty
+	44, // 49: fitglue.services.activity.ActivityService.GetShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	6,  // 50: fitglue.services.activity.ActivityService.ListShowcases:output_type -> fitglue.services.activity.ListShowcasesResponse
+	44, // 51: fitglue.services.activity.ActivityService.CreateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	44, // 52: fitglue.services.activity.ActivityService.UpdateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	50, // 53: fitglue.services.activity.ActivityService.DeleteShowcase:output_type -> google.protobuf.Empty
+	11, // 54: fitglue.services.activity.ActivityService.ExportData:output_type -> fitglue.services.activity.ExportDataResponse
+	42, // 55: fitglue.services.activity.ActivityService.ParseFitFile:output_type -> fitglue.models.activity.StandardizedActivity
+	45, // 56: fitglue.services.activity.ActivityService.GetShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
+	45, // 57: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
+	50, // 58: fitglue.services.activity.ActivityService.GenerateShowcaseImages:output_type -> google.protobuf.Empty
+	44, // 59: fitglue.services.activity.ActivityService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	30, // 60: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:output_type -> fitglue.services.activity.GetPublicShowcaseProfileResponse
+	32, // 61: fitglue.services.activity.ActivityService.GetActivityStats:output_type -> fitglue.services.activity.GetActivityStatsResponse
+	18, // 62: fitglue.services.activity.ActivityService.GetShowcaseSettings:output_type -> fitglue.services.activity.GetShowcaseSettingsResponse
+	45, // 63: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:output_type -> fitglue.models.activity.ShowcaseProfile
+	22, // 64: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:output_type -> fitglue.services.activity.UpdateShowcaseSlugResponse
+	50, // 65: fitglue.services.activity.ActivityService.AddShowcaseEntry:output_type -> google.protobuf.Empty
+	50, // 66: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:output_type -> google.protobuf.Empty
+	26, // 67: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:output_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
+	28, // 68: fitglue.services.activity.ActivityService.GetActivityPhotoUploadUrl:output_type -> fitglue.services.activity.GetActivityPhotoUploadUrlResponse
+	46, // 69: fitglue.services.activity.ActivityService.GetPublicRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
+	35, // 70: fitglue.services.activity.ActivityService.GetRecentPublicRoundups:output_type -> fitglue.services.activity.GetRecentPublicRoundupsResponse
+	45, // 71: fitglue.services.activity.ActivityService.UpdateRoundupSettings:output_type -> fitglue.models.activity.ShowcaseProfile
+	46, // 72: fitglue.services.activity.ActivityService.RecomputeRoundup:output_type -> fitglue.models.activity.ShowcaseRoundup
+	50, // 73: fitglue.services.activity.ActivityService.RecordShowcaseView:output_type -> google.protobuf.Empty
+	49, // 74: fitglue.services.activity.ActivityService.GetShowcaseViewStats:output_type -> fitglue.models.activity.ShowcaseViewStats
+	41, // 75: fitglue.services.activity.ActivityService.ListShowcaseViewStats:output_type -> fitglue.services.activity.ListShowcaseViewStatsResponse
+	46, // [46:76] is the sub-list for method output_type
+	16, // [16:46] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_services_activity_activity_proto_init() }

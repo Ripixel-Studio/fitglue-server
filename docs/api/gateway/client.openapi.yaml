@@ -1797,6 +1797,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/roundup/{periodKey}/views:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetShowcaseRoundupViewStats
+            parameters:
+                - name: periodKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseViewStats'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/showcase-management/views:
         get:
             tags:
@@ -3094,6 +3118,10 @@ components:
                     type: string
                 totalVisitors:
                     type: string
+                roundups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseViewStats'
         ListShowcasesGatewayResponse:
             type: object
             properties:
@@ -4204,6 +4232,8 @@ components:
                         - ACTIVITY_TYPE_YOGA
                     type: string
                     format: enum
+                showcaseId:
+                    type: string
             description: Pre-computed spotlight card — biggest session, longest streak, peak PR day.
         ShowcaseDailyViewCount:
             type: object
@@ -4603,6 +4633,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/RoundupMuscle'
+                furthestActivityMeters:
+                    type: number
+                    description: More single-session peaks for the "ceiling raised" highlights band
+                    format: double
+                mostCaloriesSingleKcal:
+                    type: integer
+                    format: int32
+                biggestSessionVolumeKg:
+                    type: number
+                    format: double
         ShowcaseTheme:
             type: object
             properties:

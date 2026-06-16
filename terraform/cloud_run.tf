@@ -187,9 +187,9 @@ resource "google_cloud_run_v2_service" "backend" {
       # Secrets (from Secret Manager)
       # ═══════════════════════════════════════════════════════════════
 
-      # ── Pipeline secrets (enricher needs Gemini, Spotify, Fitbit) ──
+      # ── Gemini key — pipeline (enrichers) + activity (roundup AI summary) ──
       dynamic "env" {
-        for_each = each.key == "pipeline" ? [1] : []
+        for_each = contains(["pipeline", "activity"], each.key) ? [1] : []
         content {
           name = "GEMINI_API_KEY"
           value_source {

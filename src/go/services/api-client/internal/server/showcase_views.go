@@ -50,6 +50,27 @@ func (s *APIServer) handleGetShowcaseProfileViewStats(w http.ResponseWriter, r *
 	WriteJSON(w, res)
 }
 
+// handleGetShowcaseRoundupViewStats returns view metrics for one of the caller's roundup pages.
+func (s *APIServer) handleGetShowcaseRoundupViewStats(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.activitySvc.GetShowcaseViewStats(r.Context(), &activitypb.GetShowcaseViewStatsRequest{
+		UserId:    token.UID,
+		Target:    pbactivitym.ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ROUNDUP,
+		PeriodKey: chi.URLParam(r, "periodKey"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
 // handleListShowcaseViewStats returns aggregate + per-showcase view metrics for the caller.
 func (s *APIServer) handleListShowcaseViewStats(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)

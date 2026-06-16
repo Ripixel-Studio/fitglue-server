@@ -15,6 +15,10 @@ import (
 // user's view metrics. Showcase counts per user are small in practice.
 const maxShowcasesForViewStats = 200
 
+// maxRoundupsForViewStats bounds the per-roundup fan-out when aggregating a
+// user's view metrics.
+const maxRoundupsForViewStats = 50
+
 // RecordShowcaseView records a public view for a pre-resolved target_key. Bot
 // filtering and visitor-hash derivation happen at the api-public gateway; this
 // RPC only performs the de-duplicated counting.
@@ -37,7 +41,7 @@ func (s *Service) GetShowcaseViewStats(ctx context.Context, req *pbsvc.GetShowca
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	key, err := s.resolveOwnedTargetKey(ctx, req.UserId, req.Target, req.TargetId)
+	key, err := s.resolveOwnedTargetKey(ctx, req.UserId, req.Target, req.TargetId, req.PeriodKey)
 	if err != nil {
 		return nil, err
 	}
@@ -59,12 +63,28 @@ func (s *Service) ListShowcaseViewStats(ctx context.Context, req *pbsvc.ListShow
 
 	resp := &pbsvc.ListShowcaseViewStatsResponse{}
 
-	// Profile-page metrics (keyed by the owner's current slug).
+	// Profile-page + roundup metrics (keyed by the owner's current slug).
 	if profile, err := s.store.GetShowcasePreferences(ctx, req.UserId); err == nil && profile != nil && profile.Slug != "" {
 		if stats, err := s.store.GetShowcaseViewStats(ctx, showcaseview.ProfileKey(profile.Slug)); err == nil {
 			resp.Profile = stats
 			resp.TotalViews += stats.Views
 			resp.TotalVisitors += stats.Visitors
+		}
+
+		// Recent roundups for this profile.
+		if roundups, err := s.store.ListRecentRoundups(ctx, profile.Slug, maxRoundupsForViewStats); err == nil {
+			for _, r := range roundups {
+				if r.PeriodKey == "" {
+					continue
+				}
+				stats, err := s.store.GetShowcaseViewStats(ctx, showcaseview.RoundupKey(profile.Slug, r.PeriodKey))
+				if err != nil {
+					continue
+				}
+				resp.Roundups = append(resp.Roundups, stats)
+				resp.TotalViews += stats.Views
+				resp.TotalVisitors += stats.Visitors
+			}
 		}
 	}
 
@@ -90,9 +110,10 @@ func (s *Service) ListShowcaseViewStats(ctx context.Context, req *pbsvc.ListShow
 }
 
 // resolveOwnedTargetKey verifies the caller owns the requested surface and
-// returns its view-metrics target key. Profile resolution intentionally uses
-// the caller's own slug, so a user can only ever read their own profile stats.
-func (s *Service) resolveOwnedTargetKey(ctx context.Context, userID string, target pbactivity.ShowcaseViewTarget, targetID string) (string, error) {
+// returns its view-metrics target key. Profile and roundup resolution
+// intentionally use the caller's own slug, so a user can only ever read stats
+// for surfaces they own.
+func (s *Service) resolveOwnedTargetKey(ctx context.Context, userID string, target pbactivity.ShowcaseViewTarget, targetID, periodKey string) (string, error) {
 	switch target {
 	case pbactivity.ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ACTIVITY:
 		if targetID == "" {
@@ -112,17 +133,37 @@ func (s *Service) resolveOwnedTargetKey(ctx context.Context, userID string, targ
 		return showcaseview.ActivityKey(targetID), nil
 
 	case pbactivity.ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_PROFILE:
-		profile, err := s.store.GetShowcasePreferences(ctx, userID)
+		slug, err := s.ownerSlug(ctx, userID)
 		if err != nil {
-			s.logger.Error(ctx, "failed to load profile for view stats", "error", err)
-			return "", status.Error(codes.Internal, "failed to load profile")
+			return "", err
 		}
-		if profile == nil || profile.Slug == "" {
-			return "", status.Error(codes.NotFound, "no published profile")
+		return showcaseview.ProfileKey(slug), nil
+
+	case pbactivity.ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ROUNDUP:
+		if periodKey == "" {
+			return "", status.Error(codes.InvalidArgument, "period_key is required for roundup stats")
 		}
-		return showcaseview.ProfileKey(profile.Slug), nil
+		slug, err := s.ownerSlug(ctx, userID)
+		if err != nil {
+			return "", err
+		}
+		return showcaseview.RoundupKey(slug, periodKey), nil
 
 	default:
 		return "", status.Error(codes.InvalidArgument, "unsupported view target")
 	}
+}
+
+// ownerSlug returns the caller's own profile slug, used to derive ownership-safe
+// target keys for profile and roundup stats.
+func (s *Service) ownerSlug(ctx context.Context, userID string) (string, error) {
+	profile, err := s.store.GetShowcasePreferences(ctx, userID)
+	if err != nil {
+		s.logger.Error(ctx, "failed to load profile for view stats", "error", err)
+		return "", status.Error(codes.Internal, "failed to load profile")
+	}
+	if profile == nil || profile.Slug == "" {
+		return "", status.Error(codes.NotFound, "no published profile")
+	}
+	return profile.Slug, nil
 }

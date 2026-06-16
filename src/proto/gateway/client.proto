@@ -416,6 +416,11 @@ service ClientGatewayService {
       get: "/users/me/showcase-management/profile/views"
     };
   }
+  rpc GetShowcaseRoundupViewStats(GetShowcaseRoundupViewStatsGatewayRequest) returns (fitglue.models.activity.ShowcaseViewStats) {
+    option (google.api.http) = {
+      get: "/users/me/showcase-management/roundup/{period_key}/views"
+    };
+  }
   rpc ListShowcaseViewStats(EmptyRequest) returns (ListShowcaseViewStatsGatewayResponse) {
     option (google.api.http) = {
       get: "/users/me/showcase-management/views"
@@ -775,6 +780,10 @@ message ListShowcaseViewStatsGatewayResponse {
   repeated fitglue.models.activity.ShowcaseViewStats showcases = 2;
   int64 total_views = 3;
   int64 total_visitors = 4;
+  repeated fitglue.models.activity.ShowcaseViewStats roundups = 5;
+}
+message GetShowcaseRoundupViewStatsGatewayRequest {
+  string period_key = 1;
 }
 message UpdateShowcaseSlugGatewayResponse {
   string slug = 1;

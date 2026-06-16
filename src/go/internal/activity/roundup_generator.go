@@ -120,6 +120,8 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 			}
 		}
 	}
+	// Single-session peaks for the highlights band.
+	roundup.FurthestActivityMeters, roundup.MostCaloriesSingleKcal, roundup.BiggestSessionVolumeKg = computeSessionPeaks(entries)
 	allPRs, err := s.store.ListUserPersonalRecords(ctx, userID)
 	if err == nil {
 		for _, pr := range allPRs {
@@ -205,6 +207,7 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 			StatUnit:     statUnit,
 			Date:         dateStr,
 			ActivityType: biggestEntry.ActivityType,
+			ShowcaseId:   biggestEntry.ShowcaseId,
 		})
 	}
 
@@ -269,20 +272,29 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 		statVal := fmt.Sprintf("%d", len(roundup.PrsAchieved))
 		statUnit := "RECORDS THIS PERIOD"
 		sub := ""
+		peakShowcaseID := ""
 		if peakCount >= 2 {
 			statVal = fmt.Sprintf("%d", peakCount)
 			statUnit = "RECORDS IN ONE SESSION"
 			sub = fmt.Sprintf("%d total PRs this period", len(roundup.PrsAchieved))
+			// Link to a session logged on the peak-PR day, if we can find one.
+			for _, e := range entries {
+				if e.StartTime != nil && e.StartTime.AsTime().UTC().Format("2006-01-02") == peakDate {
+					peakShowcaseID = e.ShowcaseId
+					break
+				}
+			}
 		} else {
 			dateLabel = ""
 		}
 		roundup.CalloutActivities = append(roundup.CalloutActivities, &pbactivity.ShowcaseCalloutActivity{
-			Kind:      "PERSONAL RECORDS",
-			Title:     "Records Broken",
-			StatValue: statVal,
-			StatUnit:  statUnit,
-			Sub:       sub,
-			Date:      dateLabel,
+			Kind:       "PERSONAL RECORDS",
+			Title:      "Records Broken",
+			StatValue:  statVal,
+			StatUnit:   statUnit,
+			Sub:        sub,
+			Date:       dateLabel,
+			ShowcaseId: peakShowcaseID,
 		})
 	}
 

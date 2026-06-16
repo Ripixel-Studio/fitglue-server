@@ -1544,6 +1544,8 @@ components:
                         - ACTIVITY_TYPE_YOGA
                     type: string
                     format: enum
+                showcaseId:
+                    type: string
             description: Pre-computed spotlight card — biggest session, longest streak, peak PR day.
         ShowcaseLink:
             type: object
@@ -1933,6 +1935,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/RoundupMuscle'
+                furthestActivityMeters:
+                    type: number
+                    description: More single-session peaks for the "ceiling raised" highlights band
+                    format: double
+                mostCaloriesSingleKcal:
+                    type: integer
+                    format: int32
+                biggestSessionVolumeKg:
+                    type: number
+                    format: double
         ShowcaseTheme:
             type: object
             properties:

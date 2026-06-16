@@ -105,6 +105,47 @@ func TestGetShowcaseViewStats_ProfileUsesOwnSlug(t *testing.T) {
 	}
 }
 
+func TestGetShowcaseViewStats_RoundupUsesOwnSlugAndPeriod(t *testing.T) {
+	var readKey string
+	store := &MockActivityStore{
+		GetShowcasePreferencesFunc: func(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
+			return &pbactivity.ShowcaseProfile{UserId: userID, Slug: "jane"}, nil
+		},
+		GetShowcaseViewStatsFunc: func(ctx context.Context, targetKey string) (*pbactivity.ShowcaseViewStats, error) {
+			readKey = targetKey
+			return &pbactivity.ShowcaseViewStats{TargetKey: targetKey}, nil
+		},
+	}
+	svc := newViewTestService(store)
+
+	if _, err := svc.GetShowcaseViewStats(context.Background(), &pbsvc.GetShowcaseViewStatsRequest{
+		UserId:    "owner-1",
+		Target:    pbactivity.ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ROUNDUP,
+		PeriodKey: "week-23-2025",
+	}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if readKey != "roundup:jane:week-23-2025" {
+		t.Fatalf("expected roundup:jane:week-23-2025, got %q", readKey)
+	}
+}
+
+func TestGetShowcaseViewStats_RoundupRequiresPeriodKey(t *testing.T) {
+	store := &MockActivityStore{
+		GetShowcasePreferencesFunc: func(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
+			return &pbactivity.ShowcaseProfile{UserId: userID, Slug: "jane"}, nil
+		},
+	}
+	svc := newViewTestService(store)
+	_, err := svc.GetShowcaseViewStats(context.Background(), &pbsvc.GetShowcaseViewStatsRequest{
+		UserId: "owner-1",
+		Target: pbactivity.ShowcaseViewTarget_SHOWCASE_VIEW_TARGET_ROUNDUP,
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected InvalidArgument without period_key, got %v", err)
+	}
+}
+
 func TestListShowcaseViewStats_Aggregates(t *testing.T) {
 	store := &MockActivityStore{
 		GetShowcasePreferencesFunc: func(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
