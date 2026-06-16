@@ -219,6 +219,12 @@ func (s *notificationService) dispatchPush(ctx context.Context, req *pbnotificat
 	data["user_id"] = req.UserId
 	data["title"] = req.Title
 	data["body"] = req.Body
+	// SPA-relative deep-link target (no /app prefix). Mobile reads this from
+	// data["path"] to navigate the embedded web view; web clients derive their
+	// own target from data["type"]. Omitted when there's no sensible destination.
+	if path := pushDeepLinkPath(req.Type, req.Data); path != "" {
+		data["path"] = path
+	}
 
 	if err := s.fcm.SendPushNotification(ctx, req.UserId, req.Title, req.Body, tokens, data); err != nil {
 		s.logger.Error(ctx, "FCM send failed", "error", err, "user_id", req.UserId)
@@ -383,6 +389,38 @@ func activeChannels(prefs *pbuser.NotificationPreferences, t pbnotification.Noti
 		return []pbuser.NotificationChannel{pbuser.NotificationChannel_NOTIFICATION_CHANNEL_PUSH}
 	}
 	return typePref.GetChannels()
+}
+
+// pushDeepLinkPath returns the SPA Router-relative path (no /app prefix) a push
+// notification of the given type should deep-link to, derived from the request's
+// data map. Returns "" when there's no sensible in-app destination (e.g. email-only
+// billing types, or showcase roundups which have no SPA route). Mobile navigates
+// the embedded web view to this path via data["path"].
+func pushDeepLinkPath(t pbnotification.NotificationType, data map[string]string) string {
+	switch t {
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PENDING_INPUT:
+		if id := data["activity_id"]; id != "" {
+			return "/activities/" + id
+		}
+		return "/inputs"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS,
+		pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE:
+		if id := data["activity_id"]; id != "" {
+			return "/activities/" + id
+		}
+		return "/activities"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_CONNECTION_ACTION:
+		if id := data["sourceId"]; id != "" {
+			return "/connections/" + id
+		}
+		return "/connections"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_CANCELLED:
+		return "/activities"
+	case pbnotification.NotificationType_NOTIFICATION_TYPE_TRIAL_EXPIRING:
+		return "/settings/subscription"
+	default:
+		return ""
+	}
 }
 
 // notificationTypeString converts the proto enum to the string the web clients expect.
