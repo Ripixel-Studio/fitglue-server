@@ -207,6 +207,16 @@ func (m *mockActivityServiceClient) GetActivityPhotoUploadUrl(ctx context.Contex
 	return &activitypb.GetActivityPhotoUploadUrlResponse{}, nil
 }
 
+func (m *mockActivityServiceClient) RecordShowcaseView(ctx context.Context, in *activitypb.RecordShowcaseViewRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockActivityServiceClient) GetShowcaseViewStats(ctx context.Context, in *activitypb.GetShowcaseViewStatsRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseViewStats, error) {
+	return &pbactivity.ShowcaseViewStats{}, nil
+}
+func (m *mockActivityServiceClient) ListShowcaseViewStats(ctx context.Context, in *activitypb.ListShowcaseViewStatsRequest, opts ...grpc.CallOption) (*activitypb.ListShowcaseViewStatsResponse, error) {
+	return &activitypb.ListShowcaseViewStatsResponse{}, nil
+}
+
 // ensure interfaces are implemented
 var _ userpb.UserServiceClient = (*mockUserServiceClient)(nil)
 var _ activitypb.ActivityServiceClient = (*mockActivityServiceClient)(nil)

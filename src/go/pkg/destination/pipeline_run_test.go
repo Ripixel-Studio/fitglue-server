@@ -132,7 +132,7 @@ func TestUpdateStatus_EnqueuesNotificationOnSynced(t *testing.T) {
 
 	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"hevy-123", "", "Morning Run", "activity-1", logger, nil)
+		"hevy-123", "", "Morning Run", "activity-1", logger, nil, false)
 
 	n := pub.lastNotification(t)
 	if n == nil {
@@ -160,7 +160,7 @@ func TestUpdateStatus_EnqueuesNotificationOnPartial(t *testing.T) {
 
 	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
-		"", "API error", "Morning Run", "activity-2", logger, nil)
+		"", "API error", "Morning Run", "activity-2", logger, nil, false)
 
 	n := pub.lastNotification(t)
 	if n == nil {
@@ -170,6 +170,35 @@ func TestUpdateStatus_EnqueuesNotificationOnPartial(t *testing.T) {
 		t.Errorf("expected PIPELINE_FAILURE, got %v", n.Type)
 	}
 	if n.Title != "Partial Sync: Morning Run" {
+		t.Errorf("unexpected title: %s", n.Title)
+	}
+}
+
+// At the initial sync, an activity with a still-outstanding non-blocking input lands in
+// SYNCED_WITH_PENDING. That's a success (everything uploaded) — not a "Partial Sync" failure.
+func TestUpdateStatus_SyncedWithPendingIsSuccess(t *testing.T) {
+	pub := &MockPublisher{}
+	db := &MockDatabase{
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		},
+	}
+	logger := infra.NewLogger()
+
+	// All destinations succeed but a non-blocking input is still pending → SYNCED_WITH_PENDING.
+	// Initial sync (not an update post), so nonBlockingUpdate is false → notification fires.
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		"hevy-123", "", "Morning Run", "activity-1", logger, []string{"pending-1"}, false)
+
+	n := pub.lastNotification(t)
+	if n == nil {
+		t.Fatal("expected notification to be enqueued")
+	}
+	if n.Type != pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS {
+		t.Errorf("expected PIPELINE_SUCCESS for SYNCED_WITH_PENDING, got %v", n.Type)
+	}
+	if n.Title != "Activity Synced: Morning Run" {
 		t.Errorf("unexpected title: %s", n.Title)
 	}
 }
@@ -186,7 +215,7 @@ func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
 	// Only Hevy completes — Strava still pending → RUNNING → no notification
 	UpdateStatus(context.Background(), db, pub, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"hevy-123", "", "Morning Run", "activity-3", logger, nil)
+		"hevy-123", "", "Morning Run", "activity-3", logger, nil, false)
 
 	if len(pub.Published) != 0 {
 		t.Fatalf("expected 0 notifications while RUNNING, got %d", len(pub.Published))
@@ -200,7 +229,7 @@ func TestUpdateStatus_NilPublisher(t *testing.T) {
 	// Should not panic with nil publisher
 	UpdateStatus(context.Background(), db, nil, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-4", logger, nil)
+		"strava-123", "", "Morning Run", "activity-4", logger, nil, false)
 }
 
 func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
@@ -211,10 +240,75 @@ func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 	// Empty pipelineRunId → early return (legacy flow)
 	UpdateStatus(context.Background(), db, pub, "user1", "",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", "activity-5", logger, nil)
+		"strava-123", "", "Morning Run", "activity-5", logger, nil, false)
 
 	if len(pub.Published) != 0 {
 		t.Fatalf("expected 0 notifications for empty pipelineRunId, got %d", len(pub.Published))
+	}
+}
+
+// A successful update post triggered by a resolved non-blocking input must NOT re-notify —
+// the user was already notified at the initial sync.
+func TestUpdateStatus_SuppressesSuccessForNonBlockingUpdate(t *testing.T) {
+	pub := &MockPublisher{}
+	db := &MockDatabase{
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		},
+	}
+	logger := infra.NewLogger()
+
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		"hevy-123", "", "Morning Run", "activity-1", logger, nil, true)
+
+	if len(pub.Published) != 0 {
+		t.Fatalf("expected 0 notifications for a successful non-blocking update, got %d", len(pub.Published))
+	}
+}
+
+// SYNCED_WITH_PENDING (another non-blocking input still outstanding) is also a success state
+// for the resolved input, so a non-blocking update must not re-notify here either.
+func TestUpdateStatus_SuppressesSyncedWithPendingForNonBlockingUpdate(t *testing.T) {
+	pub := &MockPublisher{}
+	db := &MockDatabase{
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		},
+	}
+	logger := infra.NewLogger()
+
+	// A second non-blocking input still pending → SYNCED_WITH_PENDING.
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		"hevy-123", "", "Morning Run", "activity-1", logger, []string{"pending-2"}, true)
+
+	if len(pub.Published) != 0 {
+		t.Fatalf("expected 0 notifications for SYNCED_WITH_PENDING non-blocking update, got %d", len(pub.Published))
+	}
+}
+
+// A FAILED update post triggered by a non-blocking input is still worth notifying — the
+// suppression only applies to success states.
+func TestUpdateStatus_NotifiesFailureForNonBlockingUpdate(t *testing.T) {
+	pub := &MockPublisher{}
+	db := &MockDatabase{
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		},
+	}
+	logger := infra.NewLogger()
+
+	UpdateStatus(context.Background(), db, pub, "user1", "run1",
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
+		"", "API error", "Morning Run", "activity-2", logger, nil, true)
+
+	n := pub.lastNotification(t)
+	if n == nil {
+		t.Fatal("expected a failure notification even for a non-blocking update")
+	}
+	if n.Type != pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_FAILURE {
+		t.Errorf("expected PIPELINE_FAILURE, got %v", n.Type)
 	}
 }
 

@@ -41,7 +41,10 @@ type Database interface {
 //   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
 //   - nonBlockingPendingIDs: IDs of non-blocking pending inputs still awaiting user input
-func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger, nonBlockingPendingIDs []string) {
+//   - nonBlockingUpdate: true when this upload is an update post triggered by a resolved
+//     non-blocking input. The user was already notified at the initial sync, so a success
+//     notification is suppressed here — only a failure (PARTIAL) is worth notifying about.
+func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger, nonBlockingPendingIDs []string, nonBlockingUpdate bool) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
@@ -118,7 +121,14 @@ func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, 
 	if newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED ||
 		newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING ||
 		newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
-		sendSyncNotification(ctx, publisher, userId, activityName, activityId, newStatus, outcomes, logger)
+		// Update posts triggered by a resolved non-blocking input would otherwise re-notify
+		// on every resolution (the user already got the initial sync notification). Only the
+		// failure case (PARTIAL) is worth a second notification.
+		if nonBlockingUpdate && newStatus != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+			logger.Debug(ctx, "Suppressing success notification for non-blocking input update post", "pipeline_run_id", pipelineRunId, "status", newStatus.String())
+		} else {
+			sendSyncNotification(ctx, publisher, userId, activityName, activityId, newStatus, outcomes, logger)
+		}
 	}
 }
 
@@ -144,7 +154,11 @@ func sendSyncNotification(ctx context.Context, publisher shared.Publisher, userI
 	var notifType pbnotification.NotificationType
 	var title, body string
 
-	if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+	// SYNCED_WITH_PENDING means every destination synced successfully and only a
+	// non-blocking input is still outstanding (prompted via a separate PENDING_INPUT
+	// notification), so it's a success — not a "Partial Sync" failure.
+	if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED ||
+		status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING {
 		notifType = pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS
 		title = fmt.Sprintf("Activity Synced: %s", activityName)
 		body = fmt.Sprintf("Successfully synced to: %s", strings.Join(succeeded, ", "))
