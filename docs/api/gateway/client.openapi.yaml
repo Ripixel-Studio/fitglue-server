@@ -4033,6 +4033,8 @@ components:
                         - ACTIVITY_TYPE_YOGA
                     type: string
                     format: enum
+                showcaseId:
+                    type: string
             description: A photo surfaced in the roundup photo mosaic.
         RoundupPlace:
             type: object
@@ -4112,6 +4114,8 @@ components:
                         - ACTIVITY_TYPE_YOGA
                     type: string
                     format: enum
+                showcaseId:
+                    type: string
             description: A GPS route thumbnail surfaced in the roundup route wall.
         RoundupSettings:
             type: object

@@ -243,6 +243,7 @@ type RoundupPhoto struct {
 	ActivityTitle string                 `protobuf:"bytes,2,opt,name=activity_title,json=activityTitle,proto3" json:"activity_title,omitempty"`
 	Date          string                 `protobuf:"bytes,3,opt,name=date,proto3" json:"date,omitempty"` // e.g. "14 Sep"
 	ActivityType  ActivityType           `protobuf:"varint,4,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
+	ShowcaseId    string                 `protobuf:"bytes,5,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"` // source showcase activity, for click-through
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -305,6 +306,13 @@ func (x *RoundupPhoto) GetActivityType() ActivityType {
 	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 }
 
+func (x *RoundupPhoto) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
+}
+
 // A GPS route thumbnail surfaced in the roundup route wall.
 type RoundupRoute struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -313,6 +321,7 @@ type RoundupRoute struct {
 	Date           string                 `protobuf:"bytes,3,opt,name=date,proto3" json:"date,omitempty"` // e.g. "14 Sep"
 	DistanceMeters float64                `protobuf:"fixed64,4,opt,name=distance_meters,json=distanceMeters,proto3" json:"distance_meters,omitempty"`
 	ActivityType   ActivityType           `protobuf:"varint,5,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
+	ShowcaseId     string                 `protobuf:"bytes,6,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"` // source showcase activity, for click-through
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -380,6 +389,13 @@ func (x *RoundupRoute) GetActivityType() ActivityType {
 		return x.ActivityType
 	}
 	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
+func (x *RoundupRoute) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
 }
 
 // A place trained at during the period (from LocationSummary).
@@ -1040,18 +1056,22 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\x04date\x18\x06 \x01(\tR\x04date\x12J\n" +
 	"\ractivity_type\x18\a \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12\x1f\n" +
 	"\vshowcase_id\x18\b \x01(\tR\n" +
-	"showcaseId\"\xa7\x01\n" +
+	"showcaseId\"\xc8\x01\n" +
 	"\fRoundupPhoto\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12%\n" +
 	"\x0eactivity_title\x18\x02 \x01(\tR\ractivityTitle\x12\x12\n" +
 	"\x04date\x18\x03 \x01(\tR\x04date\x12J\n" +
-	"\ractivity_type\x18\x04 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\"\xe3\x01\n" +
+	"\ractivity_type\x18\x04 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12\x1f\n" +
+	"\vshowcase_id\x18\x05 \x01(\tR\n" +
+	"showcaseId\"\x84\x02\n" +
 	"\fRoundupRoute\x12#\n" +
 	"\rthumbnail_url\x18\x01 \x01(\tR\fthumbnailUrl\x12%\n" +
 	"\x0eactivity_title\x18\x02 \x01(\tR\ractivityTitle\x12\x12\n" +
 	"\x04date\x18\x03 \x01(\tR\x04date\x12'\n" +
 	"\x0fdistance_meters\x18\x04 \x01(\x01R\x0edistanceMeters\x12J\n" +
-	"\ractivity_type\x18\x05 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\"c\n" +
+	"\ractivity_type\x18\x05 \x01(\x0e2%.fitglue.models.activity.ActivityTypeR\factivityType\x12\x1f\n" +
+	"\vshowcase_id\x18\x06 \x01(\tR\n" +
+	"showcaseId\"c\n" +
 	"\fRoundupPlace\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acountry\x18\x02 \x01(\tR\acountry\x12%\n" +

@@ -183,6 +183,7 @@ func collectRoundupMedia(entries []*pbactivity.ShowcaseProfileEntry, galleryEnab
 					ActivityTitle: e.Title,
 					Date:          dateStr,
 					ActivityType:  e.ActivityType,
+					ShowcaseId:    e.ShowcaseId,
 				})
 				if len(photos) >= maxRoundupPhotos {
 					break
@@ -196,6 +197,7 @@ func collectRoundupMedia(entries []*pbactivity.ShowcaseProfileEntry, galleryEnab
 				Date:           dateStr,
 				DistanceMeters: e.DistanceMeters,
 				ActivityType:   e.ActivityType,
+				ShowcaseId:     e.ShowcaseId,
 			})
 		}
 	}

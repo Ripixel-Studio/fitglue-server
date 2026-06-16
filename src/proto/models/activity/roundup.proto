@@ -34,6 +34,7 @@ message RoundupPhoto {
   string activity_title = 2;
   string date = 3;          // e.g. "14 Sep"
   ActivityType activity_type = 4;
+  string showcase_id = 5;   // source showcase activity, for click-through
 }
 // A GPS route thumbnail surfaced in the roundup route wall.
 message RoundupRoute {
@@ -42,6 +43,7 @@ message RoundupRoute {
   string date = 3;          // e.g. "14 Sep"
   double distance_meters = 4;
   ActivityType activity_type = 5;
+  string showcase_id = 6;   // source showcase activity, for click-through
 }
 // A place trained at during the period (from LocationSummary).
 message RoundupPlace {

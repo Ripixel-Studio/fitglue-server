@@ -194,6 +194,7 @@ func TestCollectRoundupMedia(t *testing.T) {
 			ActivityType:      pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
 			StartTime:         mkTime(14),
 			DistanceMeters:    10000,
+			ShowcaseId:        "sc-run-1",
 			PhotoUrls:         []string{"https://cdn/p1.jpg", "", "https://cdn/p2.jpg"},
 			RouteThumbnailUrl: "https://cdn/route1.png",
 		},
@@ -217,11 +218,17 @@ func TestCollectRoundupMedia(t *testing.T) {
 		if photos[0].ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_RUN {
 			t.Errorf("photo activity type not carried: %v", photos[0].ActivityType)
 		}
+		if photos[0].ShowcaseId != "sc-run-1" {
+			t.Errorf("photo showcase_id not carried: %q", photos[0].ShowcaseId)
+		}
 		if len(routes) != 1 {
 			t.Fatalf("routes = %d, want 1", len(routes))
 		}
 		if routes[0].ThumbnailUrl != "https://cdn/route1.png" || routes[0].DistanceMeters != 10000 || routes[0].Date != "14 Sep" {
 			t.Errorf("unexpected route: %+v", routes[0])
+		}
+		if routes[0].ShowcaseId != "sc-run-1" {
+			t.Errorf("route showcase_id not carried: %q", routes[0].ShowcaseId)
 		}
 	})
 
