@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.54.0](https://github.com/FitGlue/server/compare/v16.53.0...v16.54.0) (2026-06-16)
+
+
+### Features
+
+* **roundup:** carry showcase_id on wall photos and routes ([afd17e3](https://github.com/FitGlue/server/commit/afd17e3cf7d3b0e00c1771310f93e04a6ed58c91))
+
 ## [16.53.0](https://github.com/FitGlue/server/compare/v16.52.0...v16.53.0) (2026-06-16)
 
 
