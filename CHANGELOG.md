@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.52.0](https://github.com/FitGlue/server/compare/v16.51.0...v16.52.0) (2026-06-16)
+
+
+### Features
+
+* add GetShowcaseRoundupViewStats RPC and related functionality ([a276786](https://github.com/FitGlue/server/commit/a276786244f504e2ef4d590bd0596ea2476bca99))
+
 ## [16.51.0](https://github.com/FitGlue/server/compare/v16.50.1...v16.51.0) (2026-06-16)
 
 
