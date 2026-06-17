@@ -494,6 +494,40 @@ func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId strin
 	return record, nil
 }
 
+// TryClaimDestinationCreate atomically claims the right to CREATE an activity on a destination.
+// Implemented as a read-then-set inside a Firestore transaction, so exactly one concurrent
+// caller wins. A claim older than ttl is treated as stale (a prior attempt that crashed before
+// releasing) and may be re-acquired, so a failed upload never wedges the destination forever.
+func (a *FirestoreAdapter) TryClaimDestinationCreate(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error) {
+	doc := a.Client.Collection("users").Doc(userId).Collection("destination_create_claims").Doc(claimKey)
+	acquired := false
+	err := a.Client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		acquired = false
+		snap, err := tx.Get(doc)
+		if err != nil && !isNotFound(err) {
+			return err
+		}
+		if snap != nil && snap.Exists() {
+			if claimedAt, ok := snap.Data()["claimed_at"].(time.Time); ok && time.Since(claimedAt) < ttl {
+				return nil // still held by another execution
+			}
+		}
+		acquired = true
+		return tx.Set(doc, map[string]interface{}{"claimed_at": time.Now()})
+	})
+	if err != nil {
+		return false, err
+	}
+	return acquired, nil
+}
+
+// ReleaseDestinationCreate clears a claim so a subsequent attempt can re-acquire it. Called when
+// a Create fails, so retries are not blocked. A missing doc is not an error.
+func (a *FirestoreAdapter) ReleaseDestinationCreate(ctx context.Context, userId string, claimKey string) error {
+	_, err := a.Client.Collection("users").Doc(userId).Collection("destination_create_claims").Doc(claimKey).Delete(ctx)
+	return err
+}
+
 // buildUploadedActivityID mirrors loopprevention.BuildUploadedActivityID without the import cycle.
 func buildUploadedActivityID(destination pbplugin.DestinationType, destinationId string) string {
 	destName := strings.TrimPrefix(destination.String(), "DESTINATION_")

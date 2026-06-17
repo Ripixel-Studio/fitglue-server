@@ -2,6 +2,7 @@ package shared
 
 import (
 	"context"
+	"time"
 
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 
@@ -86,6 +87,14 @@ type Database interface {
 	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
 	SetUploadedActivity(ctx context.Context, userId string, record *pbactivity.UploadedActivityRecord) error
 	GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error)
+
+	// Destination Create Claims (cross-execution dedup). TryClaimDestinationCreate atomically
+	// records an intent to CREATE an activity on a destination. Only the first caller within the
+	// TTL window gets acquired=true; concurrent or later callers get false until the claim is
+	// released or lapses. This stops two pipeline executions — e.g. two pending-input resumes
+	// resolved at the same instant — from both creating a duplicate (two Strava activities).
+	TryClaimDestinationCreate(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error)
+	ReleaseDestinationCreate(ctx context.Context, userId string, claimKey string) error
 
 	// Pipeline Runs (lifecycle tracking)
 	CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error

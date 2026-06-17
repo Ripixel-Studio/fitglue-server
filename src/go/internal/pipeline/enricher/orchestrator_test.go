@@ -152,6 +152,12 @@ func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, r
 func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
 	return nil, nil
 }
+func (m *MockDatabase) TryClaimDestinationCreate(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error) {
+	return true, nil
+}
+func (m *MockDatabase) ReleaseDestinationCreate(ctx context.Context, userId string, claimKey string) error {
+	return nil
+}
 func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error {
 	return nil
 }

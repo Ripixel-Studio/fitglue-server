@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -295,6 +296,7 @@ destinations:
 
 		var externalId string
 		var uploadErr error
+		var createClaimKey string
 
 		if effectiveIsUpdate {
 			// Pre-write bounceback record before Update so the webhook that follows
@@ -306,6 +308,24 @@ destinations:
 			}
 			uploadErr = uploader.Update(ctx, activityPayload, userRecord, pr)
 		} else {
+			// Cross-execution create guard: ensure only one pipeline execution creates this
+			// activity on this destination. Two pending-input resumes resolved at the same instant
+			// run as separate executions, so the per-execution priorOutcomes guard above can't see
+			// each other — without this claim they'd both Create (e.g. two Strava activities).
+			createClaimKey = destinationCreateClaimKey(destEnum, activityPayload)
+			if createClaimKey != "" {
+				acquired, claimErr := e.db.TryClaimDestinationCreate(ctx, payload.UserId, createClaimKey, destinationCreateClaimTTL)
+				if claimErr != nil {
+					// Fail open: a claim store hiccup must not block a legitimate upload. Strava's
+					// own FIT-hash dedup is the backstop in the rare double-create that results.
+					e.logger.Warn(ctx, "Destination create claim check failed, proceeding", "destination", destEnum.String(), "error", claimErr)
+					createClaimKey = ""
+				} else if !acquired {
+					e.logger.Info(ctx, "Skipping create — another execution is already creating this activity on this destination", "destination", destEnum.String(), "claim_key", createClaimKey)
+					continue destinations
+				}
+			}
+
 			// Pre-write a pending bounceback record before Create so the webhook cannot
 			// arrive before we know the destination ID. Keyed by startTime since the
 			// real destination ID is unknown until the API responds.
@@ -321,6 +341,13 @@ destinations:
 		}
 
 		if uploadErr != nil {
+			// Release the create claim so a retry can re-acquire it — otherwise a failed upload
+			// would wedge this destination until the claim's TTL lapses.
+			if createClaimKey != "" {
+				if relErr := e.db.ReleaseDestinationCreate(ctx, payload.UserId, createClaimKey); relErr != nil {
+					e.logger.Warn(ctx, "Failed to release destination create claim", "destination", destEnum.String(), "error", relErr)
+				}
+			}
 			e.logger.Error(ctx, "Destination uploader failed", "destination", destEnum.String(), "error", uploadErr)
 			var fgErr *fitglueerrors.FitGlueError
 			if errors.As(uploadErr, &fgErr) && fgErr.Code == fitglueerrors.CodeIntegrationAuthFailed {
@@ -396,6 +423,26 @@ func (e *UploadExecutor) storeBouncebackRecord(
 	if err := e.db.SetUploadedActivity(ctx, userID, record); err != nil {
 		e.logger.Warn(ctx, "Failed to store bounceback record", "destination", dest.String(), "destination_id", destinationID, "error", err)
 	}
+}
+
+// destinationCreateClaimTTL bounds how long a create claim is honored. Long enough to cover two
+// near-simultaneous pending-input resumes, short enough that an intentional later re-run isn't
+// blocked (those should use Update anyway).
+const destinationCreateClaimTTL = 5 * time.Minute
+
+// destinationCreateClaimKey builds the per-destination, per-source-activity claim key used to stop
+// concurrent executions from both creating. It is stable across executions because it derives from
+// the source activity's external ID (falling back to the FitGlue activity ID). Returns "" when no
+// identifier is available, in which case the caller skips the claim.
+func destinationCreateClaimKey(dest pbplugin.DestinationType, payload *pbevents.ActivityPayload) string {
+	id := payload.GetStandardizedActivity().GetExternalId()
+	if id == "" {
+		id = payload.GetActivityId()
+	}
+	if id == "" {
+		return ""
+	}
+	return strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_")) + ":" + id
 }
 
 // existingExternalID returns the destination-side activity ID that was created in a prior

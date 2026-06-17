@@ -3,11 +3,13 @@ package destination
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/domain/user"
 	"github.com/fitglue/server/src/go/pkg/testing/mocks"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
@@ -270,6 +272,68 @@ func TestUploadExecutor_Process(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Basic execution completed without panic or error.
+}
+
+// countingUploader records how many times Create is invoked, for the concurrent-create guard test.
+type countingUploader struct {
+	name        string
+	id          string
+	createCalls int32
+}
+
+func (m *countingUploader) Name() string { return m.name }
+func (m *countingUploader) Create(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record) (string, error) {
+	atomic.AddInt32(&m.createCalls, 1)
+	return m.id, nil
+}
+func (m *countingUploader) Update(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record, pipelineRun *pbpipeline.PipelineRun) error {
+	return nil
+}
+
+// TestUploadExecutor_ConcurrentResume_SingleCreate verifies the cross-execution create claim:
+// two resumes of the same activity (distinct pipeline execution IDs, as happens when two pending
+// inputs are resolved at once) must produce exactly one Create on the destination.
+func TestUploadExecutor_ConcurrentResume_SingleCreate(t *testing.T) {
+	registry := NewRegistry()
+	uploader := &countingUploader{name: "strava", id: "strava-1"}
+	registry.Register(pbplugin.DestinationType_DESTINATION_STRAVA, uploader)
+
+	userClient := &mockUserServiceClient{
+		GetProfileFunc: func(ctx context.Context, in *userpb.GetProfileRequest, opts ...grpc.CallOption) (*pbuser.UserProfile, error) {
+			return &pbuser.UserProfile{UserId: in.UserId}, nil
+		},
+	}
+	activityClient := &mockActivityServiceClient{}
+	// One shared DB so the claim written by the first execution is visible to the second.
+	db := &mocks.MockDatabase{}
+	publisher := &mocks.MockPublisher{}
+	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, publisher, infra.NewLogger())
+
+	run := func(execID string) {
+		payload := &pbevents.EnrichedActivityEvent{
+			UserId:              "user-1",
+			ActivityId:          "act-1",
+			PipelineExecutionId: &execID,
+			Destinations:        []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA},
+			ActivityData:        &pbactivity.StandardizedActivity{ExternalId: "ext-1"},
+		}
+		payloadBytes, err := protojson.Marshal(payload)
+		assert.NoError(t, err)
+		ce := event.New()
+		ce.SetID("test-" + execID)
+		ce.SetType("com.fitglue.event.enriched")
+		ce.SetSource("test")
+		ce.SetData("application/json", payloadBytes)
+		assert.NoError(t, executor.Process(context.Background(), &ce))
+	}
+
+	// Two separate executions for the same source activity.
+	run("exec-A")
+	run("exec-B")
+
+	if got := atomic.LoadInt32(&uploader.createCalls); got != 1 {
+		t.Errorf("expected exactly 1 Create across two executions, got %d", got)
+	}
 }
 
 func TestUploadExecutor_Process_GetProfileError_WritesFailure(t *testing.T) {

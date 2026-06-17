@@ -268,6 +268,15 @@ func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest
 		payload["useUpdateMethod"] = true
 	}
 
+	// Reuse the original run's execution ID so the resume continues the SAME logical pipeline
+	// run rather than minting a fresh UUID downstream. Without this, two pending inputs resolved
+	// at once produce two distinct execution IDs and the per-execution destination idempotency
+	// guards can't see each other, allowing duplicate creates (e.g. two Strava activities). It
+	// also keeps pipeline-run history coherent instead of spawning a new run per resume.
+	if run, runErr := s.store.FindPipelineRunByPendingInputId(ctx, req.UserId, req.PendingInputId); runErr == nil && run != nil && run.Id != "" {
+		payload["pipelineExecutionId"] = run.Id
+	}
+
 	// Re-serialize payload
 	updatedPayloadBytes, err := json.Marshal(payload)
 	if err != nil {

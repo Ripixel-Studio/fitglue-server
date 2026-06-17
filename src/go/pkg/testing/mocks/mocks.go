@@ -3,6 +3,8 @@ package mocks
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
@@ -35,6 +37,13 @@ type MockDatabase struct {
 
 	GetBoosterDataFunc func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error)
 	SetBoosterDataFunc func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error
+
+	// Destination create claims. Override TryClaimDestinationCreateFunc for custom behaviour;
+	// otherwise the mock tracks claims in-memory: the first claim of a key wins, repeats lose
+	// until released.
+	TryClaimDestinationCreateFunc func(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error)
+	claimMu                       sync.Mutex
+	claimedKeys                   map[string]bool
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
@@ -258,6 +267,30 @@ func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, r
 func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
 	// No-op for tests by default - return nil (not found)
 	return nil, nil
+}
+
+func (m *MockDatabase) TryClaimDestinationCreate(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error) {
+	if m.TryClaimDestinationCreateFunc != nil {
+		return m.TryClaimDestinationCreateFunc(ctx, userId, claimKey, ttl)
+	}
+	m.claimMu.Lock()
+	defer m.claimMu.Unlock()
+	if m.claimedKeys == nil {
+		m.claimedKeys = make(map[string]bool)
+	}
+	key := userId + "/" + claimKey
+	if m.claimedKeys[key] {
+		return false, nil
+	}
+	m.claimedKeys[key] = true
+	return true, nil
+}
+
+func (m *MockDatabase) ReleaseDestinationCreate(ctx context.Context, userId string, claimKey string) error {
+	m.claimMu.Lock()
+	defer m.claimMu.Unlock()
+	delete(m.claimedKeys, userId+"/"+claimKey)
+	return nil
 }
 
 // --- Pipeline Runs (lifecycle tracking) ---

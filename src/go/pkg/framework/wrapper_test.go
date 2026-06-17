@@ -2,6 +2,8 @@
 package framework
 
 import (
+	"time"
+
 	user "github.com/fitglue/server/src/go/pkg/domain/user"
 
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -148,6 +150,12 @@ func (m *MockDB) SetUploadedActivity(ctx context.Context, userId string, record 
 }
 func (m *MockDB) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
 	return nil, nil
+}
+func (m *MockDB) TryClaimDestinationCreate(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error) {
+	return true, nil
+}
+func (m *MockDB) ReleaseDestinationCreate(ctx context.Context, userId string, claimKey string) error {
+	return nil
 }
 func (m *MockDB) CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error {
 	return nil
