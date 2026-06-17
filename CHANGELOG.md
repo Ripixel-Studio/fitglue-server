@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.55.0](https://github.com/FitGlue/server/compare/v16.54.0...v16.55.0) (2026-06-17)
+
+
+### Features
+
+* **roundup:** record source session for each single-session peak ([551f87f](https://github.com/FitGlue/server/commit/551f87f6458568257b7e49760fc211bdd41132ea))
+
+
+### Bug Fixes
+
+* **activity:** skip undecodable pipeline runs instead of failing the list ([1aaee35](https://github.com/FitGlue/server/commit/1aaee3577cfcf3800bac43815ff657a8a478100c))
+* **roundup:** attribute PR callout to the right session, not the day ([cdb653c](https://github.com/FitGlue/server/commit/cdb653c6446d169662d099f16e12d989838d8165))
+
 ## [16.54.0](https://github.com/FitGlue/server/compare/v16.53.0...v16.54.0) (2026-06-16)
 
 
