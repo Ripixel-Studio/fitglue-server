@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.56.0](https://github.com/FitGlue/server/compare/v16.55.3...v16.56.0) (2026-06-17)
+
+
+### Features
+
+* **enricher:** add location-pinner to map titles to real places ([af80a28](https://github.com/FitGlue/server/commit/af80a28d41adb64c8b448f1e22d64ecb33e9705b))
+
 ### [16.55.3](https://github.com/FitGlue/server/compare/v16.55.2...v16.55.3) (2026-06-17)
 
 
