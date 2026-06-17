@@ -352,6 +352,7 @@ components:
                         - ENRICHER_PROVIDER_TEMPERATURE_SUMMARY
                         - ENRICHER_PROVIDER_BEST_EFFORTS
                         - ENRICHER_PROVIDER_HDROP
+                        - ENRICHER_PROVIDER_LOCATION_PINNER
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum

@@ -59,6 +59,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 	// Extract GPS coordinates from first record
 	var latitude, longitude float64
 	var hasGPS bool
+	var hintLabel string
 
 	for _, session := range activity.Sessions {
 		for _, lap := range session.Laps {
@@ -79,6 +80,23 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 		}
 	}
 
+	// Fall back to a pinned location hint (set by the location-pinner enricher) when the
+	// activity has no real GPS. If the hint carries a label (the place the user searched
+	// and selected), use it directly so the resolved name is the venue rather than a
+	// reverse-geocoded suburb — this is also what flows into roundup "places".
+	if !hasGPS && activity.HintLocation != nil &&
+		(activity.HintLocation.Latitude != 0 || activity.HintLocation.Longitude != 0) {
+		latitude = activity.HintLocation.Latitude
+		longitude = activity.HintLocation.Longitude
+		hasGPS = true
+		hintLabel = activity.HintLocation.LocationName
+		logger.Info("Using pinned location hint for location naming",
+			"latitude", latitude,
+			"longitude", longitude,
+			"label", hintLabel,
+		)
+	}
+
 	if !hasGPS {
 		logger.Info("No GPS data found for location naming enricher, skipping")
 		return &providers.EnrichmentResult{
@@ -91,94 +109,102 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 		}, nil
 	}
 
-	// Try to get location from cache first
-	cacheKey := fmt.Sprintf("%.4f,%.4f", latitude, longitude)
-	locationCacheMutex.RLock()
-	cachedLocation, cached := locationCache[cacheKey]
-	locationCacheMutex.RUnlock()
-
 	var locationName, cityName string
-	if cached {
-		logger.Info("Using cached location", "key", cacheKey, "location", cachedLocation)
-		// Parse cached value (format: "location|city")
-		parts := strings.SplitN(cachedLocation, "|", 2)
-		locationName = parts[0]
-		if len(parts) > 1 {
-			cityName = parts[1]
-		}
+
+	// If a pinned hint provided an explicit label, use it verbatim and skip geocoding —
+	// the user already told us the place name (e.g. "Code Fitness, Newark").
+	if hintLabel != "" {
+		locationName = hintLabel
+		logger.Info("Using pinned hint label as location name", "location", locationName)
 	} else {
-		// Rate limiting: ensure at least 1 second between requests
-		rateLimitMutex.Lock()
-		elapsed := time.Since(lastRequestTime)
-		if elapsed < time.Second {
-			time.Sleep(time.Second - elapsed)
+		// Try to get location from cache first
+		cacheKey := fmt.Sprintf("%.4f,%.4f", latitude, longitude)
+		locationCacheMutex.RLock()
+		cachedLocation, cached := locationCache[cacheKey]
+		locationCacheMutex.RUnlock()
+
+		if cached {
+			logger.Info("Using cached location", "key", cacheKey, "location", cachedLocation)
+			// Parse cached value (format: "location|city")
+			parts := strings.SplitN(cachedLocation, "|", 2)
+			locationName = parts[0]
+			if len(parts) > 1 {
+				cityName = parts[1]
+			}
+		} else {
+			// Rate limiting: ensure at least 1 second between requests
+			rateLimitMutex.Lock()
+			elapsed := time.Since(lastRequestTime)
+			if elapsed < time.Second {
+				time.Sleep(time.Second - elapsed)
+			}
+			lastRequestTime = time.Now()
+			rateLimitMutex.Unlock()
+
+			// Call Nominatim reverse geocode API
+			url := fmt.Sprintf(
+				"https://nominatim.openstreetmap.org/reverse?lat=%.6f&lon=%.6f&format=json&zoom=16",
+				latitude, longitude,
+			)
+
+			logger.Info("Fetching location data from Nominatim",
+				"latitude", latitude,
+				"longitude", longitude,
+				"url", url,
+			)
+
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			if err != nil {
+				logger.Error("Failed to create Nominatim request", "error", err)
+				return nil, &providers.RetryableError{Err: fmt.Errorf("failed to create request: %w", err)}
+			}
+
+			// Required by Nominatim usage policy
+			req.Header.Set("User-Agent", "FitGlue/1.0")
+
+			client := &http.Client{Timeout: 10 * time.Second}
+			resp, err := client.Do(req)
+			if err != nil {
+				logger.Error("Failed to fetch location data", "error", err)
+				return nil, &providers.RetryableError{Err: fmt.Errorf("nominatim API request failed: %w", err)}
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				logger.Error("Nominatim API returned non-200 status", "status", resp.StatusCode, "body", string(body))
+				return nil, &providers.RetryableError{Err: fmt.Errorf("nominatim API returned status %d", resp.StatusCode)}
+			}
+
+			// Parse response
+			var nominatimResp NominatimResponse
+			if err := json.NewDecoder(resp.Body).Decode(&nominatimResp); err != nil {
+				logger.Error("Failed to decode nominatim response", "error", err)
+				return &providers.EnrichmentResult{
+					Skipped:    true,
+					SkipReason: "Failed to parse location response",
+					Metadata: map[string]string{
+						"location_naming_status": "skipped",
+						"status_detail":          "Failed to parse location response",
+					},
+				}, nil
+			}
+
+			// Extract location name with priority: park/leisure > suburb > city
+			locationName = getLocationName(nominatimResp.Address)
+			cityName = getCityName(nominatimResp.Address)
+
+			// Cache the result
+			cacheValue := locationName + "|" + cityName
+			locationCacheMutex.Lock()
+			locationCache[cacheKey] = cacheValue
+			locationCacheMutex.Unlock()
+
+			logger.Info("Location resolved",
+				"location", locationName,
+				"city", cityName,
+			)
 		}
-		lastRequestTime = time.Now()
-		rateLimitMutex.Unlock()
-
-		// Call Nominatim reverse geocode API
-		url := fmt.Sprintf(
-			"https://nominatim.openstreetmap.org/reverse?lat=%.6f&lon=%.6f&format=json&zoom=16",
-			latitude, longitude,
-		)
-
-		logger.Info("Fetching location data from Nominatim",
-			"latitude", latitude,
-			"longitude", longitude,
-			"url", url,
-		)
-
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-		if err != nil {
-			logger.Error("Failed to create Nominatim request", "error", err)
-			return nil, &providers.RetryableError{Err: fmt.Errorf("failed to create request: %w", err)}
-		}
-
-		// Required by Nominatim usage policy
-		req.Header.Set("User-Agent", "FitGlue/1.0")
-
-		client := &http.Client{Timeout: 10 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			logger.Error("Failed to fetch location data", "error", err)
-			return nil, &providers.RetryableError{Err: fmt.Errorf("nominatim API request failed: %w", err)}
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Body)
-			logger.Error("Nominatim API returned non-200 status", "status", resp.StatusCode, "body", string(body))
-			return nil, &providers.RetryableError{Err: fmt.Errorf("nominatim API returned status %d", resp.StatusCode)}
-		}
-
-		// Parse response
-		var nominatimResp NominatimResponse
-		if err := json.NewDecoder(resp.Body).Decode(&nominatimResp); err != nil {
-			logger.Error("Failed to decode nominatim response", "error", err)
-			return &providers.EnrichmentResult{
-				Skipped:    true,
-				SkipReason: "Failed to parse location response",
-				Metadata: map[string]string{
-					"location_naming_status": "skipped",
-					"status_detail":          "Failed to parse location response",
-				},
-			}, nil
-		}
-
-		// Extract location name with priority: park/leisure > suburb > city
-		locationName = getLocationName(nominatimResp.Address)
-		cityName = getCityName(nominatimResp.Address)
-
-		// Cache the result
-		cacheValue := locationName + "|" + cityName
-		locationCacheMutex.Lock()
-		locationCache[cacheKey] = cacheValue
-		locationCacheMutex.Unlock()
-
-		logger.Info("Location resolved",
-			"location", locationName,
-			"city", cityName,
-		)
 	}
 
 	// Get config options

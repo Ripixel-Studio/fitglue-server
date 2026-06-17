@@ -688,6 +688,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		if res.HybridRaceSummary != nil {
 			currentActivity.HybridRaceSummary = res.HybridRaceSummary
 		}
+		// Transient location hint (set by location-pinner) so downstream enrichers
+		// (weather, location-naming) can use it as a GPS fallback. Not written to
+		// records, so it never appears in the generated FIT/uploaded track.
+		if res.HintLocation != nil {
+			currentActivity.HintLocation = res.HintLocation
+		}
 
 		// Apply description to slot (preserves pipeline ordering for deferred enrichers)
 		logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name())

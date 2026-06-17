@@ -142,8 +142,13 @@ type StandardizedActivity struct {
 	HybridRaceSummary *HybridRaceSummary     `protobuf:"bytes,13,opt,name=hybrid_race_summary,json=hybridRaceSummary,proto3,oneof" json:"hybrid_race_summary,omitempty"`
 	Id                string                 `protobuf:"bytes,14,opt,name=id,proto3" json:"id,omitempty"`
 	PipelineRunStatus string                 `protobuf:"bytes,15,opt,name=pipeline_run_status,json=pipelineRunStatus,proto3" json:"pipeline_run_status,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Transient, pipeline-only location hint set by the location-pinner enricher when an
+	// activity has no GPS. Consumed by the weather and location-naming enrichers as a fallback.
+	// NOT written to records and NOT serialized into the generated FIT file, so it never produces
+	// an uploaded GPS track/map on destinations (Strava, TrainingPeaks, etc.).
+	HintLocation  *LocationSummary `protobuf:"bytes,16,opt,name=hint_location,json=hintLocation,proto3,oneof" json:"hint_location,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StandardizedActivity) Reset() {
@@ -279,6 +284,13 @@ func (x *StandardizedActivity) GetPipelineRunStatus() string {
 		return x.PipelineRunStatus
 	}
 	return ""
+}
+
+func (x *StandardizedActivity) GetHintLocation() *LocationSummary {
+	if x != nil {
+		return x.HintLocation
+	}
+	return nil
 }
 
 type HybridRaceSummary struct {
@@ -1081,7 +1093,7 @@ var File_models_activity_standardized_proto protoreflect.FileDescriptor
 
 const file_models_activity_standardized_proto_rawDesc = "" +
 	"\n" +
-	"\"models/activity/standardized.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\xfd\x05\n" +
+	"\"models/activity/standardized.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a!models/activity/enrichments.proto\"\xe3\x06\n" +
 	"\x14StandardizedActivity\x12?\n" +
 	"\x06source\x18\x01 \x01(\x0e2'.fitglue.models.activity.ActivitySourceR\x06source\x12\x1f\n" +
 	"\vexternal_id\x18\x02 \x01(\tR\n" +
@@ -1100,10 +1112,12 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\aworkout\x18\f \x01(\v2*.fitglue.models.activity.WorkoutDefinitionH\x00R\aworkout\x88\x01\x01\x12_\n" +
 	"\x13hybrid_race_summary\x18\r \x01(\v2*.fitglue.models.activity.HybridRaceSummaryH\x01R\x11hybridRaceSummary\x88\x01\x01\x12\x0e\n" +
 	"\x02id\x18\x0e \x01(\tR\x02id\x12.\n" +
-	"\x13pipeline_run_status\x18\x0f \x01(\tR\x11pipelineRunStatusB\n" +
+	"\x13pipeline_run_status\x18\x0f \x01(\tR\x11pipelineRunStatus\x12R\n" +
+	"\rhint_location\x18\x10 \x01(\v2(.fitglue.models.activity.LocationSummaryH\x02R\fhintLocation\x88\x01\x01B\n" +
 	"\n" +
 	"\b_workoutB\x16\n" +
-	"\x14_hybrid_race_summary\"[\n" +
+	"\x14_hybrid_race_summaryB\x10\n" +
+	"\x0e_hint_location\"[\n" +
 	"\x11HybridRaceSummary\x12F\n" +
 	"\bsegments\x18\x01 \x03(\v2*.fitglue.models.activity.HybridRaceSegmentR\bsegments\"\xba\x01\n" +
 	"\x11HybridRaceSegment\x129\n" +
@@ -1248,6 +1262,7 @@ var file_models_activity_standardized_proto_goTypes = []any{
 	(ActivitySource)(0),           // 11: fitglue.models.activity.ActivitySource
 	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
 	(ActivityType)(0),             // 13: fitglue.models.activity.ActivityType
+	(*LocationSummary)(nil),       // 14: fitglue.models.activity.LocationSummary
 }
 var file_models_activity_standardized_proto_depIdxs = []int32{
 	11, // 0: fitglue.models.activity.StandardizedActivity.source:type_name -> fitglue.models.activity.ActivitySource
@@ -1257,24 +1272,25 @@ var file_models_activity_standardized_proto_depIdxs = []int32{
 	4,  // 4: fitglue.models.activity.StandardizedActivity.time_markers:type_name -> fitglue.models.activity.TimeMarker
 	9,  // 5: fitglue.models.activity.StandardizedActivity.workout:type_name -> fitglue.models.activity.WorkoutDefinition
 	2,  // 6: fitglue.models.activity.StandardizedActivity.hybrid_race_summary:type_name -> fitglue.models.activity.HybridRaceSummary
-	3,  // 7: fitglue.models.activity.HybridRaceSummary.segments:type_name -> fitglue.models.activity.HybridRaceSegment
-	12, // 8: fitglue.models.activity.HybridRaceSegment.start_time:type_name -> google.protobuf.Timestamp
-	12, // 9: fitglue.models.activity.TimeMarker.timestamp:type_name -> google.protobuf.Timestamp
-	12, // 10: fitglue.models.activity.Session.start_time:type_name -> google.protobuf.Timestamp
-	6,  // 11: fitglue.models.activity.Session.laps:type_name -> fitglue.models.activity.Lap
-	8,  // 12: fitglue.models.activity.Session.strength_sets:type_name -> fitglue.models.activity.StrengthSet
-	12, // 13: fitglue.models.activity.Lap.start_time:type_name -> google.protobuf.Timestamp
-	7,  // 14: fitglue.models.activity.Lap.records:type_name -> fitglue.models.activity.Record
-	12, // 15: fitglue.models.activity.Record.timestamp:type_name -> google.protobuf.Timestamp
-	12, // 16: fitglue.models.activity.StrengthSet.start_time:type_name -> google.protobuf.Timestamp
-	0,  // 17: fitglue.models.activity.StrengthSet.primary_muscle_group:type_name -> fitglue.models.activity.MuscleGroup
-	0,  // 18: fitglue.models.activity.StrengthSet.secondary_muscle_groups:type_name -> fitglue.models.activity.MuscleGroup
-	10, // 19: fitglue.models.activity.WorkoutDefinition.steps:type_name -> fitglue.models.activity.WorkoutStep
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	14, // 7: fitglue.models.activity.StandardizedActivity.hint_location:type_name -> fitglue.models.activity.LocationSummary
+	3,  // 8: fitglue.models.activity.HybridRaceSummary.segments:type_name -> fitglue.models.activity.HybridRaceSegment
+	12, // 9: fitglue.models.activity.HybridRaceSegment.start_time:type_name -> google.protobuf.Timestamp
+	12, // 10: fitglue.models.activity.TimeMarker.timestamp:type_name -> google.protobuf.Timestamp
+	12, // 11: fitglue.models.activity.Session.start_time:type_name -> google.protobuf.Timestamp
+	6,  // 12: fitglue.models.activity.Session.laps:type_name -> fitglue.models.activity.Lap
+	8,  // 13: fitglue.models.activity.Session.strength_sets:type_name -> fitglue.models.activity.StrengthSet
+	12, // 14: fitglue.models.activity.Lap.start_time:type_name -> google.protobuf.Timestamp
+	7,  // 15: fitglue.models.activity.Lap.records:type_name -> fitglue.models.activity.Record
+	12, // 16: fitglue.models.activity.Record.timestamp:type_name -> google.protobuf.Timestamp
+	12, // 17: fitglue.models.activity.StrengthSet.start_time:type_name -> google.protobuf.Timestamp
+	0,  // 18: fitglue.models.activity.StrengthSet.primary_muscle_group:type_name -> fitglue.models.activity.MuscleGroup
+	0,  // 19: fitglue.models.activity.StrengthSet.secondary_muscle_groups:type_name -> fitglue.models.activity.MuscleGroup
+	10, // 20: fitglue.models.activity.WorkoutDefinition.steps:type_name -> fitglue.models.activity.WorkoutStep
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_standardized_proto_init() }
@@ -1283,6 +1299,7 @@ func file_models_activity_standardized_proto_init() {
 		return
 	}
 	file_models_activity_source_proto_init()
+	file_models_activity_enrichments_proto_init()
 	file_models_activity_standardized_proto_msgTypes[0].OneofWrappers = []any{}
 	file_models_activity_standardized_proto_msgTypes[4].OneofWrappers = []any{}
 	file_models_activity_standardized_proto_msgTypes[6].OneofWrappers = []any{}

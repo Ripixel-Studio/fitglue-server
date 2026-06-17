@@ -4,6 +4,7 @@ package fitglue.models.activity;
 
 import "google/protobuf/timestamp.proto";
 import "models/activity/source.proto";
+import "models/activity/enrichments.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
 
@@ -28,6 +29,12 @@ message StandardizedActivity {
 
   string id = 14;
   string pipeline_run_status = 15;
+
+  // Transient, pipeline-only location hint set by the location-pinner enricher when an
+  // activity has no GPS. Consumed by the weather and location-naming enrichers as a fallback.
+  // NOT written to records and NOT serialized into the generated FIT file, so it never produces
+  // an uploaded GPS track/map on destinations (Strava, TrainingPeaks, etc.).
+  optional LocationSummary hint_location = 16;
 }
 
 message HybridRaceSummary {

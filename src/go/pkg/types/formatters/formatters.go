@@ -799,6 +799,8 @@ func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 		return "Best Efforts"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HDROP:
 		return "Hdrop"
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_PINNER:
+		return "Location Pinner"
 	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -948,6 +950,9 @@ func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 		"best efforts":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_BEST_EFFORTS,
 		"enricher_provider_hdrop":                pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HDROP,
 		"hdrop":                                  pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HDROP,
+		"enricher_provider_location_pinner":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_PINNER,
+		"location_pinner":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_PINNER,
+		"location pinner":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_PINNER,
 		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}
@@ -1070,6 +1075,8 @@ func FormatConfigFieldType(value pbplugin.ConfigFieldType) string {
 		return "Key Value Map"
 	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT:
 		return "Dynamic Select"
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_LOCATION_SEARCH:
+		return "Location Search"
 	default:
 		return "String"
 	}
@@ -1083,25 +1090,28 @@ func ParseConfigFieldType(input string) pbplugin.ConfigFieldType {
 
 	// Case-insensitive lookup via display names, short names, and aliases
 	lookup := map[string]pbplugin.ConfigFieldType{
-		"config_field_type_unspecified":    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
-		"unspecified":                      pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
-		"config_field_type_string":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-		"string":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-		"config_field_type_number":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
-		"number":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
-		"config_field_type_boolean":        pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
-		"boolean":                          pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
-		"config_field_type_select":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-		"select":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-		"config_field_type_multi_select":   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-		"multi_select":                     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-		"multi select":                     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-		"config_field_type_key_value_map":  pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
-		"key_value_map":                    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
-		"key value map":                    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
-		"config_field_type_dynamic_select": pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
-		"dynamic_select":                   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
-		"dynamic select":                   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+		"config_field_type_unspecified":     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
+		"unspecified":                       pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
+		"config_field_type_string":          pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
+		"string":                            pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
+		"config_field_type_number":          pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
+		"number":                            pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
+		"config_field_type_boolean":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
+		"boolean":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
+		"config_field_type_select":          pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
+		"select":                            pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
+		"config_field_type_multi_select":    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+		"multi_select":                      pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+		"multi select":                      pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+		"config_field_type_key_value_map":   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+		"key_value_map":                     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+		"key value map":                     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+		"config_field_type_dynamic_select":  pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+		"dynamic_select":                    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+		"dynamic select":                    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+		"config_field_type_location_search": pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_LOCATION_SEARCH,
+		"location_search":                   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_LOCATION_SEARCH,
+		"location search":                   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_LOCATION_SEARCH,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))

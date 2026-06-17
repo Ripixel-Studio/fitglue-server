@@ -68,6 +68,14 @@ type EnrichmentResult struct {
 	// into EnrichedActivityEvent.Enrichments. Providers that don't produce a
 	// particular sub-message leave it nil; the orchestrator skips nil fields.
 	Enrichments *pbactivity.ActivityEnrichments
+
+	// HintLocation sets a transient, pipeline-only location on the activity (the
+	// location-pinner enricher uses this for GPS-less activities). The orchestrator
+	// copies it onto currentActivity.HintLocation so downstream enrichers (weather,
+	// location-naming) can use it as a GPS fallback. It is never written to records
+	// and never serialized into the generated FIT file, so it produces no uploaded
+	// GPS track/map on destinations.
+	HintLocation *pbactivity.LocationSummary
 }
 
 // Provider defines the interface for an enrichment service.

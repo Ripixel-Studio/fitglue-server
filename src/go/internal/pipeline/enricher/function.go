@@ -56,6 +56,7 @@ import (
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/ical_title"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/intervals"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/location_naming"
+	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/location_pinner"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/logic_gate"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/manual_workout_entry"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/mock"

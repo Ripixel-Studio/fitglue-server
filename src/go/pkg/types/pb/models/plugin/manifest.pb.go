@@ -138,14 +138,15 @@ func (PipelineStage) EnumDescriptor() ([]byte, []int) {
 type ConfigFieldType int32
 
 const (
-	ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED    ConfigFieldType = 0
-	ConfigFieldType_CONFIG_FIELD_TYPE_STRING         ConfigFieldType = 1
-	ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER         ConfigFieldType = 2
-	ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN        ConfigFieldType = 3
-	ConfigFieldType_CONFIG_FIELD_TYPE_SELECT         ConfigFieldType = 4
-	ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT   ConfigFieldType = 5
-	ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP  ConfigFieldType = 6
-	ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT ConfigFieldType = 7
+	ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED     ConfigFieldType = 0
+	ConfigFieldType_CONFIG_FIELD_TYPE_STRING          ConfigFieldType = 1
+	ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER          ConfigFieldType = 2
+	ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN         ConfigFieldType = 3
+	ConfigFieldType_CONFIG_FIELD_TYPE_SELECT          ConfigFieldType = 4
+	ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT    ConfigFieldType = 5
+	ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP   ConfigFieldType = 6
+	ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT  ConfigFieldType = 7
+	ConfigFieldType_CONFIG_FIELD_TYPE_LOCATION_SEARCH ConfigFieldType = 8 // Title→place rules with a Nominatim place-search picker
 )
 
 // Enum value maps for ConfigFieldType.
@@ -159,16 +160,18 @@ var (
 		5: "CONFIG_FIELD_TYPE_MULTI_SELECT",
 		6: "CONFIG_FIELD_TYPE_KEY_VALUE_MAP",
 		7: "CONFIG_FIELD_TYPE_DYNAMIC_SELECT",
+		8: "CONFIG_FIELD_TYPE_LOCATION_SEARCH",
 	}
 	ConfigFieldType_value = map[string]int32{
-		"CONFIG_FIELD_TYPE_UNSPECIFIED":    0,
-		"CONFIG_FIELD_TYPE_STRING":         1,
-		"CONFIG_FIELD_TYPE_NUMBER":         2,
-		"CONFIG_FIELD_TYPE_BOOLEAN":        3,
-		"CONFIG_FIELD_TYPE_SELECT":         4,
-		"CONFIG_FIELD_TYPE_MULTI_SELECT":   5,
-		"CONFIG_FIELD_TYPE_KEY_VALUE_MAP":  6,
-		"CONFIG_FIELD_TYPE_DYNAMIC_SELECT": 7,
+		"CONFIG_FIELD_TYPE_UNSPECIFIED":     0,
+		"CONFIG_FIELD_TYPE_STRING":          1,
+		"CONFIG_FIELD_TYPE_NUMBER":          2,
+		"CONFIG_FIELD_TYPE_BOOLEAN":         3,
+		"CONFIG_FIELD_TYPE_SELECT":          4,
+		"CONFIG_FIELD_TYPE_MULTI_SELECT":    5,
+		"CONFIG_FIELD_TYPE_KEY_VALUE_MAP":   6,
+		"CONFIG_FIELD_TYPE_DYNAMIC_SELECT":  7,
+		"CONFIG_FIELD_TYPE_LOCATION_SEARCH": 8,
 	}
 )
 
@@ -1369,7 +1372,7 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\x16PIPELINE_STAGE_METRICS\x10\x03\x12\x1d\n" +
 	"\x19PIPELINE_STAGE_CONTEXT_AI\x10\x04\x12\x18\n" +
 	"\x14PIPELINE_STAGE_INPUT\x10\x05\x12\x16\n" +
-	"\x12PIPELINE_STAGE_VIZ\x10\x06*\x9c\x02\n" +
+	"\x12PIPELINE_STAGE_VIZ\x10\x06*\xc3\x02\n" +
 	"\x0fConfigFieldType\x12!\n" +
 	"\x1dCONFIG_FIELD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18CONFIG_FIELD_TYPE_STRING\x10\x01\x12\x1c\n" +
@@ -1378,7 +1381,8 @@ const file_models_plugin_manifest_proto_rawDesc = "" +
 	"\x18CONFIG_FIELD_TYPE_SELECT\x10\x04\x12\"\n" +
 	"\x1eCONFIG_FIELD_TYPE_MULTI_SELECT\x10\x05\x12#\n" +
 	"\x1fCONFIG_FIELD_TYPE_KEY_VALUE_MAP\x10\x06\x12$\n" +
-	" CONFIG_FIELD_TYPE_DYNAMIC_SELECT\x10\a*\xc9\x01\n" +
+	" CONFIG_FIELD_TYPE_DYNAMIC_SELECT\x10\a\x12%\n" +
+	"!CONFIG_FIELD_TYPE_LOCATION_SEARCH\x10\b*\xc9\x01\n" +
 	"\x13IntegrationAuthType\x12%\n" +
 	"!INTEGRATION_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bINTEGRATION_AUTH_TYPE_OAUTH\x10\x01\x12!\n" +

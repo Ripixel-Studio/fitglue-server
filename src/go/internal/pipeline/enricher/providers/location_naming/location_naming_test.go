@@ -5,6 +5,8 @@ import (
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 
+	"context"
+	"log/slog"
 	"testing"
 )
 
@@ -126,5 +128,46 @@ func TestProviderMetadata(t *testing.T) {
 
 	if provider.ProviderType() != pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING {
 		t.Errorf("ProviderType() = %v, want ENRICHER_PROVIDER_LOCATION_NAMING", provider.ProviderType())
+	}
+}
+
+// TestEnrich_UsesPinnedHintLabel verifies that when an activity has no record GPS but
+// carries a location hint with a label (set by the location-pinner enricher), the
+// resolved location name is the hint label verbatim (no network/geocoding) and is
+// surfaced via Enrichments.Location so it rolls up into roundup "places".
+func TestEnrich_UsesPinnedHintLabel(t *testing.T) {
+	provider := NewLocationNaming()
+	act := &pbactivity.StandardizedActivity{
+		Name: "Evening Pilates Class",
+		Type: pbactivity.ActivityType_ACTIVITY_TYPE_YOGA,
+		Sessions: []*pbactivity.Session{
+			{TotalElapsedTime: 1800},
+		},
+		HintLocation: &pbactivity.LocationSummary{
+			Latitude:     52.99,
+			Longitude:    -0.78,
+			LocationName: "Anasa Fernwood",
+		},
+	}
+
+	res, err := provider.Enrich(context.Background(), slog.Default(), act, nil, map[string]string{"mode": "title"}, true)
+	if err != nil {
+		t.Fatalf("Enrich returned error: %v", err)
+	}
+	if res.Skipped {
+		t.Fatalf("expected enrichment, got skip: %s", res.SkipReason)
+	}
+	if res.Enrichments == nil || res.Enrichments.Location == nil {
+		t.Fatalf("expected Enrichments.Location to be set, got %+v", res.Enrichments)
+	}
+	if got := res.Enrichments.Location.LocationName; got != "Anasa Fernwood" {
+		t.Errorf("expected location name from hint label, got %q", got)
+	}
+	if res.Enrichments.Location.Latitude != 52.99 || res.Enrichments.Location.Longitude != -0.78 {
+		t.Errorf("expected hint coords on Enrichments.Location, got (%v,%v)",
+			res.Enrichments.Location.Latitude, res.Enrichments.Location.Longitude)
+	}
+	if res.Name == "" {
+		t.Error("expected a generated title in title mode")
 	}
 }

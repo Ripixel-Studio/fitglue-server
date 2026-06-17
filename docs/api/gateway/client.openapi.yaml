@@ -2281,6 +2281,7 @@ components:
                         - CONFIG_FIELD_TYPE_MULTI_SELECT
                         - CONFIG_FIELD_TYPE_KEY_VALUE_MAP
                         - CONFIG_FIELD_TYPE_DYNAMIC_SELECT
+                        - CONFIG_FIELD_TYPE_LOCATION_SEARCH
                     type: string
                     format: enum
                 required:
@@ -2514,6 +2515,7 @@ components:
                         - ENRICHER_PROVIDER_TEMPERATURE_SUMMARY
                         - ENRICHER_PROVIDER_BEST_EFFORTS
                         - ENRICHER_PROVIDER_HDROP
+                        - ENRICHER_PROVIDER_LOCATION_PINNER
                         - ENRICHER_PROVIDER_MOCK
                     type: string
                     format: enum
@@ -5082,6 +5084,14 @@ components:
                     type: string
                 pipelineRunStatus:
                     type: string
+                hintLocation:
+                    allOf:
+                        - $ref: '#/components/schemas/LocationSummary'
+                    description: |-
+                        Transient, pipeline-only location hint set by the location-pinner enricher when an
+                         activity has no GPS. Consumed by the weather and location-naming enrichers as a fallback.
+                         NOT written to records and NOT serialized into the generated FIT file, so it never produces
+                         an uploaded GPS track/map on destinations (Strava, TrainingPeaks, etc.).
         Status:
             type: object
             properties:

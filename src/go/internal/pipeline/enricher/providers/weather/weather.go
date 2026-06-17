@@ -68,6 +68,20 @@ func (p *Weather) Enrich(ctx context.Context, logger *slog.Logger, activity *pba
 		}
 	}
 
+	// Fall back to a pinned location hint (set by the location-pinner enricher) when the
+	// activity has no real GPS. This lets indoor/GPS-less activities still get weather.
+	if !hasGPS && activity.HintLocation != nil &&
+		(activity.HintLocation.Latitude != 0 || activity.HintLocation.Longitude != 0) {
+		latitude = activity.HintLocation.Latitude
+		longitude = activity.HintLocation.Longitude
+		hasGPS = true
+		logger.Info("Using pinned location hint for weather",
+			"latitude", latitude,
+			"longitude", longitude,
+			"label", activity.HintLocation.LocationName,
+		)
+	}
+
 	if !hasGPS {
 		logger.Info("No GPS data found for weather enricher, skipping")
 		return &providers.EnrichmentResult{

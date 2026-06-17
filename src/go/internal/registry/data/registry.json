@@ -1322,6 +1322,70 @@
       "stage": 4
     },
     {
+      "id": "location-pinner",
+      "type": 2,
+      "name": "Location Pinner",
+      "description": "Maps activities to a real place by title keyword, so GPS-less workouts (gym classes, home sessions) still get weather and location naming",
+      "icon": "📌",
+      "enabled": true,
+      "requiredIntegrations": [],
+      "configSchema": [
+        {
+          "key": "location_rules",
+          "label": "Title → Location Rules",
+          "description": "For each rule, enter a title keyword to match (case-insensitive), then search for and select the real place it happens at.",
+          "fieldType": 8,
+          "required": true,
+          "defaultValue": "",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        },
+        {
+          "key": "force",
+          "label": "Force Override",
+          "description": "Apply the pinned location even if the activity already has GPS (off by default so real tracks are never overwritten)",
+          "fieldType": 3,
+          "required": false,
+          "defaultValue": "false",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        }
+      ],
+      "marketingDescription": "\n### Pin Indoor Workouts to a Real Place\nA lot of activities are tracked without GPS — gym classes, home strength sessions, Pilates — but they always happen at the same spot. Location Pinner matches an activity by a keyword in its title and attaches the real-world place you train at, so the rest of your pipeline can do its job.\n\n### How it works\nAdd a rule for each regular activity (e.g. \"Hyrox Class\", \"Pilates Class\"), search for the venue, and select it. When a matching activity has no GPS of its own, the pinned location is used by the **Weather** and **Location Naming** enrichers and rolls up into your roundups — without ever drawing a GPS track or map on Strava. Order this booster **before** Weather and Location Naming. Real GPS tracks (and locations set by Parkrun) are never overwritten.\n  ",
+      "features": [
+        "✅ Match activities by title keyword (case-insensitive)",
+        "✅ Search and select real places, multiple rules per booster",
+        "✅ Feeds Weather + Location Naming for indoor/GPS-less workouts",
+        "✅ Rolls up into roundup places & weather",
+        "✅ Never adds a GPS track/map to uploads",
+        "✅ Never overrides real GPS or an earlier enricher's location"
+      ],
+      "transformations": [
+        {
+          "field": "location",
+          "label": "Pinned Location",
+          "before": "Pilates Class\nNo location",
+          "after": "Pilates Class\n📍 Anasa Fernwood (used by Weather & Location Naming)",
+          "visualType": "",
+          "afterHtml": ""
+        }
+      ],
+      "useCases": [
+        "Get weather on indoor gym classes",
+        "Name home workouts by where they happen",
+        "See your regular training venues in roundups"
+      ],
+      "category": "data",
+      "sortOrder": 2,
+      "isPremium": false,
+      "popularityScore": 60,
+      "allowMultipleInstances": true,
+      "enricherProviderType": 47,
+      "stage": 3
+    },
+    {
       "id": "parkrun",
       "type": 2,
       "name": "Parkrun",
