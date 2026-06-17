@@ -462,6 +462,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		enricherConfig["activity_id"] = activityId                         // For pending input linking
 		enricherConfig["external_id"] = currentActivity.GetExternalId()    // For same-source dedup
 		enricherConfig["is_repost"] = strconv.FormatBool(payload.IsRepost) // For repost guards
+		enricherConfig["is_resume"] = strconv.FormatBool(isResumeMode)     // Re-arm data-lag retries on resume
 
 		// Clear stale pending inputs when re-running (not resuming)
 		// This allows users to provide different input on a fresh re-run.

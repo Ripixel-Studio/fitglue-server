@@ -158,11 +158,13 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	alignmentMetadata := make(map[string]string)
 
 	if hasGPSData(activity) {
-		// Use elastic matching for GPS+HR alignment
-		logger.Info("GPS data detected, applying elastic HR alignment")
+		// Align HR to GPS by absolute timestamp (see providers.AlignTimeSeries).
+		logger.Info("GPS data detected, applying absolute-timestamp HR alignment")
 
-		// Convert HR response to timed samples
-		hrSamples := providers.ConvertHRResponseToSamples(hrResponse.ActivitiesHeartIntraday.Dataset, startTime)
+		// Convert HR response to timed samples. Use the start time in the Fitbit profile
+		// timezone (the frame Fitbit returns clock times in) so the samples land on the same
+		// real-time line as the UTC GPS timestamps — absolute-timestamp alignment depends on it.
+		hrSamples := providers.ConvertHRResponseToSamples(hrResponse.ActivitiesHeartIntraday.Dataset, startTimeLocal)
 
 		// Extract GPS timestamps from activity records
 		gpsTimestamps := extractGPSTimestamps(activity)
@@ -226,9 +228,17 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	timeSinceEnd := time.Since(endTime)
 	isRecent := timeSinceEnd < 1*time.Hour
 
+	// On resume the activity is usually no longer "recent" (it sat paused as a pending input),
+	// so the recency gate below would normally skip the lag retry and accept whatever partial
+	// data Fitbit has synced so far — which then gets aligned with gaps (no stretching) but
+	// still misses HR Fitbit simply hadn't delivered yet. Re-arm the retry on resume so the lag
+	// queue gives Fitbit time to finish syncing before we commit to partial coverage.
+	isResume := inputs["is_resume"] == "true"
+	requireCoverage := isRecent || isResume
+
 	var lagErr error
-	if (!hasStart || !hasEnd) && isRecent {
-		reason := fmt.Sprintf("incomplete data (start:%v end:%v) for recent activity (%v ago)", hasStart, hasEnd, timeSinceEnd.Round(time.Second))
+	if (!hasStart || !hasEnd) && requireCoverage {
+		reason := fmt.Sprintf("incomplete data (start:%v end:%v, recent:%v resume:%v) %v after end", hasStart, hasEnd, isRecent, isResume, timeSinceEnd.Round(time.Second))
 
 		// Check if we exhausted retries
 		if doNotRetry {
@@ -340,9 +350,20 @@ func buildStreamIndexBased(dataset []struct {
 		}
 	}
 
-	// Fill gaps (Forward Fill)
+	// Forward-fill internal gaps only, up to the last point Fitbit actually returned. The tail
+	// after the last real sample (e.g. a partial pull that stopped early) is left as gaps (0)
+	// rather than holding the last value across the rest of the session — that hold is the
+	// non-GPS equivalent of stretching. Leading entries before the first sample also stay 0.
+	lastDataIdx := -1
+	for i := len(stream) - 1; i >= 0; i-- {
+		if stream[i] != 0 {
+			lastDataIdx = i
+			break
+		}
+	}
+
 	lastVal := 0
-	for i := 0; i < len(stream); i++ {
+	for i := 0; i <= lastDataIdx; i++ {
 		if stream[i] != 0 {
 			lastVal = stream[i]
 		} else {

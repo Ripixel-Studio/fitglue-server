@@ -2,6 +2,7 @@ package providers
 
 import (
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 )
@@ -84,10 +85,18 @@ func TestAlignTimeSeries_SmallDrift_0_5_Percent(t *testing.T) {
 		t.Errorf("Expected 3600 aligned samples, got %d", len(result.AlignedHR))
 	}
 
-	// Check we don't have zeros (all should be 120)
-	for i, val := range result.AlignedHR {
-		if val == 0 {
-			t.Errorf("Unexpected zero at index %d", i)
+	// HR genuinely ends ~18s before GPS, so the covered region (everything up to hrEnd) must
+	// carry HR (120) and only the short uncovered tail may be a gap (0). We no longer stretch
+	// the HR to fabricate values for the tail.
+	for i := 0; i < 3580; i++ {
+		if result.AlignedHR[i] != 120 {
+			t.Errorf("At index %d (within coverage): expected 120, got %d", i, result.AlignedHR[i])
+			break
+		}
+	}
+	for i := 3585; i < 3600; i++ {
+		if result.AlignedHR[i] != 0 {
+			t.Errorf("At index %d (beyond HR coverage): expected gap 0, got %d", i, result.AlignedHR[i])
 			break
 		}
 	}
@@ -199,14 +208,18 @@ func TestAlignTimeSeries_MissingStartHR(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	// Should still have values for all GPS timestamps (forward fill for early ones)
 	if len(result.AlignedHR) != 300 {
 		t.Errorf("Expected 300 aligned samples, got %d", len(result.AlignedHR))
 	}
 
-	// First values should be forward-filled with the first available HR
-	if result.AlignedHR[0] != 140 {
-		t.Errorf("Expected forward-filled value 140, got %d", result.AlignedHR[0])
+	// The first minute has no HR data. We leave it as a gap (0) rather than forward-filling a
+	// value the device never recorded — forward-fill is what stretched partial pulls.
+	if result.AlignedHR[0] != 0 {
+		t.Errorf("Expected gap (0) before HR coverage starts, got %d", result.AlignedHR[0])
+	}
+	// Once HR coverage begins (≥60s), values should be present.
+	if result.AlignedHR[120] != 140 {
+		t.Errorf("Expected 140 within coverage, got %d", result.AlignedHR[120])
 	}
 }
 
@@ -238,9 +251,14 @@ func TestAlignTimeSeries_MissingEndHR(t *testing.T) {
 		t.Errorf("Expected 300 aligned samples, got %d", len(result.AlignedHR))
 	}
 
-	// Last values should be backward-filled with the last available HR
-	if result.AlignedHR[299] != 150 {
-		t.Errorf("Expected backward-filled value 150, got %d", result.AlignedHR[299])
+	// HR within coverage should be present.
+	if result.AlignedHR[120] != 150 {
+		t.Errorf("Expected 150 within coverage, got %d", result.AlignedHR[120])
+	}
+	// The last minute has no HR data. Leave it as a gap (0) rather than holding the last value
+	// across the whole tail — that hold is exactly what stretched partial pulls.
+	if result.AlignedHR[299] != 0 {
+		t.Errorf("Expected gap (0) beyond HR coverage, got %d", result.AlignedHR[299])
 	}
 }
 
@@ -393,6 +411,58 @@ func TestAlignTimeSeries_Gaps(t *testing.T) {
 	}
 }
 
+func TestAlignTimeSeries_PartialPull_NotStretched(t *testing.T) {
+	// Regression: Fitbit returned only the first 20% of a session (a "partial pull"). The old
+	// elastic mapping stretched those 20% across the entire GPS track, fabricating HR. With
+	// absolute-offset anchoring the partial data must stay at the start and the remaining 80%
+	// must be left as gaps (0), never stretched.
+	baseTime := time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC)
+
+	// GPS covers 1000 seconds.
+	gpsTimestamps := make([]time.Time, 1000)
+	for i := 0; i < 1000; i++ {
+		gpsTimestamps[i] = baseTime.Add(time.Duration(i) * time.Second)
+	}
+
+	// HR only covers the first 200 seconds.
+	hrSamples := make([]TimedSample, 200)
+	for i := 0; i < 200; i++ {
+		hrSamples[i] = TimedSample{
+			Timestamp: baseTime.Add(time.Duration(i) * time.Second),
+			Value:     125,
+		}
+	}
+
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// First ~200s carry real HR.
+	for i := 0; i < 199; i++ {
+		if result.AlignedHR[i] != 125 {
+			t.Errorf("At index %d (within coverage): expected 125, got %d", i, result.AlignedHR[i])
+			break
+		}
+	}
+
+	// The remaining 80% must be gaps — NOT stretched HR.
+	for i := 205; i < 1000; i++ {
+		if result.AlignedHR[i] != 0 {
+			t.Errorf("At index %d (beyond coverage): expected gap 0, got %d — partial pull was stretched", i, result.AlignedHR[i])
+			break
+		}
+	}
+
+	// Coverage should be reported at ~20% (a couple of points of edge tolerance aside).
+	if got := result.Metadata["coverage_percent"]; !strings.HasPrefix(got, "20.") {
+		t.Errorf("Expected coverage_percent ~20%%, got %q", got)
+	}
+	if result.WarningMessage == "" {
+		t.Error("Expected a warning about partial HR coverage")
+	}
+}
+
 func TestFindSampleBefore(t *testing.T) {
 	baseTime := time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC)
 
@@ -504,16 +574,15 @@ func TestAlignTimeSeries_RealWorldDrift(t *testing.T) {
 		t.Errorf("Expected status 'success', got '%s'", result.Metadata["alignment_status"])
 	}
 
-	// All aligned values should be non-zero (proper forward/backward fill)
-	for i, val := range result.AlignedHR {
+	// Within the HR coverage window (a few seconds of startup offset at the head and drift at
+	// the tail are left as gaps) all values must be present and in range. A handful of edge
+	// gaps are acceptable and far preferable to stretching.
+	for i := 10; i < 2690; i++ {
+		val := result.AlignedHR[i]
 		if val == 0 {
-			t.Errorf("Unexpected zero at index %d", i)
+			t.Errorf("Unexpected zero at index %d (within coverage)", i)
 			break
 		}
-	}
-
-	// Check that values are in expected range
-	for i, val := range result.AlignedHR {
 		if val < 140 || val > 160 {
 			t.Errorf("Value at index %d out of expected range: %d", i, val)
 			break

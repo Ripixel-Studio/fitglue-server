@@ -307,6 +307,62 @@ func TestFitBitHeartRate_Enrich_LagExpired(t *testing.T) {
 	}
 }
 
+func TestFitBitHeartRate_Enrich_LagReArmedOnResume(t *testing.T) {
+	// An old activity (not "recent") with incomplete Fitbit data would normally be accepted as
+	// partial. But when resolving a pending input (is_resume=true) we re-arm the lag retry so
+	// Fitbit gets time to finish syncing rather than committing to partial coverage.
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				if strings.Contains(req.URL.Path, "/profile.json") {
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+					}, nil
+				}
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Activity ended 2 hours ago — not recent — but we are resuming.
+	endTime := time.Now().Add(-2 * time.Hour)
+	startTime := endTime.Add(-1 * time.Hour)
+
+	activity := &pbactivity.StandardizedActivity{
+		StartTime: timestamppb.New(startTime),
+		Sessions:  []*pbactivity.Session{{TotalElapsedTime: 3600}},
+	}
+
+	user := &user.Record{
+		UserProfile: &pbuser.UserProfile{UserId: "test-user"},
+		Integrations: &pbuser.UserIntegrations{
+			Fitbit: &pbuser.FitbitIntegration{Enabled: true, AccessToken: "t"},
+		},
+	}
+
+	inputs := map[string]string{"is_resume": "true"}
+	_, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, inputs, mockHTTPClient, false)
+	if err == nil {
+		t.Fatal("Expected RetryableError when resuming with incomplete data")
+	}
+	if _, ok := err.(*providers.RetryableError); !ok {
+		t.Errorf("Expected RetryableError, got %T: %v", err, err)
+	}
+
+	// Sanity: without the resume flag, the same old activity is accepted as partial (no retry).
+	_, err = provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
+	if err != nil {
+		t.Fatalf("Expected success for old activity without resume, got: %v", err)
+	}
+}
+
 func TestFitBitHeartRate_Name(t *testing.T) {
 	provider := NewFitBitHeartRate()
 	expected := "fitbit-heart-rate"

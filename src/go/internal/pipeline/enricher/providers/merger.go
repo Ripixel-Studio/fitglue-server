@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -113,38 +114,53 @@ func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config 
 		result.Metadata["alignment_status"] = "success"
 	}
 
-	// Calculate scale factor for elastic stretch/compress
-	// scaleFactor > 1 means HR is shorter than GPS (stretch HR)
-	// scaleFactor < 1 means HR is longer than GPS (compress HR)
-	var scaleFactor float64 = 1.0
-	if hrDuration > 0 {
-		scaleFactor = float64(gpsDuration) / float64(hrDuration)
-	}
-	result.Metadata["scale_factor"] = fmt.Sprintf("%.4f", scaleFactor)
-
-	// Align each GPS timestamp to an HR value
+	// Align HR to the GPS timeline by ABSOLUTE timestamp — each GPS point takes the HR value at
+	// that same real instant — NOT by relative position. Relative-position ("elastic") mapping
+	// stretches a partial HR pull (e.g. Fitbit only synced the first 20 min of a 60 min ride)
+	// across the entire GPS track, fabricating data that never existed. Absolute anchoring keeps
+	// every HR sample at its true time; GPS points outside the HR coverage window — whether the
+	// device started HR late or stopped early — are left as gaps (0) so the downstream consumer
+	// skips them rather than holding a stale or stretched value.
+	//
+	// This relies on both series sharing one real-time frame: GPS record timestamps are UTC and
+	// the Fitbit samples must be built in the Fitbit profile timezone (see ConvertHRResponseToSamples
+	// callers) so the instants line up. Slow clock drift between devices is tolerated — HR varies
+	// slowly, so a few seconds of skew is immaterial compared to the distortion of stretching.
+	tolerance := config.TargetAccuracy
+	coverageStart := hrStart.Add(-tolerance)
+	coverageEnd := hrEnd.Add(tolerance)
+	covered := 0
 	for i, gpsTime := range sortedGPS {
-		// Calculate the relative position in GPS timeline (0.0 to 1.0)
-		var relativePos float64 = 0.0
-		if gpsDuration > 0 {
-			relativePos = float64(gpsTime.Sub(gpsStart)) / float64(gpsDuration)
+		// Outside the HR coverage window: leave a gap rather than stretch/hold a stale value.
+		if gpsTime.Before(coverageStart) || gpsTime.After(coverageEnd) {
+			result.AlignedHR[i] = 0
+			continue
 		}
 
-		// Map to corresponding position in HR timeline
-		hrRelativeTime := time.Duration(float64(hrDuration) * relativePos)
-		targetHRTime := hrStart.Add(hrRelativeTime)
-
-		// Interpolate HR value at this target time
-		hrValue := interpolateHR(sortedHR, targetHRTime)
-		result.AlignedHR[i] = hrValue
+		result.AlignedHR[i] = interpolateHR(sortedHR, gpsTime)
+		covered++
 	}
 
-	logger.Info("HR alignment completed",
+	coveragePercent := 100.0
+	if len(sortedGPS) > 0 {
+		coveragePercent = float64(covered) / float64(len(sortedGPS)) * 100
+	}
+	result.Metadata["coverage_percent"] = fmt.Sprintf("%.1f", coveragePercent)
+	result.Metadata["gps_points_covered"] = fmt.Sprintf("%d", covered)
+	if covered < len(sortedGPS) {
+		// Surface the shortfall as a warning, but leave alignment_status as the drift block set
+		// it: a genuine partial pull is always a large duration mismatch, so it is already
+		// flagged as high_drift_best_effort. coverage_percent above carries the precise figure.
+		coverageWarning := fmt.Sprintf("HR covered %.1f%% of GPS track (%d/%d points); uncovered points left as gaps", coveragePercent, covered, len(sortedGPS))
+		result.WarningMessage = strings.TrimSpace(result.WarningMessage + " " + coverageWarning)
+	}
+
+	logger.Info("HR alignment completed (absolute offset anchoring)",
 		"gps_duration_sec", gpsDuration.Seconds(),
 		"hr_duration_sec", hrDuration.Seconds(),
 		"drift_percent", result.DriftPercent,
 		"samples_aligned", len(result.AlignedHR),
-		"scale_factor", scaleFactor,
+		"coverage_percent", coveragePercent,
 	)
 
 	return result, nil
