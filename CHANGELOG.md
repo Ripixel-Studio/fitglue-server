@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.55.1](https://github.com/FitGlue/server/compare/v16.55.0...v16.55.1) (2026-06-17)
+
+
+### Bug Fixes
+
+* **destination:** prevent duplicate creates from concurrent pending-input resumes ([654714e](https://github.com/FitGlue/server/commit/654714ebcf4ba76d417ab0494093cb9abf38039f))
+* **fitbit-hr:** anchor HR to GPS by absolute time and re-arm lag retry on resume ([34b80b7](https://github.com/FitGlue/server/commit/34b80b7c9e2d60071984e484dfd39f7cfcb29340))
+
 ## [16.55.0](https://github.com/FitGlue/server/compare/v16.54.0...v16.55.0) (2026-06-17)
 
 
