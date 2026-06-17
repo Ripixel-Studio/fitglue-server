@@ -110,7 +110,10 @@ func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID string, li
 
 		var run pbpipeline.PipelineRun
 		if err := decodeProtoMap(doc.Data(), &run); err != nil {
-			return nil, "", err
+			// A single malformed record (e.g. a legacy/corrupt timestamp) must not
+			// abort the whole listing — skip it so exports and activity lists are
+			// resilient to bad rows.
+			continue
 		}
 		runs = append(runs, &run)
 	}
