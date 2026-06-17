@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.55.3](https://github.com/FitGlue/server/compare/v16.55.2...v16.55.3) (2026-06-17)
+
+
+### Bug Fixes
+
+* **roundup-ai:** increase timeout and output token limit for summary generation ([24dc695](https://github.com/FitGlue/server/commit/24dc6957048256150bde1c9a0738c345bb433285))
+
 ### [16.55.2](https://github.com/FitGlue/server/compare/v16.55.1...v16.55.2) (2026-06-17)
 
 ### [16.55.1](https://github.com/FitGlue/server/compare/v16.55.0...v16.55.1) (2026-06-17)
