@@ -121,4 +121,11 @@ message ShowcaseRoundup {
   double furthest_activity_meters = 38;     // longest single distance
   int32 most_calories_single_kcal = 39;     // most calories burned in one session
   double biggest_session_volume_kg = 40;    // heaviest single strength session (reps × weight)
+  // Source showcase activity for each single-session peak, for click-through.
+  string longest_session_showcase_id = 41;
+  string highest_burn_rate_showcase_id = 42;
+  string highest_avg_bpm_showcase_id = 43;
+  string furthest_showcase_id = 44;
+  string most_calories_showcase_id = 45;
+  string biggest_volume_showcase_id = 46;
 }

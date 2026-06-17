@@ -358,12 +358,12 @@ func TestAggregateRoundupEnrichments_Empty(t *testing.T) {
 func TestComputeSessionPeaks(t *testing.T) {
 	cal := func(v int32) *int32 { return &v }
 	entries := []*pbactivity.ShowcaseProfileEntry{
-		{DistanceMeters: 10000, CaloriesKcal: cal(600), TotalWeightKg: 0},
-		{DistanceMeters: 42195, CaloriesKcal: cal(2800), TotalWeightKg: 0},
-		{DistanceMeters: 0, CaloriesKcal: cal(450), TotalWeightKg: 4800},
-		{DistanceMeters: 5000, TotalWeightKg: 6200},
+		{DistanceMeters: 10000, CaloriesKcal: cal(600), TotalWeightKg: 0, ShowcaseId: "sc-10k"},
+		{DistanceMeters: 42195, CaloriesKcal: cal(2800), TotalWeightKg: 0, ShowcaseId: "sc-marathon"},
+		{DistanceMeters: 0, CaloriesKcal: cal(450), TotalWeightKg: 4800, ShowcaseId: "sc-legs"},
+		{DistanceMeters: 5000, TotalWeightKg: 6200, ShowcaseId: "sc-bench"},
 	}
-	furthest, mostCal, biggestVol := computeSessionPeaks(entries)
+	furthest, mostCal, biggestVol, furthestID, mostCalID, biggestVolID := computeSessionPeaks(entries)
 	if furthest != 42195 {
 		t.Errorf("furthest = %v, want 42195", furthest)
 	}
@@ -373,9 +373,12 @@ func TestComputeSessionPeaks(t *testing.T) {
 	if biggestVol != 6200 {
 		t.Errorf("biggestVol = %v, want 6200", biggestVol)
 	}
+	if furthestID != "sc-marathon" || mostCalID != "sc-marathon" || biggestVolID != "sc-bench" {
+		t.Errorf("peak ids = %q/%q/%q, want sc-marathon/sc-marathon/sc-bench", furthestID, mostCalID, biggestVolID)
+	}
 
-	f, c, v := computeSessionPeaks(nil)
-	if f != 0 || c != 0 || v != 0 {
-		t.Errorf("empty input should be zero, got %v/%d/%v", f, c, v)
+	f, c, v, fID, cID, vID := computeSessionPeaks(nil)
+	if f != 0 || c != 0 || v != 0 || fID != "" || cID != "" || vID != "" {
+		t.Errorf("empty input should be zero/empty, got %v/%d/%v ids %q/%q/%q", f, c, v, fID, cID, vID)
 	}
 }

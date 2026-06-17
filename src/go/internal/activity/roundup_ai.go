@@ -40,19 +40,25 @@ func isWetWeather(desc string) bool {
 // computeSessionPeaks finds the single-session maxima across the period for the
 // "ceiling raised" highlights band: furthest distance, most calories in one
 // session, and the heaviest strength session (reps × weight volume).
-func computeSessionPeaks(entries []*pbactivity.ShowcaseProfileEntry) (furthestM float64, mostCal int32, biggestVolKg float64) {
+func computeSessionPeaks(entries []*pbactivity.ShowcaseProfileEntry) (
+	furthestM float64, mostCal int32, biggestVolKg float64,
+	furthestID, mostCalID, biggestVolID string,
+) {
 	for _, e := range entries {
 		if e.DistanceMeters > furthestM {
 			furthestM = e.DistanceMeters
+			furthestID = e.ShowcaseId
 		}
 		if e.CaloriesKcal != nil && *e.CaloriesKcal > mostCal {
 			mostCal = *e.CaloriesKcal
+			mostCalID = e.ShowcaseId
 		}
 		if e.TotalWeightKg > biggestVolKg {
 			biggestVolKg = e.TotalWeightKg
+			biggestVolID = e.ShowcaseId
 		}
 	}
-	return furthestM, mostCal, biggestVolKg
+	return furthestM, mostCal, biggestVolKg, furthestID, mostCalID, biggestVolID
 }
 
 // aggregateRoundupEnrichments rolls the per-entry enrichment summaries up into

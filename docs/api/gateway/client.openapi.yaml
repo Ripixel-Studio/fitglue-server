@@ -4723,6 +4723,19 @@ components:
                 biggestSessionVolumeKg:
                     type: number
                     format: double
+                longestSessionShowcaseId:
+                    type: string
+                    description: Source showcase activity for each single-session peak, for click-through.
+                highestBurnRateShowcaseId:
+                    type: string
+                highestAvgBpmShowcaseId:
+                    type: string
+                furthestShowcaseId:
+                    type: string
+                mostCaloriesShowcaseId:
+                    type: string
+                biggestVolumeShowcaseId:
+                    type: string
         ShowcaseTheme:
             type: object
             properties:

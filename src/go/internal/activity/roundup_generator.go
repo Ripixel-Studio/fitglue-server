@@ -104,24 +104,29 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 	// Enrichment aggregates — places, weather grit, best efforts, muscles worked.
 	roundup.Places, roundup.Weather, roundup.BestEfforts, roundup.Muscles = aggregateRoundupEnrichments(entries)
 
-	// Highlight stats — single best across the period
+	// Highlight stats — single best across the period (with the source session
+	// for click-through).
 	for _, e := range entries {
 		if e.DurationSeconds > roundup.LongestActivityDurationSeconds {
 			roundup.LongestActivityDurationSeconds = e.DurationSeconds
+			roundup.LongestSessionShowcaseId = e.ShowcaseId
 		}
 		if e.AvgHeartRate != nil && *e.AvgHeartRate > roundup.HighestAvgBpm {
 			roundup.HighestAvgBpm = *e.AvgHeartRate
 			roundup.HighestAvgBpmActivityTitle = e.Title
+			roundup.HighestAvgBpmShowcaseId = e.ShowcaseId
 		}
 		if e.CaloriesKcal != nil && e.DurationSeconds > 0 {
 			cph := float64(*e.CaloriesKcal) / e.DurationSeconds * 3600.0
 			if cph > roundup.HighestCaloriesPerHourKcal {
 				roundup.HighestCaloriesPerHourKcal = cph
+				roundup.HighestBurnRateShowcaseId = e.ShowcaseId
 			}
 		}
 	}
 	// Single-session peaks for the highlights band.
-	roundup.FurthestActivityMeters, roundup.MostCaloriesSingleKcal, roundup.BiggestSessionVolumeKg = computeSessionPeaks(entries)
+	roundup.FurthestActivityMeters, roundup.MostCaloriesSingleKcal, roundup.BiggestSessionVolumeKg,
+		roundup.FurthestShowcaseId, roundup.MostCaloriesShowcaseId, roundup.BiggestVolumeShowcaseId = computeSessionPeaks(entries)
 	allPRs, err := s.store.ListUserPersonalRecords(ctx, userID)
 	if err == nil {
 		for _, pr := range allPRs {

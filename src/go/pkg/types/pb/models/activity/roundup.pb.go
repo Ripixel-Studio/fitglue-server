@@ -723,8 +723,15 @@ type ShowcaseRoundup struct {
 	FurthestActivityMeters float64 `protobuf:"fixed64,38,opt,name=furthest_activity_meters,json=furthestActivityMeters,proto3" json:"furthest_activity_meters,omitempty"`   // longest single distance
 	MostCaloriesSingleKcal int32   `protobuf:"varint,39,opt,name=most_calories_single_kcal,json=mostCaloriesSingleKcal,proto3" json:"most_calories_single_kcal,omitempty"`  // most calories burned in one session
 	BiggestSessionVolumeKg float64 `protobuf:"fixed64,40,opt,name=biggest_session_volume_kg,json=biggestSessionVolumeKg,proto3" json:"biggest_session_volume_kg,omitempty"` // heaviest single strength session (reps × weight)
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Source showcase activity for each single-session peak, for click-through.
+	LongestSessionShowcaseId  string `protobuf:"bytes,41,opt,name=longest_session_showcase_id,json=longestSessionShowcaseId,proto3" json:"longest_session_showcase_id,omitempty"`
+	HighestBurnRateShowcaseId string `protobuf:"bytes,42,opt,name=highest_burn_rate_showcase_id,json=highestBurnRateShowcaseId,proto3" json:"highest_burn_rate_showcase_id,omitempty"`
+	HighestAvgBpmShowcaseId   string `protobuf:"bytes,43,opt,name=highest_avg_bpm_showcase_id,json=highestAvgBpmShowcaseId,proto3" json:"highest_avg_bpm_showcase_id,omitempty"`
+	FurthestShowcaseId        string `protobuf:"bytes,44,opt,name=furthest_showcase_id,json=furthestShowcaseId,proto3" json:"furthest_showcase_id,omitempty"`
+	MostCaloriesShowcaseId    string `protobuf:"bytes,45,opt,name=most_calories_showcase_id,json=mostCaloriesShowcaseId,proto3" json:"most_calories_showcase_id,omitempty"`
+	BiggestVolumeShowcaseId   string `protobuf:"bytes,46,opt,name=biggest_volume_showcase_id,json=biggestVolumeShowcaseId,proto3" json:"biggest_volume_showcase_id,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *ShowcaseRoundup) Reset() {
@@ -1037,6 +1044,48 @@ func (x *ShowcaseRoundup) GetBiggestSessionVolumeKg() float64 {
 	return 0
 }
 
+func (x *ShowcaseRoundup) GetLongestSessionShowcaseId() string {
+	if x != nil {
+		return x.LongestSessionShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseRoundup) GetHighestBurnRateShowcaseId() string {
+	if x != nil {
+		return x.HighestBurnRateShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseRoundup) GetHighestAvgBpmShowcaseId() string {
+	if x != nil {
+		return x.HighestAvgBpmShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseRoundup) GetFurthestShowcaseId() string {
+	if x != nil {
+		return x.FurthestShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseRoundup) GetMostCaloriesShowcaseId() string {
+	if x != nil {
+		return x.MostCaloriesShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseRoundup) GetBiggestVolumeShowcaseId() string {
+	if x != nil {
+		return x.BiggestVolumeShowcaseId
+	}
+	return ""
+}
+
 var File_models_activity_roundup_proto protoreflect.FileDescriptor
 
 const file_models_activity_roundup_proto_rawDesc = "" +
@@ -1094,7 +1143,7 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\n" +
 	"total_sets\x18\x06 \x01(\x05R\ttotalSets\x12\x1d\n" +
 	"\n" +
-	"total_reps\x18\a \x01(\x05R\ttotalReps\"\x96\x12\n" +
+	"total_reps\x18\a \x01(\x05R\ttotalReps\"\xff\x14\n" +
 	"\x0fShowcaseRoundup\x12\x1d\n" +
 	"\n" +
 	"roundup_id\x18\x01 \x01(\tR\troundupId\x12\x12\n" +
@@ -1142,7 +1191,13 @@ const file_models_activity_roundup_proto_rawDesc = "" +
 	"\amuscles\x18% \x03(\v2&.fitglue.models.activity.RoundupMuscleR\amuscles\x128\n" +
 	"\x18furthest_activity_meters\x18& \x01(\x01R\x16furthestActivityMeters\x129\n" +
 	"\x19most_calories_single_kcal\x18' \x01(\x05R\x16mostCaloriesSingleKcal\x129\n" +
-	"\x19biggest_session_volume_kg\x18( \x01(\x01R\x16biggestSessionVolumeKgB\n" +
+	"\x19biggest_session_volume_kg\x18( \x01(\x01R\x16biggestSessionVolumeKg\x12=\n" +
+	"\x1blongest_session_showcase_id\x18) \x01(\tR\x18longestSessionShowcaseId\x12@\n" +
+	"\x1dhighest_burn_rate_showcase_id\x18* \x01(\tR\x19highestBurnRateShowcaseId\x12<\n" +
+	"\x1bhighest_avg_bpm_showcase_id\x18+ \x01(\tR\x17highestAvgBpmShowcaseId\x120\n" +
+	"\x14furthest_showcase_id\x18, \x01(\tR\x12furthestShowcaseId\x129\n" +
+	"\x19most_calories_showcase_id\x18- \x01(\tR\x16mostCaloriesShowcaseId\x12;\n" +
+	"\x1abiggest_volume_showcase_id\x18. \x01(\tR\x17biggestVolumeShowcaseIdB\n" +
 	"\n" +
 	"\b_weather*\x93\x01\n" +
 	"\x11RoundupPeriodType\x12#\n" +
