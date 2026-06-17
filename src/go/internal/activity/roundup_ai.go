@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-const roundupAISummaryTimeout = 20 * time.Second
+const roundupAISummaryTimeout = 30 * time.Second
 
 const (
 	maxRoundupPhotos  = 24
@@ -274,8 +274,9 @@ func generateRoundupAISummary(ctx context.Context, logger infra.Logger, roundup 
 	model.SetTopP(0.95)
 	// gemini-2.5-flash spends part of the output budget on hidden "thinking"
 	// tokens; 512 left almost nothing for the paragraph and it truncated
-	// mid-sentence. Give generous headroom — the prompt caps the visible length.
-	model.SetMaxOutputTokens(2048)
+	// mid-sentence. Even 2048 still clipped the closing line on busy weeks, so
+	// give generous headroom — the prompt caps the visible length.
+	model.SetMaxOutputTokens(4096)
 	model.SystemInstruction = genai.NewUserContent(genai.Text(roundupSystemInstruction))
 
 	periodCtx := buildRoundupSummaryContext(roundup)
