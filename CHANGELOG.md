@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.56.1](https://github.com/FitGlue/server/compare/v16.56.0...v16.56.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **destination:** let targeted reposts bypass the already-uploaded guard ([a781c5b](https://github.com/FitGlue/server/commit/a781c5b9284f01dd1ea9b73be0edcd78ee840a10))
+* **enricher:** restore and persist typed enrichments during pipeline resume ([514e1f4](https://github.com/FitGlue/server/commit/514e1f4432b35597364a361e92dfc9f1842fdf68))
+* **hdrop:** handle string numeric fields and null timeseries values ([6e79482](https://github.com/FitGlue/server/commit/6e794828b8917a7a4f48f8c9195faa8a33ebab5d))
+* **pipeline:** prevent infinite Pub/Sub retries on permanent enricher failures ([cbf99a8](https://github.com/FitGlue/server/commit/cbf99a85814e63a64c8c1d8f7320b88bc589f69b))
+* **pipeline:** skip pipeline re-run when dismissing non-blocking input ([b88ff42](https://github.com/FitGlue/server/commit/b88ff4286087e7615d012ee8db4af780084f4a2b))
+* **pipeline:** store pipeline-run updated_at as a proto Timestamp ([32075e3](https://github.com/FitGlue/server/commit/32075e3bf33bc0d7ce38253226cd9e23c3759770))
+
 ## [16.56.0](https://github.com/FitGlue/server/compare/v16.55.3...v16.56.0) (2026-06-17)
 
 
