@@ -283,13 +283,24 @@ destinations:
 
 		// Idempotency guard: if this destination already succeeded in a prior delivery of
 		// the same pipeline run, skip rather than double-posting.
-		if !effectiveIsUpdate {
+		//
+		// A targeted repost (retry-destination / missed-destination Magic Action) is an
+		// explicit user request to (re)upload to this specific destination, so it must
+		// bypass this guard. Targeted reposts reuse the original pipeline run, whose prior
+		// SUCCESS outcome would otherwise make the repost a silent no-op (the user sees no
+		// new upload and the run stays wedged). full-pipeline reposts mint a fresh run, so
+		// they keep the guard for genuine Pub/Sub redelivery protection.
+		repostMode := metadata["repost_mode"]
+		isTargetedRepost := metadata["is_repost"] == "true" && repostMode != "" && repostMode != "full-pipeline"
+		if !effectiveIsUpdate && !isTargetedRepost {
 			for _, outcome := range priorOutcomes {
 				if outcome.Destination == destEnum && outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
 					e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
 					continue destinations
 				}
 			}
+		} else if isTargetedRepost {
+			e.logger.Info(ctx, "Targeted repost: bypassing already-uploaded idempotency guard", "destination", destEnum.String(), "repost_mode", repostMode)
 		}
 
 		e.logger.Info(ctx, "Triggering destination uploader", "destination", destEnum.String(), "is_update", effectiveIsUpdate)

@@ -336,6 +336,67 @@ func TestUploadExecutor_ConcurrentResume_SingleCreate(t *testing.T) {
 	}
 }
 
+// TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard verifies that an explicit
+// retry/missed-destination Magic Action re-uploads even when the (reused) pipeline run
+// already has a SUCCESS outcome for that destination. Without the bypass the repost is a
+// silent no-op ("Skipping already-uploaded destination"), so the user never gets a new
+// upload and the run stays wedged in RUNNING.
+func TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard(t *testing.T) {
+	priorStravaSuccess := func(_ context.Context, _ string, _ string) ([]*pbpipeline.DestinationOutcome, error) {
+		return []*pbpipeline.DestinationOutcome{{
+			Destination: pbplugin.DestinationType_DESTINATION_STRAVA,
+			Status:      pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		}}, nil
+	}
+
+	newPayload := func(meta map[string]string) *pbevents.EnrichedActivityEvent {
+		execID := "run-1"
+		return &pbevents.EnrichedActivityEvent{
+			UserId:              "user-1",
+			ActivityId:          "act-1",
+			PipelineExecutionId: &execID,
+			Destinations:        []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA},
+			ActivityData:        &pbactivity.StandardizedActivity{ExternalId: "ext-1"},
+			EnrichmentMetadata:  meta,
+		}
+	}
+
+	run := func(t *testing.T, meta map[string]string) int32 {
+		t.Helper()
+		registry := NewRegistry()
+		uploader := &countingUploader{name: "strava", id: "strava-1"}
+		registry.Register(pbplugin.DestinationType_DESTINATION_STRAVA, uploader)
+
+		userClient := &mockUserServiceClient{
+			GetProfileFunc: func(ctx context.Context, in *userpb.GetProfileRequest, opts ...grpc.CallOption) (*pbuser.UserProfile, error) {
+				return &pbuser.UserProfile{UserId: in.UserId}, nil
+			},
+		}
+		db := &mocks.MockDatabase{GetDestinationOutcomesFunc: priorStravaSuccess}
+		executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, db, nil, &mocks.MockPublisher{}, infra.NewLogger())
+
+		payloadBytes, err := protojson.Marshal(newPayload(meta))
+		assert.NoError(t, err)
+		ce := event.New()
+		ce.SetID("test-id")
+		ce.SetType("com.fitglue.event.enriched")
+		ce.SetSource("test")
+		ce.SetData("application/json", payloadBytes)
+		assert.NoError(t, executor.Process(context.Background(), &ce))
+		return atomic.LoadInt32(&uploader.createCalls)
+	}
+
+	// Without repost metadata: the prior SUCCESS must short-circuit the upload.
+	if got := run(t, nil); got != 0 {
+		t.Errorf("expected guard to skip create (0 Create calls), got %d", got)
+	}
+
+	// Targeted repost: the guard must be bypassed and the upload re-attempted.
+	if got := run(t, map[string]string{"is_repost": "true", "repost_mode": "retry-destination"}); got != 1 {
+		t.Errorf("expected targeted repost to bypass guard (1 Create call), got %d", got)
+	}
+}
+
 func TestUploadExecutor_Process_GetProfileError_WritesFailure(t *testing.T) {
 	registry := NewRegistry()
 	registry.Register(pbplugin.DestinationType_DESTINATION_STRAVA, &mockUploader{name: "strava", id: "s1"})

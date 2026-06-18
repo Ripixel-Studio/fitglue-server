@@ -44,6 +44,10 @@ type MockDatabase struct {
 	TryClaimDestinationCreateFunc func(ctx context.Context, userId string, claimKey string, ttl time.Duration) (bool, error)
 	claimMu                       sync.Mutex
 	claimedKeys                   map[string]bool
+
+	// Override to return prior destination outcomes (e.g. to exercise the
+	// already-uploaded idempotency guard).
+	GetDestinationOutcomesFunc func(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error)
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
@@ -323,6 +327,9 @@ func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string,
 }
 
 func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error) {
+	if m.GetDestinationOutcomesFunc != nil {
+		return m.GetDestinationOutcomesFunc(ctx, userId, pipelineRunId)
+	}
 	// No-op for tests by default
 	return nil, nil
 }

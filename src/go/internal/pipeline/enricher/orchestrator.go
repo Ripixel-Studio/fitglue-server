@@ -1007,6 +1007,17 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
+	// Propagate targeted-repost intent to the destination executor so it can bypass the
+	// already-uploaded idempotency guard for an explicit retry/missed-destination Magic
+	// Action (these reuse the original run, whose prior SUCCESS outcome would otherwise
+	// make the repost a silent no-op).
+	if payload.IsRepost {
+		finalEvent.EnrichmentMetadata["is_repost"] = "true"
+		if payload.RepostMode != "" {
+			finalEvent.EnrichmentMetadata["repost_mode"] = payload.RepostMode
+		}
+	}
+
 	// Same-Source Detection: When the activity's source platform matches a destination,
 	// signal uploaders to overwrite title/description instead of section-based merge.
 	// Use payload.Source (the actual webhook source) — correct for multi-source pipelines.
