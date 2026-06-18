@@ -401,6 +401,20 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					if v := replayMeta["replay_description"]; v != "" {
 						descriptionSlots[i+1] = v
 					}
+					// Restore typed enrichments (e.g. AiSummary) so the final merge
+					// loop re-attaches them to finalEvent.Enrichments. Populating
+					// results[i] also re-adds this enricher to AppliedEnrichments.
+					if v := replayMeta["replay_enrichments"]; v != "" {
+						restored := &pbactivity.ActivityEnrichments{}
+						if err := protojson.Unmarshal([]byte(v), restored); err != nil {
+							logger.Warn("Resume mode: failed to unmarshal replayed enrichments", "provider", provider.Name(), "error", err)
+						} else {
+							results[i] = &providers.EnrichmentResult{
+								Enrichments: restored,
+								Metadata:    stripReplayKeys(replayMeta),
+							}
+						}
+					}
 					providerExecutions = append(providerExecutions, ProviderExecution{
 						ProviderName: provider.Name(),
 						Status:       "REPLAYED",
@@ -1720,6 +1734,20 @@ func boostersToFirestoreMaps(providerExecs []ProviderExecution) []map[string]int
 	return boosters
 }
 
+// stripReplayKeys returns a copy of the replay journal metadata with the internal
+// replay_* bookkeeping keys removed, so only the provider's original metadata is
+// merged back into EnrichedActivityEvent.EnrichmentMetadata on resume.
+func stripReplayKeys(replayMeta map[string]string) map[string]string {
+	clean := make(map[string]string, len(replayMeta))
+	for k, v := range replayMeta {
+		if strings.HasPrefix(k, "replay_") {
+			continue
+		}
+		clean[k] = v
+	}
+	return clean
+}
+
 // buildBoosterMetadata returns the metadata map to store in a ProviderExecution on success.
 // For non-idempotent providers it appends replay_* keys so the orchestrator can skip and
 // replay the enricher's mutations if the pipeline is resumed later.
@@ -1748,6 +1776,15 @@ func buildBoosterMetadata(res *providers.EnrichmentResult, provider providers.Pr
 	if len(res.Tags) > 0 {
 		if tagsJSON, err := json.Marshal(res.Tags); err == nil {
 			m["replay_tags"] = string(tagsJSON)
+		}
+	}
+	// Persist typed enrichments (e.g. AiSummary) so they can be merged back into
+	// the final event on resume. Without this, a non-idempotent enricher's typed
+	// Enrichments are lost when the pipeline resumes (the enricher is replayed,
+	// not re-run), even though its description survives via replay_description.
+	if res.Enrichments != nil {
+		if enrichJSON, err := protojson.Marshal(res.Enrichments); err == nil {
+			m["replay_enrichments"] = string(enrichJSON)
 		}
 	}
 	return m
