@@ -28,8 +28,12 @@ import (
 
 // MockDatabase implements shared.Database
 type MockDatabase struct {
-	GetUserFunc          func(ctx context.Context, id string) (*user.Record, error)
-	GetUserPipelinesFunc func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error)
+	GetUserFunc            func(ctx context.Context, id string) (*user.Record, error)
+	GetUserPipelinesFunc   func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error)
+	CreatePipelineRunFunc  func(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error
+	GetPipelineRunFunc     func(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error)
+	CreatePendingInputFunc func(ctx context.Context, userId string, input *pbpipeline.PendingInput) error
+	GetPendingInputFunc    func(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error)
 }
 
 func (m *MockDatabase) GetUser(ctx context.Context, id string) (*user.Record, error) {
@@ -48,9 +52,15 @@ func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[strin
 	return nil
 }
 func (m *MockDatabase) CreatePendingInput(ctx context.Context, userId string, input *pbpipeline.PendingInput) error {
+	if m.CreatePendingInputFunc != nil {
+		return m.CreatePendingInputFunc(ctx, userId, input)
+	}
 	return nil
 }
 func (m *MockDatabase) GetPendingInput(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error) {
+	if m.GetPendingInputFunc != nil {
+		return m.GetPendingInputFunc(ctx, userId, id)
+	}
 	return nil, nil
 }
 func (m *MockDatabase) UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error {
@@ -159,9 +169,15 @@ func (m *MockDatabase) ReleaseDestinationCreate(ctx context.Context, userId stri
 	return nil
 }
 func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error {
+	if m.CreatePipelineRunFunc != nil {
+		return m.CreatePipelineRunFunc(ctx, userId, run)
+	}
 	return nil
 }
 func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error) {
+	if m.GetPipelineRunFunc != nil {
+		return m.GetPipelineRunFunc(ctx, userId, id)
+	}
 	return nil, nil
 }
 func (m *MockDatabase) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pbpipeline.PipelineRun, error) {
