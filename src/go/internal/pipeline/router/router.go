@@ -93,8 +93,12 @@ func (r *Router) RouteActivity(ctx context.Context, e cloudevents.Event) error {
 	r.logger.Info(ctx, "Routing complete", "routed_count", routedCount)
 
 	if eventPayload.UserId != "" && pipelineExecID != "" {
+		// Write a proto Timestamp directly so the Firestore client stores a native
+		// timestamp. protojson.Format yields a quote-wrapped JSON string ("...Z") that
+		// Firestore persists verbatim, which then fails to decode back into the
+		// PipelineRun proto (invalid google.protobuf.Timestamp value) and wedges the run.
 		updateData := map[string]interface{}{
-			"updated_at": protojson.Format(timestamppb.Now()),
+			"updated_at": timestamppb.Now(),
 		}
 
 		if eventPayload.ActivityDataUri != "" {

@@ -9,6 +9,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/internal/pipeline"
@@ -23,7 +24,8 @@ import (
 // =============================================================
 
 type mockRouterStore struct {
-	updateErr error
+	updateErr  error
+	lastUpdate map[string]interface{}
 }
 
 func (m *mockRouterStore) ListPipelines(_ context.Context, _ string) ([]*pbpipeline.PipelineConfig, error) {
@@ -54,7 +56,8 @@ func (m *mockRouterStore) GetPipelineRun(_ context.Context, _, _ string) (*pbpip
 func (m *mockRouterStore) ListPipelineRuns(_ context.Context, _, _ string, _ int32, _ string, _, _ *time.Time) ([]*pbpipeline.PipelineRun, string, error) {
 	return nil, "", nil
 }
-func (m *mockRouterStore) UpdatePipelineRun(_ context.Context, _, _ string, _ map[string]interface{}) error {
+func (m *mockRouterStore) UpdatePipelineRun(_ context.Context, _, _ string, data map[string]interface{}) error {
+	m.lastUpdate = data
 	return m.updateErr
 }
 func (m *mockRouterStore) FindPipelineRunByActivityId(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
@@ -282,6 +285,44 @@ func TestRouteActivity_BlobWriteError_NonFatal(t *testing.T) {
 	err := r.RouteActivity(context.Background(), makeEnrichedEvent(payload))
 	if err != nil {
 		t.Errorf("expected no error (blob errors are non-fatal), got %v", err)
+	}
+}
+
+// TestRouteActivity_UpdatedAtIsProtoTimestamp guards against a regression where
+// updated_at was written via protojson.Format(timestamppb.Now()), which yields a
+// quote-wrapped JSON string ("2026-...Z"). Firestore persisted that string verbatim,
+// and it then failed to decode back into the PipelineRun proto
+// ("invalid google.protobuf.Timestamp value"), wedging the run and breaking every
+// magic action (repost / re-run) on the affected activity. updated_at must be a
+// proto Timestamp so the Firestore client stores a native timestamp.
+func TestRouteActivity_UpdatedAtIsProtoTimestamp(t *testing.T) {
+	store := &mockRouterStore{}
+	r := router.NewRouter(store, &mockRouterPublisher{}, &mockBlobStore{}, "my-bucket", &mockRouterLogger{})
+
+	execID := "exec-ts"
+	payload := &pbevents.EnrichedActivityEvent{
+		UserId:              "user1",
+		PipelineId:          "pipe1",
+		PipelineExecutionId: &execID,
+		Destinations:        []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_HEVY},
+	}
+
+	if err := r.RouteActivity(context.Background(), makeEnrichedEvent(payload)); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if store.lastUpdate == nil {
+		t.Fatal("expected UpdatePipelineRun to be called")
+	}
+	ua, ok := store.lastUpdate["updated_at"]
+	if !ok {
+		t.Fatal("expected updated_at in update payload")
+	}
+	if _, isString := ua.(string); isString {
+		t.Fatalf("updated_at must not be a string (would corrupt the run on decode), got string %q", ua)
+	}
+	if _, isTS := ua.(*timestamppb.Timestamp); !isTS {
+		t.Fatalf("updated_at must be a *timestamppb.Timestamp, got %T", ua)
 	}
 }
 
