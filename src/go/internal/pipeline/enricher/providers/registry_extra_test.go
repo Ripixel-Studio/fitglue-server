@@ -57,7 +57,7 @@ type fakeProvider struct {
 	typ  pbplugin.EnricherProviderType
 }
 
-func (f *fakeProvider) Name() string                              { return f.name }
+func (f *fakeProvider) Name() string                                { return f.name }
 func (f *fakeProvider) ProviderType() pbplugin.EnricherProviderType { return f.typ }
 func (f *fakeProvider) Enrich(_ context.Context, _ *slog.Logger, _ *pbactivity.StandardizedActivity, _ *user.Record, _ map[string]string, _ bool) (*EnrichmentResult, error) {
 	return &EnrichmentResult{}, nil

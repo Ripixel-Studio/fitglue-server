@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/fitglue/server/src/go/internal/infra"
-	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
 
 // serverWithDeps builds an APIServer wiring the given mocks plus a real (discardable)
