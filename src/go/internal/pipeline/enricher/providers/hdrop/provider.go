@@ -73,10 +73,13 @@ func (p *Provider) EnrichResume(_ context.Context, _ *pbactivity.StandardizedAct
 }
 
 // hDropJSON mirrors the structure of an hDrop export file.
+// Several metadata fields are exported as JSON strings despite being numeric values.
+// Timeseries sweatRate and fluidLoss are null for the warm-up period before the sensor
+// detects sweat, so they must be pointer types.
 type hDropJSON struct {
 	Metadata struct {
 		TotalSweatLoss      float64 `json:"totalSweatLoss"`
-		SweatRate           float64 `json:"sweatRate"`
+		SweatRate           string  `json:"sweatRate"`
 		TotalSodium         float64 `json:"totalSodium"`
 		TotalPotassium      float64 `json:"totalPotassium"`
 		SodiumConcentration string  `json:"sodiumConcentration"`
@@ -87,11 +90,11 @@ type hDropJSON struct {
 		MaxTemperature      float64 `json:"maxTemperature"`
 	} `json:"metadata"`
 	TimeseriesData []struct {
-		TimeMinutes         float64 `json:"timeMinutes"`
-		SweatRate           float64 `json:"sweatRate"`
-		FluidLoss           float64 `json:"fluidLoss"`
-		Temperature         float64 `json:"temperature"`
-		SodiumConcentration float64 `json:"sodiumConcentration"`
+		TimeMinutes         float64  `json:"timeMinutes"`
+		SweatRate           *float64 `json:"sweatRate"`
+		FluidLoss           *float64 `json:"fluidLoss"`
+		Temperature         float64  `json:"temperature"`
+		SodiumConcentration float64  `json:"sodiumConcentration"`
 	} `json:"timeseriesData"`
 }
 
@@ -109,13 +112,16 @@ func processHDropData(raw string) (*providers.EnrichmentResult, error) {
 
 	m := data.Metadata
 
-	// Build timeseries proto points
+	sweatRate := parseFloatString(m.SweatRate)
+	sodiumConc := parseFloatString(m.SodiumConcentration)
+
+	// Build timeseries proto points; null sweat rate / fluid loss during warm-up → 0.
 	pts := make([]*pbactivity.HDropTimeseriesPoint, 0, len(data.TimeseriesData))
 	for _, t := range data.TimeseriesData {
 		pts = append(pts, &pbactivity.HDropTimeseriesPoint{
 			TimeMinutes:         t.TimeMinutes,
-			SweatRate:           t.SweatRate,
-			FluidLossCumulative: t.FluidLoss,
+			SweatRate:           derefF64(t.SweatRate),
+			FluidLossCumulative: derefF64(t.FluidLoss),
 			SodiumConcentration: t.SodiumConcentration,
 			Temperature:         t.Temperature,
 		})
@@ -123,10 +129,10 @@ func processHDropData(raw string) (*providers.EnrichmentResult, error) {
 
 	summary := &pbactivity.HDropSummary{
 		TotalFluidLossL:           m.TotalSweatLoss,
-		SweatRateLPerHr:           m.SweatRate,
+		SweatRateLPerHr:           sweatRate,
 		TotalSodiumMg:             m.TotalSodium,
 		TotalPotassiumMg:          m.TotalPotassium,
-		SodiumConcentrationMgPerL: parseSodiumConcentration(m.SodiumConcentration),
+		SodiumConcentrationMgPerL: sodiumConc,
 		AvgHdropScore:             m.AveragehDropScore,
 		MinHdropScore:             m.MinhDropScore,
 		BodyLocation:              m.BodyLocation,
@@ -135,7 +141,7 @@ func processHDropData(raw string) (*providers.EnrichmentResult, error) {
 		Timeseries:                pts,
 	}
 
-	desc := buildDescription(m.TotalSweatLoss, m.SweatRate, m.TotalSodium, m.TotalPotassium, parseSodiumConcentration(m.SodiumConcentration), m.AveragehDropScore, m.MinhDropScore, m.MinTemperature, m.MaxTemperature)
+	desc := buildDescription(m.TotalSweatLoss, sweatRate, m.TotalSodium, m.TotalPotassium, sodiumConc, m.AveragehDropScore, m.MinhDropScore, m.MinTemperature, m.MaxTemperature)
 
 	return &providers.EnrichmentResult{
 		Description:   desc,
@@ -166,11 +172,17 @@ func formatRounded(v float64) string {
 	return fmt.Sprintf("%.0f", math.Round(v))
 }
 
-// parseSodiumConcentration handles both numeric and string forms in the export.
-func parseSodiumConcentration(s string) float64 {
+func parseFloatString(s string) float64 {
 	var v float64
 	fmt.Sscanf(s, "%f", &v)
 	return v
+}
+
+func derefF64(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 
 func buildWaitError(stableID, providerName string) *user_input.WaitForInputError {
