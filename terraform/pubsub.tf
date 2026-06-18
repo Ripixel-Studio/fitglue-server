@@ -52,6 +52,15 @@ resource "google_pubsub_topic" "enrichment_lag" {
   message_retention_duration = "7200s"
 }
 
+# Dead-letter topic for pipeline-run messages that exhaust all retries.
+# Catches any error type that slips past the TerminalError / RetryableError handling.
+resource "google_pubsub_topic" "pipeline_run_dead_letter" {
+  name    = "topic-pipeline-run-dead-letter"
+  project = var.project_id
+
+  message_retention_duration = "604800s" # 7 days for investigation
+}
+
 # Dead-letter topic for lag messages that exhaust all retries.
 resource "google_pubsub_topic" "enrichment_lag_dead_letter" {
   name    = "topic-enrichment-lag-dead-letter"
@@ -198,8 +207,15 @@ resource "google_pubsub_subscription" "pipeline_run_sub" {
 
   ack_deadline_seconds = 600
   retry_policy {
-    minimum_backoff = "10s"
+    minimum_backoff = "30s"
     maximum_backoff = "600s"
+  }
+
+  # Safety net: if a message slips past TerminalError handling and keeps NACKing,
+  # dead-letter it after 5 attempts rather than retrying indefinitely.
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.pipeline_run_dead_letter.id
+    max_delivery_attempts = 5
   }
 }
 

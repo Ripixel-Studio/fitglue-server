@@ -311,8 +311,13 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 			}
 		}
 
-		fwCtx.Logger.Error("Orchestrator failed", "error", err)
-		return nil, err
+		// Non-retryable failure: the pipeline run is already marked FAILED in Firestore.
+		// ACK the message so Pub/Sub doesn't retry endlessly — returning a plain error
+		// would NACK and cause infinite re-delivery for permanent failures (bad data,
+		// bad user input, etc.). Use TerminalError so the framework wrapper logs it to
+		// Sentry but still ACKs.
+		fwCtx.Logger.Error("Orchestrator failed (terminal)", "error", err)
+		return nil, framework.NewTerminalError(err.Error())
 	}
 
 	if len(processResult.Events) == 0 {
