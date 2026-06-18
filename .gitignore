@@ -66,3 +66,6 @@ __pycache__/
 
 # Coverage output
 src/go/coverage.out
+src/go/coverage.real.out
+coverage.out
+coverage.real.out
