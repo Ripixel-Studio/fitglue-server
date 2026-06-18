@@ -409,6 +409,77 @@ func TestSubmitInput(t *testing.T) {
 	}
 }
 
+func TestSubmitInput_SkipNonBlocking_DoesNotRerun(t *testing.T) {
+	store := NewMockStore()
+	publisher := &MockPublisher{}
+	blobStore := &MockBlobStore{Blobs: map[string][]byte{}}
+
+	svc := NewService(store, publisher, blobStore, mockLogger{}, nil)
+	ctx := context.Background()
+
+	store.PendingInputs["user1_input1"] = &pipeline.PendingInput{
+		ActivityId:       "input1",
+		Status:           pipeline.PendingInput_STATUS_WAITING,
+		LinkedActivityId: "activity1",
+		NonBlocking:      true,
+	}
+
+	req := &pbsvc.SubmitInputRequest{
+		UserId:         "user1",
+		PendingInputId: "input1",
+		// No InputData — this is a skip.
+	}
+
+	if _, err := svc.SubmitInput(ctx, req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Input is marked complete...
+	input, _ := store.GetPendingInput(ctx, "user1", "input1")
+	if input.Status != pipeline.PendingInput_STATUS_COMPLETED {
+		t.Errorf("expected status COMPLETED, got %v", input.Status)
+	}
+
+	// ...but the pipeline is NOT re-run (no resume event published).
+	if len(publisher.PublishedEvents) != 0 {
+		t.Errorf("expected no events published for skipped non-blocking input, got %d", len(publisher.PublishedEvents))
+	}
+}
+
+func TestSubmitInput_SkipBlocking_StillReruns(t *testing.T) {
+	store := NewMockStore()
+	publisher := &MockPublisher{}
+
+	payloadBytes, _ := json.Marshal(map[string]interface{}{"foo": "bar"})
+	blobStore := &MockBlobStore{Blobs: map[string][]byte{"gs://bucket/path.json": payloadBytes}}
+
+	svc := NewService(store, publisher, blobStore, mockLogger{}, nil)
+	ctx := context.Background()
+
+	store.PendingInputs["user1_input1"] = &pipeline.PendingInput{
+		ActivityId:         "input1",
+		Status:             pipeline.PendingInput_STATUS_WAITING,
+		OriginalPayloadUri: "gs://bucket/path.json",
+		LinkedActivityId:   "activity1",
+		NonBlocking:        false,
+	}
+
+	req := &pbsvc.SubmitInputRequest{
+		UserId:         "user1",
+		PendingInputId: "input1",
+		// No InputData — a skip on a blocking input must still resume the pipeline
+		// so the activity can finish syncing.
+	}
+
+	if _, err := svc.SubmitInput(ctx, req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(publisher.PublishedEvents) != 1 {
+		t.Errorf("expected 1 event published for skipped blocking input, got %d", len(publisher.PublishedEvents))
+	}
+}
+
 func TestCreatePipeline_InvalidSource(t *testing.T) {
 	store := NewMockStore()
 	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{}, nil)

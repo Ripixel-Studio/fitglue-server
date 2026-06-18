@@ -227,6 +227,19 @@ func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest
 		return nil, status.Error(codes.FailedPrecondition, "input is not in WAITING state")
 	}
 
+	// Skipping a non-blocking pending input: the pipeline never paused for it, so the
+	// destinations already ran on the original pass. With no input data to apply, re-running
+	// would only re-issue a no-op Update to every destination — so just mark the input
+	// complete and return without republishing the resume event.
+	if input.NonBlocking && len(req.InputData) == 0 {
+		input.Status = pipeline.PendingInput_STATUS_COMPLETED
+		if err := s.store.UpdatePendingInput(ctx, req.UserId, input); err != nil {
+			s.logger.Error(ctx, "failed to mark skipped non-blocking input as completed", "error", err)
+			return nil, status.Error(codes.Internal, "failed to update pending input")
+		}
+		return &emptypb.Empty{}, nil
+	}
+
 	if input.LinkedActivityId == "" {
 		return nil, status.Error(codes.Internal, "pending input missing linked activity ID")
 	}
