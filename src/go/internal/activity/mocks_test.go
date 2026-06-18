@@ -47,6 +47,12 @@ type MockActivityStore struct {
 	GetExportJobFunc          func(ctx context.Context, userID, jobID string) (*ExportJobRecord, error)
 	UpdateExportJobFunc       func(ctx context.Context, userID, jobID string, fields map[string]interface{}) error
 	LatestActiveExportJobFunc func(ctx context.Context, userID string) (*ExportJobRecord, error)
+
+	GetRoundupFunc                 func(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error)
+	ListRecentRoundupsFunc         func(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error)
+	ListShowcaseEntriesInRangeFunc func(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error)
+	ListUserPersonalRecordsFunc    func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseTopPR, error)
+	ListAllShowcaseUserIDsFunc     func(ctx context.Context) ([]string, error)
 }
 
 func (m *MockActivityStore) CreateExportJob(ctx context.Context, userID string, job *ExportJobRecord) error {
@@ -267,10 +273,16 @@ func (m *MockActivityStore) DeleteShowcaseProfileEntry(ctx context.Context, user
 }
 
 func (m *MockActivityStore) ListUserPersonalRecords(ctx context.Context, userID string) ([]*pbactivity.ShowcaseTopPR, error) {
+	if m.ListUserPersonalRecordsFunc != nil {
+		return m.ListUserPersonalRecordsFunc(ctx, userID)
+	}
 	return nil, nil
 }
 
 func (m *MockActivityStore) GetRoundup(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error) {
+	if m.GetRoundupFunc != nil {
+		return m.GetRoundupFunc(ctx, slug, periodKey)
+	}
 	return nil, nil
 }
 
@@ -279,14 +291,23 @@ func (m *MockActivityStore) SetRoundup(ctx context.Context, roundup *pbactivity.
 }
 
 func (m *MockActivityStore) ListRecentRoundups(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error) {
+	if m.ListRecentRoundupsFunc != nil {
+		return m.ListRecentRoundupsFunc(ctx, slug, limit)
+	}
 	return nil, nil
 }
 
 func (m *MockActivityStore) ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error) {
+	if m.ListShowcaseEntriesInRangeFunc != nil {
+		return m.ListShowcaseEntriesInRangeFunc(ctx, userID, from, to)
+	}
 	return nil, nil
 }
 
 func (m *MockActivityStore) ListAllShowcaseUserIDs(ctx context.Context) ([]string, error) {
+	if m.ListAllShowcaseUserIDsFunc != nil {
+		return m.ListAllShowcaseUserIDsFunc(ctx)
+	}
 	return nil, nil
 }
 
