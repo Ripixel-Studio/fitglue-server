@@ -33,6 +33,13 @@ else
   cp coverage.out coverage.real.out
 fi
 
+# Also exclude package `main.go` entrypoints from the metric. These are thin
+# bootstrap/serve wiring (flag parsing, dependency construction, ListenAndServe)
+# that is validated by integration/E2E tests, not unit tests. They are exempt
+# from the per-file floor below for the same reason, so excluding them here keeps
+# the percentage an honest measure of *unit-tested* hand-written logic.
+grep -v '/main\.go:[0-9]' coverage.real.out > coverage.real.tmp && mv coverage.real.tmp coverage.real.out
+
 echo "Analyzing coverage (hand-written code only)..."
 
 # Per-file floor: every hand-written file must have SOME coverage. Generated
