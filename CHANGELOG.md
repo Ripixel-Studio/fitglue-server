@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.57.1](https://github.com/FitGlue/server/compare/v16.57.0...v16.57.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **admin:** populate run user_id, resolve identity from Firebase, add pipeline config endpoints ([3447aba](https://github.com/FitGlue/server/commit/3447aba653d9bcd6de03de270eb317e763298e8a))
+
 ## [16.57.0](https://github.com/FitGlue/server/compare/v16.56.3...v16.57.0) (2026-06-19)
 
 
