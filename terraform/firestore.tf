@@ -470,3 +470,26 @@ resource "google_firestore_index" "pipeline_runs_cg_source_created" {
     order      = "DESCENDING"
   }
 }
+
+# -------------------------------------------------------------------
+# Admin Audit Log Index
+# Used by the admin console to list a single user's audit trail:
+#   .where('target_user_id','==',uid).orderBy('timestamp','desc')
+# The unfiltered, timestamp-ordered listing uses the automatic single-field index.
+# -------------------------------------------------------------------
+resource "google_firestore_index" "admin_audit_log_target_timestamp" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "admin_audit_log"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "target_user_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+}

@@ -69,6 +69,7 @@ func TestRouteCoverage(t *testing.T) {
 		&adminMockUserClient{},
 		&adminNopPipelineClient{},
 		nil, // activitySvc — only need router structure
+		nil, // billingSvc — only need router structure
 		nil, // firestoreClient — only need router structure
 	)
 

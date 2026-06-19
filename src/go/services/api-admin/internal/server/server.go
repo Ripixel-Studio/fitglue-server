@@ -1,10 +1,8 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"cloud.google.com/go/firestore"
 	"firebase.google.com/go/v4/auth"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/fitglue/server/src/go/internal/infra"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
+	billingpb "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
@@ -25,6 +24,7 @@ type APIServer struct {
 	userService     userpb.UserServiceClient
 	pipelineSvc     pipelinepb.PipelineServiceClient
 	activitySvc     activitypb.ActivityServiceClient
+	billingSvc      billingpb.BillingServiceClient
 	firestoreClient *firestore.Client
 }
 
@@ -35,6 +35,7 @@ func NewAPIServer(
 	userSvc userpb.UserServiceClient,
 	pipelineSvc pipelinepb.PipelineServiceClient,
 	activitySvc activitypb.ActivityServiceClient,
+	billingSvc billingpb.BillingServiceClient,
 	fsClient *firestore.Client,
 ) *APIServer {
 	s := &APIServer{
@@ -44,6 +45,7 @@ func NewAPIServer(
 		userService:     userSvc,
 		pipelineSvc:     pipelineSvc,
 		activitySvc:     activitySvc,
+		billingSvc:      billingSvc,
 		firestoreClient: fsClient,
 	}
 
@@ -78,91 +80,36 @@ func (s *APIServer) setupRoutes() {
 func (s *APIServer) registerAdminRoutes(r chi.Router) {
 	r.Get("/stats", s.handleGetStats)
 
+	// User management
 	r.Get("/users", s.handleListUsers)
 	r.Get("/users/{id}", s.handleGetUser)
 	r.Put("/users/{id}", s.handleUpdateUser)
 	r.Delete("/users/{id}", s.handleDeleteUser)
 	r.Delete("/users/{id}/{dataType}", s.handleDeleteUserData)
 
+	// User actions
+	r.Post("/users/{id}/send-password-reset", s.handleSendPasswordReset)
+	r.Post("/users/{id}/send-verification-email", s.handleSendVerificationEmail)
+	r.Post("/users/{id}/integrations/{provider}/enabled", s.handleSetIntegrationEnabled)
+	r.Delete("/users/{id}/integrations/{provider}", s.handleDeleteIntegration)
+
+	// Pipeline management
 	r.Get("/pipelines", s.handleListAllPipelines)
 	r.Get("/pipeline-runs", s.handleAdminPipelineRuns)
-}
+	r.Get("/users/{id}/pipeline-runs/{runId}", s.handleGetPipelineRun)
+	r.Post("/users/{id}/activities/{activityId}/repost", s.handleRepostActivity)
+	r.Post("/users/{id}/pipeline-runs/{runId}/cancel", s.handleCancelPipelineRun)
+	r.Get("/users/{id}/pending-inputs", s.handleListPendingInputs)
+	r.Post("/users/{id}/pending-inputs/{inputId}/resolve", s.handleResolvePendingInput)
 
-func (s *APIServer) handleListUsers(w http.ResponseWriter, r *http.Request) {
-	limitStr := r.URL.Query().Get("limit")
-	limit := 50
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
-			limit = l
-		}
-	}
-	pageToken := r.URL.Query().Get("page_token")
+	// Billing
+	r.Get("/users/{id}/billing", s.handleGetUserBilling)
+	r.Post("/users/{id}/billing/trial", s.handleStartTrial)
+	r.Post("/users/{id}/billing/cancel", s.handleCancelSubscription)
+	r.Post("/users/{id}/billing/portal", s.handleCreateBillingPortal)
 
-	res, err := s.userService.ListUsers(r.Context(), &userpb.ListUsersRequest{
-		Limit:     int32(limit),
-		PageToken: pageToken,
-	})
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-
-	WriteJSON(w, res)
-}
-
-func (s *APIServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "id")
-	if userID == "" {
-		WriteError(w, statusError(http.StatusBadRequest, "missing user id"))
-		return
-	}
-
-	res, err := s.userService.GetProfile(r.Context(), &userpb.GetProfileRequest{
-		UserId: userID,
-	})
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-
-	WriteJSON(w, res)
-}
-
-func (s *APIServer) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "id")
-	if userID == "" {
-		WriteError(w, statusError(http.StatusBadRequest, "missing user id"))
-		return
-	}
-
-	var req struct {
-		AccessEnabled *bool `json:"accessEnabled"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
-		return
-	}
-
-	profile, err := s.userService.GetProfile(r.Context(), &userpb.GetProfileRequest{UserId: userID})
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-
-	if req.AccessEnabled != nil {
-		profile.AccessEnabled = *req.AccessEnabled
-	}
-
-	res, err := s.userService.UpdateProfile(r.Context(), &userpb.UpdateProfileRequest{
-		UserId:  userID,
-		Profile: profile,
-	})
-	if err != nil {
-		WriteError(w, err)
-		return
-	}
-
-	WriteJSON(w, res)
+	// Audit log
+	r.Get("/audit-log", s.handleListAuditLog)
 }
 
 func (s *APIServer) handleDeleteUser(w http.ResponseWriter, r *http.Request) {

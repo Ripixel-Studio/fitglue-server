@@ -8,7 +8,7 @@ package gateway
 
 import (
 	context "context"
-	user "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+	pipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,14 +20,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminGatewayService_GetStats_FullMethodName         = "/fitglue.gateway.AdminGatewayService/GetStats"
-	AdminGatewayService_ListUsers_FullMethodName        = "/fitglue.gateway.AdminGatewayService/ListUsers"
-	AdminGatewayService_GetUser_FullMethodName          = "/fitglue.gateway.AdminGatewayService/GetUser"
-	AdminGatewayService_UpdateUser_FullMethodName       = "/fitglue.gateway.AdminGatewayService/UpdateUser"
-	AdminGatewayService_DeleteUser_FullMethodName       = "/fitglue.gateway.AdminGatewayService/DeleteUser"
-	AdminGatewayService_DeleteUserData_FullMethodName   = "/fitglue.gateway.AdminGatewayService/DeleteUserData"
-	AdminGatewayService_ListAllPipelines_FullMethodName = "/fitglue.gateway.AdminGatewayService/ListAllPipelines"
-	AdminGatewayService_ListPipelineRuns_FullMethodName = "/fitglue.gateway.AdminGatewayService/ListPipelineRuns"
+	AdminGatewayService_GetStats_FullMethodName                   = "/fitglue.gateway.AdminGatewayService/GetStats"
+	AdminGatewayService_ListUsers_FullMethodName                  = "/fitglue.gateway.AdminGatewayService/ListUsers"
+	AdminGatewayService_GetUser_FullMethodName                    = "/fitglue.gateway.AdminGatewayService/GetUser"
+	AdminGatewayService_UpdateUser_FullMethodName                 = "/fitglue.gateway.AdminGatewayService/UpdateUser"
+	AdminGatewayService_DeleteUser_FullMethodName                 = "/fitglue.gateway.AdminGatewayService/DeleteUser"
+	AdminGatewayService_DeleteUserData_FullMethodName             = "/fitglue.gateway.AdminGatewayService/DeleteUserData"
+	AdminGatewayService_SendPasswordReset_FullMethodName          = "/fitglue.gateway.AdminGatewayService/SendPasswordReset"
+	AdminGatewayService_SendVerificationEmail_FullMethodName      = "/fitglue.gateway.AdminGatewayService/SendVerificationEmail"
+	AdminGatewayService_SetIntegrationEnabled_FullMethodName      = "/fitglue.gateway.AdminGatewayService/SetIntegrationEnabled"
+	AdminGatewayService_DeleteIntegration_FullMethodName          = "/fitglue.gateway.AdminGatewayService/DeleteIntegration"
+	AdminGatewayService_ListAllPipelines_FullMethodName           = "/fitglue.gateway.AdminGatewayService/ListAllPipelines"
+	AdminGatewayService_ListPipelineRuns_FullMethodName           = "/fitglue.gateway.AdminGatewayService/ListPipelineRuns"
+	AdminGatewayService_GetPipelineRun_FullMethodName             = "/fitglue.gateway.AdminGatewayService/GetPipelineRun"
+	AdminGatewayService_RepostActivity_FullMethodName             = "/fitglue.gateway.AdminGatewayService/RepostActivity"
+	AdminGatewayService_CancelPipelineRun_FullMethodName          = "/fitglue.gateway.AdminGatewayService/CancelPipelineRun"
+	AdminGatewayService_ListPendingInputs_FullMethodName          = "/fitglue.gateway.AdminGatewayService/ListPendingInputs"
+	AdminGatewayService_ResolvePendingInput_FullMethodName        = "/fitglue.gateway.AdminGatewayService/ResolvePendingInput"
+	AdminGatewayService_GetUserBilling_FullMethodName             = "/fitglue.gateway.AdminGatewayService/GetUserBilling"
+	AdminGatewayService_StartTrial_FullMethodName                 = "/fitglue.gateway.AdminGatewayService/StartTrial"
+	AdminGatewayService_CancelSubscription_FullMethodName         = "/fitglue.gateway.AdminGatewayService/CancelSubscription"
+	AdminGatewayService_CreateBillingPortalSession_FullMethodName = "/fitglue.gateway.AdminGatewayService/CreateBillingPortalSession"
+	AdminGatewayService_ListAuditLog_FullMethodName               = "/fitglue.gateway.AdminGatewayService/ListAuditLog"
 )
 
 // AdminGatewayServiceClient is the client API for AdminGatewayService service.
@@ -37,19 +51,37 @@ const (
 // AdminGatewayService describes the admin REST API surface
 // served by api-admin at /api/admin/*.
 //
-// Requires admin authentication via AdminMiddleware.
+// Requires admin authentication via AdminMiddleware. Every mutating RPC is
+// recorded to the admin audit log.
 type AdminGatewayServiceClient interface {
 	// ===================== Platform Stats =====================
 	GetStats(ctx context.Context, in *GetAdminStatsRequest, opts ...grpc.CallOption) (*GetAdminStatsResponse, error)
 	// ===================== User Management =====================
 	ListUsers(ctx context.Context, in *ListUsersAdminRequest, opts ...grpc.CallOption) (*ListUsersAdminResponse, error)
-	GetUser(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*user.UserProfile, error)
-	UpdateUser(ctx context.Context, in *UpdateUserAdminRequest, opts ...grpc.CallOption) (*user.UserProfile, error)
+	GetUser(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminUserDetail, error)
+	UpdateUser(ctx context.Context, in *UpdateUserAdminRequest, opts ...grpc.CallOption) (*AdminUserDetail, error)
 	DeleteUser(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
 	DeleteUserData(ctx context.Context, in *DeleteUserDataAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	// ===================== User Actions =====================
+	SendPasswordReset(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	SendVerificationEmail(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	SetIntegrationEnabled(ctx context.Context, in *SetIntegrationEnabledAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	DeleteIntegration(ctx context.Context, in *DeleteIntegrationAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
 	// ===================== Pipeline Management =====================
 	ListAllPipelines(ctx context.Context, in *ListAllPipelinesAdminRequest, opts ...grpc.CallOption) (*ListAllPipelinesAdminResponse, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsAdminRequest, opts ...grpc.CallOption) (*ListPipelineRunsAdminResponse, error)
+	GetPipelineRun(ctx context.Context, in *GetPipelineRunAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
+	RepostActivity(ctx context.Context, in *RepostActivityAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	CancelPipelineRun(ctx context.Context, in *CancelPipelineRunAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	ListPendingInputs(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*ListPendingInputsAdminResponse, error)
+	ResolvePendingInput(ctx context.Context, in *ResolvePendingInputAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	// ===================== Billing =====================
+	GetUserBilling(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminUserBilling, error)
+	StartTrial(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	CancelSubscription(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
+	CreateBillingPortalSession(ctx context.Context, in *CreateBillingPortalAdminRequest, opts ...grpc.CallOption) (*CreateBillingPortalAdminResponse, error)
+	// ===================== Audit Log =====================
+	ListAuditLog(ctx context.Context, in *ListAuditLogAdminRequest, opts ...grpc.CallOption) (*ListAuditLogAdminResponse, error)
 }
 
 type adminGatewayServiceClient struct {
@@ -80,9 +112,9 @@ func (c *adminGatewayServiceClient) ListUsers(ctx context.Context, in *ListUsers
 	return out, nil
 }
 
-func (c *adminGatewayServiceClient) GetUser(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*user.UserProfile, error) {
+func (c *adminGatewayServiceClient) GetUser(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminUserDetail, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(user.UserProfile)
+	out := new(AdminUserDetail)
 	err := c.cc.Invoke(ctx, AdminGatewayService_GetUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -90,9 +122,9 @@ func (c *adminGatewayServiceClient) GetUser(ctx context.Context, in *UserIdAdmin
 	return out, nil
 }
 
-func (c *adminGatewayServiceClient) UpdateUser(ctx context.Context, in *UpdateUserAdminRequest, opts ...grpc.CallOption) (*user.UserProfile, error) {
+func (c *adminGatewayServiceClient) UpdateUser(ctx context.Context, in *UpdateUserAdminRequest, opts ...grpc.CallOption) (*AdminUserDetail, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(user.UserProfile)
+	out := new(AdminUserDetail)
 	err := c.cc.Invoke(ctx, AdminGatewayService_UpdateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -120,6 +152,46 @@ func (c *adminGatewayServiceClient) DeleteUserData(ctx context.Context, in *Dele
 	return out, nil
 }
 
+func (c *adminGatewayServiceClient) SendPasswordReset(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_SendPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) SendVerificationEmail(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_SendVerificationEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) SetIntegrationEnabled(ctx context.Context, in *SetIntegrationEnabledAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_SetIntegrationEnabled_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) DeleteIntegration(ctx context.Context, in *DeleteIntegrationAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_DeleteIntegration_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminGatewayServiceClient) ListAllPipelines(ctx context.Context, in *ListAllPipelinesAdminRequest, opts ...grpc.CallOption) (*ListAllPipelinesAdminResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAllPipelinesAdminResponse)
@@ -140,6 +212,106 @@ func (c *adminGatewayServiceClient) ListPipelineRuns(ctx context.Context, in *Li
 	return out, nil
 }
 
+func (c *adminGatewayServiceClient) GetPipelineRun(ctx context.Context, in *GetPipelineRunAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pipeline.PipelineRun)
+	err := c.cc.Invoke(ctx, AdminGatewayService_GetPipelineRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) RepostActivity(ctx context.Context, in *RepostActivityAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_RepostActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) CancelPipelineRun(ctx context.Context, in *CancelPipelineRunAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_CancelPipelineRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) ListPendingInputs(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*ListPendingInputsAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPendingInputsAdminResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_ListPendingInputs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) ResolvePendingInput(ctx context.Context, in *ResolvePendingInputAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_ResolvePendingInput_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) GetUserBilling(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminUserBilling, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminUserBilling)
+	err := c.cc.Invoke(ctx, AdminGatewayService_GetUserBilling_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) StartTrial(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_StartTrial_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) CancelSubscription(ctx context.Context, in *UserIdAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_CancelSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) CreateBillingPortalSession(ctx context.Context, in *CreateBillingPortalAdminRequest, opts ...grpc.CallOption) (*CreateBillingPortalAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateBillingPortalAdminResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_CreateBillingPortalSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) ListAuditLog(ctx context.Context, in *ListAuditLogAdminRequest, opts ...grpc.CallOption) (*ListAuditLogAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAuditLogAdminResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_ListAuditLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminGatewayServiceServer is the server API for AdminGatewayService service.
 // All implementations must embed UnimplementedAdminGatewayServiceServer
 // for forward compatibility.
@@ -147,19 +319,37 @@ func (c *adminGatewayServiceClient) ListPipelineRuns(ctx context.Context, in *Li
 // AdminGatewayService describes the admin REST API surface
 // served by api-admin at /api/admin/*.
 //
-// Requires admin authentication via AdminMiddleware.
+// Requires admin authentication via AdminMiddleware. Every mutating RPC is
+// recorded to the admin audit log.
 type AdminGatewayServiceServer interface {
 	// ===================== Platform Stats =====================
 	GetStats(context.Context, *GetAdminStatsRequest) (*GetAdminStatsResponse, error)
 	// ===================== User Management =====================
 	ListUsers(context.Context, *ListUsersAdminRequest) (*ListUsersAdminResponse, error)
-	GetUser(context.Context, *UserIdAdminRequest) (*user.UserProfile, error)
-	UpdateUser(context.Context, *UpdateUserAdminRequest) (*user.UserProfile, error)
+	GetUser(context.Context, *UserIdAdminRequest) (*AdminUserDetail, error)
+	UpdateUser(context.Context, *UpdateUserAdminRequest) (*AdminUserDetail, error)
 	DeleteUser(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error)
 	DeleteUserData(context.Context, *DeleteUserDataAdminRequest) (*AdminEmptyResponse, error)
+	// ===================== User Actions =====================
+	SendPasswordReset(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error)
+	SendVerificationEmail(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error)
+	SetIntegrationEnabled(context.Context, *SetIntegrationEnabledAdminRequest) (*AdminEmptyResponse, error)
+	DeleteIntegration(context.Context, *DeleteIntegrationAdminRequest) (*AdminEmptyResponse, error)
 	// ===================== Pipeline Management =====================
 	ListAllPipelines(context.Context, *ListAllPipelinesAdminRequest) (*ListAllPipelinesAdminResponse, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsAdminRequest) (*ListPipelineRunsAdminResponse, error)
+	GetPipelineRun(context.Context, *GetPipelineRunAdminRequest) (*pipeline.PipelineRun, error)
+	RepostActivity(context.Context, *RepostActivityAdminRequest) (*AdminEmptyResponse, error)
+	CancelPipelineRun(context.Context, *CancelPipelineRunAdminRequest) (*AdminEmptyResponse, error)
+	ListPendingInputs(context.Context, *UserIdAdminRequest) (*ListPendingInputsAdminResponse, error)
+	ResolvePendingInput(context.Context, *ResolvePendingInputAdminRequest) (*AdminEmptyResponse, error)
+	// ===================== Billing =====================
+	GetUserBilling(context.Context, *UserIdAdminRequest) (*AdminUserBilling, error)
+	StartTrial(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error)
+	CancelSubscription(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error)
+	CreateBillingPortalSession(context.Context, *CreateBillingPortalAdminRequest) (*CreateBillingPortalAdminResponse, error)
+	// ===================== Audit Log =====================
+	ListAuditLog(context.Context, *ListAuditLogAdminRequest) (*ListAuditLogAdminResponse, error)
 	mustEmbedUnimplementedAdminGatewayServiceServer()
 }
 
@@ -176,10 +366,10 @@ func (UnimplementedAdminGatewayServiceServer) GetStats(context.Context, *GetAdmi
 func (UnimplementedAdminGatewayServiceServer) ListUsers(context.Context, *ListUsersAdminRequest) (*ListUsersAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListUsers not implemented")
 }
-func (UnimplementedAdminGatewayServiceServer) GetUser(context.Context, *UserIdAdminRequest) (*user.UserProfile, error) {
+func (UnimplementedAdminGatewayServiceServer) GetUser(context.Context, *UserIdAdminRequest) (*AdminUserDetail, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
 }
-func (UnimplementedAdminGatewayServiceServer) UpdateUser(context.Context, *UpdateUserAdminRequest) (*user.UserProfile, error) {
+func (UnimplementedAdminGatewayServiceServer) UpdateUser(context.Context, *UpdateUserAdminRequest) (*AdminUserDetail, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
 }
 func (UnimplementedAdminGatewayServiceServer) DeleteUser(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error) {
@@ -188,11 +378,53 @@ func (UnimplementedAdminGatewayServiceServer) DeleteUser(context.Context, *UserI
 func (UnimplementedAdminGatewayServiceServer) DeleteUserData(context.Context, *DeleteUserDataAdminRequest) (*AdminEmptyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUserData not implemented")
 }
+func (UnimplementedAdminGatewayServiceServer) SendPasswordReset(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendPasswordReset not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) SendVerificationEmail(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendVerificationEmail not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) SetIntegrationEnabled(context.Context, *SetIntegrationEnabledAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetIntegrationEnabled not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) DeleteIntegration(context.Context, *DeleteIntegrationAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteIntegration not implemented")
+}
 func (UnimplementedAdminGatewayServiceServer) ListAllPipelines(context.Context, *ListAllPipelinesAdminRequest) (*ListAllPipelinesAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAllPipelines not implemented")
 }
 func (UnimplementedAdminGatewayServiceServer) ListPipelineRuns(context.Context, *ListPipelineRunsAdminRequest) (*ListPipelineRunsAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPipelineRuns not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) GetPipelineRun(context.Context, *GetPipelineRunAdminRequest) (*pipeline.PipelineRun, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPipelineRun not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) RepostActivity(context.Context, *RepostActivityAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RepostActivity not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) CancelPipelineRun(context.Context, *CancelPipelineRunAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelPipelineRun not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) ListPendingInputs(context.Context, *UserIdAdminRequest) (*ListPendingInputsAdminResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPendingInputs not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) ResolvePendingInput(context.Context, *ResolvePendingInputAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolvePendingInput not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) GetUserBilling(context.Context, *UserIdAdminRequest) (*AdminUserBilling, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserBilling not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) StartTrial(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartTrial not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) CancelSubscription(context.Context, *UserIdAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelSubscription not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) CreateBillingPortalSession(context.Context, *CreateBillingPortalAdminRequest) (*CreateBillingPortalAdminResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateBillingPortalSession not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) ListAuditLog(context.Context, *ListAuditLogAdminRequest) (*ListAuditLogAdminResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAuditLog not implemented")
 }
 func (UnimplementedAdminGatewayServiceServer) mustEmbedUnimplementedAdminGatewayServiceServer() {}
 func (UnimplementedAdminGatewayServiceServer) testEmbeddedByValue()                             {}
@@ -323,6 +555,78 @@ func _AdminGatewayService_DeleteUserData_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminGatewayService_SendPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).SendPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_SendPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).SendPasswordReset(ctx, req.(*UserIdAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_SendVerificationEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).SendVerificationEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_SendVerificationEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).SendVerificationEmail(ctx, req.(*UserIdAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_SetIntegrationEnabled_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetIntegrationEnabledAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).SetIntegrationEnabled(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_SetIntegrationEnabled_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).SetIntegrationEnabled(ctx, req.(*SetIntegrationEnabledAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_DeleteIntegration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteIntegrationAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).DeleteIntegration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_DeleteIntegration_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).DeleteIntegration(ctx, req.(*DeleteIntegrationAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminGatewayService_ListAllPipelines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListAllPipelinesAdminRequest)
 	if err := dec(in); err != nil {
@@ -359,6 +663,186 @@ func _AdminGatewayService_ListPipelineRuns_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminGatewayService_GetPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPipelineRunAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).GetPipelineRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_GetPipelineRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).GetPipelineRun(ctx, req.(*GetPipelineRunAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_RepostActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RepostActivityAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).RepostActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_RepostActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).RepostActivity(ctx, req.(*RepostActivityAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_CancelPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelPipelineRunAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).CancelPipelineRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_CancelPipelineRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).CancelPipelineRun(ctx, req.(*CancelPipelineRunAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_ListPendingInputs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).ListPendingInputs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_ListPendingInputs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).ListPendingInputs(ctx, req.(*UserIdAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_ResolvePendingInput_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolvePendingInputAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).ResolvePendingInput(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_ResolvePendingInput_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).ResolvePendingInput(ctx, req.(*ResolvePendingInputAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_GetUserBilling_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).GetUserBilling(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_GetUserBilling_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).GetUserBilling(ctx, req.(*UserIdAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_StartTrial_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).StartTrial(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_StartTrial_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).StartTrial(ctx, req.(*UserIdAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_CancelSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).CancelSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_CancelSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).CancelSubscription(ctx, req.(*UserIdAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_CreateBillingPortalSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBillingPortalAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).CreateBillingPortalSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_CreateBillingPortalSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).CreateBillingPortalSession(ctx, req.(*CreateBillingPortalAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_ListAuditLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAuditLogAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).ListAuditLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_ListAuditLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).ListAuditLog(ctx, req.(*ListAuditLogAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminGatewayService_ServiceDesc is the grpc.ServiceDesc for AdminGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -391,12 +875,68 @@ var AdminGatewayService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminGatewayService_DeleteUserData_Handler,
 		},
 		{
+			MethodName: "SendPasswordReset",
+			Handler:    _AdminGatewayService_SendPasswordReset_Handler,
+		},
+		{
+			MethodName: "SendVerificationEmail",
+			Handler:    _AdminGatewayService_SendVerificationEmail_Handler,
+		},
+		{
+			MethodName: "SetIntegrationEnabled",
+			Handler:    _AdminGatewayService_SetIntegrationEnabled_Handler,
+		},
+		{
+			MethodName: "DeleteIntegration",
+			Handler:    _AdminGatewayService_DeleteIntegration_Handler,
+		},
+		{
 			MethodName: "ListAllPipelines",
 			Handler:    _AdminGatewayService_ListAllPipelines_Handler,
 		},
 		{
 			MethodName: "ListPipelineRuns",
 			Handler:    _AdminGatewayService_ListPipelineRuns_Handler,
+		},
+		{
+			MethodName: "GetPipelineRun",
+			Handler:    _AdminGatewayService_GetPipelineRun_Handler,
+		},
+		{
+			MethodName: "RepostActivity",
+			Handler:    _AdminGatewayService_RepostActivity_Handler,
+		},
+		{
+			MethodName: "CancelPipelineRun",
+			Handler:    _AdminGatewayService_CancelPipelineRun_Handler,
+		},
+		{
+			MethodName: "ListPendingInputs",
+			Handler:    _AdminGatewayService_ListPendingInputs_Handler,
+		},
+		{
+			MethodName: "ResolvePendingInput",
+			Handler:    _AdminGatewayService_ResolvePendingInput_Handler,
+		},
+		{
+			MethodName: "GetUserBilling",
+			Handler:    _AdminGatewayService_GetUserBilling_Handler,
+		},
+		{
+			MethodName: "StartTrial",
+			Handler:    _AdminGatewayService_StartTrial_Handler,
+		},
+		{
+			MethodName: "CancelSubscription",
+			Handler:    _AdminGatewayService_CancelSubscription_Handler,
+		},
+		{
+			MethodName: "CreateBillingPortalSession",
+			Handler:    _AdminGatewayService_CreateBillingPortalSession_Handler,
+		},
+		{
+			MethodName: "ListAuditLog",
+			Handler:    _AdminGatewayService_ListAuditLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

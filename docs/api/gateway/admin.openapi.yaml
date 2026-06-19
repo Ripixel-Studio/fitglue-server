@@ -8,9 +8,43 @@ info:
         AdminGatewayService describes the admin REST API surface
          served by api-admin at /api/admin/*.
 
-         Requires admin authentication via AdminMiddleware.
+         Requires admin authentication via AdminMiddleware. Every mutating RPC is
+         recorded to the admin audit log.
     version: 0.0.1
 paths:
+    /audit-log:
+        get:
+            tags:
+                - AdminGatewayService
+            description: ===================== Audit Log =====================
+            operationId: AdminGatewayService_ListAuditLog
+            parameters:
+                - name: targetUserId
+                  in: query
+                  schema:
+                    type: string
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListAuditLogAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /pipeline-runs:
         get:
             tags:
@@ -140,7 +174,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserProfile'
+                                $ref: '#/components/schemas/AdminUserDetail'
                 default:
                     description: Default error response
                     content:
@@ -169,7 +203,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserProfile'
+                                $ref: '#/components/schemas/AdminUserDetail'
                 default:
                     description: Default error response
                     content:
@@ -186,6 +220,404 @@ paths:
                   required: true
                   schema:
                     type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/activities/{activityId}/repost:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_RepostActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: activityId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RepostActivityAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/billing:
+        get:
+            tags:
+                - AdminGatewayService
+            description: ===================== Billing =====================
+            operationId: AdminGatewayService_GetUserBilling
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminUserBilling'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/billing/cancel:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_CancelSubscription
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserIdAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/billing/portal:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_CreateBillingPortalSession
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateBillingPortalAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateBillingPortalAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/billing/trial:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_StartTrial
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserIdAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/integrations/{provider}:
+        delete:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_DeleteIntegration
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/integrations/{provider}/enabled:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_SetIntegrationEnabled
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetIntegrationEnabledAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/pending-inputs:
+        get:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_ListPendingInputs
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPendingInputsAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/pending-inputs/{inputId}/resolve:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_ResolvePendingInput
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: inputId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ResolvePendingInputAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/pipeline-runs/{runId}:
+        get:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_GetPipelineRun
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: runId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineRun'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/pipeline-runs/{runId}/cancel:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_CancelPipelineRun
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: runId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CancelPipelineRunAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/send-password-reset:
+        post:
+            tags:
+                - AdminGatewayService
+            description: ===================== User Actions =====================
+            operationId: AdminGatewayService_SendPasswordReset
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserIdAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/send-verification-email:
+        post:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_SendVerificationEmail
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserIdAdminRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -230,9 +662,190 @@ paths:
                                 $ref: '#/components/schemas/Status'
 components:
     schemas:
+        AdminAuditLogEntry:
+            type: object
+            properties:
+                id:
+                    type: string
+                actorUid:
+                    type: string
+                actorEmail:
+                    type: string
+                action:
+                    type: string
+                targetUserId:
+                    type: string
+                params:
+                    type: object
+                    additionalProperties:
+                        type: string
+                result:
+                    type: string
+                error:
+                    type: string
+                timestamp:
+                    type: string
+                    format: date-time
+            description: '----------------------- Audit Log -----------------------'
         AdminEmptyResponse:
             type: object
             properties: {}
+        AdminIntegrationSummary:
+            type: object
+            properties:
+                provider:
+                    type: string
+                enabled:
+                    type: boolean
+                connected:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+                expiresAt:
+                    type: string
+                    format: date-time
+                tokenHealth:
+                    type: string
+                    description: '"valid" | "expired" | "n/a" (n/a = provider has no expiring token)'
+            description: |-
+                AdminIntegrationSummary is a redacted view of a connected provider — it never
+                 includes tokens or secrets, only status/health metadata.
+        AdminPendingInputSummary:
+            type: object
+            properties:
+                id:
+                    type: string
+                activityId:
+                    type: string
+                enricherProviderId:
+                    type: string
+                status:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+        AdminPipelineRunStats:
+            type: object
+            properties:
+                total:
+                    type: integer
+                    format: int32
+                byStatus:
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int32
+                bySource:
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int32
+        AdminPipelineSummary:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                source:
+                    type: string
+                destinations:
+                    type: array
+                    items:
+                        type: string
+                enabled:
+                    type: boolean
+        AdminUserBilling:
+            type: object
+            properties:
+                subscription:
+                    $ref: '#/components/schemas/SubscriptionState'
+                effectiveTier:
+                    enum:
+                        - USER_TIER_UNSPECIFIED
+                        - USER_TIER_HOBBYIST
+                        - USER_TIER_ATHLETE
+                    type: string
+                    format: enum
+                isTrial:
+                    type: boolean
+        AdminUserDetail:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/UserProfile'
+                integrations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AdminIntegrationSummary'
+                pipelines:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AdminPipelineSummary'
+                activityCount:
+                    type: integer
+                    format: int32
+                pipelineRunCount:
+                    type: integer
+                    format: int32
+                pendingInputs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AdminPendingInputSummary'
+                billing:
+                    $ref: '#/components/schemas/AdminUserBilling'
+            description: AdminUserDetail is the aggregated 360-degree view of a single user.
+        AdminUserSummary:
+            type: object
+            properties:
+                userId:
+                    type: string
+                email:
+                    type: string
+                displayName:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                tier:
+                    enum:
+                        - USER_TIER_UNSPECIFIED
+                        - USER_TIER_HOBBYIST
+                        - USER_TIER_ATHLETE
+                    type: string
+                    format: enum
+                isAdmin:
+                    type: boolean
+                accessEnabled:
+                    type: boolean
+                syncCountThisMonth:
+                    type: integer
+                    format: int32
+                preventedSyncCount:
+                    type: integer
+                    format: int32
+                integrationCount:
+                    type: integer
+                    format: int32
+                pipelineCount:
+                    type: integer
+                    format: int32
+                trialEndsAt:
+                    type: string
+                    format: date-time
+                stripeCustomerId:
+                    type: string
+                integrations:
+                    type: array
+                    items:
+                        type: string
+            description: |-
+                AdminUserSummary is the per-row shape for the user directory. It carries the
+                 derived counts the table needs without the client having to aggregate.
         BoosterExecution:
             type: object
             properties:
@@ -258,6 +871,26 @@ components:
                         - EXECUTION_STEP_STATUS_RETRIED
                     type: string
                     format: enum
+        CancelPipelineRunAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                runId:
+                    type: string
+        CreateBillingPortalAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                returnUrl:
+                    type: string
+            description: '----------------------- Billing -----------------------'
+        CreateBillingPortalAdminResponse:
+            type: object
+            properties:
+                url:
+                    type: string
         DestinationConfig:
             type: object
             properties:
@@ -442,6 +1075,22 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/PipelineConfig'
+        ListAuditLogAdminResponse:
+            type: object
+            properties:
+                entries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AdminAuditLogEntry'
+                nextPageToken:
+                    type: string
+        ListPendingInputsAdminResponse:
+            type: object
+            properties:
+                inputs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AdminPendingInputSummary'
         ListPipelineRunsAdminResponse:
             type: object
             properties:
@@ -451,13 +1100,17 @@ components:
                         $ref: '#/components/schemas/PipelineRun'
                 nextPageToken:
                     type: string
+                hasMore:
+                    type: boolean
+                stats:
+                    $ref: '#/components/schemas/AdminPipelineRunStats'
         ListUsersAdminResponse:
             type: object
             properties:
                 users:
                     type: array
                     items:
-                        $ref: '#/components/schemas/UserProfile'
+                        $ref: '#/components/schemas/AdminUserSummary'
                 nextPageToken:
                     type: string
         NotificationPreferences:
@@ -672,6 +1325,35 @@ components:
                 started:
                     type: integer
                     format: int32
+        RepostActivityAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                activityId:
+                    type: string
+                mode:
+                    type: string
+                    description: '"missed-destination" | "retry-destination" | "full-pipeline"'
+                destination:
+                    type: string
+        ResolvePendingInputAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                inputId:
+                    type: string
+        SetIntegrationEnabledAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                provider:
+                    type: string
+                enabled:
+                    type: boolean
+            description: '----------------------- User Actions -----------------------'
         Status:
             type: object
             properties:
@@ -688,6 +1370,39 @@ components:
                         $ref: '#/components/schemas/GoogleProtobufAny'
                     description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
             description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        SubscriptionState:
+            type: object
+            properties:
+                userId:
+                    type: string
+                stripeCustomerId:
+                    type: string
+                    description: Stripe customer ID for billing
+                stripeSubscriptionId:
+                    type: string
+                trialEndsAt:
+                    type: string
+                    description: Athlete trial end date (null = no trial)
+                    format: date-time
+                subscriptionTier:
+                    enum:
+                        - USER_TIER_UNSPECIFIED
+                        - USER_TIER_HOBBYIST
+                        - USER_TIER_ATHLETE
+                    type: string
+                    description: The actual purchased tier (free users won't have this record or it will be free)
+                    format: enum
+                currentPeriodStart:
+                    type: string
+                    format: date-time
+                currentPeriodEnd:
+                    type: string
+                    format: date-time
+                cancelAtPeriodEnd:
+                    type: boolean
+                status:
+                    type: string
+            description: SubscriptionState tracks the user's billing info, decoupled from core profile.
         UpdateUserAdminRequest:
             type: object
             properties:
@@ -695,6 +1410,22 @@ components:
                     type: string
                 accessEnabled:
                     type: boolean
+                tier:
+                    enum:
+                        - USER_TIER_UNSPECIFIED
+                        - USER_TIER_HOBBYIST
+                        - USER_TIER_ATHLETE
+                    type: string
+                    format: enum
+                isAdmin:
+                    type: boolean
+                displayName:
+                    type: string
+        UserIdAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
         UserProfile:
             type: object
             properties:

@@ -3,9 +3,11 @@ syntax = "proto3";
 package fitglue.gateway;
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 
 // Shared model types
 import "models/user/profile.proto";
+import "models/user/billing.proto";
 import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
 
@@ -14,7 +16,8 @@ option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/gateway";
 // AdminGatewayService describes the admin REST API surface
 // served by api-admin at /api/admin/*.
 //
-// Requires admin authentication via AdminMiddleware.
+// Requires admin authentication via AdminMiddleware. Every mutating RPC is
+// recorded to the admin audit log.
 service AdminGatewayService {
 
   // ===================== Platform Stats =====================
@@ -30,12 +33,12 @@ service AdminGatewayService {
       get: "/users"
     };
   }
-  rpc GetUser(UserIdAdminRequest) returns (fitglue.models.user.UserProfile) {
+  rpc GetUser(UserIdAdminRequest) returns (AdminUserDetail) {
     option (google.api.http) = {
       get: "/users/{id}"
     };
   }
-  rpc UpdateUser(UpdateUserAdminRequest) returns (fitglue.models.user.UserProfile) {
+  rpc UpdateUser(UpdateUserAdminRequest) returns (AdminUserDetail) {
     option (google.api.http) = {
       put: "/users/{id}"
       body: "*"
@@ -52,6 +55,31 @@ service AdminGatewayService {
     };
   }
 
+  // ===================== User Actions =====================
+  rpc SendPasswordReset(UserIdAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/send-password-reset"
+      body: "*"
+    };
+  }
+  rpc SendVerificationEmail(UserIdAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/send-verification-email"
+      body: "*"
+    };
+  }
+  rpc SetIntegrationEnabled(SetIntegrationEnabledAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/integrations/{provider}/enabled"
+      body: "*"
+    };
+  }
+  rpc DeleteIntegration(DeleteIntegrationAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      delete: "/users/{id}/integrations/{provider}"
+    };
+  }
+
   // ===================== Pipeline Management =====================
   rpc ListAllPipelines(ListAllPipelinesAdminRequest) returns (ListAllPipelinesAdminResponse) {
     option (google.api.http) = {
@@ -63,6 +91,66 @@ service AdminGatewayService {
       get: "/pipeline-runs"
     };
   }
+  rpc GetPipelineRun(GetPipelineRunAdminRequest) returns (fitglue.models.pipeline.PipelineRun) {
+    option (google.api.http) = {
+      get: "/users/{id}/pipeline-runs/{run_id}"
+    };
+  }
+  rpc RepostActivity(RepostActivityAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/activities/{activity_id}/repost"
+      body: "*"
+    };
+  }
+  rpc CancelPipelineRun(CancelPipelineRunAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/pipeline-runs/{run_id}/cancel"
+      body: "*"
+    };
+  }
+  rpc ListPendingInputs(UserIdAdminRequest) returns (ListPendingInputsAdminResponse) {
+    option (google.api.http) = {
+      get: "/users/{id}/pending-inputs"
+    };
+  }
+  rpc ResolvePendingInput(ResolvePendingInputAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/pending-inputs/{input_id}/resolve"
+      body: "*"
+    };
+  }
+
+  // ===================== Billing =====================
+  rpc GetUserBilling(UserIdAdminRequest) returns (AdminUserBilling) {
+    option (google.api.http) = {
+      get: "/users/{id}/billing"
+    };
+  }
+  rpc StartTrial(UserIdAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/billing/trial"
+      body: "*"
+    };
+  }
+  rpc CancelSubscription(UserIdAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/billing/cancel"
+      body: "*"
+    };
+  }
+  rpc CreateBillingPortalSession(CreateBillingPortalAdminRequest) returns (CreateBillingPortalAdminResponse) {
+    option (google.api.http) = {
+      post: "/users/{id}/billing/portal"
+      body: "*"
+    };
+  }
+
+  // ===================== Audit Log =====================
+  rpc ListAuditLog(ListAuditLogAdminRequest) returns (ListAuditLogAdminResponse) {
+    option (google.api.http) = {
+      get: "/audit-log"
+    };
+  }
 }
 
 // =====================================================================
@@ -71,7 +159,7 @@ service AdminGatewayService {
 
 message AdminEmptyResponse {}
 
-// Platform Stats
+// ----------------------- Platform Stats -----------------------
 message GetAdminStatsRequest {}
 message RecentPipelineRunCounts {
   int32 success = 1;
@@ -86,34 +174,125 @@ message GetAdminStatsResponse {
   RecentPipelineRunCounts recent_executions = 5;
 }
 
-// User Management
+// ----------------------- User Management -----------------------
 message ListUsersAdminRequest {
   int32 limit = 1;
   string page_token = 2;
 }
+
+// AdminUserSummary is the per-row shape for the user directory. It carries the
+// derived counts the table needs without the client having to aggregate.
+message AdminUserSummary {
+  string user_id = 1;
+  string email = 2;
+  string display_name = 3;
+  google.protobuf.Timestamp created_at = 4;
+  fitglue.models.user.UserTier tier = 5;
+  bool is_admin = 6;
+  bool access_enabled = 7;
+  int32 sync_count_this_month = 8;
+  int32 prevented_sync_count = 9;
+  int32 integration_count = 10;
+  int32 pipeline_count = 11;
+  google.protobuf.Timestamp trial_ends_at = 12;
+  string stripe_customer_id = 13;
+  repeated string integrations = 14; // connected provider names
+}
+
 message ListUsersAdminResponse {
-  repeated fitglue.models.user.UserProfile users = 1;
+  repeated AdminUserSummary users = 1;
   string next_page_token = 2;
 }
+
 message UserIdAdminRequest {
   string id = 1;
 }
+
 message UpdateUserAdminRequest {
   string id = 1;
-  bool access_enabled = 2;
+  optional bool access_enabled = 2;
+  optional fitglue.models.user.UserTier tier = 3;
+  optional bool is_admin = 4;
+  optional string display_name = 5;
 }
+
 message DeleteUserDataAdminRequest {
   string id = 1;
   string data_type = 2;
 }
 
-// Pipeline Management
+// AdminIntegrationSummary is a redacted view of a connected provider — it never
+// includes tokens or secrets, only status/health metadata.
+message AdminIntegrationSummary {
+  string provider = 1;
+  bool enabled = 2;
+  bool connected = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_used_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  // "valid" | "expired" | "n/a" (n/a = provider has no expiring token)
+  string token_health = 7;
+}
+
+message AdminPipelineSummary {
+  string id = 1;
+  string name = 2;
+  string source = 3;
+  repeated string destinations = 4;
+  bool enabled = 5;
+}
+
+message AdminPendingInputSummary {
+  string id = 1;
+  string activity_id = 2;
+  string enricher_provider_id = 3;
+  string status = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message AdminUserBilling {
+  fitglue.models.user.SubscriptionState subscription = 1;
+  fitglue.models.user.UserTier effective_tier = 2;
+  bool is_trial = 3;
+}
+
+// AdminUserDetail is the aggregated 360-degree view of a single user.
+message AdminUserDetail {
+  fitglue.models.user.UserProfile profile = 1;
+  repeated AdminIntegrationSummary integrations = 2;
+  repeated AdminPipelineSummary pipelines = 3;
+  int32 activity_count = 4;
+  int32 pipeline_run_count = 5;
+  repeated AdminPendingInputSummary pending_inputs = 6;
+  AdminUserBilling billing = 7;
+}
+
+// ----------------------- User Actions -----------------------
+message SetIntegrationEnabledAdminRequest {
+  string id = 1;
+  string provider = 2;
+  bool enabled = 3;
+}
+
+message DeleteIntegrationAdminRequest {
+  string id = 1;
+  string provider = 2;
+}
+
+// ----------------------- Pipeline Management -----------------------
 message ListAllPipelinesAdminRequest {
   string user_id = 1; // required query param
 }
 message ListAllPipelinesAdminResponse {
   repeated fitglue.models.pipeline.PipelineConfig pipelines = 1;
 }
+
+message AdminPipelineRunStats {
+  int32 total = 1;
+  map<string, int32> by_status = 2;
+  map<string, int32> by_source = 3;
+}
+
 message ListPipelineRunsAdminRequest {
   string status = 1;
   string source = 2;
@@ -123,5 +302,67 @@ message ListPipelineRunsAdminRequest {
 }
 message ListPipelineRunsAdminResponse {
   repeated fitglue.models.pipeline.PipelineRun runs = 1;
+  string next_page_token = 2;
+  bool has_more = 3;
+  AdminPipelineRunStats stats = 4;
+}
+
+message GetPipelineRunAdminRequest {
+  string id = 1; // user id
+  string run_id = 2;
+}
+
+message RepostActivityAdminRequest {
+  string id = 1; // user id
+  string activity_id = 2;
+  // "missed-destination" | "retry-destination" | "full-pipeline"
+  string mode = 3;
+  string destination = 4;
+}
+
+message CancelPipelineRunAdminRequest {
+  string id = 1; // user id
+  string run_id = 2;
+}
+
+message ListPendingInputsAdminResponse {
+  repeated AdminPendingInputSummary inputs = 1;
+}
+
+message ResolvePendingInputAdminRequest {
+  string id = 1; // user id
+  string input_id = 2;
+}
+
+// ----------------------- Billing -----------------------
+message CreateBillingPortalAdminRequest {
+  string id = 1; // user id
+  string return_url = 2;
+}
+message CreateBillingPortalAdminResponse {
+  string url = 1;
+}
+
+// ----------------------- Audit Log -----------------------
+message AdminAuditLogEntry {
+  string id = 1;
+  string actor_uid = 2;
+  string actor_email = 3;
+  string action = 4;
+  string target_user_id = 5;
+  map<string, string> params = 6;
+  string result = 7; // "ok" | "error"
+  string error = 8;
+  google.protobuf.Timestamp timestamp = 9;
+}
+
+message ListAuditLogAdminRequest {
+  string target_user_id = 1; // optional filter
+  int32 limit = 2;
+  string page_token = 3;
+}
+
+message ListAuditLogAdminResponse {
+  repeated AdminAuditLogEntry entries = 1;
   string next_page_token = 2;
 }

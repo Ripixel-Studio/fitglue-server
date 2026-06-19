@@ -12,6 +12,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -60,7 +61,7 @@ func (*AdminEmptyResponse) Descriptor() ([]byte, []int) {
 	return file_gateway_admin_proto_rawDescGZIP(), []int{0}
 }
 
-// Platform Stats
+// ----------------------- Platform Stats -----------------------
 type GetAdminStatsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -233,7 +234,7 @@ func (x *GetAdminStatsResponse) GetRecentExecutions() *RecentPipelineRunCounts {
 	return nil
 }
 
-// User Management
+// ----------------------- User Management -----------------------
 type ListUsersAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -286,9 +287,159 @@ func (x *ListUsersAdminRequest) GetPageToken() string {
 	return ""
 }
 
+// AdminUserSummary is the per-row shape for the user directory. It carries the
+// derived counts the table needs without the client having to aggregate.
+type AdminUserSummary struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	UserId             string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Email              string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	DisplayName        string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Tier               user.UserTier          `protobuf:"varint,5,opt,name=tier,proto3,enum=fitglue.models.user.UserTier" json:"tier,omitempty"`
+	IsAdmin            bool                   `protobuf:"varint,6,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	AccessEnabled      bool                   `protobuf:"varint,7,opt,name=access_enabled,json=accessEnabled,proto3" json:"access_enabled,omitempty"`
+	SyncCountThisMonth int32                  `protobuf:"varint,8,opt,name=sync_count_this_month,json=syncCountThisMonth,proto3" json:"sync_count_this_month,omitempty"`
+	PreventedSyncCount int32                  `protobuf:"varint,9,opt,name=prevented_sync_count,json=preventedSyncCount,proto3" json:"prevented_sync_count,omitempty"`
+	IntegrationCount   int32                  `protobuf:"varint,10,opt,name=integration_count,json=integrationCount,proto3" json:"integration_count,omitempty"`
+	PipelineCount      int32                  `protobuf:"varint,11,opt,name=pipeline_count,json=pipelineCount,proto3" json:"pipeline_count,omitempty"`
+	TrialEndsAt        *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=trial_ends_at,json=trialEndsAt,proto3" json:"trial_ends_at,omitempty"`
+	StripeCustomerId   string                 `protobuf:"bytes,13,opt,name=stripe_customer_id,json=stripeCustomerId,proto3" json:"stripe_customer_id,omitempty"`
+	Integrations       []string               `protobuf:"bytes,14,rep,name=integrations,proto3" json:"integrations,omitempty"` // connected provider names
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *AdminUserSummary) Reset() {
+	*x = AdminUserSummary{}
+	mi := &file_gateway_admin_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUserSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUserSummary) ProtoMessage() {}
+
+func (x *AdminUserSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUserSummary.ProtoReflect.Descriptor instead.
+func (*AdminUserSummary) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *AdminUserSummary) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminUserSummary) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *AdminUserSummary) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *AdminUserSummary) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *AdminUserSummary) GetTier() user.UserTier {
+	if x != nil {
+		return x.Tier
+	}
+	return user.UserTier(0)
+}
+
+func (x *AdminUserSummary) GetIsAdmin() bool {
+	if x != nil {
+		return x.IsAdmin
+	}
+	return false
+}
+
+func (x *AdminUserSummary) GetAccessEnabled() bool {
+	if x != nil {
+		return x.AccessEnabled
+	}
+	return false
+}
+
+func (x *AdminUserSummary) GetSyncCountThisMonth() int32 {
+	if x != nil {
+		return x.SyncCountThisMonth
+	}
+	return 0
+}
+
+func (x *AdminUserSummary) GetPreventedSyncCount() int32 {
+	if x != nil {
+		return x.PreventedSyncCount
+	}
+	return 0
+}
+
+func (x *AdminUserSummary) GetIntegrationCount() int32 {
+	if x != nil {
+		return x.IntegrationCount
+	}
+	return 0
+}
+
+func (x *AdminUserSummary) GetPipelineCount() int32 {
+	if x != nil {
+		return x.PipelineCount
+	}
+	return 0
+}
+
+func (x *AdminUserSummary) GetTrialEndsAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TrialEndsAt
+	}
+	return nil
+}
+
+func (x *AdminUserSummary) GetStripeCustomerId() string {
+	if x != nil {
+		return x.StripeCustomerId
+	}
+	return ""
+}
+
+func (x *AdminUserSummary) GetIntegrations() []string {
+	if x != nil {
+		return x.Integrations
+	}
+	return nil
+}
+
 type ListUsersAdminResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Users         []*user.UserProfile    `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	Users         []*AdminUserSummary    `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
 	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -296,7 +447,7 @@ type ListUsersAdminResponse struct {
 
 func (x *ListUsersAdminResponse) Reset() {
 	*x = ListUsersAdminResponse{}
-	mi := &file_gateway_admin_proto_msgTypes[5]
+	mi := &file_gateway_admin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -308,7 +459,7 @@ func (x *ListUsersAdminResponse) String() string {
 func (*ListUsersAdminResponse) ProtoMessage() {}
 
 func (x *ListUsersAdminResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[5]
+	mi := &file_gateway_admin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -321,10 +472,10 @@ func (x *ListUsersAdminResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersAdminResponse.ProtoReflect.Descriptor instead.
 func (*ListUsersAdminResponse) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{5}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ListUsersAdminResponse) GetUsers() []*user.UserProfile {
+func (x *ListUsersAdminResponse) GetUsers() []*AdminUserSummary {
 	if x != nil {
 		return x.Users
 	}
@@ -347,7 +498,7 @@ type UserIdAdminRequest struct {
 
 func (x *UserIdAdminRequest) Reset() {
 	*x = UserIdAdminRequest{}
-	mi := &file_gateway_admin_proto_msgTypes[6]
+	mi := &file_gateway_admin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -359,7 +510,7 @@ func (x *UserIdAdminRequest) String() string {
 func (*UserIdAdminRequest) ProtoMessage() {}
 
 func (x *UserIdAdminRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[6]
+	mi := &file_gateway_admin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -372,7 +523,7 @@ func (x *UserIdAdminRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserIdAdminRequest.ProtoReflect.Descriptor instead.
 func (*UserIdAdminRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{6}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UserIdAdminRequest) GetId() string {
@@ -385,14 +536,17 @@ func (x *UserIdAdminRequest) GetId() string {
 type UpdateUserAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	AccessEnabled bool                   `protobuf:"varint,2,opt,name=access_enabled,json=accessEnabled,proto3" json:"access_enabled,omitempty"`
+	AccessEnabled *bool                  `protobuf:"varint,2,opt,name=access_enabled,json=accessEnabled,proto3,oneof" json:"access_enabled,omitempty"`
+	Tier          *user.UserTier         `protobuf:"varint,3,opt,name=tier,proto3,enum=fitglue.models.user.UserTier,oneof" json:"tier,omitempty"`
+	IsAdmin       *bool                  `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3,oneof" json:"is_admin,omitempty"`
+	DisplayName   *string                `protobuf:"bytes,5,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateUserAdminRequest) Reset() {
 	*x = UpdateUserAdminRequest{}
-	mi := &file_gateway_admin_proto_msgTypes[7]
+	mi := &file_gateway_admin_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +558,7 @@ func (x *UpdateUserAdminRequest) String() string {
 func (*UpdateUserAdminRequest) ProtoMessage() {}
 
 func (x *UpdateUserAdminRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[7]
+	mi := &file_gateway_admin_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +571,7 @@ func (x *UpdateUserAdminRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserAdminRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserAdminRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{7}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateUserAdminRequest) GetId() string {
@@ -428,10 +582,31 @@ func (x *UpdateUserAdminRequest) GetId() string {
 }
 
 func (x *UpdateUserAdminRequest) GetAccessEnabled() bool {
-	if x != nil {
-		return x.AccessEnabled
+	if x != nil && x.AccessEnabled != nil {
+		return *x.AccessEnabled
 	}
 	return false
+}
+
+func (x *UpdateUserAdminRequest) GetTier() user.UserTier {
+	if x != nil && x.Tier != nil {
+		return *x.Tier
+	}
+	return user.UserTier(0)
+}
+
+func (x *UpdateUserAdminRequest) GetIsAdmin() bool {
+	if x != nil && x.IsAdmin != nil {
+		return *x.IsAdmin
+	}
+	return false
+}
+
+func (x *UpdateUserAdminRequest) GetDisplayName() string {
+	if x != nil && x.DisplayName != nil {
+		return *x.DisplayName
+	}
+	return ""
 }
 
 type DeleteUserDataAdminRequest struct {
@@ -444,7 +619,7 @@ type DeleteUserDataAdminRequest struct {
 
 func (x *DeleteUserDataAdminRequest) Reset() {
 	*x = DeleteUserDataAdminRequest{}
-	mi := &file_gateway_admin_proto_msgTypes[8]
+	mi := &file_gateway_admin_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -456,7 +631,7 @@ func (x *DeleteUserDataAdminRequest) String() string {
 func (*DeleteUserDataAdminRequest) ProtoMessage() {}
 
 func (x *DeleteUserDataAdminRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[8]
+	mi := &file_gateway_admin_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -469,7 +644,7 @@ func (x *DeleteUserDataAdminRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserDataAdminRequest.ProtoReflect.Descriptor instead.
 func (*DeleteUserDataAdminRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{8}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeleteUserDataAdminRequest) GetId() string {
@@ -486,7 +661,520 @@ func (x *DeleteUserDataAdminRequest) GetDataType() string {
 	return ""
 }
 
-// Pipeline Management
+// AdminIntegrationSummary is a redacted view of a connected provider — it never
+// includes tokens or secrets, only status/health metadata.
+type AdminIntegrationSummary struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Provider   string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+	Enabled    bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Connected  bool                   `protobuf:"varint,3,opt,name=connected,proto3" json:"connected,omitempty"`
+	CreatedAt  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUsedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
+	ExpiresAt  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	// "valid" | "expired" | "n/a" (n/a = provider has no expiring token)
+	TokenHealth   string `protobuf:"bytes,7,opt,name=token_health,json=tokenHealth,proto3" json:"token_health,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminIntegrationSummary) Reset() {
+	*x = AdminIntegrationSummary{}
+	mi := &file_gateway_admin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminIntegrationSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminIntegrationSummary) ProtoMessage() {}
+
+func (x *AdminIntegrationSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminIntegrationSummary.ProtoReflect.Descriptor instead.
+func (*AdminIntegrationSummary) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AdminIntegrationSummary) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *AdminIntegrationSummary) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *AdminIntegrationSummary) GetConnected() bool {
+	if x != nil {
+		return x.Connected
+	}
+	return false
+}
+
+func (x *AdminIntegrationSummary) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *AdminIntegrationSummary) GetLastUsedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
+}
+
+func (x *AdminIntegrationSummary) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+func (x *AdminIntegrationSummary) GetTokenHealth() string {
+	if x != nil {
+		return x.TokenHealth
+	}
+	return ""
+}
+
+type AdminPipelineSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	Destinations  []string               `protobuf:"bytes,4,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	Enabled       bool                   `protobuf:"varint,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminPipelineSummary) Reset() {
+	*x = AdminPipelineSummary{}
+	mi := &file_gateway_admin_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminPipelineSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminPipelineSummary) ProtoMessage() {}
+
+func (x *AdminPipelineSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminPipelineSummary.ProtoReflect.Descriptor instead.
+func (*AdminPipelineSummary) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *AdminPipelineSummary) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AdminPipelineSummary) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AdminPipelineSummary) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *AdminPipelineSummary) GetDestinations() []string {
+	if x != nil {
+		return x.Destinations
+	}
+	return nil
+}
+
+func (x *AdminPipelineSummary) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type AdminPendingInputSummary struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActivityId         string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	EnricherProviderId string                 `protobuf:"bytes,3,opt,name=enricher_provider_id,json=enricherProviderId,proto3" json:"enricher_provider_id,omitempty"`
+	Status             string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *AdminPendingInputSummary) Reset() {
+	*x = AdminPendingInputSummary{}
+	mi := &file_gateway_admin_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminPendingInputSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminPendingInputSummary) ProtoMessage() {}
+
+func (x *AdminPendingInputSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminPendingInputSummary.ProtoReflect.Descriptor instead.
+func (*AdminPendingInputSummary) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *AdminPendingInputSummary) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AdminPendingInputSummary) GetActivityId() string {
+	if x != nil {
+		return x.ActivityId
+	}
+	return ""
+}
+
+func (x *AdminPendingInputSummary) GetEnricherProviderId() string {
+	if x != nil {
+		return x.EnricherProviderId
+	}
+	return ""
+}
+
+func (x *AdminPendingInputSummary) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *AdminPendingInputSummary) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type AdminUserBilling struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Subscription  *user.SubscriptionState `protobuf:"bytes,1,opt,name=subscription,proto3" json:"subscription,omitempty"`
+	EffectiveTier user.UserTier           `protobuf:"varint,2,opt,name=effective_tier,json=effectiveTier,proto3,enum=fitglue.models.user.UserTier" json:"effective_tier,omitempty"`
+	IsTrial       bool                    `protobuf:"varint,3,opt,name=is_trial,json=isTrial,proto3" json:"is_trial,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminUserBilling) Reset() {
+	*x = AdminUserBilling{}
+	mi := &file_gateway_admin_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUserBilling) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUserBilling) ProtoMessage() {}
+
+func (x *AdminUserBilling) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUserBilling.ProtoReflect.Descriptor instead.
+func (*AdminUserBilling) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *AdminUserBilling) GetSubscription() *user.SubscriptionState {
+	if x != nil {
+		return x.Subscription
+	}
+	return nil
+}
+
+func (x *AdminUserBilling) GetEffectiveTier() user.UserTier {
+	if x != nil {
+		return x.EffectiveTier
+	}
+	return user.UserTier(0)
+}
+
+func (x *AdminUserBilling) GetIsTrial() bool {
+	if x != nil {
+		return x.IsTrial
+	}
+	return false
+}
+
+// AdminUserDetail is the aggregated 360-degree view of a single user.
+type AdminUserDetail struct {
+	state            protoimpl.MessageState      `protogen:"open.v1"`
+	Profile          *user.UserProfile           `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
+	Integrations     []*AdminIntegrationSummary  `protobuf:"bytes,2,rep,name=integrations,proto3" json:"integrations,omitempty"`
+	Pipelines        []*AdminPipelineSummary     `protobuf:"bytes,3,rep,name=pipelines,proto3" json:"pipelines,omitempty"`
+	ActivityCount    int32                       `protobuf:"varint,4,opt,name=activity_count,json=activityCount,proto3" json:"activity_count,omitempty"`
+	PipelineRunCount int32                       `protobuf:"varint,5,opt,name=pipeline_run_count,json=pipelineRunCount,proto3" json:"pipeline_run_count,omitempty"`
+	PendingInputs    []*AdminPendingInputSummary `protobuf:"bytes,6,rep,name=pending_inputs,json=pendingInputs,proto3" json:"pending_inputs,omitempty"`
+	Billing          *AdminUserBilling           `protobuf:"bytes,7,opt,name=billing,proto3" json:"billing,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AdminUserDetail) Reset() {
+	*x = AdminUserDetail{}
+	mi := &file_gateway_admin_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUserDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUserDetail) ProtoMessage() {}
+
+func (x *AdminUserDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUserDetail.ProtoReflect.Descriptor instead.
+func (*AdminUserDetail) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AdminUserDetail) GetProfile() *user.UserProfile {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetIntegrations() []*AdminIntegrationSummary {
+	if x != nil {
+		return x.Integrations
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetPipelines() []*AdminPipelineSummary {
+	if x != nil {
+		return x.Pipelines
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetActivityCount() int32 {
+	if x != nil {
+		return x.ActivityCount
+	}
+	return 0
+}
+
+func (x *AdminUserDetail) GetPipelineRunCount() int32 {
+	if x != nil {
+		return x.PipelineRunCount
+	}
+	return 0
+}
+
+func (x *AdminUserDetail) GetPendingInputs() []*AdminPendingInputSummary {
+	if x != nil {
+		return x.PendingInputs
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetBilling() *AdminUserBilling {
+	if x != nil {
+		return x.Billing
+	}
+	return nil
+}
+
+// ----------------------- User Actions -----------------------
+type SetIntegrationEnabledAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Provider      string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	Enabled       bool                   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetIntegrationEnabledAdminRequest) Reset() {
+	*x = SetIntegrationEnabledAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetIntegrationEnabledAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetIntegrationEnabledAdminRequest) ProtoMessage() {}
+
+func (x *SetIntegrationEnabledAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetIntegrationEnabledAdminRequest.ProtoReflect.Descriptor instead.
+func (*SetIntegrationEnabledAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *SetIntegrationEnabledAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SetIntegrationEnabledAdminRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *SetIntegrationEnabledAdminRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type DeleteIntegrationAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Provider      string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteIntegrationAdminRequest) Reset() {
+	*x = DeleteIntegrationAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteIntegrationAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteIntegrationAdminRequest) ProtoMessage() {}
+
+func (x *DeleteIntegrationAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteIntegrationAdminRequest.ProtoReflect.Descriptor instead.
+func (*DeleteIntegrationAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DeleteIntegrationAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteIntegrationAdminRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+// ----------------------- Pipeline Management -----------------------
 type ListAllPipelinesAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // required query param
@@ -496,7 +1184,7 @@ type ListAllPipelinesAdminRequest struct {
 
 func (x *ListAllPipelinesAdminRequest) Reset() {
 	*x = ListAllPipelinesAdminRequest{}
-	mi := &file_gateway_admin_proto_msgTypes[9]
+	mi := &file_gateway_admin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -508,7 +1196,7 @@ func (x *ListAllPipelinesAdminRequest) String() string {
 func (*ListAllPipelinesAdminRequest) ProtoMessage() {}
 
 func (x *ListAllPipelinesAdminRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[9]
+	mi := &file_gateway_admin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -521,7 +1209,7 @@ func (x *ListAllPipelinesAdminRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAllPipelinesAdminRequest.ProtoReflect.Descriptor instead.
 func (*ListAllPipelinesAdminRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{9}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListAllPipelinesAdminRequest) GetUserId() string {
@@ -540,7 +1228,7 @@ type ListAllPipelinesAdminResponse struct {
 
 func (x *ListAllPipelinesAdminResponse) Reset() {
 	*x = ListAllPipelinesAdminResponse{}
-	mi := &file_gateway_admin_proto_msgTypes[10]
+	mi := &file_gateway_admin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -552,7 +1240,7 @@ func (x *ListAllPipelinesAdminResponse) String() string {
 func (*ListAllPipelinesAdminResponse) ProtoMessage() {}
 
 func (x *ListAllPipelinesAdminResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[10]
+	mi := &file_gateway_admin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -565,12 +1253,72 @@ func (x *ListAllPipelinesAdminResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAllPipelinesAdminResponse.ProtoReflect.Descriptor instead.
 func (*ListAllPipelinesAdminResponse) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{10}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListAllPipelinesAdminResponse) GetPipelines() []*pipeline.PipelineConfig {
 	if x != nil {
 		return x.Pipelines
+	}
+	return nil
+}
+
+type AdminPipelineRunStats struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Total         int32                  `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	ByStatus      map[string]int32       `protobuf:"bytes,2,rep,name=by_status,json=byStatus,proto3" json:"by_status,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	BySource      map[string]int32       `protobuf:"bytes,3,rep,name=by_source,json=bySource,proto3" json:"by_source,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminPipelineRunStats) Reset() {
+	*x = AdminPipelineRunStats{}
+	mi := &file_gateway_admin_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminPipelineRunStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminPipelineRunStats) ProtoMessage() {}
+
+func (x *AdminPipelineRunStats) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminPipelineRunStats.ProtoReflect.Descriptor instead.
+func (*AdminPipelineRunStats) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *AdminPipelineRunStats) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *AdminPipelineRunStats) GetByStatus() map[string]int32 {
+	if x != nil {
+		return x.ByStatus
+	}
+	return nil
+}
+
+func (x *AdminPipelineRunStats) GetBySource() map[string]int32 {
+	if x != nil {
+		return x.BySource
 	}
 	return nil
 }
@@ -588,7 +1336,7 @@ type ListPipelineRunsAdminRequest struct {
 
 func (x *ListPipelineRunsAdminRequest) Reset() {
 	*x = ListPipelineRunsAdminRequest{}
-	mi := &file_gateway_admin_proto_msgTypes[11]
+	mi := &file_gateway_admin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -600,7 +1348,7 @@ func (x *ListPipelineRunsAdminRequest) String() string {
 func (*ListPipelineRunsAdminRequest) ProtoMessage() {}
 
 func (x *ListPipelineRunsAdminRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[11]
+	mi := &file_gateway_admin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -613,7 +1361,7 @@ func (x *ListPipelineRunsAdminRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelineRunsAdminRequest.ProtoReflect.Descriptor instead.
 func (*ListPipelineRunsAdminRequest) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{11}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListPipelineRunsAdminRequest) GetStatus() string {
@@ -655,13 +1403,15 @@ type ListPipelineRunsAdminResponse struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Runs          []*pipeline.PipelineRun `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
 	NextPageToken string                  `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	HasMore       bool                    `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	Stats         *AdminPipelineRunStats  `protobuf:"bytes,4,opt,name=stats,proto3" json:"stats,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListPipelineRunsAdminResponse) Reset() {
 	*x = ListPipelineRunsAdminResponse{}
-	mi := &file_gateway_admin_proto_msgTypes[12]
+	mi := &file_gateway_admin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -673,7 +1423,7 @@ func (x *ListPipelineRunsAdminResponse) String() string {
 func (*ListPipelineRunsAdminResponse) ProtoMessage() {}
 
 func (x *ListPipelineRunsAdminResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gateway_admin_proto_msgTypes[12]
+	mi := &file_gateway_admin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -686,7 +1436,7 @@ func (x *ListPipelineRunsAdminResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelineRunsAdminResponse.ProtoReflect.Descriptor instead.
 func (*ListPipelineRunsAdminResponse) Descriptor() ([]byte, []int) {
-	return file_gateway_admin_proto_rawDescGZIP(), []int{12}
+	return file_gateway_admin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListPipelineRunsAdminResponse) GetRuns() []*pipeline.PipelineRun {
@@ -703,11 +1453,612 @@ func (x *ListPipelineRunsAdminResponse) GetNextPageToken() string {
 	return ""
 }
 
+func (x *ListPipelineRunsAdminResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+func (x *ListPipelineRunsAdminResponse) GetStats() *AdminPipelineRunStats {
+	if x != nil {
+		return x.Stats
+	}
+	return nil
+}
+
+type GetPipelineRunAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // user id
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPipelineRunAdminRequest) Reset() {
+	*x = GetPipelineRunAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPipelineRunAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPipelineRunAdminRequest) ProtoMessage() {}
+
+func (x *GetPipelineRunAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPipelineRunAdminRequest.ProtoReflect.Descriptor instead.
+func (*GetPipelineRunAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetPipelineRunAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetPipelineRunAdminRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type RepostActivityAdminRequest struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // user id
+	ActivityId string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	// "missed-destination" | "retry-destination" | "full-pipeline"
+	Mode          string `protobuf:"bytes,3,opt,name=mode,proto3" json:"mode,omitempty"`
+	Destination   string `protobuf:"bytes,4,opt,name=destination,proto3" json:"destination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RepostActivityAdminRequest) Reset() {
+	*x = RepostActivityAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RepostActivityAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RepostActivityAdminRequest) ProtoMessage() {}
+
+func (x *RepostActivityAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RepostActivityAdminRequest.ProtoReflect.Descriptor instead.
+func (*RepostActivityAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *RepostActivityAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RepostActivityAdminRequest) GetActivityId() string {
+	if x != nil {
+		return x.ActivityId
+	}
+	return ""
+}
+
+func (x *RepostActivityAdminRequest) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *RepostActivityAdminRequest) GetDestination() string {
+	if x != nil {
+		return x.Destination
+	}
+	return ""
+}
+
+type CancelPipelineRunAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // user id
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelPipelineRunAdminRequest) Reset() {
+	*x = CancelPipelineRunAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelPipelineRunAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelPipelineRunAdminRequest) ProtoMessage() {}
+
+func (x *CancelPipelineRunAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelPipelineRunAdminRequest.ProtoReflect.Descriptor instead.
+func (*CancelPipelineRunAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *CancelPipelineRunAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CancelPipelineRunAdminRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type ListPendingInputsAdminResponse struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Inputs        []*AdminPendingInputSummary `protobuf:"bytes,1,rep,name=inputs,proto3" json:"inputs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPendingInputsAdminResponse) Reset() {
+	*x = ListPendingInputsAdminResponse{}
+	mi := &file_gateway_admin_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPendingInputsAdminResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPendingInputsAdminResponse) ProtoMessage() {}
+
+func (x *ListPendingInputsAdminResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPendingInputsAdminResponse.ProtoReflect.Descriptor instead.
+func (*ListPendingInputsAdminResponse) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ListPendingInputsAdminResponse) GetInputs() []*AdminPendingInputSummary {
+	if x != nil {
+		return x.Inputs
+	}
+	return nil
+}
+
+type ResolvePendingInputAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // user id
+	InputId       string                 `protobuf:"bytes,2,opt,name=input_id,json=inputId,proto3" json:"input_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolvePendingInputAdminRequest) Reset() {
+	*x = ResolvePendingInputAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolvePendingInputAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolvePendingInputAdminRequest) ProtoMessage() {}
+
+func (x *ResolvePendingInputAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolvePendingInputAdminRequest.ProtoReflect.Descriptor instead.
+func (*ResolvePendingInputAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ResolvePendingInputAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ResolvePendingInputAdminRequest) GetInputId() string {
+	if x != nil {
+		return x.InputId
+	}
+	return ""
+}
+
+// ----------------------- Billing -----------------------
+type CreateBillingPortalAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // user id
+	ReturnUrl     string                 `protobuf:"bytes,2,opt,name=return_url,json=returnUrl,proto3" json:"return_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateBillingPortalAdminRequest) Reset() {
+	*x = CreateBillingPortalAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBillingPortalAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBillingPortalAdminRequest) ProtoMessage() {}
+
+func (x *CreateBillingPortalAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBillingPortalAdminRequest.ProtoReflect.Descriptor instead.
+func (*CreateBillingPortalAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *CreateBillingPortalAdminRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CreateBillingPortalAdminRequest) GetReturnUrl() string {
+	if x != nil {
+		return x.ReturnUrl
+	}
+	return ""
+}
+
+type CreateBillingPortalAdminResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateBillingPortalAdminResponse) Reset() {
+	*x = CreateBillingPortalAdminResponse{}
+	mi := &file_gateway_admin_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBillingPortalAdminResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBillingPortalAdminResponse) ProtoMessage() {}
+
+func (x *CreateBillingPortalAdminResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBillingPortalAdminResponse.ProtoReflect.Descriptor instead.
+func (*CreateBillingPortalAdminResponse) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *CreateBillingPortalAdminResponse) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+// ----------------------- Audit Log -----------------------
+type AdminAuditLogEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActorUid      string                 `protobuf:"bytes,2,opt,name=actor_uid,json=actorUid,proto3" json:"actor_uid,omitempty"`
+	ActorEmail    string                 `protobuf:"bytes,3,opt,name=actor_email,json=actorEmail,proto3" json:"actor_email,omitempty"`
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
+	TargetUserId  string                 `protobuf:"bytes,5,opt,name=target_user_id,json=targetUserId,proto3" json:"target_user_id,omitempty"`
+	Params        map[string]string      `protobuf:"bytes,6,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Result        string                 `protobuf:"bytes,7,opt,name=result,proto3" json:"result,omitempty"` // "ok" | "error"
+	Error         string                 `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminAuditLogEntry) Reset() {
+	*x = AdminAuditLogEntry{}
+	mi := &file_gateway_admin_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminAuditLogEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminAuditLogEntry) ProtoMessage() {}
+
+func (x *AdminAuditLogEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminAuditLogEntry.ProtoReflect.Descriptor instead.
+func (*AdminAuditLogEntry) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *AdminAuditLogEntry) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetActorUid() string {
+	if x != nil {
+		return x.ActorUid
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetActorEmail() string {
+	if x != nil {
+		return x.ActorEmail
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetParams() map[string]string {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+func (x *AdminAuditLogEntry) GetResult() string {
+	if x != nil {
+		return x.Result
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *AdminAuditLogEntry) GetTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
+}
+
+type ListAuditLogAdminRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TargetUserId  string                 `protobuf:"bytes,1,opt,name=target_user_id,json=targetUserId,proto3" json:"target_user_id,omitempty"` // optional filter
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAuditLogAdminRequest) Reset() {
+	*x = ListAuditLogAdminRequest{}
+	mi := &file_gateway_admin_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAuditLogAdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAuditLogAdminRequest) ProtoMessage() {}
+
+func (x *ListAuditLogAdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAuditLogAdminRequest.ProtoReflect.Descriptor instead.
+func (*ListAuditLogAdminRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *ListAuditLogAdminRequest) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *ListAuditLogAdminRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListAuditLogAdminRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListAuditLogAdminResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*AdminAuditLogEntry  `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAuditLogAdminResponse) Reset() {
+	*x = ListAuditLogAdminResponse{}
+	mi := &file_gateway_admin_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAuditLogAdminResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAuditLogAdminResponse) ProtoMessage() {}
+
+func (x *ListAuditLogAdminResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_admin_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAuditLogAdminResponse.ProtoReflect.Descriptor instead.
+func (*ListAuditLogAdminResponse) Descriptor() ([]byte, []int) {
+	return file_gateway_admin_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *ListAuditLogAdminResponse) GetEntries() []*AdminAuditLogEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+func (x *ListAuditLogAdminResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 var File_gateway_admin_proto protoreflect.FileDescriptor
 
 const file_gateway_admin_proto_rawDesc = "" +
 	"\n" +
-	"\x13gateway/admin.proto\x12\x0ffitglue.gateway\x1a\x1cgoogle/api/annotations.proto\x1a\x19models/user/profile.proto\x1a\x1cmodels/pipeline/config.proto\x1a\x1fmodels/pipeline/execution.proto\"\x14\n" +
+	"\x13gateway/admin.proto\x12\x0ffitglue.gateway\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19models/user/profile.proto\x1a\x19models/user/billing.proto\x1a\x1cmodels/pipeline/config.proto\x1a\x1fmodels/pipeline/execution.proto\"\x14\n" +
 	"\x12AdminEmptyResponse\"\x16\n" +
 	"\x14GetAdminStatsRequest\"e\n" +
 	"\x17RecentPipelineRunCounts\x12\x18\n" +
@@ -725,44 +2076,185 @@ const file_gateway_admin_proto_rawDesc = "" +
 	"\x15ListUsersAdminRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"x\n" +
-	"\x16ListUsersAdminResponse\x126\n" +
-	"\x05users\x18\x01 \x03(\v2 .fitglue.models.user.UserProfileR\x05users\x12&\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"\xdf\x04\n" +
+	"\x10AdminUserSummary\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x129\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x121\n" +
+	"\x04tier\x18\x05 \x01(\x0e2\x1d.fitglue.models.user.UserTierR\x04tier\x12\x19\n" +
+	"\bis_admin\x18\x06 \x01(\bR\aisAdmin\x12%\n" +
+	"\x0eaccess_enabled\x18\a \x01(\bR\raccessEnabled\x121\n" +
+	"\x15sync_count_this_month\x18\b \x01(\x05R\x12syncCountThisMonth\x120\n" +
+	"\x14prevented_sync_count\x18\t \x01(\x05R\x12preventedSyncCount\x12+\n" +
+	"\x11integration_count\x18\n" +
+	" \x01(\x05R\x10integrationCount\x12%\n" +
+	"\x0epipeline_count\x18\v \x01(\x05R\rpipelineCount\x12>\n" +
+	"\rtrial_ends_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vtrialEndsAt\x12,\n" +
+	"\x12stripe_customer_id\x18\r \x01(\tR\x10stripeCustomerId\x12\"\n" +
+	"\fintegrations\x18\x0e \x03(\tR\fintegrations\"y\n" +
+	"\x16ListUsersAdminResponse\x127\n" +
+	"\x05users\x18\x01 \x03(\v2!.fitglue.gateway.AdminUserSummaryR\x05users\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"$\n" +
 	"\x12UserIdAdminRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"O\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x8e\x02\n" +
 	"\x16UpdateUserAdminRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12%\n" +
-	"\x0eaccess_enabled\x18\x02 \x01(\bR\raccessEnabled\"I\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
+	"\x0eaccess_enabled\x18\x02 \x01(\bH\x00R\raccessEnabled\x88\x01\x01\x126\n" +
+	"\x04tier\x18\x03 \x01(\x0e2\x1d.fitglue.models.user.UserTierH\x01R\x04tier\x88\x01\x01\x12\x1e\n" +
+	"\bis_admin\x18\x04 \x01(\bH\x02R\aisAdmin\x88\x01\x01\x12&\n" +
+	"\fdisplay_name\x18\x05 \x01(\tH\x03R\vdisplayName\x88\x01\x01B\x11\n" +
+	"\x0f_access_enabledB\a\n" +
+	"\x05_tierB\v\n" +
+	"\t_is_adminB\x0f\n" +
+	"\r_display_name\"I\n" +
 	"\x1aDeleteUserDataAdminRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tdata_type\x18\x02 \x01(\tR\bdataType\"7\n" +
+	"\tdata_type\x18\x02 \x01(\tR\bdataType\"\xc4\x02\n" +
+	"\x17AdminIntegrationSummary\x12\x1a\n" +
+	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1c\n" +
+	"\tconnected\x18\x03 \x01(\bR\tconnected\x129\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
+	"\flast_used_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastUsedAt\x129\n" +
+	"\n" +
+	"expires_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12!\n" +
+	"\ftoken_health\x18\a \x01(\tR\vtokenHealth\"\x90\x01\n" +
+	"\x14AdminPipelineSummary\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12\"\n" +
+	"\fdestinations\x18\x04 \x03(\tR\fdestinations\x12\x18\n" +
+	"\aenabled\x18\x05 \x01(\bR\aenabled\"\xd0\x01\n" +
+	"\x18AdminPendingInputSummary\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
+	"\vactivity_id\x18\x02 \x01(\tR\n" +
+	"activityId\x120\n" +
+	"\x14enricher_provider_id\x18\x03 \x01(\tR\x12enricherProviderId\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x129\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xbf\x01\n" +
+	"\x10AdminUserBilling\x12J\n" +
+	"\fsubscription\x18\x01 \x01(\v2&.fitglue.models.user.SubscriptionStateR\fsubscription\x12D\n" +
+	"\x0eeffective_tier\x18\x02 \x01(\x0e2\x1d.fitglue.models.user.UserTierR\reffectiveTier\x12\x19\n" +
+	"\bis_trial\x18\x03 \x01(\bR\aisTrial\"\xc4\x03\n" +
+	"\x0fAdminUserDetail\x12:\n" +
+	"\aprofile\x18\x01 \x01(\v2 .fitglue.models.user.UserProfileR\aprofile\x12L\n" +
+	"\fintegrations\x18\x02 \x03(\v2(.fitglue.gateway.AdminIntegrationSummaryR\fintegrations\x12C\n" +
+	"\tpipelines\x18\x03 \x03(\v2%.fitglue.gateway.AdminPipelineSummaryR\tpipelines\x12%\n" +
+	"\x0eactivity_count\x18\x04 \x01(\x05R\ractivityCount\x12,\n" +
+	"\x12pipeline_run_count\x18\x05 \x01(\x05R\x10pipelineRunCount\x12P\n" +
+	"\x0epending_inputs\x18\x06 \x03(\v2).fitglue.gateway.AdminPendingInputSummaryR\rpendingInputs\x12;\n" +
+	"\abilling\x18\a \x01(\v2!.fitglue.gateway.AdminUserBillingR\abilling\"i\n" +
+	"!SetIntegrationEnabledAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\"K\n" +
+	"\x1dDeleteIntegrationAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bprovider\x18\x02 \x01(\tR\bprovider\"7\n" +
 	"\x1cListAllPipelinesAdminRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"f\n" +
 	"\x1dListAllPipelinesAdminResponse\x12E\n" +
-	"\tpipelines\x18\x01 \x03(\v2'.fitglue.models.pipeline.PipelineConfigR\tpipelines\"\x9c\x01\n" +
+	"\tpipelines\x18\x01 \x03(\v2'.fitglue.models.pipeline.PipelineConfigR\tpipelines\"\xcd\x02\n" +
+	"\x15AdminPipelineRunStats\x12\x14\n" +
+	"\x05total\x18\x01 \x01(\x05R\x05total\x12Q\n" +
+	"\tby_status\x18\x02 \x03(\v24.fitglue.gateway.AdminPipelineRunStats.ByStatusEntryR\bbyStatus\x12Q\n" +
+	"\tby_source\x18\x03 \x03(\v24.fitglue.gateway.AdminPipelineRunStats.BySourceEntryR\bbySource\x1a;\n" +
+	"\rByStatusEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a;\n" +
+	"\rBySourceEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"\x9c\x01\n" +
 	"\x1cListPipelineRunsAdminRequest\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12\x17\n" +
 	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x05 \x01(\tR\tpageToken\"\x81\x01\n" +
+	"page_token\x18\x05 \x01(\tR\tpageToken\"\xda\x01\n" +
 	"\x1dListPipelineRunsAdminResponse\x128\n" +
 	"\x04runs\x18\x01 \x03(\v2$.fitglue.models.pipeline.PipelineRunR\x04runs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xcd\a\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x19\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore\x12<\n" +
+	"\x05stats\x18\x04 \x01(\v2&.fitglue.gateway.AdminPipelineRunStatsR\x05stats\"C\n" +
+	"\x1aGetPipelineRunAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"\x83\x01\n" +
+	"\x1aRepostActivityAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
+	"\vactivity_id\x18\x02 \x01(\tR\n" +
+	"activityId\x12\x12\n" +
+	"\x04mode\x18\x03 \x01(\tR\x04mode\x12 \n" +
+	"\vdestination\x18\x04 \x01(\tR\vdestination\"F\n" +
+	"\x1dCancelPipelineRunAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"c\n" +
+	"\x1eListPendingInputsAdminResponse\x12A\n" +
+	"\x06inputs\x18\x01 \x03(\v2).fitglue.gateway.AdminPendingInputSummaryR\x06inputs\"L\n" +
+	"\x1fResolvePendingInputAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\binput_id\x18\x02 \x01(\tR\ainputId\"P\n" +
+	"\x1fCreateBillingPortalAdminRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"return_url\x18\x02 \x01(\tR\treturnUrl\"4\n" +
+	" CreateBillingPortalAdminResponse\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\"\x8c\x03\n" +
+	"\x12AdminAuditLogEntry\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\tactor_uid\x18\x02 \x01(\tR\bactorUid\x12\x1f\n" +
+	"\vactor_email\x18\x03 \x01(\tR\n" +
+	"actorEmail\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\x12$\n" +
+	"\x0etarget_user_id\x18\x05 \x01(\tR\ftargetUserId\x12G\n" +
+	"\x06params\x18\x06 \x03(\v2/.fitglue.gateway.AdminAuditLogEntry.ParamsEntryR\x06params\x12\x16\n" +
+	"\x06result\x18\a \x01(\tR\x06result\x12\x14\n" +
+	"\x05error\x18\b \x01(\tR\x05error\x128\n" +
+	"\ttimestamp\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x1a9\n" +
+	"\vParamsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
+	"\x18ListAuditLogAdminRequest\x12$\n" +
+	"\x0etarget_user_id\x18\x01 \x01(\tR\ftargetUserId\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"\x82\x01\n" +
+	"\x19ListAuditLogAdminResponse\x12=\n" +
+	"\aentries\x18\x01 \x03(\v2#.fitglue.gateway.AdminAuditLogEntryR\aentries\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xdc\x17\n" +
 	"\x13AdminGatewayService\x12i\n" +
 	"\bGetStats\x12%.fitglue.gateway.GetAdminStatsRequest\x1a&.fitglue.gateway.GetAdminStatsResponse\"\x0e\x82\xd3\xe4\x93\x02\b\x12\x06/stats\x12l\n" +
 	"\tListUsers\x12&.fitglue.gateway.ListUsersAdminRequest\x1a'.fitglue.gateway.ListUsersAdminResponse\"\x0e\x82\xd3\xe4\x93\x02\b\x12\x06/users\x12e\n" +
-	"\aGetUser\x12#.fitglue.gateway.UserIdAdminRequest\x1a .fitglue.models.user.UserProfile\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/users/{id}\x12o\n" +
+	"\aGetUser\x12#.fitglue.gateway.UserIdAdminRequest\x1a .fitglue.gateway.AdminUserDetail\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/users/{id}\x12o\n" +
 	"\n" +
-	"UpdateUser\x12'.fitglue.gateway.UpdateUserAdminRequest\x1a .fitglue.models.user.UserProfile\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\x1a\v/users/{id}\x12k\n" +
+	"UpdateUser\x12'.fitglue.gateway.UpdateUserAdminRequest\x1a .fitglue.gateway.AdminUserDetail\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\x1a\v/users/{id}\x12k\n" +
 	"\n" +
 	"DeleteUser\x12#.fitglue.gateway.UserIdAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"\x13\x82\xd3\xe4\x93\x02\r*\v/users/{id}\x12\x83\x01\n" +
-	"\x0eDeleteUserData\x12+.fitglue.gateway.DeleteUserDataAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/users/{id}/{data_type}\x12\x85\x01\n" +
+	"\x0eDeleteUserData\x12+.fitglue.gateway.DeleteUserDataAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/users/{id}/{data_type}\x12\x89\x01\n" +
+	"\x11SendPasswordReset\x12#.fitglue.gateway.UserIdAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"*\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/users/{id}/send-password-reset\x12\x91\x01\n" +
+	"\x15SendVerificationEmail\x12#.fitglue.gateway.UserIdAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\".\x82\xd3\xe4\x93\x02(:\x01*\"#/users/{id}/send-verification-email\x12\xa8\x01\n" +
+	"\x15SetIntegrationEnabled\x122.fitglue.gateway.SetIntegrationEnabledAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"6\x82\xd3\xe4\x93\x020:\x01*\"+/users/{id}/integrations/{provider}/enabled\x12\x95\x01\n" +
+	"\x11DeleteIntegration\x12..fitglue.gateway.DeleteIntegrationAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"+\x82\xd3\xe4\x93\x02%*#/users/{id}/integrations/{provider}\x12\x85\x01\n" +
 	"\x10ListAllPipelines\x12-.fitglue.gateway.ListAllPipelinesAdminRequest\x1a..fitglue.gateway.ListAllPipelinesAdminResponse\"\x12\x82\xd3\xe4\x93\x02\f\x12\n" +
 	"/pipelines\x12\x89\x01\n" +
-	"\x10ListPipelineRuns\x12-.fitglue.gateway.ListPipelineRunsAdminRequest\x1a..fitglue.gateway.ListPipelineRunsAdminResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/pipeline-runsB7Z5github.com/fitglue/server/src/go/pkg/types/pb/gatewayb\x06proto3"
+	"\x10ListPipelineRuns\x12-.fitglue.gateway.ListPipelineRunsAdminRequest\x1a..fitglue.gateway.ListPipelineRunsAdminResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/pipeline-runs\x12\x8f\x01\n" +
+	"\x0eGetPipelineRun\x12+.fitglue.gateway.GetPipelineRunAdminRequest\x1a$.fitglue.models.pipeline.PipelineRun\"*\x82\xd3\xe4\x93\x02$\x12\"/users/{id}/pipeline-runs/{run_id}\x12\x9a\x01\n" +
+	"\x0eRepostActivity\x12+.fitglue.gateway.RepostActivityAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"6\x82\xd3\xe4\x93\x020:\x01*\"+/users/{id}/activities/{activity_id}/repost\x12\x9e\x01\n" +
+	"\x11CancelPipelineRun\x12..fitglue.gateway.CancelPipelineRunAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"4\x82\xd3\xe4\x93\x02.:\x01*\")/users/{id}/pipeline-runs/{run_id}/cancel\x12\x8d\x01\n" +
+	"\x11ListPendingInputs\x12#.fitglue.gateway.UserIdAdminRequest\x1a/.fitglue.gateway.ListPendingInputsAdminResponse\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/users/{id}/pending-inputs\x12\xa6\x01\n" +
+	"\x13ResolvePendingInput\x120.fitglue.gateway.ResolvePendingInputAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"8\x82\xd3\xe4\x93\x022:\x01*\"-/users/{id}/pending-inputs/{input_id}/resolve\x12u\n" +
+	"\x0eGetUserBilling\x12#.fitglue.gateway.UserIdAdminRequest\x1a!.fitglue.gateway.AdminUserBilling\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/users/{id}/billing\x12|\n" +
+	"\n" +
+	"StartTrial\x12#.fitglue.gateway.UserIdAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/users/{id}/billing/trial\x12\x85\x01\n" +
+	"\x12CancelSubscription\x12#.fitglue.gateway.UserIdAdminRequest\x1a#.fitglue.gateway.AdminEmptyResponse\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/users/{id}/billing/cancel\x12\xa8\x01\n" +
+	"\x1aCreateBillingPortalSession\x120.fitglue.gateway.CreateBillingPortalAdminRequest\x1a1.fitglue.gateway.CreateBillingPortalAdminResponse\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/users/{id}/billing/portal\x12y\n" +
+	"\fListAuditLog\x12).fitglue.gateway.ListAuditLogAdminRequest\x1a*.fitglue.gateway.ListAuditLogAdminResponse\"\x12\x82\xd3\xe4\x93\x02\f\x12\n" +
+	"/audit-logB7Z5github.com/fitglue/server/src/go/pkg/types/pb/gatewayb\x06proto3"
 
 var (
 	file_gateway_admin_proto_rawDescOnce sync.Once
@@ -776,51 +2268,126 @@ func file_gateway_admin_proto_rawDescGZIP() []byte {
 	return file_gateway_admin_proto_rawDescData
 }
 
-var file_gateway_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_gateway_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_gateway_admin_proto_goTypes = []any{
-	(*AdminEmptyResponse)(nil),            // 0: fitglue.gateway.AdminEmptyResponse
-	(*GetAdminStatsRequest)(nil),          // 1: fitglue.gateway.GetAdminStatsRequest
-	(*RecentPipelineRunCounts)(nil),       // 2: fitglue.gateway.RecentPipelineRunCounts
-	(*GetAdminStatsResponse)(nil),         // 3: fitglue.gateway.GetAdminStatsResponse
-	(*ListUsersAdminRequest)(nil),         // 4: fitglue.gateway.ListUsersAdminRequest
-	(*ListUsersAdminResponse)(nil),        // 5: fitglue.gateway.ListUsersAdminResponse
-	(*UserIdAdminRequest)(nil),            // 6: fitglue.gateway.UserIdAdminRequest
-	(*UpdateUserAdminRequest)(nil),        // 7: fitglue.gateway.UpdateUserAdminRequest
-	(*DeleteUserDataAdminRequest)(nil),    // 8: fitglue.gateway.DeleteUserDataAdminRequest
-	(*ListAllPipelinesAdminRequest)(nil),  // 9: fitglue.gateway.ListAllPipelinesAdminRequest
-	(*ListAllPipelinesAdminResponse)(nil), // 10: fitglue.gateway.ListAllPipelinesAdminResponse
-	(*ListPipelineRunsAdminRequest)(nil),  // 11: fitglue.gateway.ListPipelineRunsAdminRequest
-	(*ListPipelineRunsAdminResponse)(nil), // 12: fitglue.gateway.ListPipelineRunsAdminResponse
-	(*user.UserProfile)(nil),              // 13: fitglue.models.user.UserProfile
-	(*pipeline.PipelineConfig)(nil),       // 14: fitglue.models.pipeline.PipelineConfig
-	(*pipeline.PipelineRun)(nil),          // 15: fitglue.models.pipeline.PipelineRun
+	(*AdminEmptyResponse)(nil),                // 0: fitglue.gateway.AdminEmptyResponse
+	(*GetAdminStatsRequest)(nil),              // 1: fitglue.gateway.GetAdminStatsRequest
+	(*RecentPipelineRunCounts)(nil),           // 2: fitglue.gateway.RecentPipelineRunCounts
+	(*GetAdminStatsResponse)(nil),             // 3: fitglue.gateway.GetAdminStatsResponse
+	(*ListUsersAdminRequest)(nil),             // 4: fitglue.gateway.ListUsersAdminRequest
+	(*AdminUserSummary)(nil),                  // 5: fitglue.gateway.AdminUserSummary
+	(*ListUsersAdminResponse)(nil),            // 6: fitglue.gateway.ListUsersAdminResponse
+	(*UserIdAdminRequest)(nil),                // 7: fitglue.gateway.UserIdAdminRequest
+	(*UpdateUserAdminRequest)(nil),            // 8: fitglue.gateway.UpdateUserAdminRequest
+	(*DeleteUserDataAdminRequest)(nil),        // 9: fitglue.gateway.DeleteUserDataAdminRequest
+	(*AdminIntegrationSummary)(nil),           // 10: fitglue.gateway.AdminIntegrationSummary
+	(*AdminPipelineSummary)(nil),              // 11: fitglue.gateway.AdminPipelineSummary
+	(*AdminPendingInputSummary)(nil),          // 12: fitglue.gateway.AdminPendingInputSummary
+	(*AdminUserBilling)(nil),                  // 13: fitglue.gateway.AdminUserBilling
+	(*AdminUserDetail)(nil),                   // 14: fitglue.gateway.AdminUserDetail
+	(*SetIntegrationEnabledAdminRequest)(nil), // 15: fitglue.gateway.SetIntegrationEnabledAdminRequest
+	(*DeleteIntegrationAdminRequest)(nil),     // 16: fitglue.gateway.DeleteIntegrationAdminRequest
+	(*ListAllPipelinesAdminRequest)(nil),      // 17: fitglue.gateway.ListAllPipelinesAdminRequest
+	(*ListAllPipelinesAdminResponse)(nil),     // 18: fitglue.gateway.ListAllPipelinesAdminResponse
+	(*AdminPipelineRunStats)(nil),             // 19: fitglue.gateway.AdminPipelineRunStats
+	(*ListPipelineRunsAdminRequest)(nil),      // 20: fitglue.gateway.ListPipelineRunsAdminRequest
+	(*ListPipelineRunsAdminResponse)(nil),     // 21: fitglue.gateway.ListPipelineRunsAdminResponse
+	(*GetPipelineRunAdminRequest)(nil),        // 22: fitglue.gateway.GetPipelineRunAdminRequest
+	(*RepostActivityAdminRequest)(nil),        // 23: fitglue.gateway.RepostActivityAdminRequest
+	(*CancelPipelineRunAdminRequest)(nil),     // 24: fitglue.gateway.CancelPipelineRunAdminRequest
+	(*ListPendingInputsAdminResponse)(nil),    // 25: fitglue.gateway.ListPendingInputsAdminResponse
+	(*ResolvePendingInputAdminRequest)(nil),   // 26: fitglue.gateway.ResolvePendingInputAdminRequest
+	(*CreateBillingPortalAdminRequest)(nil),   // 27: fitglue.gateway.CreateBillingPortalAdminRequest
+	(*CreateBillingPortalAdminResponse)(nil),  // 28: fitglue.gateway.CreateBillingPortalAdminResponse
+	(*AdminAuditLogEntry)(nil),                // 29: fitglue.gateway.AdminAuditLogEntry
+	(*ListAuditLogAdminRequest)(nil),          // 30: fitglue.gateway.ListAuditLogAdminRequest
+	(*ListAuditLogAdminResponse)(nil),         // 31: fitglue.gateway.ListAuditLogAdminResponse
+	nil,                                       // 32: fitglue.gateway.AdminPipelineRunStats.ByStatusEntry
+	nil,                                       // 33: fitglue.gateway.AdminPipelineRunStats.BySourceEntry
+	nil,                                       // 34: fitglue.gateway.AdminAuditLogEntry.ParamsEntry
+	(*timestamppb.Timestamp)(nil),             // 35: google.protobuf.Timestamp
+	(user.UserTier)(0),                        // 36: fitglue.models.user.UserTier
+	(*user.SubscriptionState)(nil),            // 37: fitglue.models.user.SubscriptionState
+	(*user.UserProfile)(nil),                  // 38: fitglue.models.user.UserProfile
+	(*pipeline.PipelineConfig)(nil),           // 39: fitglue.models.pipeline.PipelineConfig
+	(*pipeline.PipelineRun)(nil),              // 40: fitglue.models.pipeline.PipelineRun
 }
 var file_gateway_admin_proto_depIdxs = []int32{
 	2,  // 0: fitglue.gateway.GetAdminStatsResponse.recent_executions:type_name -> fitglue.gateway.RecentPipelineRunCounts
-	13, // 1: fitglue.gateway.ListUsersAdminResponse.users:type_name -> fitglue.models.user.UserProfile
-	14, // 2: fitglue.gateway.ListAllPipelinesAdminResponse.pipelines:type_name -> fitglue.models.pipeline.PipelineConfig
-	15, // 3: fitglue.gateway.ListPipelineRunsAdminResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
-	1,  // 4: fitglue.gateway.AdminGatewayService.GetStats:input_type -> fitglue.gateway.GetAdminStatsRequest
-	4,  // 5: fitglue.gateway.AdminGatewayService.ListUsers:input_type -> fitglue.gateway.ListUsersAdminRequest
-	6,  // 6: fitglue.gateway.AdminGatewayService.GetUser:input_type -> fitglue.gateway.UserIdAdminRequest
-	7,  // 7: fitglue.gateway.AdminGatewayService.UpdateUser:input_type -> fitglue.gateway.UpdateUserAdminRequest
-	6,  // 8: fitglue.gateway.AdminGatewayService.DeleteUser:input_type -> fitglue.gateway.UserIdAdminRequest
-	8,  // 9: fitglue.gateway.AdminGatewayService.DeleteUserData:input_type -> fitglue.gateway.DeleteUserDataAdminRequest
-	9,  // 10: fitglue.gateway.AdminGatewayService.ListAllPipelines:input_type -> fitglue.gateway.ListAllPipelinesAdminRequest
-	11, // 11: fitglue.gateway.AdminGatewayService.ListPipelineRuns:input_type -> fitglue.gateway.ListPipelineRunsAdminRequest
-	3,  // 12: fitglue.gateway.AdminGatewayService.GetStats:output_type -> fitglue.gateway.GetAdminStatsResponse
-	5,  // 13: fitglue.gateway.AdminGatewayService.ListUsers:output_type -> fitglue.gateway.ListUsersAdminResponse
-	13, // 14: fitglue.gateway.AdminGatewayService.GetUser:output_type -> fitglue.models.user.UserProfile
-	13, // 15: fitglue.gateway.AdminGatewayService.UpdateUser:output_type -> fitglue.models.user.UserProfile
-	0,  // 16: fitglue.gateway.AdminGatewayService.DeleteUser:output_type -> fitglue.gateway.AdminEmptyResponse
-	0,  // 17: fitglue.gateway.AdminGatewayService.DeleteUserData:output_type -> fitglue.gateway.AdminEmptyResponse
-	10, // 18: fitglue.gateway.AdminGatewayService.ListAllPipelines:output_type -> fitglue.gateway.ListAllPipelinesAdminResponse
-	12, // 19: fitglue.gateway.AdminGatewayService.ListPipelineRuns:output_type -> fitglue.gateway.ListPipelineRunsAdminResponse
-	12, // [12:20] is the sub-list for method output_type
-	4,  // [4:12] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	35, // 1: fitglue.gateway.AdminUserSummary.created_at:type_name -> google.protobuf.Timestamp
+	36, // 2: fitglue.gateway.AdminUserSummary.tier:type_name -> fitglue.models.user.UserTier
+	35, // 3: fitglue.gateway.AdminUserSummary.trial_ends_at:type_name -> google.protobuf.Timestamp
+	5,  // 4: fitglue.gateway.ListUsersAdminResponse.users:type_name -> fitglue.gateway.AdminUserSummary
+	36, // 5: fitglue.gateway.UpdateUserAdminRequest.tier:type_name -> fitglue.models.user.UserTier
+	35, // 6: fitglue.gateway.AdminIntegrationSummary.created_at:type_name -> google.protobuf.Timestamp
+	35, // 7: fitglue.gateway.AdminIntegrationSummary.last_used_at:type_name -> google.protobuf.Timestamp
+	35, // 8: fitglue.gateway.AdminIntegrationSummary.expires_at:type_name -> google.protobuf.Timestamp
+	35, // 9: fitglue.gateway.AdminPendingInputSummary.created_at:type_name -> google.protobuf.Timestamp
+	37, // 10: fitglue.gateway.AdminUserBilling.subscription:type_name -> fitglue.models.user.SubscriptionState
+	36, // 11: fitglue.gateway.AdminUserBilling.effective_tier:type_name -> fitglue.models.user.UserTier
+	38, // 12: fitglue.gateway.AdminUserDetail.profile:type_name -> fitglue.models.user.UserProfile
+	10, // 13: fitglue.gateway.AdminUserDetail.integrations:type_name -> fitglue.gateway.AdminIntegrationSummary
+	11, // 14: fitglue.gateway.AdminUserDetail.pipelines:type_name -> fitglue.gateway.AdminPipelineSummary
+	12, // 15: fitglue.gateway.AdminUserDetail.pending_inputs:type_name -> fitglue.gateway.AdminPendingInputSummary
+	13, // 16: fitglue.gateway.AdminUserDetail.billing:type_name -> fitglue.gateway.AdminUserBilling
+	39, // 17: fitglue.gateway.ListAllPipelinesAdminResponse.pipelines:type_name -> fitglue.models.pipeline.PipelineConfig
+	32, // 18: fitglue.gateway.AdminPipelineRunStats.by_status:type_name -> fitglue.gateway.AdminPipelineRunStats.ByStatusEntry
+	33, // 19: fitglue.gateway.AdminPipelineRunStats.by_source:type_name -> fitglue.gateway.AdminPipelineRunStats.BySourceEntry
+	40, // 20: fitglue.gateway.ListPipelineRunsAdminResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
+	19, // 21: fitglue.gateway.ListPipelineRunsAdminResponse.stats:type_name -> fitglue.gateway.AdminPipelineRunStats
+	12, // 22: fitglue.gateway.ListPendingInputsAdminResponse.inputs:type_name -> fitglue.gateway.AdminPendingInputSummary
+	34, // 23: fitglue.gateway.AdminAuditLogEntry.params:type_name -> fitglue.gateway.AdminAuditLogEntry.ParamsEntry
+	35, // 24: fitglue.gateway.AdminAuditLogEntry.timestamp:type_name -> google.protobuf.Timestamp
+	29, // 25: fitglue.gateway.ListAuditLogAdminResponse.entries:type_name -> fitglue.gateway.AdminAuditLogEntry
+	1,  // 26: fitglue.gateway.AdminGatewayService.GetStats:input_type -> fitglue.gateway.GetAdminStatsRequest
+	4,  // 27: fitglue.gateway.AdminGatewayService.ListUsers:input_type -> fitglue.gateway.ListUsersAdminRequest
+	7,  // 28: fitglue.gateway.AdminGatewayService.GetUser:input_type -> fitglue.gateway.UserIdAdminRequest
+	8,  // 29: fitglue.gateway.AdminGatewayService.UpdateUser:input_type -> fitglue.gateway.UpdateUserAdminRequest
+	7,  // 30: fitglue.gateway.AdminGatewayService.DeleteUser:input_type -> fitglue.gateway.UserIdAdminRequest
+	9,  // 31: fitglue.gateway.AdminGatewayService.DeleteUserData:input_type -> fitglue.gateway.DeleteUserDataAdminRequest
+	7,  // 32: fitglue.gateway.AdminGatewayService.SendPasswordReset:input_type -> fitglue.gateway.UserIdAdminRequest
+	7,  // 33: fitglue.gateway.AdminGatewayService.SendVerificationEmail:input_type -> fitglue.gateway.UserIdAdminRequest
+	15, // 34: fitglue.gateway.AdminGatewayService.SetIntegrationEnabled:input_type -> fitglue.gateway.SetIntegrationEnabledAdminRequest
+	16, // 35: fitglue.gateway.AdminGatewayService.DeleteIntegration:input_type -> fitglue.gateway.DeleteIntegrationAdminRequest
+	17, // 36: fitglue.gateway.AdminGatewayService.ListAllPipelines:input_type -> fitglue.gateway.ListAllPipelinesAdminRequest
+	20, // 37: fitglue.gateway.AdminGatewayService.ListPipelineRuns:input_type -> fitglue.gateway.ListPipelineRunsAdminRequest
+	22, // 38: fitglue.gateway.AdminGatewayService.GetPipelineRun:input_type -> fitglue.gateway.GetPipelineRunAdminRequest
+	23, // 39: fitglue.gateway.AdminGatewayService.RepostActivity:input_type -> fitglue.gateway.RepostActivityAdminRequest
+	24, // 40: fitglue.gateway.AdminGatewayService.CancelPipelineRun:input_type -> fitglue.gateway.CancelPipelineRunAdminRequest
+	7,  // 41: fitglue.gateway.AdminGatewayService.ListPendingInputs:input_type -> fitglue.gateway.UserIdAdminRequest
+	26, // 42: fitglue.gateway.AdminGatewayService.ResolvePendingInput:input_type -> fitglue.gateway.ResolvePendingInputAdminRequest
+	7,  // 43: fitglue.gateway.AdminGatewayService.GetUserBilling:input_type -> fitglue.gateway.UserIdAdminRequest
+	7,  // 44: fitglue.gateway.AdminGatewayService.StartTrial:input_type -> fitglue.gateway.UserIdAdminRequest
+	7,  // 45: fitglue.gateway.AdminGatewayService.CancelSubscription:input_type -> fitglue.gateway.UserIdAdminRequest
+	27, // 46: fitglue.gateway.AdminGatewayService.CreateBillingPortalSession:input_type -> fitglue.gateway.CreateBillingPortalAdminRequest
+	30, // 47: fitglue.gateway.AdminGatewayService.ListAuditLog:input_type -> fitglue.gateway.ListAuditLogAdminRequest
+	3,  // 48: fitglue.gateway.AdminGatewayService.GetStats:output_type -> fitglue.gateway.GetAdminStatsResponse
+	6,  // 49: fitglue.gateway.AdminGatewayService.ListUsers:output_type -> fitglue.gateway.ListUsersAdminResponse
+	14, // 50: fitglue.gateway.AdminGatewayService.GetUser:output_type -> fitglue.gateway.AdminUserDetail
+	14, // 51: fitglue.gateway.AdminGatewayService.UpdateUser:output_type -> fitglue.gateway.AdminUserDetail
+	0,  // 52: fitglue.gateway.AdminGatewayService.DeleteUser:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 53: fitglue.gateway.AdminGatewayService.DeleteUserData:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 54: fitglue.gateway.AdminGatewayService.SendPasswordReset:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 55: fitglue.gateway.AdminGatewayService.SendVerificationEmail:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 56: fitglue.gateway.AdminGatewayService.SetIntegrationEnabled:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 57: fitglue.gateway.AdminGatewayService.DeleteIntegration:output_type -> fitglue.gateway.AdminEmptyResponse
+	18, // 58: fitglue.gateway.AdminGatewayService.ListAllPipelines:output_type -> fitglue.gateway.ListAllPipelinesAdminResponse
+	21, // 59: fitglue.gateway.AdminGatewayService.ListPipelineRuns:output_type -> fitglue.gateway.ListPipelineRunsAdminResponse
+	40, // 60: fitglue.gateway.AdminGatewayService.GetPipelineRun:output_type -> fitglue.models.pipeline.PipelineRun
+	0,  // 61: fitglue.gateway.AdminGatewayService.RepostActivity:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 62: fitglue.gateway.AdminGatewayService.CancelPipelineRun:output_type -> fitglue.gateway.AdminEmptyResponse
+	25, // 63: fitglue.gateway.AdminGatewayService.ListPendingInputs:output_type -> fitglue.gateway.ListPendingInputsAdminResponse
+	0,  // 64: fitglue.gateway.AdminGatewayService.ResolvePendingInput:output_type -> fitglue.gateway.AdminEmptyResponse
+	13, // 65: fitglue.gateway.AdminGatewayService.GetUserBilling:output_type -> fitglue.gateway.AdminUserBilling
+	0,  // 66: fitglue.gateway.AdminGatewayService.StartTrial:output_type -> fitglue.gateway.AdminEmptyResponse
+	0,  // 67: fitglue.gateway.AdminGatewayService.CancelSubscription:output_type -> fitglue.gateway.AdminEmptyResponse
+	28, // 68: fitglue.gateway.AdminGatewayService.CreateBillingPortalSession:output_type -> fitglue.gateway.CreateBillingPortalAdminResponse
+	31, // 69: fitglue.gateway.AdminGatewayService.ListAuditLog:output_type -> fitglue.gateway.ListAuditLogAdminResponse
+	48, // [48:70] is the sub-list for method output_type
+	26, // [26:48] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_gateway_admin_proto_init() }
@@ -828,13 +2395,14 @@ func file_gateway_admin_proto_init() {
 	if File_gateway_admin_proto != nil {
 		return
 	}
+	file_gateway_admin_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gateway_admin_proto_rawDesc), len(file_gateway_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
