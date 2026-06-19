@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.56.3](https://github.com/FitGlue/server/compare/v16.56.2...v16.56.3) (2026-06-19)
+
+
+### Bug Fixes
+
+* **admin:** correct platform stats and harden cross-user pipeline-run listing ([7f76600](https://github.com/FitGlue/server/commit/7f766009337a565460fc491295cc7c597cf87a33))
+
 ### [16.56.2](https://github.com/FitGlue/server/compare/v16.56.1...v16.56.2) (2026-06-19)
 
 ### [16.56.1](https://github.com/FitGlue/server/compare/v16.56.0...v16.56.1) (2026-06-18)
