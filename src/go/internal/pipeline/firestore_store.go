@@ -344,6 +344,13 @@ func (s *FirestoreStore) AdminListPipelineRuns(ctx context.Context, status, sour
 				"doc", doc.Ref.Path, "error", err)
 			continue
 		}
+		// user_id is not persisted on the per-user run document; derive it so the
+		// admin console can act on the run. For the collection-group query the
+		// owning user is the grandparent of the run document.
+		run.UserId = userID
+		if run.UserId == "" && doc.Ref.Parent != nil && doc.Ref.Parent.Parent != nil {
+			run.UserId = doc.Ref.Parent.Parent.ID
+		}
 		runs = append(runs, &run)
 	}
 	return runs, nil

@@ -86,6 +86,22 @@ service AdminGatewayService {
       get: "/pipelines"
     };
   }
+  rpc GetPipeline(GetPipelineAdminRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      get: "/users/{id}/pipelines/{pipeline_id}"
+    };
+  }
+  rpc UpdatePipeline(UpdatePipelineAdminRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      put: "/users/{id}/pipelines/{pipeline_id}"
+      body: "*"
+    };
+  }
+  rpc DeletePipeline(DeletePipelineAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      delete: "/users/{id}/pipelines/{pipeline_id}"
+    };
+  }
   rpc ListPipelineRuns(ListPipelineRunsAdminRequest) returns (ListPipelineRunsAdminResponse) {
     option (google.api.http) = {
       get: "/pipeline-runs"
@@ -285,6 +301,22 @@ message ListAllPipelinesAdminRequest {
 }
 message ListAllPipelinesAdminResponse {
   repeated fitglue.models.pipeline.PipelineConfig pipelines = 1;
+}
+
+message GetPipelineAdminRequest {
+  string id = 1; // user id
+  string pipeline_id = 2;
+}
+
+message UpdatePipelineAdminRequest {
+  string id = 1; // user id
+  string pipeline_id = 2;
+  fitglue.models.pipeline.PipelineConfig pipeline = 3;
+}
+
+message DeletePipelineAdminRequest {
+  string id = 1; // user id
+  string pipeline_id = 2;
 }
 
 message AdminPipelineRunStats {

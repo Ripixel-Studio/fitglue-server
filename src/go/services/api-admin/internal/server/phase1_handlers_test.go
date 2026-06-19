@@ -280,6 +280,60 @@ func TestPipelineSummaries(t *testing.T) {
 	assert.False(t, out[1].GetEnabled()) // disabled → not enabled
 }
 
+func TestGetPipeline_Success(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	req := withTwoParams(httptest.NewRequest(http.MethodGet, "/", nil), "id", "u1", "pipelineId", "p1")
+	w := httptest.NewRecorder()
+	svc.handleGetPipeline(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestPipelineConfigOps_MissingIDs(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	for _, h := range []func(http.ResponseWriter, *http.Request){
+		svc.handleGetPipeline, svc.handleUpdatePipeline, svc.handleDeletePipeline,
+	} {
+		w := httptest.NewRecorder()
+		h(w, httptest.NewRequest(http.MethodGet, "/", nil))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestUpdatePipeline_BadBody(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	req := withTwoParams(httptest.NewRequest(http.MethodPut, "/", bytes.NewBufferString("not json")), "id", "u1", "pipelineId", "p1")
+	w := httptest.NewRecorder()
+	svc.handleUpdatePipeline(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdatePipeline_MissingPipeline(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	req := withTwoParams(httptest.NewRequest(http.MethodPut, "/", bytes.NewBufferString("{}")), "id", "u1", "pipelineId", "p1")
+	w := httptest.NewRecorder()
+	svc.handleUpdatePipeline(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdatePipeline_Success(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	req := withTwoParams(
+		httptest.NewRequest(http.MethodPut, "/", bytes.NewBufferString(`{"pipeline":{"id":"p1","name":"My Pipe"}}`)),
+		"id", "u1", "pipelineId", "p1",
+	)
+	w := httptest.NewRecorder()
+	svc.handleUpdatePipeline(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestDeletePipeline_Success(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	req := withTwoParams(httptest.NewRequest(http.MethodDelete, "/", nil), "id", "u1", "pipelineId", "p1")
+	w := httptest.NewRecorder()
+	svc.handleDeletePipeline(w, req)
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
 func TestPendingInputSummaries(t *testing.T) {
 	inputs := []*pipelinemodelpb.PendingInput{
 		{ActivityId: "a1", EnricherProviderId: "weather", Status: pipelinemodelpb.PendingInput_STATUS_WAITING},

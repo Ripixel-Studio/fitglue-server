@@ -31,6 +31,9 @@ const (
 	AdminGatewayService_SetIntegrationEnabled_FullMethodName      = "/fitglue.gateway.AdminGatewayService/SetIntegrationEnabled"
 	AdminGatewayService_DeleteIntegration_FullMethodName          = "/fitglue.gateway.AdminGatewayService/DeleteIntegration"
 	AdminGatewayService_ListAllPipelines_FullMethodName           = "/fitglue.gateway.AdminGatewayService/ListAllPipelines"
+	AdminGatewayService_GetPipeline_FullMethodName                = "/fitglue.gateway.AdminGatewayService/GetPipeline"
+	AdminGatewayService_UpdatePipeline_FullMethodName             = "/fitglue.gateway.AdminGatewayService/UpdatePipeline"
+	AdminGatewayService_DeletePipeline_FullMethodName             = "/fitglue.gateway.AdminGatewayService/DeletePipeline"
 	AdminGatewayService_ListPipelineRuns_FullMethodName           = "/fitglue.gateway.AdminGatewayService/ListPipelineRuns"
 	AdminGatewayService_GetPipelineRun_FullMethodName             = "/fitglue.gateway.AdminGatewayService/GetPipelineRun"
 	AdminGatewayService_RepostActivity_FullMethodName             = "/fitglue.gateway.AdminGatewayService/RepostActivity"
@@ -69,6 +72,9 @@ type AdminGatewayServiceClient interface {
 	DeleteIntegration(ctx context.Context, in *DeleteIntegrationAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
 	// ===================== Pipeline Management =====================
 	ListAllPipelines(ctx context.Context, in *ListAllPipelinesAdminRequest, opts ...grpc.CallOption) (*ListAllPipelinesAdminResponse, error)
+	GetPipeline(ctx context.Context, in *GetPipelineAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineConfig, error)
+	UpdatePipeline(ctx context.Context, in *UpdatePipelineAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineConfig, error)
+	DeletePipeline(ctx context.Context, in *DeletePipelineAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsAdminRequest, opts ...grpc.CallOption) (*ListPipelineRunsAdminResponse, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	RepostActivity(ctx context.Context, in *RepostActivityAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error)
@@ -196,6 +202,36 @@ func (c *adminGatewayServiceClient) ListAllPipelines(ctx context.Context, in *Li
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAllPipelinesAdminResponse)
 	err := c.cc.Invoke(ctx, AdminGatewayService_ListAllPipelines_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) GetPipeline(ctx context.Context, in *GetPipelineAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineConfig, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pipeline.PipelineConfig)
+	err := c.cc.Invoke(ctx, AdminGatewayService_GetPipeline_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) UpdatePipeline(ctx context.Context, in *UpdatePipelineAdminRequest, opts ...grpc.CallOption) (*pipeline.PipelineConfig, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pipeline.PipelineConfig)
+	err := c.cc.Invoke(ctx, AdminGatewayService_UpdatePipeline_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminGatewayServiceClient) DeletePipeline(ctx context.Context, in *DeletePipelineAdminRequest, opts ...grpc.CallOption) (*AdminEmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminEmptyResponse)
+	err := c.cc.Invoke(ctx, AdminGatewayService_DeletePipeline_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -337,6 +373,9 @@ type AdminGatewayServiceServer interface {
 	DeleteIntegration(context.Context, *DeleteIntegrationAdminRequest) (*AdminEmptyResponse, error)
 	// ===================== Pipeline Management =====================
 	ListAllPipelines(context.Context, *ListAllPipelinesAdminRequest) (*ListAllPipelinesAdminResponse, error)
+	GetPipeline(context.Context, *GetPipelineAdminRequest) (*pipeline.PipelineConfig, error)
+	UpdatePipeline(context.Context, *UpdatePipelineAdminRequest) (*pipeline.PipelineConfig, error)
+	DeletePipeline(context.Context, *DeletePipelineAdminRequest) (*AdminEmptyResponse, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsAdminRequest) (*ListPipelineRunsAdminResponse, error)
 	GetPipelineRun(context.Context, *GetPipelineRunAdminRequest) (*pipeline.PipelineRun, error)
 	RepostActivity(context.Context, *RepostActivityAdminRequest) (*AdminEmptyResponse, error)
@@ -392,6 +431,15 @@ func (UnimplementedAdminGatewayServiceServer) DeleteIntegration(context.Context,
 }
 func (UnimplementedAdminGatewayServiceServer) ListAllPipelines(context.Context, *ListAllPipelinesAdminRequest) (*ListAllPipelinesAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAllPipelines not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) GetPipeline(context.Context, *GetPipelineAdminRequest) (*pipeline.PipelineConfig, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPipeline not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) UpdatePipeline(context.Context, *UpdatePipelineAdminRequest) (*pipeline.PipelineConfig, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdatePipeline not implemented")
+}
+func (UnimplementedAdminGatewayServiceServer) DeletePipeline(context.Context, *DeletePipelineAdminRequest) (*AdminEmptyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePipeline not implemented")
 }
 func (UnimplementedAdminGatewayServiceServer) ListPipelineRuns(context.Context, *ListPipelineRunsAdminRequest) (*ListPipelineRunsAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPipelineRuns not implemented")
@@ -645,6 +693,60 @@ func _AdminGatewayService_ListAllPipelines_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminGatewayService_GetPipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPipelineAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).GetPipeline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_GetPipeline_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).GetPipeline(ctx, req.(*GetPipelineAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_UpdatePipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePipelineAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).UpdatePipeline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_UpdatePipeline_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).UpdatePipeline(ctx, req.(*UpdatePipelineAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminGatewayService_DeletePipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePipelineAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminGatewayServiceServer).DeletePipeline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminGatewayService_DeletePipeline_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminGatewayServiceServer).DeletePipeline(ctx, req.(*DeletePipelineAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminGatewayService_ListPipelineRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPipelineRunsAdminRequest)
 	if err := dec(in); err != nil {
@@ -893,6 +995,18 @@ var AdminGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAllPipelines",
 			Handler:    _AdminGatewayService_ListAllPipelines_Handler,
+		},
+		{
+			MethodName: "GetPipeline",
+			Handler:    _AdminGatewayService_GetPipeline_Handler,
+		},
+		{
+			MethodName: "UpdatePipeline",
+			Handler:    _AdminGatewayService_UpdatePipeline_Handler,
+		},
+		{
+			MethodName: "DeletePipeline",
+			Handler:    _AdminGatewayService_DeletePipeline_Handler,
 		},
 		{
 			MethodName: "ListPipelineRuns",

@@ -156,6 +156,7 @@ func (s *APIServer) buildUserDetail(ctx context.Context, userID string) (*gatewa
 	if err != nil {
 		return nil, err
 	}
+	s.enrichIdentity(ctx, profile)
 	detail := &gatewaypb.AdminUserDetail{Profile: profile}
 
 	if integ, err := s.userService.ListIntegrations(ctx, &userpb.ListIntegrationsRequest{UserId: userID}); err == nil {
@@ -184,6 +185,7 @@ func (s *APIServer) buildUserDetail(ctx context.Context, userID string) (*gatewa
 // userSummary maps a UserProfile into the directory row shape, enriching with
 // per-user integration/pipeline counts (cheap at our user scale).
 func (s *APIServer) userSummary(ctx context.Context, p *usermodelpb.UserProfile) *gatewaypb.AdminUserSummary {
+	s.enrichIdentity(ctx, p)
 	sum := &gatewaypb.AdminUserSummary{
 		UserId:             p.GetUserId(),
 		Email:              p.GetEmail(),
@@ -297,6 +299,29 @@ func subTimestamp(m protoreflect.Message, name string) *timestamppb.Timestamp {
 		return ts
 	}
 	return nil
+}
+
+// enrichIdentity fills a profile's email/display name from Firebase Auth when
+// the Firestore profile is missing them — identity lives in Firebase Auth, not
+// the Firestore profile, so admin views would otherwise show blanks.
+func (s *APIServer) enrichIdentity(ctx context.Context, p *usermodelpb.UserProfile) {
+	if p == nil || s.authClient == nil {
+		return
+	}
+	if p.GetEmail() != "" && p.GetDisplayName() != "" {
+		return
+	}
+	rec, err := s.authClient.GetUser(ctx, p.GetUserId())
+	if err != nil {
+		s.logger.Warn(ctx, "admin: firebase GetUser failed", "uid", p.GetUserId(), "error", err)
+		return
+	}
+	if p.Email == "" {
+		p.Email = rec.Email
+	}
+	if p.DisplayName == "" {
+		p.DisplayName = rec.DisplayName
+	}
 }
 
 func tokenHealth(expires *timestamppb.Timestamp) string {

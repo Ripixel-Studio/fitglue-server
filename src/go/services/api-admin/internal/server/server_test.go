@@ -156,13 +156,13 @@ func (m *adminNopPipelineClient) ListPipelines(_ context.Context, _ *pipelinepb.
 	return &pipelinepb.ListPipelinesResponse{}, nil
 }
 func (m *adminNopPipelineClient) GetPipeline(_ context.Context, _ *pipelinepb.GetPipelineRequest, _ ...grpc.CallOption) (*pbpipeline.PipelineConfig, error) {
-	return nil, nil
+	return &pbpipeline.PipelineConfig{}, nil
 }
 func (m *adminNopPipelineClient) CreatePipeline(_ context.Context, _ *pipelinepb.CreatePipelineRequest, _ ...grpc.CallOption) (*pbpipeline.PipelineConfig, error) {
 	return nil, nil
 }
 func (m *adminNopPipelineClient) UpdatePipeline(_ context.Context, _ *pipelinepb.UpdatePipelineRequest, _ ...grpc.CallOption) (*pbpipeline.PipelineConfig, error) {
-	return nil, nil
+	return &pbpipeline.PipelineConfig{}, nil
 }
 func (m *adminNopPipelineClient) DeletePipeline(_ context.Context, _ *pipelinepb.DeletePipelineRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil

@@ -95,6 +95,9 @@ func (s *APIServer) registerAdminRoutes(r chi.Router) {
 
 	// Pipeline management
 	r.Get("/pipelines", s.handleListAllPipelines)
+	r.Get("/users/{id}/pipelines/{pipelineId}", s.handleGetPipeline)
+	r.Put("/users/{id}/pipelines/{pipelineId}", s.handleUpdatePipeline)
+	r.Delete("/users/{id}/pipelines/{pipelineId}", s.handleDeletePipeline)
 	r.Get("/pipeline-runs", s.handleAdminPipelineRuns)
 	r.Get("/users/{id}/pipeline-runs/{runId}", s.handleGetPipelineRun)
 	r.Post("/users/{id}/activities/{activityId}/repost", s.handleRepostActivity)

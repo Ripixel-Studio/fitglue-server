@@ -369,7 +369,11 @@ type PipelineRun struct {
 	// Unified record of every step in a pipeline run — source, parse, gate,
 	// enricher batch, router, and per-destination uploaders.
 	// boosters[] is preserved for existing documents; new clients should prefer steps[].
-	Steps         []*ExecutionStep `protobuf:"bytes,24,rep,name=steps,proto3" json:"steps,omitempty"`
+	Steps []*ExecutionStep `protobuf:"bytes,24,rep,name=steps,proto3" json:"steps,omitempty"`
+	// Owning user id. Not persisted on the per-user run documents (it is implied by
+	// the document path); populated by the admin cross-user listing so callers can
+	// act on the run. Empty on the user-facing API.
+	UserId        string `protobuf:"bytes,26,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -542,6 +546,13 @@ func (x *PipelineRun) GetSteps() []*ExecutionStep {
 		return x.Steps
 	}
 	return nil
+}
+
+func (x *PipelineRun) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
 }
 
 // ExecutionStep is the unified record for a single step in a pipeline run.
@@ -973,7 +984,7 @@ var File_models_pipeline_execution_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\n" +
-	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x8a\b\n" +
+	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\xa3\b\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -1000,7 +1011,8 @@ const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\x14original_payload_uri\x18\x16 \x01(\tR\x12originalPayloadUri\x12,\n" +
 	"\x12enriched_event_uri\x18\x17 \x01(\tR\x10enrichedEventUri\x12B\n" +
 	"\x1enon_blocking_pending_input_ids\x18\x19 \x03(\tR\x1anonBlockingPendingInputIds\x12<\n" +
-	"\x05steps\x18\x18 \x03(\v2&.fitglue.models.pipeline.ExecutionStepR\x05stepsB\x11\n" +
+	"\x05steps\x18\x18 \x03(\v2&.fitglue.models.pipeline.ExecutionStepR\x05steps\x12\x17\n" +
+	"\auser_id\x18\x1a \x01(\tR\x06userIdB\x11\n" +
 	"\x0f_status_messageB\x13\n" +
 	"\x11_pending_input_id\"\xa7\x04\n" +
 	"\rExecutionStep\x12\x0e\n" +

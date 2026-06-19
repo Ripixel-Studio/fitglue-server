@@ -570,6 +570,97 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/{id}/pipelines/{pipelineId}:
+        get:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_GetPipeline
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pipelineId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_UpdatePipeline
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pipelineId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePipelineAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_DeletePipeline
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pipelineId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/{id}/send-password-reset:
         post:
             tags:
@@ -1313,6 +1404,12 @@ components:
                         Unified record of every step in a pipeline run — source, parse, gate,
                          enricher batch, router, and per-destination uploaders.
                          boosters[] is preserved for existing documents; new clients should prefer steps[].
+                userId:
+                    type: string
+                    description: |-
+                        Owning user id. Not persisted on the per-user run documents (it is implied by
+                         the document path); populated by the admin cross-user listing so callers can
+                         act on the run. Empty on the user-facing API.
         RecentPipelineRunCounts:
             type: object
             properties:
@@ -1403,6 +1500,15 @@ components:
                 status:
                     type: string
             description: SubscriptionState tracks the user's billing info, decoupled from core profile.
+        UpdatePipelineAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                pipelineId:
+                    type: string
+                pipeline:
+                    $ref: '#/components/schemas/PipelineConfig'
         UpdateUserAdminRequest:
             type: object
             properties:
