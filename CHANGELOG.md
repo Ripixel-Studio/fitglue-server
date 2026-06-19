@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.57.0](https://github.com/FitGlue/server/compare/v16.56.3...v16.57.0) (2026-06-19)
+
+
+### Features
+
+* **admin:** expand admin gateway with 360° user detail, ops, billing and audit ([1aa50f2](https://github.com/FitGlue/server/commit/1aa50f24b829be7f0489ea29d7ba965733a18e20))
+
 ### [16.56.3](https://github.com/FitGlue/server/compare/v16.56.2...v16.56.3) (2026-06-19)
 
 
