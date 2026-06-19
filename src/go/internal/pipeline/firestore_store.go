@@ -4,9 +4,12 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -17,10 +20,11 @@ import (
 
 type FirestoreStore struct {
 	client *firestore.Client
+	logger infra.Logger
 }
 
 func NewFirestoreStore(client *firestore.Client) *FirestoreStore {
-	return &FirestoreStore{client: client}
+	return &FirestoreStore{client: client, logger: infra.NewLoggerWithComponent("pipeline-store")}
 }
 
 func (s *FirestoreStore) ListPipelines(ctx context.Context, userID string) ([]*pipeline.PipelineConfig, error) {
@@ -307,9 +311,12 @@ func (s *FirestoreStore) AdminListPipelineRuns(ctx context.Context, status, sour
 			OrderBy("created_at", firestore.Desc)
 	}
 
+	// status is stored as the proto enum *name* string (protojson), not its
+	// numeric value, so filter by the resolved name. Accept enum names, short
+	// names ("SYNCED"), or numeric values from older clients.
 	if status != "" {
-		if v, ok := pipeline.PipelineRunStatus_value[status]; ok {
-			q = q.Where("status", "==", v)
+		if name, ok := resolvePipelineRunStatusName(status); ok {
+			q = q.Where("status", "==", name)
 		}
 	}
 	if source != "" {
@@ -329,12 +336,83 @@ func (s *FirestoreStore) AdminListPipelineRuns(ctx context.Context, status, sour
 			return nil, err
 		}
 		var run pipeline.PipelineRun
-		if err := decodeProtoMap(doc.Data(), &run); err != nil {
-			return nil, err
+		// A single legacy/dirty document must not fail the whole admin listing.
+		// Normalise common legacy shapes, then skip (with a warning) anything
+		// that still won't decode rather than returning an error to the caller.
+		if err := decodeProtoMap(normalizeRunData(doc.Data()), &run); err != nil {
+			s.logger.Warn(ctx, "skipping pipeline run that failed to decode",
+				"doc", doc.Ref.Path, "error", err)
+			continue
 		}
 		runs = append(runs, &run)
 	}
 	return runs, nil
+}
+
+// resolvePipelineRunStatusName converts a status filter supplied as an enum name
+// ("PIPELINE_RUN_STATUS_SYNCED"), a short name ("SYNCED"), or a numeric enum
+// value ("2") into the canonical proto enum name used in Firestore.
+func resolvePipelineRunStatusName(in string) (string, bool) {
+	in = strings.TrimSpace(in)
+	if in == "" {
+		return "", false
+	}
+	if n, err := strconv.Atoi(in); err == nil {
+		if name, ok := pipeline.PipelineRunStatus_name[int32(n)]; ok {
+			return name, true
+		}
+		return "", false
+	}
+	up := strings.ToUpper(in)
+	if !strings.HasPrefix(up, "PIPELINE_RUN_STATUS_") {
+		up = "PIPELINE_RUN_STATUS_" + up
+	}
+	if _, ok := pipeline.PipelineRunStatus_value[up]; ok {
+		return up, true
+	}
+	return "", false
+}
+
+// normalizeRunData converts legacy pipeline_run documents into a shape protojson
+// can decode. Old TypeScript-written docs used camelCase keys; later Go merges
+// added snake_case keys, leaving documents with both forms which protojson
+// rejects as duplicate fields. We drop the camelCase form where a snake_case
+// equivalent exists. We also coerce a numeric status into its enum name.
+func normalizeRunData(data map[string]interface{}) map[string]interface{} {
+	camelToSnake := map[string]string{
+		"pipelineId":         "pipeline_id",
+		"activityId":         "activity_id",
+		"sourceActivityId":   "source_activity_id",
+		"startTime":          "start_time",
+		"createdAt":          "created_at",
+		"updatedAt":          "updated_at",
+		"statusMessage":      "status_message",
+		"pendingInputId":     "pending_input_id",
+		"originalPayloadUri": "original_payload_uri",
+		"enrichedEventUri":   "enriched_event_uri",
+	}
+	for camel, snake := range camelToSnake {
+		if _, hasCamel := data[camel]; hasCamel {
+			if _, hasSnake := data[snake]; hasSnake {
+				delete(data, camel)
+			}
+		}
+	}
+
+	if statusVal, ok := data["status"]; ok {
+		switch n := statusVal.(type) {
+		case int64:
+			if name, ok := pipeline.PipelineRunStatus_name[int32(n)]; ok {
+				data["status"] = name
+			}
+		case float64:
+			if name, ok := pipeline.PipelineRunStatus_name[int32(n)]; ok {
+				data["status"] = name
+			}
+		}
+	}
+
+	return data
 }
 
 func (s *FirestoreStore) UpdatePipelineRun(ctx context.Context, userID, runID string, updateData map[string]interface{}) error {

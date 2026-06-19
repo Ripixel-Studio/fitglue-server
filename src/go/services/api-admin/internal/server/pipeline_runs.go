@@ -10,8 +10,10 @@ import (
 func (s *APIServer) handleAdminPipelineRuns(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	source := r.URL.Query().Get("source")
-	userID := r.URL.Query().Get("user_id")
-	pageToken := r.URL.Query().Get("page_token")
+	// The generated OpenAPI client sends camelCase query params; accept the
+	// snake_case proto field names too for compatibility.
+	userID := queryParam(r, "userId", "user_id")
+	pageToken := queryParam(r, "pageToken", "page_token")
 
 	limit := int32(50)
 	if l := r.URL.Query().Get("limit"); l != "" {
