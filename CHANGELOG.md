@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.57.2](https://github.com/FitGlue/server/compare/v16.57.1...v16.57.2) (2026-06-20)
+
+
+### Bug Fixes
+
+* **muscle-heatmap:** skip section when no muscle groups have volume ([486a284](https://github.com/FitGlue/server/commit/486a284c95c12fa32e332641bb36b4d426b9c325))
+* **pace-summary:** derive real per-km splits from record stream ([891cb55](https://github.com/FitGlue/server/commit/891cb5505c4d2e5cf004ea951474ca019fe1832c))
+
 ### [16.57.1](https://github.com/FitGlue/server/compare/v16.57.0...v16.57.1) (2026-06-19)
 
 
