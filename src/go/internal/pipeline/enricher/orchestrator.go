@@ -196,12 +196,10 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	// 2.2 Handle Resume Mode flags
 	isResumeMode := payload.IsResume
-	resumeOnlyEnrichers := payload.ResumeOnlyEnrichers
 	useUpdateMethod := payload.UseUpdateMethod
 
 	if isResumeMode {
 		logger.Info("Resume mode activated",
-			"resume_only_enrichers", resumeOnlyEnrichers,
 			"use_update_method", useUpdateMethod,
 			"resume_pending_input_id", payload.ResumePendingInputId,
 			"pipeline_id", pipelineID)
@@ -423,26 +421,6 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					logger.Info("Resume mode: replayed non-idempotent enricher", "provider", provider.Name())
 					continue
 				}
-			}
-		}
-
-		// 3a.2 Resume Mode: Skip enrichers not in the resume list
-		if isResumeMode && len(resumeOnlyEnrichers) > 0 {
-			shouldRun := false
-			for _, allowedName := range resumeOnlyEnrichers {
-				if provider.Name() == allowedName {
-					shouldRun = true
-					break
-				}
-			}
-			if !shouldRun {
-				logger.Debug("Skipping enricher in resume mode", "name", provider.Name())
-				providerExecutions = append(providerExecutions, ProviderExecution{
-					ProviderName: provider.Name(),
-					Status:       "SKIPPED",
-					Metadata:     map[string]string{"skip_reason": "not_in_resume_list"},
-				})
-				continue
 			}
 		}
 
@@ -1019,6 +997,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		if useUpdateMethod {
 			finalEvent.EnrichmentMetadata["use_update_method"] = "true"
 		}
+		// Flag every resume so the destination executor refreshes destinations that
+		// already succeeded on an earlier pass (with Update) instead of skipping them
+		// via the redelivery idempotency guard. Without this, late-arriving non-blocking
+		// data (e.g. photo uploads resolved after a separate blocking input synced the
+		// pipeline) never reaches an already-created showcase/destination.
+		finalEvent.EnrichmentMetadata["pipeline_resumed"] = "true"
 	}
 
 	// Propagate targeted-repost intent to the destination executor so it can bypass the

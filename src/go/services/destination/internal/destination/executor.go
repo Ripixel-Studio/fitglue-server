@@ -292,11 +292,22 @@ destinations:
 		// they keep the guard for genuine Pub/Sub redelivery protection.
 		repostMode := metadata["repost_mode"]
 		isTargetedRepost := metadata["is_repost"] == "true" && repostMode != "" && repostMode != "full-pipeline"
+		// A resume re-enriches the activity, so a destination that already succeeded on an
+		// earlier pass may now have fresh data to apply (e.g. a non-blocking photo upload that
+		// resolved after a separate blocking input already synced the pipeline). Update it
+		// rather than skipping, which would otherwise freeze the stale pre-resume state.
+		isResume := metadata["pipeline_resumed"] == "true"
 		if !effectiveIsUpdate && !isTargetedRepost {
 			for _, outcome := range priorOutcomes {
 				if outcome.Destination == destEnum && outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
-					e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
-					continue destinations
+					if isResume {
+						e.logger.Info(ctx, "Resume: updating already-succeeded destination with refreshed data", "destination", destEnum.String())
+						effectiveIsUpdate = true
+					} else {
+						e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
+						continue destinations
+					}
+					break
 				}
 			}
 		} else if isTargetedRepost {

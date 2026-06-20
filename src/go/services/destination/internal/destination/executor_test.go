@@ -279,6 +279,7 @@ type countingUploader struct {
 	name        string
 	id          string
 	createCalls int32
+	updateCalls int32
 }
 
 func (m *countingUploader) Name() string { return m.name }
@@ -287,6 +288,7 @@ func (m *countingUploader) Create(ctx context.Context, payload *pbevents.Activit
 	return m.id, nil
 }
 func (m *countingUploader) Update(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record, pipelineRun *pbpipeline.PipelineRun) error {
+	atomic.AddInt32(&m.updateCalls, 1)
 	return nil
 }
 
@@ -394,6 +396,70 @@ func TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard(t *testing.T) {
 	// Targeted repost: the guard must be bypassed and the upload re-attempted.
 	if got := run(t, map[string]string{"is_repost": "true", "repost_mode": "retry-destination"}); got != 1 {
 		t.Errorf("expected targeted repost to bypass guard (1 Create call), got %d", got)
+	}
+}
+
+// TestUploadExecutor_Resume_UpdatesAlreadySucceededDestination covers the bug where
+// late-arriving non-blocking data (e.g. a photo upload resolved after a separate
+// blocking input already synced the pipeline) never reached an already-created
+// destination. A resume must Update destinations that already succeeded — not skip
+// them via the redelivery idempotency guard, nor Create a duplicate. A non-resume
+// redelivery must still skip.
+func TestUploadExecutor_Resume_UpdatesAlreadySucceededDestination(t *testing.T) {
+	priorShowcaseSuccess := func(_ context.Context, _ string, _ string) ([]*pbpipeline.DestinationOutcome, error) {
+		extID := "showcase-1"
+		return []*pbpipeline.DestinationOutcome{{
+			Destination: pbplugin.DestinationType_DESTINATION_SHOWCASE,
+			Status:      pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+			ExternalId:  &extID,
+		}}, nil
+	}
+
+	newPayload := func(meta map[string]string) *pbevents.EnrichedActivityEvent {
+		execID := "run-1"
+		return &pbevents.EnrichedActivityEvent{
+			UserId:              "user-1",
+			ActivityId:          "act-1",
+			PipelineExecutionId: &execID,
+			Destinations:        []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_SHOWCASE},
+			ActivityData:        &pbactivity.StandardizedActivity{ExternalId: "ext-1"},
+			EnrichmentMetadata:  meta,
+		}
+	}
+
+	run := func(t *testing.T, meta map[string]string) (int32, int32) {
+		t.Helper()
+		registry := NewRegistry()
+		uploader := &countingUploader{name: "showcase", id: "showcase-1"}
+		registry.Register(pbplugin.DestinationType_DESTINATION_SHOWCASE, uploader)
+
+		userClient := &mockUserServiceClient{
+			GetProfileFunc: func(ctx context.Context, in *userpb.GetProfileRequest, opts ...grpc.CallOption) (*pbuser.UserProfile, error) {
+				return &pbuser.UserProfile{UserId: in.UserId}, nil
+			},
+		}
+		db := &mocks.MockDatabase{GetDestinationOutcomesFunc: priorShowcaseSuccess}
+		executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, db, nil, &mocks.MockPublisher{}, infra.NewLogger())
+
+		payloadBytes, err := protojson.Marshal(newPayload(meta))
+		assert.NoError(t, err)
+		ce := event.New()
+		ce.SetID("test-id")
+		ce.SetType("com.fitglue.event.enriched")
+		ce.SetSource("test")
+		ce.SetData("application/json", payloadBytes)
+		assert.NoError(t, executor.Process(context.Background(), &ce))
+		return atomic.LoadInt32(&uploader.createCalls), atomic.LoadInt32(&uploader.updateCalls)
+	}
+
+	// Plain redelivery (no resume flag): prior SUCCESS must short-circuit — no Create, no Update.
+	if c, u := run(t, nil); c != 0 || u != 0 {
+		t.Errorf("expected redelivery to skip (0 create, 0 update), got %d create, %d update", c, u)
+	}
+
+	// Resume: the already-succeeded destination must be Updated with refreshed data, not skipped or duplicated.
+	if c, u := run(t, map[string]string{"pipeline_resumed": "true"}); c != 0 || u != 1 {
+		t.Errorf("expected resume to update once (0 create, 1 update), got %d create, %d update", c, u)
 	}
 }
 

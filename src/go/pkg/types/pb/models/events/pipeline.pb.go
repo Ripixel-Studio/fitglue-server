@@ -195,7 +195,6 @@ type ActivityPayload struct {
 	ActivityId           *string                        `protobuf:"bytes,8,opt,name=activity_id,json=activityId,proto3,oneof" json:"activity_id,omitempty"`
 	PipelineId           *string                        `protobuf:"bytes,9,opt,name=pipeline_id,json=pipelineId,proto3,oneof" json:"pipeline_id,omitempty"`
 	IsResume             bool                           `protobuf:"varint,10,opt,name=is_resume,json=isResume,proto3" json:"is_resume,omitempty"`
-	ResumeOnlyEnrichers  []string                       `protobuf:"bytes,11,rep,name=resume_only_enrichers,json=resumeOnlyEnrichers,proto3" json:"resume_only_enrichers,omitempty"`
 	UseUpdateMethod      bool                           `protobuf:"varint,12,opt,name=use_update_method,json=useUpdateMethod,proto3" json:"use_update_method,omitempty"`
 	ResumePendingInputId *string                        `protobuf:"bytes,13,opt,name=resume_pending_input_id,json=resumePendingInputId,proto3,oneof" json:"resume_pending_input_id,omitempty"`
 	OriginDestination    *string                        `protobuf:"bytes,14,opt,name=origin_destination,json=originDestination,proto3,oneof" json:"origin_destination,omitempty"`
@@ -304,13 +303,6 @@ func (x *ActivityPayload) GetIsResume() bool {
 		return x.IsResume
 	}
 	return false
-}
-
-func (x *ActivityPayload) GetResumeOnlyEnrichers() []string {
-	if x != nil {
-		return x.ResumeOnlyEnrichers
-	}
-	return nil
 }
 
 func (x *ActivityPayload) GetUseUpdateMethod() bool {
@@ -636,7 +628,7 @@ var File_models_events_pipeline_proto protoreflect.FileDescriptor
 
 const file_models_events_pipeline_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/events/pipeline.proto\x12\x15fitglue.models.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\"models/activity/standardized.proto\x1a!models/activity/enrichments.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x98\b\n" +
+	"\x1cmodels/events/pipeline.proto\x12\x15fitglue.models.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\"models/activity/standardized.proto\x1a!models/activity/enrichments.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\xea\a\n" +
 	"\x0fActivityPayload\x12?\n" +
 	"\x06source\x18\x01 \x01(\x0e2'.fitglue.models.activity.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
@@ -650,8 +642,7 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\vpipeline_id\x18\t \x01(\tH\x02R\n" +
 	"pipelineId\x88\x01\x01\x12\x1b\n" +
 	"\tis_resume\x18\n" +
-	" \x01(\bR\bisResume\x122\n" +
-	"\x15resume_only_enrichers\x18\v \x03(\tR\x13resumeOnlyEnrichers\x12*\n" +
+	" \x01(\bR\bisResume\x12*\n" +
 	"\x11use_update_method\x18\f \x01(\bR\x0fuseUpdateMethod\x12:\n" +
 	"\x17resume_pending_input_id\x18\r \x01(\tH\x03R\x14resumePendingInputId\x88\x01\x01\x122\n" +
 	"\x12origin_destination\x18\x0e \x01(\tH\x04R\x11originDestination\x88\x01\x01\x12\x1b\n" +
@@ -666,7 +657,7 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination\"\xc8\b\n" +
+	"\x13_origin_destinationJ\x04\b\v\x10\f\"\xc8\b\n" +
 	"\x15EnrichedActivityEvent\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +

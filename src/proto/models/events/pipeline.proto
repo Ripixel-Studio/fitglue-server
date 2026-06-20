@@ -62,9 +62,9 @@ message ActivityPayload {
   optional string activity_id = 8;  
   optional string pipeline_id = 9;  
 
-  bool is_resume = 10;                          
-  repeated string resume_only_enrichers = 11;   
-  bool use_update_method = 12;                  
+  bool is_resume = 10;
+  reserved 11; // was resume_only_enrichers — never wired up in production, removed
+  bool use_update_method = 12;
   optional string resume_pending_input_id = 13; 
 
   optional string origin_destination = 14;      

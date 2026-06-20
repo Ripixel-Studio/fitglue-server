@@ -94,7 +94,7 @@ type Provider interface {
 }
 
 // ResumableProvider is an optional interface for providers that support resume mode.
-// When the orchestrator is in resume mode and the provider is in the resume_only_enrichers list,
+// When the orchestrator is in resume mode resolving this provider's pending input,
 // if the provider implements this interface, EnrichResume will be called instead of Enrich.
 // This allows providers to apply resolved pending input data directly.
 type ResumableProvider interface {

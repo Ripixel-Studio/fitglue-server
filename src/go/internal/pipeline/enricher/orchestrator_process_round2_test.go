@@ -531,63 +531,6 @@ func TestProcess_ResumeReplaysJournal(t *testing.T) {
 	}
 }
 
-// TestProcess_ResumeOnlySkips covers the resume-only-enrichers skip branch: in
-// resume mode, an enricher not in resume_only_enrichers is SKIPPED.
-func TestProcess_ResumeOnlySkips(t *testing.T) {
-	ran := false
-	db := &MockDatabase{
-		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
-			return &user.Record{UserProfile: &pbuser.UserProfile{UserId: id}}, nil
-		},
-		GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
-			return []*pbpipeline.PipelineConfig{{
-				Id:           "p1",
-				Source:       "SOURCE_HEVY",
-				Destinations: []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA},
-				Enrichers: []*pbpipeline.EnricherConfig{
-					{ProviderType: pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK},
-				},
-			}}, nil
-		},
-	}
-	o := NewOrchestrator(db, &MockBlobStore{}, "bucket", nil)
-	o.Register(&MockProvider{
-		NameFunc: func() string { return "mock-enricher" },
-		EnrichFunc: func(ctx context.Context, _ *slog.Logger, _ *pbactivity.StandardizedActivity, _ *user.Record, _ map[string]string, _ bool) (*providers.EnrichmentResult, error) {
-			ran = true
-			return &providers.EnrichmentResult{}, nil
-		},
-	})
-
-	pipelineID := "p1"
-	activityID := "resume-2"
-	payload := &pbevents.ActivityPayload{
-		UserId:               "u1",
-		PipelineId:           &pipelineID,
-		Source:               pbactivity.ActivitySource_SOURCE_HEVY,
-		IsResume:             true,
-		ActivityId:           &activityID,
-		ResumeOnlyEnrichers:  []string{"some-other-enricher"}, // excludes mock-enricher
-		StandardizedActivity: oneSessionActivity(),
-	}
-	res, err := o.Process(context.Background(), covLogger(), payload, "parent", "exec", false)
-	if err != nil {
-		t.Fatalf("resume-only run should not error, got %v", err)
-	}
-	if ran {
-		t.Error("enricher not in resume list should be skipped")
-	}
-	var skipped bool
-	for _, pe := range res.ProviderExecutions {
-		if pe.Status == "SKIPPED" && pe.Metadata["skip_reason"] == "not_in_resume_list" {
-			skipped = true
-		}
-	}
-	if !skipped {
-		t.Error("expected not_in_resume_list skip")
-	}
-}
-
 // nonBlockingMockProvider implements SupportsNonBlocking + ResumableProvider so a
 // WaitForInputError in NonBlocking config defers without halting the pipeline.
 type nonBlockingMockProvider struct {
