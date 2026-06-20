@@ -136,6 +136,27 @@ func TestEnrich_EmptySets(t *testing.T) {
 	}
 }
 
+func TestEnrich_SetsButNoRecognizedMuscleGroups(t *testing.T) {
+	p := NewMuscleHeatmapProvider()
+
+	// Sets exist but their exercises map to no recognized muscle group
+	// (e.g. Pilates). The enricher should produce no output at all rather
+	// than a header with an empty body.
+	sets := []*pbactivity.StrengthSet{
+		{ExerciseName: "Pilates Roll Up", PrimaryMuscleGroup: pbactivity.MuscleGroup_MUSCLE_GROUP_OTHER, WeightKg: 0, Reps: 10},
+		{ExerciseName: "Pilates Hundred", PrimaryMuscleGroup: pbactivity.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED, WeightKg: 0, Reps: 100},
+	}
+
+	result, err := p.Enrich(context.Background(), slog.Default(), makeTestActivity(sets), &user.Record{}, map[string]string{}, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Description != "" {
+		t.Errorf("expected empty description when no muscle groups have volume, got: %q", result.Description)
+	}
+}
+
 func TestRollUpScores(t *testing.T) {
 	input := map[string]float64{
 		"Quadriceps": 500.0,

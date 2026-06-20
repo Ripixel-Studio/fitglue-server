@@ -232,6 +232,13 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, logger *slog.Logger,
 		}
 	}
 
+	// If no muscle groups have any volume (e.g. an activity whose exercises
+	// map to no recognized muscle group, like Pilates), skip the section
+	// entirely rather than emitting a header with no body.
+	if len(keys) == 0 {
+		return &providers.EnrichmentResult{}, nil
+	}
+
 	// Sort by volume (descending order)
 	sort.Slice(keys, func(i, j int) bool {
 		return volumeScores[keys[i]] > volumeScores[keys[j]]
