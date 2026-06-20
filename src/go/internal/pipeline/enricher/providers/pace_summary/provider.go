@@ -97,12 +97,41 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 
 	avgSpeed := sumSpeed / float64(len(speeds))
 	avgPace := 1000.0 / avgSpeed / 60.0 // minutes per km
+	// bestPace defaults to the fastest instantaneous sample, but is replaced
+	// below by the fastest real kilometre split whenever split data is
+	// available — a single GPS speed sample is far too noisy to report as a
+	// "best split" (it routinely yields impossibly fast paces).
 	bestPace := 1000.0 / maxSpeed / 60.0
+
+	// Calculate splits if requested. Derive them from the per-record
+	// distance/time stream (the way Strava builds its lap table) rather than
+	// slicing a single long lap into equal pieces — the latter reports the
+	// overall average pace for every kilometre. Fall back to lap division only
+	// when the stream lacks usable distance/time data (e.g. treadmill or
+	// structured workouts without GPS).
+	var splits []Split
+	if showSplits || showNegativeSplit || showFatigue {
+		splits = calculateSplitsFromRecords(activity)
+		if len(splits) == 0 {
+			splits = calculateSplitsFromLaps(activity)
+		}
+	}
+
+	// Prefer the fastest actual kilometre split for the "best" figure.
+	if len(splits) > 0 {
+		bestPace = splits[0].Pace
+		for _, s := range splits[1:] {
+			if s.Pace < bestPace {
+				bestPace = s.Pace
+			}
+		}
+	}
 
 	logger.Info("Pace summary calculated",
 		"avg_pace_min_km", avgPace,
 		"best_pace_min_km", bestPace,
 		"sample_count", len(speeds),
+		"split_count", len(splits),
 	)
 
 	avgPaceStr := formatPace(avgPace)
@@ -111,12 +140,6 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	// Build the summary text
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("⚡ Pace: %s/km avg • %s/km best", avgPaceStr, bestPaceStr))
-
-	// Calculate splits if requested
-	var splits []Split
-	if showSplits || showNegativeSplit || showFatigue {
-		splits = calculateSplitsFromLaps(activity)
-	}
 
 	// Show splits
 	if showSplits && len(splits) > 0 {
@@ -263,6 +286,100 @@ func lapElapsedSeconds(lap *pbactivity.Lap, nextLapStartTime *timestamppb.Timest
 		return sessionEndTime.AsTime().Sub(lap.StartTime.AsTime()).Seconds()
 	}
 	return 0
+}
+
+// splitDistanceMeters is the boundary at which a new kilometre split begins.
+const splitDistanceMeters = 1000.0
+
+// calculateSplitsFromRecords derives true per-kilometre splits from the
+// per-record cumulative distance + timestamp stream, exactly as Strava builds
+// its lap table. This is the correct source for splits: many sources (Strava
+// included) deliver an entire run as a single lap, so dividing a lap evenly
+// would assign the overall average pace to every kilometre.
+//
+// It returns nil when the stream lacks the distance/time data needed to compute
+// real splits (e.g. treadmill or structured workouts with no GPS), so callers
+// can fall back to lap-based estimation.
+func calculateSplitsFromRecords(activity *pbactivity.StandardizedActivity) []Split {
+	// Flatten records across all sessions/laps in chronological order.
+	var records []*pbactivity.Record
+	for _, session := range activity.Sessions {
+		for _, lap := range session.Laps {
+			records = append(records, lap.Records...)
+		}
+	}
+	if len(records) < 2 {
+		return nil
+	}
+
+	var (
+		splits       []Split
+		cumDist      float64 // total distance covered so far (metres)
+		nextBoundary = splitDistanceMeters
+		started      bool
+		prevRawDist  float64   // last record's reported (cumulative) distance
+		prevTime     time.Time // last record's timestamp
+		splitStart   time.Time // timestamp at which the current split began
+	)
+
+	for _, r := range records {
+		if r.Timestamp == nil {
+			continue
+		}
+		t := r.Timestamp.AsTime()
+
+		if !started {
+			prevRawDist = r.Distance
+			prevTime = t
+			splitStart = t
+			started = true
+			continue
+		}
+
+		// Record.Distance is normally cumulative for the whole activity, but
+		// accumulate deltas so we stay correct even if a source resets the
+		// counter per lap. Guard against backwards/negative jumps.
+		delta := r.Distance - prevRawDist
+		if delta < 0 {
+			delta = r.Distance
+			if delta < 0 {
+				delta = 0
+			}
+		}
+		prevRawDist = r.Distance
+
+		segStart := cumDist
+		segDurSec := t.Sub(prevTime).Seconds()
+
+		// Emit a split each time this segment crosses a kilometre boundary,
+		// interpolating the crossing time linearly along the segment. A single
+		// segment can span more than one boundary, hence the loop.
+		for delta > 0 && segStart+delta >= nextBoundary {
+			frac := (nextBoundary - segStart) / delta
+			if frac < 0 {
+				frac = 0
+			} else if frac > 1 {
+				frac = 1
+			}
+			crossTime := prevTime.Add(time.Duration(frac * segDurSec * float64(time.Second)))
+			splitDurSec := crossTime.Sub(splitStart).Seconds()
+			if splitDurSec > 0 {
+				splits = append(splits, Split{
+					Distance:  splitDistanceMeters,
+					Duration:  time.Duration(splitDurSec * float64(time.Second)),
+					Pace:      (splitDurSec / splitDistanceMeters) * 1000 / 60, // min/km
+					StartTime: timestamppb.New(splitStart),
+				})
+			}
+			splitStart = crossTime
+			nextBoundary += splitDistanceMeters
+		}
+
+		cumDist = segStart + delta
+		prevTime = t
+	}
+
+	return splits
 }
 
 // calculateSplitsFromLaps attempts to derive km splits from lap data
