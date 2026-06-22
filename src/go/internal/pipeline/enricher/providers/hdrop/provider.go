@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"strings"
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/user_input"
@@ -103,6 +104,11 @@ func processHDropData(raw string) (*providers.EnrichmentResult, error) {
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"hdrop_status": "no_data"},
 		}, nil
+	}
+
+	// hDrop exports include a prose sentence before the JSON object — strip it.
+	if idx := strings.IndexByte(raw, '{'); idx > 0 {
+		raw = raw[idx:]
 	}
 
 	var data hDropJSON

@@ -7,6 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestProcessHDropData_LeadingProse(t *testing.T) {
+	raw := `Here is your individual activity data:
+{"metadata":{"totalSweatLoss":1.618,"sweatRate":"1.26","totalSodium":1250.568,"totalPotassium":163.118,"sodiumConcentration":"772.9","averagehDropScore":76.08,"minhDropScore":39,"bodyLocation":"Upper Arm (Default)","minTemperature":27.04,"maxTemperature":43.74},"timeseriesData":[]}`
+
+	result, err := processHDropData(raw)
+	require.NoError(t, err)
+	assert.Equal(t, "applied", result.Metadata["hdrop_status"])
+}
+
 func TestProcessHDropData_Empty(t *testing.T) {
 	result, err := processHDropData("")
 	require.NoError(t, err)
