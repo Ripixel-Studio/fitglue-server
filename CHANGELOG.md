@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.58.0](https://github.com/FitGlue/server/compare/v16.57.4...v16.58.0) (2026-06-22)
+
+
+### Features
+
+* **cors:** add public CORS middleware for unauthenticated API access ([b04ef39](https://github.com/FitGlue/server/commit/b04ef3911261c4ef1357bc9e8ece89b4e4545103))
+
 ### [16.57.4](https://github.com/FitGlue/server/compare/v16.57.3...v16.57.4) (2026-06-22)
 
 
