@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.57.4](https://github.com/FitGlue/server/compare/v16.57.3...v16.57.4) (2026-06-22)
+
+
+### Bug Fixes
+
+* **hdrop:** strip leading prose before JSON object in export ([c086ebb](https://github.com/FitGlue/server/commit/c086ebbfea5b91e1b2185002a601a211c714328d))
+
 ### [16.57.3](https://github.com/FitGlue/server/compare/v16.57.2...v16.57.3) (2026-06-20)
 
 ### [16.57.2](https://github.com/FitGlue/server/compare/v16.57.1...v16.57.2) (2026-06-20)
