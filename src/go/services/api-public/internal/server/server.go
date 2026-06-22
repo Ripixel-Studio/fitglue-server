@@ -55,12 +55,33 @@ func (s *APIServer) setupRoutes() {
 
 	// API Public block (No Auth / API routing)
 	s.router.Route("/api/public", func(r chi.Router) {
+		// Public, unauthenticated, read-only data — allow any browser origin so
+		// third-party tools (e.g. a user's own post maker) can read a public
+		// showcase. No credentials are involved, so "*" is safe here.
+		r.Use(publicCORS)
+
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
 
 		s.registerRegistryRoutes(r)
 		s.registerShowcaseRoutes(r)
+	})
+}
+
+// publicCORS adds permissive CORS headers (and answers preflight) for the
+// public API block.
+func publicCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
