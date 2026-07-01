@@ -637,6 +637,35 @@ func (s *FirestoreStore) ListRecentRoundups(ctx context.Context, slug string, li
 	return results, nil
 }
 
+// ListAllRoundups returns every roundup for slug, newest first — used for
+// in-memory pagination in GetRecentPublicRoundups, mirroring the
+// GetPublicShowcaseProfile pattern until real Firestore offset pagination
+// is needed here.
+func (s *FirestoreStore) ListAllRoundups(ctx context.Context, slug string) ([]*pbactivity.ShowcaseRoundup, error) {
+	iter := s.client.Collection("showcased_roundups").
+		Where("slug", "==", slug).
+		OrderBy("period_end", firestore.Desc).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var results []*pbactivity.ShowcaseRoundup
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var r pbactivity.ShowcaseRoundup
+		if err := decodeProtoMap(doc.Data(), &r); err != nil {
+			return nil, err
+		}
+		results = append(results, &r)
+	}
+	return results, nil
+}
+
 func (s *FirestoreStore) ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error) {
 	// start_time is stored as a protojson RFC3339 string, not a Firestore Timestamp,
 	// so range queries against time.Time values don't work. Load all entries and filter in Go.

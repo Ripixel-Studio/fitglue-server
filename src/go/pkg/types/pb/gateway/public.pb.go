@@ -502,7 +502,7 @@ func (x *GetPublicRoundupGatewayRequest) GetPeriodKey() string {
 type GetRecentPublicRoundupsGatewayRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
-	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"` // optional query param — 1-indexed, defaults to 1
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -544,9 +544,9 @@ func (x *GetRecentPublicRoundupsGatewayRequest) GetSlug() string {
 	return ""
 }
 
-func (x *GetRecentPublicRoundupsGatewayRequest) GetLimit() int32 {
+func (x *GetRecentPublicRoundupsGatewayRequest) GetPage() int32 {
 	if x != nil {
-		return x.Limit
+		return x.Page
 	}
 	return 0
 }
@@ -554,6 +554,8 @@ func (x *GetRecentPublicRoundupsGatewayRequest) GetLimit() int32 {
 type GetRecentPublicRoundupsGatewayResponse struct {
 	state         protoimpl.MessageState      `protogen:"open.v1"`
 	Roundups      []*activity.ShowcaseRoundup `protobuf:"bytes,1,rep,name=roundups,proto3" json:"roundups,omitempty"`
+	TotalPages    int32                       `protobuf:"varint,2,opt,name=total_pages,json=totalPages,proto3" json:"total_pages,omitempty"`
+	CurrentPage   int32                       `protobuf:"varint,3,opt,name=current_page,json=currentPage,proto3" json:"current_page,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -593,6 +595,20 @@ func (x *GetRecentPublicRoundupsGatewayResponse) GetRoundups() []*activity.Showc
 		return x.Roundups
 	}
 	return nil
+}
+
+func (x *GetRecentPublicRoundupsGatewayResponse) GetTotalPages() int32 {
+	if x != nil {
+		return x.TotalPages
+	}
+	return 0
+}
+
+func (x *GetRecentPublicRoundupsGatewayResponse) GetCurrentPage() int32 {
+	if x != nil {
+		return x.CurrentPage
+	}
+	return 0
 }
 
 // Showcase view beacons (visitor identity is derived server-side from IP/UA)
@@ -768,12 +784,15 @@ const file_gateway_public_proto_rawDesc = "" +
 	"\x1eGetPublicRoundupGatewayRequest\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x1d\n" +
 	"\n" +
-	"period_key\x18\x02 \x01(\tR\tperiodKey\"Q\n" +
+	"period_key\x18\x02 \x01(\tR\tperiodKey\"O\n" +
 	"%GetRecentPublicRoundupsGatewayRequest\x12\x12\n" +
-	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"n\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\"\xb2\x01\n" +
 	"&GetRecentPublicRoundupsGatewayResponse\x12D\n" +
-	"\broundups\x18\x01 \x03(\v2(.fitglue.models.activity.ShowcaseRoundupR\broundups\"3\n" +
+	"\broundups\x18\x01 \x03(\v2(.fitglue.models.activity.ShowcaseRoundupR\broundups\x12\x1f\n" +
+	"\vtotal_pages\x18\x02 \x01(\x05R\n" +
+	"totalPages\x12!\n" +
+	"\fcurrent_page\x18\x03 \x01(\x05R\vcurrentPage\"3\n" +
 	"!RecordShowcaseActivityViewRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"6\n" +
 	" RecordShowcaseProfileViewRequest\x12\x12\n" +

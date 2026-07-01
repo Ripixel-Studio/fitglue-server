@@ -58,6 +58,7 @@ type ActivityStore interface {
 	GetRoundup(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error)
 	SetRoundup(ctx context.Context, roundup *pbactivity.ShowcaseRoundup) error
 	ListRecentRoundups(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error)
+	ListAllRoundups(ctx context.Context, slug string) ([]*pbactivity.ShowcaseRoundup, error)
 
 	// Roundup — generation inputs
 	ListShowcaseEntriesInRange(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error)

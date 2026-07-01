@@ -50,6 +50,7 @@ type MockActivityStore struct {
 
 	GetRoundupFunc                 func(ctx context.Context, slug, periodKey string) (*pbactivity.ShowcaseRoundup, error)
 	ListRecentRoundupsFunc         func(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error)
+	ListAllRoundupsFunc            func(ctx context.Context, slug string) ([]*pbactivity.ShowcaseRoundup, error)
 	ListShowcaseEntriesInRangeFunc func(ctx context.Context, userID string, from, to time.Time) ([]*pbactivity.ShowcaseProfileEntry, error)
 	ListUserPersonalRecordsFunc    func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseTopPR, error)
 	ListAllShowcaseUserIDsFunc     func(ctx context.Context) ([]string, error)
@@ -293,6 +294,13 @@ func (m *MockActivityStore) SetRoundup(ctx context.Context, roundup *pbactivity.
 func (m *MockActivityStore) ListRecentRoundups(ctx context.Context, slug string, limit int) ([]*pbactivity.ShowcaseRoundup, error) {
 	if m.ListRecentRoundupsFunc != nil {
 		return m.ListRecentRoundupsFunc(ctx, slug, limit)
+	}
+	return nil, nil
+}
+
+func (m *MockActivityStore) ListAllRoundups(ctx context.Context, slug string) ([]*pbactivity.ShowcaseRoundup, error) {
+	if m.ListAllRoundupsFunc != nil {
+		return m.ListAllRoundupsFunc(ctx, slug)
 	}
 	return nil, nil
 }

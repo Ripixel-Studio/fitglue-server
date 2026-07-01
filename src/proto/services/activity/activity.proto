@@ -435,11 +435,13 @@ message GetPublicRoundupRequest {
 
 message GetRecentPublicRoundupsRequest {
   string slug = 1;
-  int32 limit = 2;
+  int32 page = 2; // optional query param — 1-indexed, defaults to 1
 }
 
 message GetRecentPublicRoundupsResponse {
   repeated fitglue.models.activity.ShowcaseRoundup roundups = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
 }
 
 message UpdateRoundupSettingsRequest {

@@ -225,17 +225,17 @@ func (s *APIServer) handleGetPublicRoundup(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *APIServer) handleGetRecentPublicRoundups(w http.ResponseWriter, r *http.Request) {
-	limitStr := r.URL.Query().Get("limit")
-	var limit int32 = 3
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = int32(l)
+	pageStr := r.URL.Query().Get("page")
+	page := int32(1)
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = int32(p)
 		}
 	}
 
 	req := &activitypb.GetRecentPublicRoundupsRequest{
-		Slug:  chi.URLParam(r, "slug"),
-		Limit: limit,
+		Slug: chi.URLParam(r, "slug"),
+		Page: page,
 	}
 
 	res, err := s.activitySvc.GetRecentPublicRoundups(r.Context(), req)

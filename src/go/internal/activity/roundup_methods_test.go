@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -82,7 +83,7 @@ func TestGetRecentPublicRoundups_Methods(t *testing.T) {
 
 	t.Run("StoreError", func(t *testing.T) {
 		store := &MockActivityStore{}
-		store.ListRecentRoundupsFunc = func(_ context.Context, _ string, _ int) ([]*pbactivity.ShowcaseRoundup, error) {
+		store.ListAllRoundupsFunc = func(_ context.Context, _ string) ([]*pbactivity.ShowcaseRoundup, error) {
 			return nil, errors.New("db error")
 		}
 		svc := newTestSvc(store, &MockBlobStore{})
@@ -92,11 +93,9 @@ func TestGetRecentPublicRoundups_Methods(t *testing.T) {
 		}
 	})
 
-	t.Run("DefaultLimitSuccess", func(t *testing.T) {
-		var gotLimit int
+	t.Run("DefaultPageSuccess", func(t *testing.T) {
 		store := &MockActivityStore{}
-		store.ListRecentRoundupsFunc = func(_ context.Context, _ string, limit int) ([]*pbactivity.ShowcaseRoundup, error) {
-			gotLimit = limit
+		store.ListAllRoundupsFunc = func(_ context.Context, _ string) ([]*pbactivity.ShowcaseRoundup, error) {
 			return []*pbactivity.ShowcaseRoundup{{RoundupId: "r1"}}, nil
 		}
 		svc := newTestSvc(store, &MockBlobStore{})
@@ -104,11 +103,64 @@ func TestGetRecentPublicRoundups_Methods(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if gotLimit != 3 {
-			t.Errorf("expected default limit 3, got %d", gotLimit)
-		}
 		if len(res.Roundups) != 1 {
 			t.Errorf("expected 1 roundup, got %d", len(res.Roundups))
+		}
+		if res.CurrentPage != 1 {
+			t.Errorf("expected current page 1, got %d", res.CurrentPage)
+		}
+		if res.TotalPages != 1 {
+			t.Errorf("expected 1 total page, got %d", res.TotalPages)
+		}
+	})
+
+	t.Run("PaginatesAcrossPages", func(t *testing.T) {
+		all := make([]*pbactivity.ShowcaseRoundup, 0, 25)
+		for i := 0; i < 25; i++ {
+			all = append(all, &pbactivity.ShowcaseRoundup{RoundupId: strconv.Itoa(i)})
+		}
+		store := &MockActivityStore{}
+		store.ListAllRoundupsFunc = func(_ context.Context, _ string) ([]*pbactivity.ShowcaseRoundup, error) {
+			return all, nil
+		}
+		svc := newTestSvc(store, &MockBlobStore{})
+
+		res, err := svc.GetRecentPublicRoundups(ctx, &pbsvc.GetRecentPublicRoundupsRequest{Slug: "x", Page: 2})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(res.Roundups) != 12 {
+			t.Errorf("expected 12 roundups on page 2, got %d", len(res.Roundups))
+		}
+		if res.Roundups[0].RoundupId != "12" {
+			t.Errorf("expected page 2 to start at index 12, got %q", res.Roundups[0].RoundupId)
+		}
+		if res.CurrentPage != 2 {
+			t.Errorf("expected current page 2, got %d", res.CurrentPage)
+		}
+		if res.TotalPages != 3 {
+			t.Errorf("expected 3 total pages for 25 roundups, got %d", res.TotalPages)
+		}
+
+		// Page 3 is a partial page (1 remaining roundup).
+		res3, err := svc.GetRecentPublicRoundups(ctx, &pbsvc.GetRecentPublicRoundupsRequest{Slug: "x", Page: 3})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(res3.Roundups) != 1 {
+			t.Errorf("expected 1 roundup on final page, got %d", len(res3.Roundups))
+		}
+
+		// Past the end — empty page, but pagination metadata still reflects the total.
+		res4, err := svc.GetRecentPublicRoundups(ctx, &pbsvc.GetRecentPublicRoundupsRequest{Slug: "x", Page: 4})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(res4.Roundups) != 0 {
+			t.Errorf("expected 0 roundups past the end, got %d", len(res4.Roundups))
+		}
+		if res4.TotalPages != 3 {
+			t.Errorf("expected total pages to stay 3, got %d", res4.TotalPages)
 		}
 	})
 }

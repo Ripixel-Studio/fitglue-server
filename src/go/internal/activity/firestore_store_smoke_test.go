@@ -86,6 +86,7 @@ func TestFirestoreStore_Smoke(t *testing.T) {
 	_, _ = s.GetRoundup(ctx, "slug", "month-01-2024")
 	_ = s.SetRoundup(ctx, roundup)
 	_, _ = s.ListRecentRoundups(ctx, "slug", 5)
+	_, _ = s.ListAllRoundups(ctx, "slug")
 
 	// Billing / counting
 	_, _ = s.CountBillingEvents(ctx, "u1")

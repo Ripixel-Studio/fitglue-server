@@ -280,7 +280,7 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: limit
+                - name: page
                   in: query
                   schema:
                     type: integer
@@ -575,6 +575,12 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ShowcaseRoundup'
+                totalPages:
+                    type: integer
+                    format: int32
+                currentPage:
+                    type: integer
+                    format: int32
         GoalEntry:
             type: object
             properties:

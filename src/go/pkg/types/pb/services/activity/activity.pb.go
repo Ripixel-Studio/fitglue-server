@@ -2255,7 +2255,7 @@ func (x *GetPublicRoundupRequest) GetPeriodKey() string {
 type GetRecentPublicRoundupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
-	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"` // optional query param — 1-indexed, defaults to 1
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2297,9 +2297,9 @@ func (x *GetRecentPublicRoundupsRequest) GetSlug() string {
 	return ""
 }
 
-func (x *GetRecentPublicRoundupsRequest) GetLimit() int32 {
+func (x *GetRecentPublicRoundupsRequest) GetPage() int32 {
 	if x != nil {
-		return x.Limit
+		return x.Page
 	}
 	return 0
 }
@@ -2307,6 +2307,8 @@ func (x *GetRecentPublicRoundupsRequest) GetLimit() int32 {
 type GetRecentPublicRoundupsResponse struct {
 	state         protoimpl.MessageState      `protogen:"open.v1"`
 	Roundups      []*activity.ShowcaseRoundup `protobuf:"bytes,1,rep,name=roundups,proto3" json:"roundups,omitempty"`
+	TotalPages    int32                       `protobuf:"varint,2,opt,name=total_pages,json=totalPages,proto3" json:"total_pages,omitempty"`
+	CurrentPage   int32                       `protobuf:"varint,3,opt,name=current_page,json=currentPage,proto3" json:"current_page,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2346,6 +2348,20 @@ func (x *GetRecentPublicRoundupsResponse) GetRoundups() []*activity.ShowcaseRoun
 		return x.Roundups
 	}
 	return nil
+}
+
+func (x *GetRecentPublicRoundupsResponse) GetTotalPages() int32 {
+	if x != nil {
+		return x.TotalPages
+	}
+	return 0
+}
+
+func (x *GetRecentPublicRoundupsResponse) GetCurrentPage() int32 {
+	if x != nil {
+		return x.CurrentPage
+	}
+	return 0
 }
 
 type UpdateRoundupSettingsRequest struct {
@@ -2871,12 +2887,15 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\x17GetPublicRoundupRequest\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x1d\n" +
 	"\n" +
-	"period_key\x18\x02 \x01(\tR\tperiodKey\"J\n" +
+	"period_key\x18\x02 \x01(\tR\tperiodKey\"H\n" +
 	"\x1eGetRecentPublicRoundupsRequest\x12\x12\n" +
-	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"g\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\"\xab\x01\n" +
 	"\x1fGetRecentPublicRoundupsResponse\x12D\n" +
-	"\broundups\x18\x01 \x03(\v2(.fitglue.models.activity.ShowcaseRoundupR\broundups\"}\n" +
+	"\broundups\x18\x01 \x03(\v2(.fitglue.models.activity.ShowcaseRoundupR\broundups\x12\x1f\n" +
+	"\vtotal_pages\x18\x02 \x01(\x05R\n" +
+	"totalPages\x12!\n" +
+	"\fcurrent_page\x18\x03 \x01(\x05R\vcurrentPage\"}\n" +
 	"\x1cUpdateRoundupSettingsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12D\n" +
 	"\bsettings\x18\x02 \x01(\v2(.fitglue.models.activity.RoundupSettingsR\bsettings\"Q\n" +
