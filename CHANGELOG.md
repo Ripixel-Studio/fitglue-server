@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.59.0](https://github.com/FitGlue/server/compare/v16.58.1...v16.59.0) (2026-07-01)
+
+
+### Features
+
+* **activity:** add real pagination to recent public roundups ([e8d3097](https://github.com/FitGlue/server/commit/e8d3097273235806a0cad4ac648d210a8cb1700c))
+
 ### [16.58.1](https://github.com/FitGlue/server/compare/v16.58.0...v16.58.1) (2026-07-01)
 
 
