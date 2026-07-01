@@ -408,10 +408,12 @@ resource "google_firestore_index" "uploaded_activities_destination_id" {
 
 # -------------------------------------------------------------------
 # Showcased Roundups Indexes
-# Used by ListRecentRoundups: .Where("slug","==",slug).OrderBy("period_start", Desc)
+# Used by ListRecentRoundups: .Where("slug","==",slug).OrderBy("period_end", Desc)
+# Ordered by period_end (last date covered) so the roundup covering the most
+# recent dates surfaces first, regardless of period type (week/month/year).
 # -------------------------------------------------------------------
 
-resource "google_firestore_index" "showcased_roundups_slug_period_start" {
+resource "google_firestore_index" "showcased_roundups_slug_period_end" {
   project     = var.project_id
   database    = google_firestore_database.database.name
   collection  = "showcased_roundups"
@@ -423,7 +425,7 @@ resource "google_firestore_index" "showcased_roundups_slug_period_start" {
   }
 
   fields {
-    field_path = "period_start"
+    field_path = "period_end"
     order      = "DESCENDING"
   }
 }

@@ -614,7 +614,7 @@ func (s *FirestoreStore) ListRecentRoundups(ctx context.Context, slug string, li
 	}
 	iter := s.client.Collection("showcased_roundups").
 		Where("slug", "==", slug).
-		OrderBy("period_start", firestore.Desc).
+		OrderBy("period_end", firestore.Desc).
 		Limit(limit).
 		Documents(ctx)
 	defer iter.Stop()
