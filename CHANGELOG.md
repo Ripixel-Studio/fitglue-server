@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.58.1](https://github.com/FitGlue/server/compare/v16.58.0...v16.58.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **roundups:** order showcase roundups by last date covered ([aced707](https://github.com/FitGlue/server/commit/aced70780f39af79adfbc3b20ad1952c1466e791))
+
 ## [16.58.0](https://github.com/FitGlue/server/compare/v16.57.4...v16.58.0) (2026-06-22)
 
 
