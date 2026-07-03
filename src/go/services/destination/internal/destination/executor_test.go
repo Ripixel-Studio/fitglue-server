@@ -13,6 +13,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/testing/mocks"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
+	pbnotification "github.com/fitglue/server/src/go/pkg/types/pb/models/notification"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -427,7 +428,7 @@ func TestUploadExecutor_Resume_UpdatesAlreadySucceededDestination(t *testing.T) 
 		}
 	}
 
-	run := func(t *testing.T, meta map[string]string) (int32, int32) {
+	run := func(t *testing.T, meta map[string]string) (int32, int32, []string) {
 		t.Helper()
 		registry := NewRegistry()
 		uploader := &countingUploader{name: "showcase", id: "showcase-1"}
@@ -439,7 +440,16 @@ func TestUploadExecutor_Resume_UpdatesAlreadySucceededDestination(t *testing.T) 
 			},
 		}
 		db := &mocks.MockDatabase{GetDestinationOutcomesFunc: priorShowcaseSuccess}
-		executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, db, nil, &mocks.MockPublisher{}, infra.NewLogger())
+		var notificationTitles []string
+		pub := &mocks.MockPublisher{PublishJSONFunc: func(ctx context.Context, topic string, data []byte) error {
+			var req pbnotification.NotificationRequest
+			if err := protojson.Unmarshal(data, &req); err != nil {
+				return err
+			}
+			notificationTitles = append(notificationTitles, req.Title)
+			return nil
+		}}
+		executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, db, nil, pub, infra.NewLogger())
 
 		payloadBytes, err := protojson.Marshal(newPayload(meta))
 		assert.NoError(t, err)
@@ -449,17 +459,24 @@ func TestUploadExecutor_Resume_UpdatesAlreadySucceededDestination(t *testing.T) 
 		ce.SetSource("test")
 		ce.SetData("application/json", payloadBytes)
 		assert.NoError(t, executor.Process(context.Background(), &ce))
-		return atomic.LoadInt32(&uploader.createCalls), atomic.LoadInt32(&uploader.updateCalls)
+		return atomic.LoadInt32(&uploader.createCalls), atomic.LoadInt32(&uploader.updateCalls), notificationTitles
 	}
 
 	// Plain redelivery (no resume flag): prior SUCCESS must short-circuit — no Create, no Update.
-	if c, u := run(t, nil); c != 0 || u != 0 {
+	if c, u, _ := run(t, nil); c != 0 || u != 0 {
 		t.Errorf("expected redelivery to skip (0 create, 0 update), got %d create, %d update", c, u)
 	}
 
-	// Resume: the already-succeeded destination must be Updated with refreshed data, not skipped or duplicated.
-	if c, u := run(t, map[string]string{"pipeline_resumed": "true"}); c != 0 || u != 1 {
+	// Resume: the already-succeeded destination must be Updated with refreshed data, not skipped or
+	// duplicated. This is a *blocking* pending input resolution (no use_update_method metadata set —
+	// only pipeline_resumed), so it must still be recognized as a re-run and get the lighter "Activity
+	// Updated" notice, not a full "Activity Synced" re-notification.
+	c, u, titles := run(t, map[string]string{"pipeline_resumed": "true"})
+	if c != 0 || u != 1 {
 		t.Errorf("expected resume to update once (0 create, 1 update), got %d create, %d update", c, u)
+	}
+	if len(titles) != 1 || titles[0] != "Activity Updated: " {
+		t.Errorf("expected a single lighter 'Activity Updated' notification, got %v", titles)
 	}
 }
 

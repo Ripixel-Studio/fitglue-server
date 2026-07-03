@@ -259,11 +259,25 @@ destinations:
 			continue
 		}
 
+		// Whether this destination already has a SUCCESS outcome from an earlier pass of this
+		// same pipeline run. Drives both the idempotency guard below and the notification
+		// suppression passed to UpdateStatus — a destination that already succeeded and
+		// notified once should get a lighter "updated" notification on a re-run, not another
+		// full "Activity Synced" push, regardless of *why* this is a re-run (non-blocking
+		// resume, blocking resume, targeted repost, or Pub/Sub redelivery).
+		wasAlreadySynced := false
+		for _, outcome := range priorOutcomes {
+			if outcome.Destination == destEnum && outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
+				wasAlreadySynced = true
+				break
+			}
+		}
+
 		uploader, ok := e.registry.Get(destEnum)
 		if !ok {
 			e.logger.Warn(ctx, "No uploader registered for destination", "destination", destEnum.String())
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, isUpdate)
+				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, wasAlreadySynced)
 			}
 			continue
 		}
@@ -297,18 +311,13 @@ destinations:
 		// resolved after a separate blocking input already synced the pipeline). Update it
 		// rather than skipping, which would otherwise freeze the stale pre-resume state.
 		isResume := metadata["pipeline_resumed"] == "true"
-		if !effectiveIsUpdate && !isTargetedRepost {
-			for _, outcome := range priorOutcomes {
-				if outcome.Destination == destEnum && outcome.Status == pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
-					if isResume {
-						e.logger.Info(ctx, "Resume: updating already-succeeded destination with refreshed data", "destination", destEnum.String())
-						effectiveIsUpdate = true
-					} else {
-						e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
-						continue destinations
-					}
-					break
-				}
+		if !effectiveIsUpdate && !isTargetedRepost && wasAlreadySynced {
+			if isResume {
+				e.logger.Info(ctx, "Resume: updating already-succeeded destination with refreshed data", "destination", destEnum.String())
+				effectiveIsUpdate = true
+			} else {
+				e.logger.Info(ctx, "Skipping already-uploaded destination (Pub/Sub redelivery)", "destination", destEnum.String())
+				continue destinations
 			}
 		} else if isTargetedRepost {
 			e.logger.Info(ctx, "Targeted repost: bypassing already-uploaded idempotency guard", "destination", destEnum.String(), "repost_mode", repostMode)
@@ -376,14 +385,14 @@ destinations:
 				e.enqueueConnectionActionNotification(ctx, payload.UserId, destEnum)
 			}
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, isUpdate)
+				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, wasAlreadySynced)
 			}
 			continue
 		}
 
 		// Success
 		if pipelineRunId != "" {
-			destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, isUpdate)
+			destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, wasAlreadySynced)
 		}
 		if err := e.db.RecordBillingEvent(ctx, payload.UserId, shared.BillingEvent{
 			ActivityID:    payload.ActivityId,

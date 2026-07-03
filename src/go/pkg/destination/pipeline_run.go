@@ -41,10 +41,12 @@ type Database interface {
 //   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
 //   - nonBlockingPendingIDs: IDs of non-blocking pending inputs still awaiting user input
-//   - nonBlockingUpdate: true when this upload is an update post triggered by a resolved
-//     non-blocking input. The user was already notified at the initial sync, so a success
-//     notification is suppressed here — only a failure (PARTIAL) is worth notifying about.
-func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger, nonBlockingPendingIDs []string, nonBlockingUpdate bool) {
+//   - alreadySynced: true when this destination already had a SUCCESS outcome before this
+//     call (a re-run: resolved resume, targeted repost, or Pub/Sub redelivery). The user was
+//     already notified about this destination once, so a full "Activity Synced" summary is
+//     replaced with a lighter "Activity Updated" notification — except on failure (PARTIAL),
+//     which always gets the full notification.
+func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger infra.Logger, nonBlockingPendingIDs []string, alreadySynced bool) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
@@ -121,11 +123,11 @@ func UpdateStatus(ctx context.Context, db Database, publisher shared.Publisher, 
 	if newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED ||
 		newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED_WITH_PENDING ||
 		newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
-		// Update posts triggered by a resolved non-blocking input would otherwise re-notify
-		// on every resolution (the user already got the initial sync notification). Only the
-		// failure case (PARTIAL) is worth a second notification.
-		if nonBlockingUpdate && newStatus != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
-			logger.Debug(ctx, "Suppressing success notification for non-blocking input update post", "pipeline_run_id", pipelineRunId, "status", newStatus.String())
+		// A re-run of a destination that already succeeded once would otherwise re-send the
+		// full "Activity Synced" summary on every resolution. Send a lighter update notice
+		// instead — except on failure (PARTIAL), which always deserves the full notification.
+		if alreadySynced && newStatus != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+			sendUpdateNotification(ctx, publisher, userId, activityName, activityId, dest, logger)
 		} else {
 			sendSyncNotification(ctx, publisher, userId, activityName, activityId, newStatus, outcomes, logger)
 		}
@@ -181,6 +183,26 @@ func sendSyncNotification(ctx context.Context, publisher shared.Publisher, userI
 	}
 	if err := notificationpub.Enqueue(ctx, publisher, req); err != nil {
 		logger.Warn(ctx, "Failed to enqueue sync notification", "error", err, "user_id", userId)
+	}
+}
+
+// sendUpdateNotification enqueues a lighter notification for a single destination that was
+// re-synced after already succeeding once (resume, redelivery, or a targeted repost) —
+// avoids re-sending the full "Activity Synced" summary on every re-run.
+func sendUpdateNotification(ctx context.Context, publisher shared.Publisher, userId string, activityName string, activityId string, dest pbplugin.DestinationType, logger infra.Logger) {
+	if publisher == nil {
+		return
+	}
+
+	req := &pbnotification.NotificationRequest{
+		UserId: userId,
+		Type:   pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS,
+		Title:  fmt.Sprintf("Activity Updated: %s", activityName),
+		Body:   fmt.Sprintf("Successfully updated: %s", FormatDestinationName(dest)),
+		Data:   map[string]string{"activity_id": activityId},
+	}
+	if err := notificationpub.Enqueue(ctx, publisher, req); err != nil {
+		logger.Warn(ctx, "Failed to enqueue update notification", "error", err, "user_id", userId)
 	}
 }
 

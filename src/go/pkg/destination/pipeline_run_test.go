@@ -247,9 +247,9 @@ func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 	}
 }
 
-// A successful update post triggered by a resolved non-blocking input must NOT re-notify —
-// the user was already notified at the initial sync.
-func TestUpdateStatus_SuppressesSuccessForNonBlockingUpdate(t *testing.T) {
+// A successful re-run of a destination that already synced once must not re-send the full
+// "Activity Synced" summary — it should get a lighter "Activity Updated" notice instead.
+func TestUpdateStatus_SendsUpdateNotificationForAlreadySynced(t *testing.T) {
 	pub := &MockPublisher{}
 	db := &MockDatabase{
 		Outcomes: []*pbpipeline.DestinationOutcome{
@@ -262,14 +262,24 @@ func TestUpdateStatus_SuppressesSuccessForNonBlockingUpdate(t *testing.T) {
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"hevy-123", "", "Morning Run", "activity-1", logger, nil, true)
 
-	if len(pub.Published) != 0 {
-		t.Fatalf("expected 0 notifications for a successful non-blocking update, got %d", len(pub.Published))
+	n := pub.lastNotification(t)
+	if n == nil {
+		t.Fatal("expected an update notification to be enqueued")
+	}
+	if n.Type != pbnotification.NotificationType_NOTIFICATION_TYPE_PIPELINE_SUCCESS {
+		t.Errorf("expected PIPELINE_SUCCESS, got %v", n.Type)
+	}
+	if n.Title != "Activity Updated: Morning Run" {
+		t.Errorf("unexpected title: %s", n.Title)
+	}
+	if n.Body != "Successfully updated: Hevy" {
+		t.Errorf("unexpected body: %s", n.Body)
 	}
 }
 
-// SYNCED_WITH_PENDING (another non-blocking input still outstanding) is also a success state
-// for the resolved input, so a non-blocking update must not re-notify here either.
-func TestUpdateStatus_SuppressesSyncedWithPendingForNonBlockingUpdate(t *testing.T) {
+// SYNCED_WITH_PENDING (another non-blocking input still outstanding) is also a success state,
+// so a re-run of an already-synced destination should still get the lighter notice here too.
+func TestUpdateStatus_SendsUpdateNotificationForSyncedWithPendingAlreadySynced(t *testing.T) {
 	pub := &MockPublisher{}
 	db := &MockDatabase{
 		Outcomes: []*pbpipeline.DestinationOutcome{
@@ -283,8 +293,12 @@ func TestUpdateStatus_SuppressesSyncedWithPendingForNonBlockingUpdate(t *testing
 		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"hevy-123", "", "Morning Run", "activity-1", logger, []string{"pending-2"}, true)
 
-	if len(pub.Published) != 0 {
-		t.Fatalf("expected 0 notifications for SYNCED_WITH_PENDING non-blocking update, got %d", len(pub.Published))
+	n := pub.lastNotification(t)
+	if n == nil {
+		t.Fatal("expected an update notification to be enqueued")
+	}
+	if n.Title != "Activity Updated: Morning Run" {
+		t.Errorf("unexpected title: %s", n.Title)
 	}
 }
 
