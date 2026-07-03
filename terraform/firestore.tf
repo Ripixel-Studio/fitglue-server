@@ -168,10 +168,16 @@ resource "google_firestore_index" "executions_user_sync_timestamp" {
   }
 }
 
-# Note: Single-field collection group indexes are NOT needed here.
-# Firestore automatically creates single-field indexes for all fields.
-# The previous `activities_synced_at` and `activities_pipeline_execution`
-# indexes were rejected by GCP with "this index is not necessary".
+# Note: `google_firestore_index` (this resource type) only accepts composite
+# (2+ field) indexes — the previous `activities_synced_at` and
+# `activities_pipeline_execution` single-field attempts were rejected by GCP
+# with "this index is not necessary" for that reason, NOT because collection-group
+# single-field indexes are unneeded in general. Automatic single-field indexes
+# default to COLLECTION scope only; a collection-group single-field query (e.g.
+# CollectionGroup("activities").OrderBy("synced_at", ...) with no other filter)
+# still needs an explicit `google_firestore_field` override with a
+# COLLECTION_GROUP index_config entry. See pipeline_runs_created_at below for
+# a worked example — its absence caused a prod outage in AdminListPipelineRuns.
 #
 # If you need COMPOSITE collection group indexes (2+ fields), add them here.
 # Example:
@@ -377,9 +383,36 @@ resource "google_firestore_index" "pipeline_runs_cg_status_created" {
   }
 }
 
-# Note: A collection group index for created_at only is NOT needed here.
-# Firestore automatically creates single-field indexes (including collection group).
-# See also the comment on line 160 about this pattern.
+# Single-field index override for created_at at COLLECTION_GROUP scope.
+# The unfiltered admin listing (no status/source) runs a plain
+# CollectionGroup("pipeline_runs").OrderBy("created_at", Desc) query. Firestore's
+# automatic single-field indexes default to COLLECTION scope only — they do NOT
+# cover collection-group queries — so that query fails with FailedPrecondition
+# without this override. (The earlier note here claiming this wasn't needed was
+# wrong; the composite indexes above only cover the status/source-filtered cases.)
+# Ascending/descending COLLECTION entries are repeated to preserve the automatic
+# defaults, since specifying any index for a field replaces the full auto set.
+resource "google_firestore_field" "pipeline_runs_created_at" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "pipeline_runs"
+  field      = "created_at"
+
+  index_config {
+    indexes {
+      order       = "ASCENDING"
+      query_scope = "COLLECTION"
+    }
+    indexes {
+      order       = "DESCENDING"
+      query_scope = "COLLECTION"
+    }
+    indexes {
+      order       = "DESCENDING"
+      query_scope = "COLLECTION_GROUP"
+    }
+  }
+}
 
 # -------------------------------------------------------------------
 # Uploaded Activities Indexes (Loop Prevention)
