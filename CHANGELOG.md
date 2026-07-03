@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.59.1](https://github.com/FitGlue/server/compare/v16.59.0...v16.59.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **destination:** correctly suppress/lighten notifications on re-runs ([dcb8726](https://github.com/FitGlue/server/commit/dcb87267c3a534af9fa8767faf690055cb0f33a5))
+* **destination:** don't duplicate description on repeated Update() calls ([f67bf25](https://github.com/FitGlue/server/commit/f67bf2515728791774296f61d17bce0f8018f40a))
+* **firestore:** add missing collection-group index for pipeline_runs.created_at ([8e575ae](https://github.com/FitGlue/server/commit/8e575ae2a848895e145ac6435e339ebf0d30d738))
+* **pipeline:** replay heart rate stream on resume instead of re-fetching ([c48a512](https://github.com/FitGlue/server/commit/c48a5128e371e831d57d0ae9b9f1611bdf8ba34a))
+
 ## [16.59.0](https://github.com/FitGlue/server/compare/v16.58.1...v16.59.0) (2026-07-01)
 
 
