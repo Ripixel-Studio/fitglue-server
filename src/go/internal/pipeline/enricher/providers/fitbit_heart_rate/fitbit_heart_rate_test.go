@@ -371,6 +371,18 @@ func TestFitBitHeartRate_Name(t *testing.T) {
 	}
 }
 
+// TestFitBitHeartRate_IsIdempotent is a regression test: the fetched stream depends on
+// Fitbit's own sync lag at query time, so re-running on resume can silently commit a
+// less-complete stream than the one already applied to the activity. The provider must
+// report itself as non-idempotent so the orchestrator replays the journaled stream on
+// resume instead of re-querying Fitbit.
+func TestFitBitHeartRate_IsIdempotent(t *testing.T) {
+	provider := NewFitBitHeartRate()
+	if provider.IsIdempotent() {
+		t.Error("Expected IsIdempotent() to return false so resume replays the journaled stream instead of re-fetching")
+	}
+}
+
 func TestFitBitHeartRate_Enrich_LagExhausted(t *testing.T) {
 	mockHTTPClient := &http.Client{
 		Transport: &mockTransport{

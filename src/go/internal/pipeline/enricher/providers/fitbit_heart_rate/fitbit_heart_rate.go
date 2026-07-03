@@ -48,6 +48,12 @@ func (p *FitBitHeartRate) ProviderType() pbplugin.EnricherProviderType {
 	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE
 }
 
+// IsIdempotent returns false: the fetched stream depends on Fitbit's own sync lag at
+// query time, so re-running on resume can silently commit a less-complete stream than
+// the one already applied. Marking this non-idempotent makes the orchestrator replay
+// the previously-fetched stream from the journal instead of re-querying Fitbit.
+func (p *FitBitHeartRate) IsIdempotent() bool { return false }
+
 func (p *FitBitHeartRate) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	return p.EnrichWithClient(ctx, logger, activity, user, inputs, nil, doNotRetry)
 }

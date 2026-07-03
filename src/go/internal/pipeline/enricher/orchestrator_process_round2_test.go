@@ -3,6 +3,7 @@ package enricher
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strings"
@@ -528,6 +529,93 @@ func TestProcess_ResumeReplaysJournal(t *testing.T) {
 	}
 	if len(res.Events) == 1 && res.Events[0].Name != "Replayed Name" {
 		t.Errorf("expected replayed name applied, got %q", res.Events[0].Name)
+	}
+}
+
+// TestProcess_ResumeReplaysHeartRateStream is a regression test: resolving a pending
+// input (e.g. an unrelated non-blocking enricher) republishes the pipeline from the
+// clean pre-enrichment payload, which has no heart rate data merged in. A non-idempotent
+// stream provider must have its previously-fetched stream replayed from the journal
+// instead of being re-run, otherwise it silently re-queries the source API and can
+// commit a worse (partial) stream than the one already applied on the first run.
+func TestProcess_ResumeReplaysHeartRateStream(t *testing.T) {
+	enrichRan := false
+	streamJSON, err := json.Marshal([]int{111, 112, 113, 114, 115})
+	if err != nil {
+		t.Fatalf("failed to marshal fixture stream: %v", err)
+	}
+	db := &MockDatabase{
+		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+			return &user.Record{UserProfile: &pbuser.UserProfile{UserId: id}}, nil
+		},
+		GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
+			return []*pbpipeline.PipelineConfig{{
+				Id:           "p1",
+				Source:       "SOURCE_HEVY",
+				Destinations: []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA},
+				Enrichers: []*pbpipeline.EnricherConfig{
+					{ProviderType: pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK},
+				},
+			}}, nil
+		},
+		// Existing run carries the previously-fetched heart rate stream in the journal.
+		GetPipelineRunFunc: func(ctx context.Context, userID, id string) (*pbpipeline.PipelineRun, error) {
+			return &pbpipeline.PipelineRun{
+				Id:     id,
+				Status: pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
+				Boosters: []*pbpipeline.BoosterExecution{{
+					ProviderName: "mock-enricher",
+					Metadata: map[string]string{
+						"replay_completed":         "true",
+						"replay_heart_rate_stream": string(streamJSON),
+					},
+				}},
+			}, nil
+		},
+	}
+	o := NewOrchestrator(db, &MockBlobStore{}, "bucket", nil)
+
+	nip := &nonIdempotentMockProvider{ran: &enrichRan}
+	nip.NameFunc = func() string { return "mock-enricher" }
+	nip.ProviderTypeFunc = func() pbplugin.EnricherProviderType {
+		return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK
+	}
+	o.Register(nip)
+
+	pipelineID := "p1"
+	activityID := "resume-hr-1"
+	activity := oneSessionActivity()
+	activity.Sessions[0].TotalElapsedTime = 5 // match the 5-point fixture stream
+	payload := &pbevents.ActivityPayload{
+		UserId:               "u1",
+		PipelineId:           &pipelineID,
+		Source:               pbactivity.ActivitySource_SOURCE_HEVY,
+		IsResume:             true,
+		ActivityId:           &activityID,
+		StandardizedActivity: activity,
+	}
+	res, err := o.Process(context.Background(), covLogger(), payload, "parent", "exec", false)
+	if err != nil {
+		t.Fatalf("replay run should not error, got %v", err)
+	}
+	if enrichRan {
+		t.Error("non-idempotent stream provider should be replayed, not re-run against the source API")
+	}
+	if len(res.Events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(res.Events))
+	}
+
+	var records []*pbactivity.Record
+	for _, lap := range res.Events[0].ActivityData.Sessions[0].Laps {
+		records = append(records, lap.Records...)
+	}
+	if len(records) != 5 {
+		t.Fatalf("expected 5 records from replayed stream expansion, got %d", len(records))
+	}
+	for i, want := range []int32{111, 112, 113, 114, 115} {
+		if records[i].HeartRate != want {
+			t.Errorf("record[%d].HeartRate = %d, want %d", i, records[i].HeartRate, want)
+		}
 	}
 }
 

@@ -413,6 +413,26 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 							}
 						}
 					}
+					// Restore a previously-fetched heart rate stream rather than letting the
+					// provider re-run against the clean pre-enrichment payload (which has no
+					// existing heart rate data, so its own "already enriched" skip guard never
+					// triggers on resume).
+					if v := replayMeta["replay_heart_rate_stream"]; v != "" {
+						var stream []int
+						if err := json.Unmarshal([]byte(v), &stream); err != nil {
+							logger.Warn("Resume mode: failed to unmarshal replayed heart rate stream", "provider", provider.Name(), "error", err)
+						} else if len(stream) > 0 {
+							applyEnrichmentStreams(currentActivity, &providers.EnrichmentResult{HeartRateStream: stream})
+							if results[i] == nil {
+								results[i] = &providers.EnrichmentResult{
+									HeartRateStream: stream,
+									Metadata:        stripReplayKeys(replayMeta),
+								}
+							} else {
+								results[i].HeartRateStream = stream
+							}
+						}
+					}
 					providerExecutions = append(providerExecutions, ProviderExecution{
 						ProviderName: provider.Name(),
 						Status:       "REPLAYED",
@@ -704,99 +724,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 
 		// Apply stream data immediately to currentActivity so downstream enrichers can see it
-		// Ensure Laps/Records exist
-		enricherSession := currentActivity.Sessions[0]
-		if len(enricherSession.Laps) == 0 {
-			enricherSession.Laps = append(enricherSession.Laps, &pbactivity.Lap{
-				StartTime:        enricherSession.StartTime,
-				TotalElapsedTime: enricherSession.TotalElapsedTime,
-				Records:          []*pbactivity.Record{},
-			})
-		}
-
-		// Check if enricher provides any stream data that needs to be applied
-		hasStreamData := len(res.HeartRateStream) > 0 || len(res.PowerStream) > 0 ||
-			len(res.PositionLatStream) > 0 || len(res.PositionLongStream) > 0
-
-		// Count total existing records across ALL laps to detect multi-lap activities
-		// (e.g., from FIT file uploads where records are properly distributed)
-		totalExistingRecords := 0
-		for _, lap := range enricherSession.Laps {
-			totalExistingRecords += len(lap.Records)
-		}
-
-		// Only expand Laps[0] with placeholder records if:
-		// 1. An enricher provides stream data that needs to be applied, AND
-		// 2. The activity doesn't already have substantial records (less than 25% coverage)
-		//
-		// This protects multi-lap FIT file uploads from having their rich record data
-		// destroyed by placeholder expansion, while still supporting API-sourced activities
-		// (e.g., Strava) where HR/power streams need to be applied to sparse records.
-		enricherDuration := int(enricherSession.TotalElapsedTime)
-		// Use max(duration/4, 1) to handle short durations properly
-		threshold := enricherDuration / 4
-		if threshold < 1 {
-			threshold = 1
-		}
-		needsRecordExpansion := hasStreamData && totalExistingRecords < threshold
-
-		if needsRecordExpansion {
-			enricherLap := enricherSession.Laps[0]
-			enricherCurrentLen := len(enricherLap.Records)
-			if enricherCurrentLen < enricherDuration {
-				enricherStartTime := enricherSession.StartTime.AsTime()
-				for k := enricherCurrentLen; k < enricherDuration; k++ {
-					ts := timestamppb.New(enricherStartTime.Add(time.Duration(k) * time.Second))
-					enricherLap.Records = append(enricherLap.Records, &pbactivity.Record{Timestamp: ts})
-				}
-			}
-		}
-
-		// ALWAYS apply stream data when available - regardless of record expansion
-		// For activities with existing records (like FIT files), apply to those records
-		// For newly expanded activities, apply to the expanded placeholder records
-		if hasStreamData {
-			// Apply stream data to ALL laps' records using timestamp-based matching
-			// This handles both single-lap expanded activities and multi-lap FIT activities
-			activityStart := enricherSession.StartTime.AsTime()
-
-			for _, lap := range enricherSession.Laps {
-				for _, record := range lap.Records {
-					if record.Timestamp == nil {
-						continue
-					}
-					// Calculate the second offset from activity start
-					offsetSec := int(record.Timestamp.AsTime().Sub(activityStart).Seconds())
-					if offsetSec < 0 {
-						continue
-					}
-
-					// Apply HR stream value at this offset
-					if len(res.HeartRateStream) > 0 && offsetSec < len(res.HeartRateStream) {
-						val := res.HeartRateStream[offsetSec]
-						if val > 0 {
-							record.HeartRate = int32(val)
-						}
-					}
-
-					// Apply Power stream value at this offset
-					if len(res.PowerStream) > 0 && offsetSec < len(res.PowerStream) {
-						val := res.PowerStream[offsetSec]
-						if val > 0 {
-							record.Power = int32(val)
-						}
-					}
-
-					// Apply GPS position streams at this offset
-					if len(res.PositionLatStream) > 0 && offsetSec < len(res.PositionLatStream) {
-						record.PositionLat = res.PositionLatStream[offsetSec]
-					}
-					if len(res.PositionLongStream) > 0 && offsetSec < len(res.PositionLongStream) {
-						record.PositionLong = res.PositionLongStream[offsetSec]
-					}
-				}
-			}
-		}
+		applyEnrichmentStreams(currentActivity, res)
 	}
 
 	// ---- Phase 2: Execute deferred enrichers with full context ----
@@ -1193,6 +1121,109 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		ProviderExecutions: providerExecutions,
 		Status:             pbpipeline.ExecutionStatus_STATUS_SUCCESS,
 	}, nil
+}
+
+// applyEnrichmentStreams writes an enricher's raw data streams (heart rate, power,
+// GPS position) onto currentActivity's records by timestamp-based offset matching.
+// Shared between live provider execution and resume-mode journal replay so a
+// replayed stream (e.g. a previously-fetched Fitbit heart rate stream) lands on the
+// activity the same way a freshly-computed one would.
+func applyEnrichmentStreams(currentActivity *pbactivity.StandardizedActivity, res *providers.EnrichmentResult) {
+	// Ensure Laps/Records exist
+	enricherSession := currentActivity.Sessions[0]
+	if len(enricherSession.Laps) == 0 {
+		enricherSession.Laps = append(enricherSession.Laps, &pbactivity.Lap{
+			StartTime:        enricherSession.StartTime,
+			TotalElapsedTime: enricherSession.TotalElapsedTime,
+			Records:          []*pbactivity.Record{},
+		})
+	}
+
+	// Check if enricher provides any stream data that needs to be applied
+	hasStreamData := len(res.HeartRateStream) > 0 || len(res.PowerStream) > 0 ||
+		len(res.PositionLatStream) > 0 || len(res.PositionLongStream) > 0
+
+	// Count total existing records across ALL laps to detect multi-lap activities
+	// (e.g., from FIT file uploads where records are properly distributed)
+	totalExistingRecords := 0
+	for _, lap := range enricherSession.Laps {
+		totalExistingRecords += len(lap.Records)
+	}
+
+	// Only expand Laps[0] with placeholder records if:
+	// 1. An enricher provides stream data that needs to be applied, AND
+	// 2. The activity doesn't already have substantial records (less than 25% coverage)
+	//
+	// This protects multi-lap FIT file uploads from having their rich record data
+	// destroyed by placeholder expansion, while still supporting API-sourced activities
+	// (e.g., Strava) where HR/power streams need to be applied to sparse records.
+	enricherDuration := int(enricherSession.TotalElapsedTime)
+	// Use max(duration/4, 1) to handle short durations properly
+	threshold := enricherDuration / 4
+	if threshold < 1 {
+		threshold = 1
+	}
+	needsRecordExpansion := hasStreamData && totalExistingRecords < threshold
+
+	if needsRecordExpansion {
+		enricherLap := enricherSession.Laps[0]
+		enricherCurrentLen := len(enricherLap.Records)
+		if enricherCurrentLen < enricherDuration {
+			enricherStartTime := enricherSession.StartTime.AsTime()
+			for k := enricherCurrentLen; k < enricherDuration; k++ {
+				ts := timestamppb.New(enricherStartTime.Add(time.Duration(k) * time.Second))
+				enricherLap.Records = append(enricherLap.Records, &pbactivity.Record{Timestamp: ts})
+			}
+		}
+	}
+
+	// ALWAYS apply stream data when available - regardless of record expansion
+	// For activities with existing records (like FIT files), apply to those records
+	// For newly expanded activities, apply to the expanded placeholder records
+	if !hasStreamData {
+		return
+	}
+
+	// Apply stream data to ALL laps' records using timestamp-based matching
+	// This handles both single-lap expanded activities and multi-lap FIT activities
+	activityStart := enricherSession.StartTime.AsTime()
+
+	for _, lap := range enricherSession.Laps {
+		for _, record := range lap.Records {
+			if record.Timestamp == nil {
+				continue
+			}
+			// Calculate the second offset from activity start
+			offsetSec := int(record.Timestamp.AsTime().Sub(activityStart).Seconds())
+			if offsetSec < 0 {
+				continue
+			}
+
+			// Apply HR stream value at this offset
+			if len(res.HeartRateStream) > 0 && offsetSec < len(res.HeartRateStream) {
+				val := res.HeartRateStream[offsetSec]
+				if val > 0 {
+					record.HeartRate = int32(val)
+				}
+			}
+
+			// Apply Power stream value at this offset
+			if len(res.PowerStream) > 0 && offsetSec < len(res.PowerStream) {
+				val := res.PowerStream[offsetSec]
+				if val > 0 {
+					record.Power = int32(val)
+				}
+			}
+
+			// Apply GPS position streams at this offset
+			if len(res.PositionLatStream) > 0 && offsetSec < len(res.PositionLatStream) {
+				record.PositionLat = res.PositionLatStream[offsetSec]
+			}
+			if len(res.PositionLongStream) > 0 && offsetSec < len(res.PositionLongStream) {
+				record.PositionLong = res.PositionLongStream[offsetSec]
+			}
+		}
+	}
 }
 
 // buildDescriptionFromSlots joins non-empty description slots with double newlines.
@@ -1769,6 +1800,16 @@ func buildBoosterMetadata(res *providers.EnrichmentResult, provider providers.Pr
 	if res.Enrichments != nil {
 		if enrichJSON, err := protojson.Marshal(res.Enrichments); err == nil {
 			m["replay_enrichments"] = string(enrichJSON)
+		}
+	}
+	// Persist the heart rate stream so a resume replays the already-fetched data
+	// instead of re-querying the source API. Without this, non-idempotent stream
+	// providers (e.g. fitbit-heart-rate) re-run from the clean pre-enrichment
+	// payload on every resume, re-fetching from the external API and sometimes
+	// committing incomplete data if that fetch races the provider's own sync lag.
+	if len(res.HeartRateStream) > 0 {
+		if streamJSON, err := json.Marshal(res.HeartRateStream); err == nil {
+			m["replay_heart_rate_stream"] = string(streamJSON)
 		}
 	}
 	return m

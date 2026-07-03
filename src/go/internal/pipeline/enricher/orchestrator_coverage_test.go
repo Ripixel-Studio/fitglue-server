@@ -515,12 +515,13 @@ func TestBuildBoosterMetadata_IdempotentReturnsPlainMetadata(t *testing.T) {
 
 func TestBuildBoosterMetadata_NonIdempotentAllFields(t *testing.T) {
 	res := &providers.EnrichmentResult{
-		Name:         "Run",
-		NameSuffix:   " (#5)",
-		Description:  "  desc  ",
-		ActivityType: pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
-		Tags:         []string{"race", "pb"},
-		Metadata:     map[string]string{"k": "v"},
+		Name:            "Run",
+		NameSuffix:      " (#5)",
+		Description:     "  desc  ",
+		ActivityType:    pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+		Tags:            []string{"race", "pb"},
+		Metadata:        map[string]string{"k": "v"},
+		HeartRateStream: []int{101, 102, 103},
 	}
 	m := buildBoosterMetadata(res, &fakeNonIdempotentProvider{})
 	assert.Equal(t, "true", m["replay_completed"])
@@ -531,6 +532,18 @@ func TestBuildBoosterMetadata_NonIdempotentAllFields(t *testing.T) {
 	var tags []string
 	require.NoError(t, json.Unmarshal([]byte(m["replay_tags"]), &tags))
 	assert.Equal(t, []string{"race", "pb"}, tags)
+	var stream []int
+	require.NoError(t, json.Unmarshal([]byte(m["replay_heart_rate_stream"]), &stream))
+	assert.Equal(t, []int{101, 102, 103}, stream)
+}
+
+// TestBuildBoosterMetadata_NoHeartRateStream verifies the journal omits the key when
+// the result carries no heart rate stream (e.g. non-stream non-idempotent providers).
+func TestBuildBoosterMetadata_NoHeartRateStream(t *testing.T) {
+	res := &providers.EnrichmentResult{Name: "Run"}
+	m := buildBoosterMetadata(res, &fakeNonIdempotentProvider{})
+	_, ok := m["replay_heart_rate_stream"]
+	assert.False(t, ok)
 }
 
 // --- mergeEnrichments edge cases ---
