@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	hevyapi "github.com/fitglue/server/src/go/pkg/api/hevy"
@@ -177,28 +176,8 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		mergedDescription = payloadDesc
 		mergedTitle = payloadName
 	} else {
-		mergedDescription = existingDesc
+		mergedDescription = description.MergeDescription(existingDesc, payloadDesc, payload.Metadata)
 		mergedTitle = existingTitle
-		if payloadDesc != "" {
-			sectionHeader := ""
-			for key, val := range payload.Metadata {
-				if strings.HasPrefix(key, "section_header_") {
-					sectionHeader = val
-					break
-				}
-			}
-
-			if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-				newSectionContent := description.ExtractSection(payloadDesc, sectionHeader)
-				if newSectionContent != "" {
-					mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
-				}
-			} else if mergedDescription != "" {
-				mergedDescription += "\n\n" + payloadDesc
-			} else {
-				mergedDescription = payloadDesc
-			}
-		}
 	}
 
 	updatedFields := map[string]interface{}{}

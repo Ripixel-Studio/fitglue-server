@@ -240,27 +240,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	if isSameSource {
 		mergedDescription = payloadDescription
 	} else {
-		mergedDescription = existingActivity.Description
-		if payloadDescription != "" {
-			sectionHeader := ""
-			for key, val := range payload.Metadata {
-				if strings.HasPrefix(key, "section_header_") {
-					sectionHeader = val
-					break
-				}
-			}
-
-			if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-				newSectionContent := description.ExtractSection(payloadDescription, sectionHeader)
-				if newSectionContent != "" {
-					mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
-				}
-			} else if mergedDescription != "" {
-				mergedDescription += "\n\n" + payloadDescription
-			} else {
-				mergedDescription = payloadDescription
-			}
-		}
+		mergedDescription = description.MergeDescription(existingActivity.Description, payloadDescription, payload.Metadata)
 	}
 
 	updateBody := map[string]interface{}{}

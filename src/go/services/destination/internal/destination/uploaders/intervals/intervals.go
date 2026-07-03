@@ -192,29 +192,8 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		return fmt.Errorf("failed to decode existing activity: %w", err)
 	}
 
-	mergedDescription := existingActivity.Description
 	payloadDesc := payload.Metadata["description"]
-
-	if payloadDesc != "" {
-		sectionHeader := ""
-		for key, val := range payload.Metadata {
-			if strings.HasPrefix(key, "section_header_") {
-				sectionHeader = val
-				break
-			}
-		}
-
-		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			newSectionContent := description.ExtractSection(payloadDesc, sectionHeader)
-			if newSectionContent != "" {
-				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
-			}
-		} else if mergedDescription != "" {
-			mergedDescription += "\n\n" + payloadDesc
-		} else {
-			mergedDescription = payloadDesc
-		}
-	}
+	mergedDescription := description.MergeDescription(existingActivity.Description, payloadDesc, payload.Metadata)
 
 	updateBody := map[string]interface{}{}
 	if mergedDescription != existingActivity.Description {

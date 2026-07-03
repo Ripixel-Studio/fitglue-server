@@ -129,6 +129,48 @@ func ExtractSection(description, headerPrefix string) string {
 	return strings.TrimSpace(description[start:end])
 }
 
+// MergeDescription merges a freshly-computed payload description into a destination's
+// existing remote description for a cross-source Update() call. If the pipeline declared
+// a replaceable section (a payloadMetadata entry keyed "section_header_*") and that
+// section already exists remotely, only that section is replaced. Otherwise the payload
+// description is appended — unless it's already present verbatim in the existing
+// description, in which case the existing description is returned unchanged.
+//
+// The "already present" guard exists because a resumed pipeline (e.g. resolving an
+// unrelated non-blocking pending input) recomputes the same final description and calls
+// Update() again. Without it, every such resume blindly re-appends the whole
+// description, producing duplicated content in destinations that don't have a matching
+// section header configured.
+func MergeDescription(existingDescription, payloadDescription string, payloadMetadata map[string]string) string {
+	if payloadDescription == "" {
+		return existingDescription
+	}
+
+	sectionHeader := ""
+	for key, val := range payloadMetadata {
+		if strings.HasPrefix(key, "section_header_") {
+			sectionHeader = val
+			break
+		}
+	}
+
+	if sectionHeader != "" && HasSection(existingDescription, sectionHeader) {
+		newSectionContent := ExtractSection(payloadDescription, sectionHeader)
+		if newSectionContent != "" {
+			return ReplaceSection(existingDescription, sectionHeader, newSectionContent)
+		}
+		return existingDescription
+	}
+
+	if existingDescription == "" {
+		return payloadDescription
+	}
+	if strings.Contains(existingDescription, payloadDescription) {
+		return existingDescription
+	}
+	return existingDescription + "\n\n" + payloadDescription
+}
+
 // RemoveSection removes a section entirely from the description.
 func RemoveSection(description, headerPrefix string) string {
 	start, end, found := FindSection(description, headerPrefix)

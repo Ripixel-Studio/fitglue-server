@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -105,27 +104,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 
 	existingDescription := pipelineRun.Description
 	payloadDesc := payload.Metadata["description"]
-	mergedDescription := existingDescription
-	if payloadDesc != "" {
-		sectionHeader := ""
-		for key, val := range payload.Metadata {
-			if strings.HasPrefix(key, "section_header_") {
-				sectionHeader = val
-				break
-			}
-		}
-
-		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			newSectionContent := description.ExtractSection(payloadDesc, sectionHeader)
-			if newSectionContent != "" {
-				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
-			}
-		} else if mergedDescription != "" {
-			mergedDescription += "\n\n" + payloadDesc
-		} else {
-			mergedDescription = payloadDesc
-		}
-	}
+	mergedDescription := description.MergeDescription(existingDescription, payloadDesc, payload.Metadata)
 
 	updatePayload := &TrainingPeaksWorkout{}
 	hasChanges := false
