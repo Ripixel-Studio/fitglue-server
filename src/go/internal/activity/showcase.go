@@ -43,7 +43,11 @@ func (s *Service) GetShowcase(ctx context.Context, req *pbsvc.GetShowcaseRequest
 				if showcase.Enrichments == nil {
 					showcase.Enrichments = fullEvent.Enrichments
 				}
+			} else {
+				s.logger.Error(ctx, "failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
 			}
+		} else if err != nil {
+			s.logger.Error(ctx, "failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
 		}
 	}
 
@@ -79,12 +83,14 @@ func (s *Service) offloadShowcaseData(ctx context.Context, userID string, showca
 			return err
 		}
 
+		// Written to the durable showcase-assets bucket (no lifecycle deletion), not the
+		// ephemeral artifacts bucket — showcases are public pages meant to last forever.
 		fileName := fmt.Sprintf("showcase_data/%s/%s_data.json", userID, showcase.ShowcaseId)
-		if err := s.blobStore.Write(ctx, s.bucketName, fileName, data); err != nil {
+		if err := s.blobStore.Write(ctx, s.showcaseAssetsBucket, fileName, data); err != nil {
 			return err
 		}
 
-		showcase.ActivityDataUri = fmt.Sprintf("gs://%s/%s", s.bucketName, fileName)
+		showcase.ActivityDataUri = fmt.Sprintf("gs://%s/%s", s.showcaseAssetsBucket, fileName)
 		showcase.ActivityData = nil // Prevent writing to Firestore
 	}
 	return nil
@@ -252,10 +258,10 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 					showcase.Enrichments = fullEvent.Enrichments
 				}
 			} else {
-				s.logger.Warn(ctx, "Failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
+				s.logger.Error(ctx, "failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
 			}
 		} else if err != nil {
-			s.logger.Warn(ctx, "Failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
+			s.logger.Error(ctx, "failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
 		}
 	}
 

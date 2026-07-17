@@ -171,6 +171,13 @@ resource "google_cloud_run_v2_service" "backend" {
       dynamic "env" {
         for_each = each.key == "destination" ? [1] : []
         content {
+          name  = "SHOWCASE_ASSETS_BUCKET"
+          value = google_storage_bucket.showcase_assets_bucket.name
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
           name  = "USER_SERVICE_URL"
           value = "https://user-${data.google_project.project.number}.${var.region}.run.app"
         }

@@ -53,8 +53,10 @@ func TestShowcaseOffloading(t *testing.T) {
 		t.Error("expected ActivityData to be nil after offloading")
 	}
 
-	if !strings.HasPrefix(res.ActivityDataUri, "gs://test-bucket/showcase_data/u1/s1_data.json") {
-		t.Errorf("expected GCS URI, got %s", res.ActivityDataUri)
+	// Must land in the durable showcase-assets bucket, not the ephemeral artifacts
+	// bucket (which has a 7-day lifecycle-delete rule and would blank the showcase).
+	if !strings.HasPrefix(res.ActivityDataUri, "gs://test-showcase-bucket/showcase_data/u1/s1_data.json") {
+		t.Errorf("expected GCS URI in durable showcase bucket, got %s", res.ActivityDataUri)
 	}
 
 	if !strings.Contains(string(writtenData), "Massive Workout Data") {

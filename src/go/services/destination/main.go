@@ -60,6 +60,11 @@ func main() {
 	defer activityConn.Close()
 	activityClient := activitypb.NewActivityServiceClient(activityConn)
 
+	showcaseAssetsBucket := os.Getenv("SHOWCASE_ASSETS_BUCKET")
+	if showcaseAssetsBucket == "" {
+		showcaseAssetsBucket = fmt.Sprintf("%s-showcase-assets", svc.Config.ProjectID)
+	}
+
 	// Setup Destination Registry & Executor
 	registry := destination.NewRegistry()
 
@@ -69,7 +74,7 @@ func main() {
 	registry.Register(pbplugin.DestinationType_DESTINATION_INTERVALS, intervals.New(svc))
 	registry.Register(pbplugin.DestinationType_DESTINATION_GOOGLESHEETS, googlesheets.New(svc))
 	registry.Register(pbplugin.DestinationType_DESTINATION_GITHUB, github.New(svc))
-	registry.Register(pbplugin.DestinationType_DESTINATION_SHOWCASE, showcase.New(svc, activityClient))
+	registry.Register(pbplugin.DestinationType_DESTINATION_SHOWCASE, showcase.New(svc, activityClient, showcaseAssetsBucket))
 	registry.Register(pbplugin.DestinationType_DESTINATION_MOCK, mock.New())
 
 	executor := destination.NewUploadExecutor(registry, userClient, activityClient, svc.DB, svc.Store, svc.Pub, logger)

@@ -27,16 +27,57 @@ const (
 
 // Uploader implements destination.Destination for Showcase
 type Uploader struct {
-	svc            *bootstrap.Service
-	activityClient activitypb.ActivityServiceClient
+	svc                  *bootstrap.Service
+	activityClient       activitypb.ActivityServiceClient
+	showcaseAssetsBucket string
 }
 
 // New returns a new Showcase Uploader initialized with dependencies.
-func New(svc *bootstrap.Service, activityClient activitypb.ActivityServiceClient) *Uploader {
+func New(svc *bootstrap.Service, activityClient activitypb.ActivityServiceClient, showcaseAssetsBucket string) *Uploader {
 	return &Uploader{
-		svc:            svc,
-		activityClient: activityClient,
+		svc:                  svc,
+		activityClient:       activityClient,
+		showcaseAssetsBucket: showcaseAssetsBucket,
 	}
+}
+
+// persistDurableActivityData copies the pipeline's enriched-event JSON from its ephemeral
+// location (subject to the artifacts bucket's 7-day lifecycle deletion) into the durable
+// showcase-assets bucket, since Showcase pages are public and meant to last indefinitely.
+// Returns "" if the copy fails — callers should leave ActivityDataUri unset rather than
+// point at a source that will disappear in days.
+func (u *Uploader) persistDurableActivityData(ctx context.Context, logger *slog.Logger, userID, showcaseID, ephemeralURI string) string {
+	data, err := u.svc.Store.Get(ctx, "", ephemeralURI)
+	if err != nil {
+		logger.Error("Failed to read ephemeral activity data for durable showcase copy", "error", err, "uri", ephemeralURI)
+		return ""
+	}
+
+	fileName := fmt.Sprintf("showcase_data/%s/%s_data.json", userID, showcaseID)
+	if err := u.svc.Store.Write(ctx, u.showcaseAssetsBucket, fileName, data); err != nil {
+		logger.Error("Failed to write durable showcase activity data", "error", err, "file_name", fileName)
+		return ""
+	}
+
+	return fmt.Sprintf("gs://%s/%s", u.showcaseAssetsBucket, fileName)
+}
+
+// persistDurableFitFile copies the activity's FIT file from its ephemeral pipeline location
+// into the durable showcase-assets bucket, for the same reason as persistDurableActivityData.
+func (u *Uploader) persistDurableFitFile(ctx context.Context, logger *slog.Logger, userID, showcaseID, ephemeralURI string) string {
+	data, err := u.svc.Store.Get(ctx, "", ephemeralURI)
+	if err != nil {
+		logger.Error("Failed to read ephemeral FIT file for durable showcase copy", "error", err, "uri", ephemeralURI)
+		return ""
+	}
+
+	fileName := fmt.Sprintf("showcase_data/%s/%s.fit", userID, showcaseID)
+	if err := u.svc.Store.Write(ctx, u.showcaseAssetsBucket, fileName, data); err != nil {
+		logger.Error("Failed to write durable showcase FIT file", "error", err, "file_name", fileName)
+		return ""
+	}
+
+	return fmt.Sprintf("gs://%s/%s", u.showcaseAssetsBucket, fileName)
 }
 
 // Name returns the identifier for this uploader
@@ -211,7 +252,6 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		Source:              payload.Source,
 		StartTime:           timestamppb.New(startTime),
 		ActivityData:        nil,
-		FitFileUri:          payload.Metadata["fit_file_uri"],
 		AppliedEnrichments:  appliedEnrichments,
 		Tags:                tags,
 		PipelineExecutionId: payload.PipelineExecutionId,
@@ -222,12 +262,22 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {
-		showcasedActivity.ActivityDataUri = uri
+		showcasedActivity.ActivityDataUri = u.persistDurableActivityData(ctx, logger, payload.UserId, showcaseID, uri)
+		if showcasedActivity.ActivityDataUri == "" {
+			logger.Warn("No durable ActivityDataUri available - showcase will be missing activity data",
+				"showcase_id", showcaseID,
+				"activity_id", payload.ActivityId,
+			)
+		}
 	} else {
 		logger.Warn("No ActivityDataUri available - showcase will be missing activity data",
 			"showcase_id", showcaseID,
 			"activity_id", payload.ActivityId,
 		)
+	}
+
+	if uri := payload.Metadata["fit_file_uri"]; uri != "" {
+		showcasedActivity.FitFileUri = u.persistDurableFitFile(ctx, logger, payload.UserId, showcaseID, uri)
 	}
 
 	if expiresAt != nil {
@@ -331,7 +381,6 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		Source:              payload.Source,
 		StartTime:           timestamppb.New(startTime),
 		ActivityData:        nil,
-		FitFileUri:          payload.Metadata["fit_file_uri"],
 		AppliedEnrichments:  appliedEnrichments,
 		Tags:                tags,
 		PipelineExecutionId: payload.PipelineExecutionId,
@@ -341,7 +390,11 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {
-		showcasedActivity.ActivityDataUri = uri
+		showcasedActivity.ActivityDataUri = u.persistDurableActivityData(ctx, logger, payload.UserId, showcaseID, uri)
+	}
+
+	if uri := payload.Metadata["fit_file_uri"]; uri != "" {
+		showcasedActivity.FitFileUri = u.persistDurableFitFile(ctx, logger, payload.UserId, showcaseID, uri)
 	}
 
 	if expiresAt != nil {
