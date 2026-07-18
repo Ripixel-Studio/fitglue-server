@@ -841,6 +841,7 @@ func PendingInputToFirestore(p *pbpipeline.PendingInput) map[string]interface{} 
 		"enricher_provider_id":         p.EnricherProviderId,
 		"linked_activity_id":           p.LinkedActivityId,
 		"pipeline_id":                  p.PipelineId,
+		"non_blocking":                 p.NonBlocking,
 	}
 
 	if p.AutoDeadline != nil {
@@ -900,6 +901,7 @@ func FirestoreToPendingInput(m map[string]interface{}) *pbpipeline.PendingInput 
 		LinkedActivityId:           getString(m, "linked_activity_id"),
 		PipelineId:                 getString(m, "pipeline_id"),
 		OriginalPayloadUri:         getString(m, "original_payload_uri"),
+		NonBlocking:                getBool(m, "non_blocking"),
 	}
 
 	if v, ok := m["status"]; ok {
