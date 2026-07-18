@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.59.2](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.1...v16.59.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* **ci:** point web-rebuild trigger at the renamed Ripixel-Studio/fitglue-web project ([0c7ce40](https://github.com/Ripixel-Studio/fitglue-server/commit/0c7ce40873571482888f7d4f99e9fd239f0115a6))
+* **showcase:** stop public showcases from losing activity data after 7 days ([8fd1447](https://github.com/Ripixel-Studio/fitglue-server/commit/8fd144746619bc9e2460e4b6d14d3532fe9a3c8e))
+
 ### [16.59.1](https://github.com/FitGlue/server/compare/v16.59.0...v16.59.1) (2026-07-03)
 
 
