@@ -607,6 +607,27 @@ func TestPendingInputRoundTrip(t *testing.T) {
 	}
 }
 
+// TestPendingInputToFirestore_NonBlockingRoundTrips guards the skip-on-non-blocking
+// behaviour: if the non_blocking flag is dropped on persist, SubmitInput reads it back
+// as false and re-runs the pipeline when the user skips a non-blocking pending input.
+func TestPendingInputToFirestore_NonBlockingRoundTrips(t *testing.T) {
+	now := timestamppb.Now()
+	orig := &pbpipeline.PendingInput{
+		ActivityId:  "act-nb",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		CompletedAt: now,
+		NonBlocking: true,
+	}
+	m := PendingInputToFirestore(orig)
+	if m["non_blocking"] != true {
+		t.Fatalf("non_blocking not written to Firestore map: %v", m["non_blocking"])
+	}
+	if got := FirestoreToPendingInput(m); !got.NonBlocking {
+		t.Error("expected NonBlocking to survive Firestore round-trip")
+	}
+}
+
 func TestPendingInputToFirestore_OmitsEmptyOptional(t *testing.T) {
 	orig := &pbpipeline.PendingInput{
 		ActivityId:  "a",
