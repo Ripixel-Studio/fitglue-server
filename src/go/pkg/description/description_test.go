@@ -191,6 +191,24 @@ func TestMergeDescription(t *testing.T) {
 			metadata: map[string]string{"section_header_parkrun": "🏃 Parkrun Results:"},
 			expected: "Original description\n\n🏃 Parkrun Results:\n42nd place",
 		},
+		{
+			// Cross-source update where the destination still holds only the user's
+			// original upload text. The payload carries that same text at its head
+			// followed by enrichment sections, so we replace over it rather than
+			// appending a duplicate copy of the user's words.
+			name:     "existing user description carried in payload is replaced not duplicated",
+			existing: "Great run today!",
+			payload:  "Great run today!\n\n🏃 Parkrun Results:\n42nd place",
+			expected: "Great run today!\n\n🏃 Parkrun Results:\n42nd place",
+		},
+		{
+			// The destination holds text FitGlue didn't author (not present in the
+			// payload), so it must be preserved by appending the payload after it.
+			name:     "unrelated existing description is preserved by appending",
+			existing: "Manually written on Strava",
+			payload:  "🏃 Parkrun Results:\n42nd place",
+			expected: "Manually written on Strava\n\n🏃 Parkrun Results:\n42nd place",
+		},
 	}
 
 	for _, tt := range tests {
