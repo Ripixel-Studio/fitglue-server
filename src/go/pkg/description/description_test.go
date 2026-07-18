@@ -191,6 +191,22 @@ func TestMergeDescription(t *testing.T) {
 			metadata: map[string]string{"section_header_parkrun": "🏃 Parkrun Results:"},
 			expected: "Original description\n\n🏃 Parkrun Results:\n42nd place",
 		},
+		{
+			// Two enrichers each declare a section. Both are present remotely (written as
+			// placeholders at Create time). A resume must replace BOTH in place without
+			// duplicating the base line or the branding footer. The previous
+			// implementation replaced only one map-iteration-order-dependent section and,
+			// when it happened to pick a section not yet present, appended the whole
+			// payload — the source of the cross-source duplication.
+			name:     "multiple present sections are all replaced without duplication",
+			existing: "🏃 Base\n\n🏃 Parkrun Results:\nWaiting...\n\n💧 hDrop Sweat Analysis:\nPending...\n\nPosted via FitGlue 💪",
+			payload:  "🏃 Base\n\n🏃 Parkrun Results:\n42nd place, 23:45\n\n💧 hDrop Sweat Analysis:\n2.1L lost\n\nPosted via FitGlue 💪",
+			metadata: map[string]string{
+				"section_header_parkrun": "🏃 Parkrun Results:",
+				"section_header_hdrop":   "💧 hDrop Sweat Analysis:",
+			},
+			expected: "🏃 Base\n\n🏃 Parkrun Results:\n42nd place, 23:45\n\n💧 hDrop Sweat Analysis:\n2.1L lost\n\nPosted via FitGlue 💪",
+		},
 	}
 
 	for _, tt := range tests {
@@ -222,6 +238,41 @@ func TestMergeDescription_ResumeDoesNotDuplicate(t *testing.T) {
 	merged = MergeDescription(merged, payloadDescription, nil)
 	if merged != remoteDescription {
 		t.Fatalf("description duplicated across repeated resumes, got %q", merged)
+	}
+}
+
+// TestMergeDescription_MultiSectionResumeDoesNotDuplicate is a regression test for
+// cross-source duplication where a pipeline declares more than one replaceable section.
+// The previous implementation only handled a single, map-iteration-order-dependent
+// section header, so a resume could re-append the entire description. This drives two
+// sequential resumes (one section resolving at a time) and asserts nothing accumulates.
+func TestMergeDescription_MultiSectionResumeDoesNotDuplicate(t *testing.T) {
+	metadata := map[string]string{
+		"section_header_parkrun": "🏃 Parkrun Results:",
+		"section_header_hdrop":   "💧 hDrop Sweat Analysis:",
+	}
+	remote := "🏃 Base\n\n🏃 Parkrun Results:\nWaiting...\n\n💧 hDrop Sweat Analysis:\nPending...\n\nPosted via FitGlue 💪"
+
+	// First resume: parkrun resolves, hdrop still pending in the recomputed payload.
+	payload1 := "🏃 Base\n\n🏃 Parkrun Results:\n42nd place\n\n💧 hDrop Sweat Analysis:\nPending...\n\nPosted via FitGlue 💪"
+	remote = MergeDescription(remote, payload1, metadata)
+	want1 := "🏃 Base\n\n🏃 Parkrun Results:\n42nd place\n\n💧 hDrop Sweat Analysis:\nPending...\n\nPosted via FitGlue 💪"
+	if remote != want1 {
+		t.Fatalf("after first resume = %q, want %q", remote, want1)
+	}
+
+	// Second resume: hdrop now resolves too. Both sections must be current, with the
+	// base line and branding footer each appearing exactly once.
+	payload2 := "🏃 Base\n\n🏃 Parkrun Results:\n42nd place\n\n💧 hDrop Sweat Analysis:\n2.1L lost\n\nPosted via FitGlue 💪"
+	remote = MergeDescription(remote, payload2, metadata)
+	if remote != payload2 {
+		t.Fatalf("after second resume = %q, want %q", remote, payload2)
+	}
+
+	// A redundant resume with identical payload must be a no-op.
+	remote = MergeDescription(remote, payload2, metadata)
+	if remote != payload2 {
+		t.Fatalf("redundant resume duplicated content, got %q", remote)
 	}
 }
 

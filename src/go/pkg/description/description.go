@@ -131,35 +131,53 @@ func ExtractSection(description, headerPrefix string) string {
 
 // MergeDescription merges a freshly-computed payload description into a destination's
 // existing remote description for a cross-source Update() call. If the pipeline declared
-// a replaceable section (a payloadMetadata entry keyed "section_header_*") and that
-// section already exists remotely, only that section is replaced. Otherwise the payload
-// description is appended — unless it's already present verbatim in the existing
-// description, in which case the existing description is returned unchanged.
+// any replaceable sections (payloadMetadata entries keyed "section_header_*") that already
+// exist remotely, each of those sections is replaced in place with its payload version.
+// Otherwise the payload description is appended — unless it's already present verbatim in
+// the existing description, in which case the existing description is returned unchanged.
 //
-// The "already present" guard exists because a resumed pipeline (e.g. resolving an
-// unrelated non-blocking pending input) recomputes the same final description and calls
-// Update() again. Without it, every such resume blindly re-appends the whole
-// description, producing duplicated content in destinations that don't have a matching
-// section header configured.
+// A cross-source Update() recomputes the WHOLE final description on every pass, so blindly
+// appending it re-adds content already present remotely. Two guards prevent this:
+//
+//   - Section-managed merge: enrichers declaring a section header write a placeholder
+//     section at Create time, so those headers are present remotely by the time Update()
+//     runs. Every declared section that is present is replaced in place; the surrounding
+//     content (and any section not owned by this pipeline) is left untouched, and the
+//     payload is never appended wholesale. Handling *all* declared headers — rather than a
+//     single, map-iteration-order-dependent one — is what stops a second section from
+//     being duplicated on resume.
+//   - Verbatim guard: for pipelines with no declared sections (e.g. only branding's
+//     "Posted via FitGlue" footer), a resume that recomputes an identical description is a
+//     no-op rather than a re-append.
 func MergeDescription(existingDescription, payloadDescription string, payloadMetadata map[string]string) string {
 	if payloadDescription == "" {
 		return existingDescription
 	}
 
-	sectionHeader := ""
+	var sectionHeaders []string
 	for key, val := range payloadMetadata {
-		if strings.HasPrefix(key, "section_header_") {
-			sectionHeader = val
-			break
+		if strings.HasPrefix(key, "section_header_") && val != "" {
+			sectionHeaders = append(sectionHeaders, val)
 		}
 	}
 
-	if sectionHeader != "" && HasSection(existingDescription, sectionHeader) {
-		newSectionContent := ExtractSection(payloadDescription, sectionHeader)
-		if newSectionContent != "" {
-			return ReplaceSection(existingDescription, sectionHeader, newSectionContent)
+	// If any declared section is already present remotely, treat this as a section-managed
+	// merge: replace each present section in place and never append the payload wholesale.
+	merged := existingDescription
+	sectionManaged := false
+	for _, header := range sectionHeaders {
+		if !HasSection(merged, header) {
+			continue
 		}
-		return existingDescription
+		sectionManaged = true
+		newSectionContent := ExtractSection(payloadDescription, header)
+		if newSectionContent == "" {
+			continue
+		}
+		merged = ReplaceSection(merged, header, newSectionContent)
+	}
+	if sectionManaged {
+		return merged
 	}
 
 	if existingDescription == "" {
