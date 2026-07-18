@@ -133,14 +133,24 @@ func ExtractSection(description, headerPrefix string) string {
 // existing remote description for a cross-source Update() call. If the pipeline declared
 // a replaceable section (a payloadMetadata entry keyed "section_header_*") and that
 // section already exists remotely, only that section is replaced. Otherwise the payload
-// description is appended — unless it's already present verbatim in the existing
-// description, in which case the existing description is returned unchanged.
+// description is appended — unless one description already wholly contains the other, in
+// which case no append happens.
 //
-// The "already present" guard exists because a resumed pipeline (e.g. resolving an
-// unrelated non-blocking pending input) recomputes the same final description and calls
-// Update() again. Without it, every such resume blindly re-appends the whole
-// description, producing duplicated content in destinations that don't have a matching
-// section header configured.
+// The two containment guards handle the two ways FitGlue re-writes a description it has
+// already touched:
+//
+//   - existing contains payload: a resumed pipeline (e.g. resolving an unrelated
+//     non-blocking pending input) recomputes the same final description and calls
+//     Update() again. Returning the existing description unchanged stops every such
+//     resume from re-appending the whole block.
+//
+//   - payload contains existing: the destination's current description is the user's
+//     original upload text, which the payload already carries at its head (slot 0) ahead
+//     of the freshly-computed enrichment sections. The user-provided description never
+//     has a section heading, so it survives inside the payload verbatim; returning the
+//     payload replaces over what's there without duplicating the user's words or losing
+//     them. When the destination instead holds text FitGlue didn't author (not contained
+//     in the payload), neither guard fires and the payload is appended, preserving it.
 func MergeDescription(existingDescription, payloadDescription string, payloadMetadata map[string]string) string {
 	if payloadDescription == "" {
 		return existingDescription
@@ -167,6 +177,12 @@ func MergeDescription(existingDescription, payloadDescription string, payloadMet
 	}
 	if strings.Contains(existingDescription, payloadDescription) {
 		return existingDescription
+	}
+	// The payload already carries the destination's current description (typically the
+	// user's heading-less upload text) at its head, so replace over it rather than
+	// appending a second copy.
+	if strings.Contains(payloadDescription, existingDescription) {
+		return payloadDescription
 	}
 	return existingDescription + "\n\n" + payloadDescription
 }
