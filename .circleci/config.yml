@@ -264,7 +264,7 @@ jobs:
           command: |
             VERSION=$(node -p "require('./package.json').version")
             # Trigger web rebuild - web will fetch server version from GCS
-            curl -X POST "https://circleci.com/api/v2/project/github/FitGlue/web/pipeline" \
+            curl -X POST "https://circleci.com/api/v2/project/github/Ripixel-Studio/fitglue-web/pipeline" \
               -H "Circle-Token: ${CIRCLECI_API_TOKEN}" \
               -H "Content-Type: application/json" \
               -d '{
