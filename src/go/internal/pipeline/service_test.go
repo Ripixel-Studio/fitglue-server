@@ -409,6 +409,60 @@ func TestSubmitInput(t *testing.T) {
 	}
 }
 
+// TestSubmitInput_NonBlocking_ReusesRunExecutionId guards against the bug where resolving
+// one of several pending inputs on a run orphaned the others. A non-blocking pending input is
+// tracked in the run's non_blocking_pending_input_ids array rather than the scalar
+// pending_input_id field, so the by-pending-input-id lookup misses it. The resume must still
+// rejoin the original run (via the linked activity ID) instead of minting a fresh execution ID
+// and spawning a duplicate run.
+func TestSubmitInput_NonBlocking_ReusesRunExecutionId(t *testing.T) {
+	store := NewMockStore()
+	publisher := &MockPublisher{}
+
+	payloadBytes, _ := json.Marshal(map[string]interface{}{"foo": "bar"})
+	blobStore := &MockBlobStore{Blobs: map[string][]byte{"gs://bucket/path.json": payloadBytes}}
+
+	svc := NewService(store, publisher, blobStore, mockLogger{}, nil)
+	ctx := context.Background()
+
+	// The run references the input only via non_blocking_pending_input_ids — its scalar
+	// pending_input_id is empty, exactly as Firestore stores a non-blocking pending input.
+	store.Runs["user1_run-exec-1"] = &pipeline.PipelineRun{
+		Id:                         "run-exec-1",
+		ActivityId:                 "activity1",
+		NonBlockingPendingInputIds: []string{"input1"},
+	}
+
+	store.PendingInputs["user1_input1"] = &pipeline.PendingInput{
+		ActivityId:         "input1",
+		Status:             pipeline.PendingInput_STATUS_WAITING,
+		OriginalPayloadUri: "gs://bucket/path.json",
+		LinkedActivityId:   "activity1",
+		NonBlocking:        true,
+	}
+
+	req := &pbsvc.SubmitInputRequest{
+		UserId:         "user1",
+		PendingInputId: "input1",
+		InputData:      map[string]string{"answer": "42"},
+	}
+
+	if _, err := svc.SubmitInput(ctx, req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(publisher.PublishedEvents) != 1 {
+		t.Fatalf("expected 1 event published, got %d", len(publisher.PublishedEvents))
+	}
+
+	var publishedPayload map[string]interface{}
+	json.Unmarshal(publisher.PublishedEvents[0].Data(), &publishedPayload)
+
+	if publishedPayload["pipelineExecutionId"] != "run-exec-1" {
+		t.Errorf("expected resume to reuse original run execution ID run-exec-1, got %v", publishedPayload["pipelineExecutionId"])
+	}
+}
+
 func TestSubmitInput_SkipNonBlocking_DoesNotRerun(t *testing.T) {
 	store := NewMockStore()
 	publisher := &MockPublisher{}

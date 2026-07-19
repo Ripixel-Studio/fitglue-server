@@ -286,7 +286,26 @@ func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest
 	// at once produce two distinct execution IDs and the per-execution destination idempotency
 	// guards can't see each other, allowing duplicate creates (e.g. two Strava activities). It
 	// also keeps pipeline-run history coherent instead of spawning a new run per resume.
-	if run, runErr := s.store.FindPipelineRunByPendingInputId(ctx, req.UserId, req.PendingInputId); runErr == nil && run != nil && run.Id != "" {
+	//
+	// FindPipelineRunByPendingInputId only matches the run's scalar pending_input_id field, which
+	// holds the (single) blocking input. Non-blocking inputs are tracked in the run's
+	// non_blocking_pending_input_ids array instead, so that lookup misses them. When a run has
+	// multiple pending inputs, resolving one non-blocking input would then fail to find the run,
+	// mint a fresh execution ID, and spawn a duplicate run — orphaning the run's other pending
+	// inputs onto a different execution. Fall back to the linked activity ID (== run.activity_id,
+	// set on every pending input, blocking or not) so the resume always rejoins the original run.
+	run, runErr := s.store.FindPipelineRunByPendingInputId(ctx, req.UserId, req.PendingInputId)
+	if runErr != nil {
+		s.logger.Warn(ctx, "failed to find pipeline run by pending input ID for resume", "error", runErr, "pendingInputId", req.PendingInputId)
+	}
+	if (run == nil || run.Id == "") && input.LinkedActivityId != "" {
+		if actRun, actErr := s.store.FindPipelineRunByActivityId(ctx, req.UserId, input.LinkedActivityId); actErr != nil {
+			s.logger.Warn(ctx, "failed to find pipeline run by activity ID for resume", "error", actErr, "activityId", input.LinkedActivityId)
+		} else {
+			run = actRun
+		}
+	}
+	if run != nil && run.Id != "" {
 		payload["pipelineExecutionId"] = run.Id
 	}
 
