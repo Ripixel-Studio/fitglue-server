@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Europe/London",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "labels": ["dependencies"],
+  "platformAutomerge": true,
+  "packageRules": [
+    {
+      "description": "SAFE class (dev tooling). devDependencies (test runners, linters, @types, build tooling) on patch & minor. A bad devDep can only break CI, which is visible and never runs in production. OBSERVE MODE: labelled 'automerge-candidate' but automerge stays FALSE. To enable auto-merge later, change the 'automerge' line below to true.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "addLabels": ["automerge-candidate"],
+      "minimumReleaseAge": "3 days",
+      "groupName": "dev tooling (non-major)",
+      "automerge": false
+    },
+    {
+      "description": "SAFE class (GitHub Actions). Patch and digest bumps to pinned GitHub Actions. Actions run only in CI, never in production. OBSERVE MODE: labelled 'automerge-candidate' but automerge stays FALSE. To enable auto-merge later, change the 'automerge' line below to true.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch", "digest", "pinDigest"],
+      "addLabels": ["automerge-candidate"],
+      "minimumReleaseAge": "3 days",
+      "groupName": "github-actions (patch/digest)",
+      "automerge": false
+    },
+    {
+      "description": "NEVER-AUTOMERGE class (runtime npm deps). Production npm dependencies. A runtime bump can pass CI and still break production; green CI only proves the covered code paths. Always human-reviewed.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies", "optionalDependencies", "peerDependencies"],
+      "addLabels": ["needs-human"],
+      "automerge": false
+    },
+    {
+      "description": "NEVER-AUTOMERGE class (Go modules). Go has no dev/prod split, so every Go module is treated as runtime/production code. Always human-reviewed.",
+      "matchManagers": ["gomod"],
+      "addLabels": ["needs-human"],
+      "automerge": false
+    },
+    {
+      "description": "NEVER-AUTOMERGE class (deploy/runtime surface). Docker base images, docker-compose, Terraform providers/modules and CircleCI orbs all ship to or provision production. Always human-reviewed.",
+      "matchManagers": ["dockerfile", "docker-compose", "terraform", "circleci"],
+      "addLabels": ["needs-human"],
+      "automerge": false
+    },
+    {
+      "description": "NEVER-AUTOMERGE class (majors). Every major update, in any manager, no matter how small the version jump — this rule is last so it overrides the SAFE rules above for any major. Always human-reviewed.",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["needs-human"],
+      "automerge": false
+    }
+  ]
+}
