@@ -570,6 +570,10 @@ func TestPendingInputRoundTrip(t *testing.T) {
 		PipelineId:                 "pipe",
 		OriginalPayloadUri:         "gs://x",
 		ProviderMetadata:           map[string]string{"pk": "pv"},
+		SourceDisplayName:          "Morning Run",
+		SourceActivityType:         "ACTIVITY_TYPE_RUN",
+		SourceStartTime:            now,
+		SourceActivitySource:       "SOURCE_HEVY",
 	}
 	m := PendingInputToFirestore(orig)
 	if s, ok := m["status"].(int32); ok {
@@ -604,6 +608,17 @@ func TestPendingInputRoundTrip(t *testing.T) {
 	}
 	if got.ProviderMetadata["pk"] != "pv" {
 		t.Errorf("provider metadata: %v", got.ProviderMetadata)
+	}
+	// Source display metadata must survive the round-trip so the web can show which
+	// activity a pending input relates to (title + when it took place), not just the source.
+	if got.SourceDisplayName != "Morning Run" || got.SourceActivityType != "ACTIVITY_TYPE_RUN" {
+		t.Errorf("source display fields lost: name=%q type=%q", got.SourceDisplayName, got.SourceActivityType)
+	}
+	if got.SourceActivitySource != "SOURCE_HEVY" {
+		t.Errorf("source activity source lost: %q", got.SourceActivitySource)
+	}
+	if got.SourceStartTime == nil || !got.SourceStartTime.AsTime().Equal(now.AsTime()) {
+		t.Errorf("source start time lost: %v", got.SourceStartTime)
 	}
 }
 
@@ -644,6 +659,12 @@ func TestPendingInputToFirestore_OmitsEmptyOptional(t *testing.T) {
 	}
 	if _, ok := m["provider_metadata"]; ok {
 		t.Error("provider_metadata should be omitted when empty")
+	}
+	if _, ok := m["source_display_name"]; ok {
+		t.Error("source_display_name should be omitted when empty")
+	}
+	if _, ok := m["source_start_time"]; ok {
+		t.Error("source_start_time should be omitted when nil")
 	}
 }
 
