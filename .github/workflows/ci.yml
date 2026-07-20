@@ -1,0 +1,58 @@
+# GitHub Actions PR gate.
+#
+# This does NOT replace the CircleCI pipeline (.circleci/config.yml), which
+# remains the source of truth for build/deploy/release on `main`. It mirrors the
+# CircleCI `build-and-test` job's checks (build → lint → test) as a GitHub-native
+# status check so a green tick here can be made a required check and trusted to
+# auto-merge low-risk dependency bumps.
+#
+# The repo is a Go monorepo (module at src/go); the root package.json is only
+# release + integration-test tooling. All real checks live in the Makefile.
+name: CI
+
+on:
+  pull_request:
+    branches: [main] # PRs targeting the default branch only
+
+# Least privilege: this job only reads the code.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same PR to keep the queue fast.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-lint-test:
+    name: build-lint-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Fail if go.mod/go.sum are inconsistent instead of silently editing them,
+      # so a bumped dependency is exercised at exactly its committed version.
+      GOFLAGS: -mod=readonly
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@v5.2.0
+        with:
+          # Single source of truth for the Go version — the module's go directive.
+          go-version-file: src/go/go.mod
+          # Module + build cache keyed off the lockfile.
+          cache-dependency-path: src/go/go.sum
+
+      - name: Download dependencies (from lockfile)
+        working-directory: src/go
+        run: go mod download
+
+      - name: Build
+        run: make build
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
