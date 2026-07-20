@@ -856,6 +856,21 @@ func PendingInputToFirestore(p *pbpipeline.PendingInput) map[string]interface{} 
 	if len(p.ProviderMetadata) > 0 {
 		m["provider_metadata"] = p.ProviderMetadata
 	}
+
+	// Source activity display metadata — lets the web identify which activity a
+	// pending input relates to (title, type, when it took place, and its source).
+	if p.SourceDisplayName != "" {
+		m["source_display_name"] = p.SourceDisplayName
+	}
+	if p.SourceActivityType != "" {
+		m["source_activity_type"] = p.SourceActivityType
+	}
+	if p.SourceStartTime != nil {
+		m["source_start_time"] = p.SourceStartTime.AsTime()
+	}
+	if p.SourceActivitySource != "" {
+		m["source_activity_source"] = p.SourceActivitySource
+	}
 	return m
 }
 
@@ -902,6 +917,10 @@ func FirestoreToPendingInput(m map[string]interface{}) *pbpipeline.PendingInput 
 		PipelineId:                 getString(m, "pipeline_id"),
 		OriginalPayloadUri:         getString(m, "original_payload_uri"),
 		NonBlocking:                getBool(m, "non_blocking"),
+		SourceDisplayName:          getString(m, "source_display_name"),
+		SourceActivityType:         getString(m, "source_activity_type"),
+		SourceStartTime:            getTime(m, "source_start_time"),
+		SourceActivitySource:       getString(m, "source_activity_source"),
 	}
 
 	if v, ok := m["status"]; ok {
