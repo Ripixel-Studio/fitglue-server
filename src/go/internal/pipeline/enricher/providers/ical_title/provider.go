@@ -187,6 +187,14 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 	searchStart := actStart.Add(-rruleSearchBuffer)
 	searchEnd := actEnd.Add(rruleSearchBuffer)
 
+	// Index RECURRENCE-ID overrides by UID. When a single occurrence of a recurring
+	// event is edited (moved or retitled), calendars emit a separate VEVENT carrying
+	// the same UID plus a RECURRENCE-ID pointing at the original occurrence's time.
+	// The recurring master is NOT given an EXDATE for that occurrence, so without
+	// suppressing it here the master's phantom occurrence and the override event both
+	// overlap the activity — producing a spurious "multiple events overlap" clash.
+	overridden := recurrenceOverrides(cal)
+
 	for _, component := range cal.Components {
 		event, ok := component.(*ical.VEvent)
 		if !ok {
@@ -225,8 +233,15 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 			continue
 		}
 
-		// Recurring event: collect EXDATE exclusions, then expand and check each occurrence.
+		// Recurring event: collect EXDATE exclusions plus any occurrences that have been
+		// replaced by an edited single instance (RECURRENCE-ID override), then expand and
+		// check each remaining occurrence.
 		exdates := parseExdates(event)
+		if uid := eventUID(event); uid != "" {
+			for t := range overridden[uid] {
+				exdates[t] = struct{}{}
+			}
+		}
 
 		option, err := rrule.StrToROption(rruleProp.Value)
 		if err != nil {
@@ -253,6 +268,45 @@ func overlappingEvents(cal *ical.Calendar, actStart, actEnd time.Time, minOverla
 		}
 	}
 	return matches
+}
+
+// recurrenceOverrides indexes, by UID, the set of occurrence times that have been
+// replaced by an edited single instance — a VEVENT carrying a RECURRENCE-ID that
+// points at the original occurrence in its recurring series. Times are normalised to
+// UTC minute precision to match the EXDATE / occurrence comparison in isExdated.
+func recurrenceOverrides(cal *ical.Calendar) map[string]map[time.Time]struct{} {
+	overrides := make(map[string]map[time.Time]struct{})
+	for _, component := range cal.Components {
+		event, ok := component.(*ical.VEvent)
+		if !ok {
+			continue
+		}
+		ridProp := event.GetProperty(ical.ComponentPropertyRecurrenceId)
+		if ridProp == nil {
+			continue
+		}
+		uid := eventUID(event)
+		if uid == "" {
+			continue
+		}
+		rid, err := parseEventTime(ridProp)
+		if err != nil {
+			continue
+		}
+		if overrides[uid] == nil {
+			overrides[uid] = make(map[time.Time]struct{})
+		}
+		overrides[uid][rid.UTC().Truncate(time.Minute)] = struct{}{}
+	}
+	return overrides
+}
+
+// eventUID returns an event's UID, trimmed, or "" if absent.
+func eventUID(event *ical.VEvent) string {
+	if p := event.GetProperty(ical.ComponentPropertyUniqueId); p != nil {
+		return strings.TrimSpace(p.Value)
+	}
+	return ""
 }
 
 // parseExdates collects all excluded datetime occurrences from an event's EXDATE properties.
