@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.59.8](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.7...v16.59.8) (2026-07-20)
+
 ### [16.59.7](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.6...v16.59.7) (2026-07-20)
 
 ### [16.59.6](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.5...v16.59.6) (2026-07-20)
