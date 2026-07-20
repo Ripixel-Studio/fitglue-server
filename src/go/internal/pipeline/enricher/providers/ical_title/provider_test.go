@@ -290,6 +290,89 @@ func TestRRuleExpansion(t *testing.T) {
 	}
 }
 
+// --- RECURRENCE-ID: edited single occurrences of a recurring event ---
+
+func TestRecurrenceIdOverrideNoFalseClash(t *testing.T) {
+	// Weekly Thursday bootcamp. The 2026-05-21 occurrence was edited (moved 15 min
+	// later and retitled) via a RECURRENCE-ID override. Google Calendar does NOT add
+	// an EXDATE for edits, so the master still yields an occurrence at 06:30 and the
+	// override yields one at 06:45 — both overlap the activity. Without handling the
+	// override this looks like two clashing events; it must resolve to the override.
+	icalBody := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//Google Inc//GoogleCalendarV1//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-recur@example.com\r\n" +
+		"DTSTART;TZID=Europe/London:20260115T063000\r\n" +
+		"DTEND;TZID=Europe/London:20260115T070000\r\n" +
+		"RRULE:FREQ=WEEKLY;BYDAY=TH\r\n" +
+		"SUMMARY:Bootcamp Class\r\n" +
+		"END:VEVENT\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-recur@example.com\r\n" +
+		"RECURRENCE-ID;TZID=Europe/London:20260521T063000\r\n" +
+		"DTSTART;TZID=Europe/London:20260521T064500\r\n" +
+		"DTEND;TZID=Europe/London:20260521T071500\r\n" +
+		"SUMMARY:Bootcamp Class (Special)\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+
+	srv, client := serveICal(t, icalBody)
+
+	p := NewICalTitle()
+	actStart := time.Date(2026, 5, 21, 5, 46, 0, 0, time.UTC) // 6:46 BST
+	act := newTestActivity(actStart, 37*60)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Fatalf("expected the edited occurrence to match, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Bootcamp Class (Special)" {
+		t.Errorf("expected %q, got %q", "Bootcamp Class (Special)", result.Name)
+	}
+}
+
+func TestRecurrenceIdOverrideOtherOccurrencesUnaffected(t *testing.T) {
+	// Same calendar; the override only suppresses the 2026-05-21 master occurrence.
+	// The following Thursday (2026-05-28) must still match the master normally.
+	icalBody := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//Google Inc//GoogleCalendarV1//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-recur2@example.com\r\n" +
+		"DTSTART;TZID=Europe/London:20260115T063000\r\n" +
+		"DTEND;TZID=Europe/London:20260115T070000\r\n" +
+		"RRULE:FREQ=WEEKLY;BYDAY=TH\r\n" +
+		"SUMMARY:Bootcamp Class\r\n" +
+		"END:VEVENT\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:bootcamp-recur2@example.com\r\n" +
+		"RECURRENCE-ID;TZID=Europe/London:20260521T063000\r\n" +
+		"DTSTART;TZID=Europe/London:20260521T064500\r\n" +
+		"DTEND;TZID=Europe/London:20260521T071500\r\n" +
+		"SUMMARY:Bootcamp Class (Special)\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+
+	srv, client := serveICal(t, icalBody)
+
+	p := NewICalTitle()
+	actStart := time.Date(2026, 5, 28, 5, 31, 0, 0, time.UTC) // 6:31 BST, next Thursday
+	act := newTestActivity(actStart, 37*60)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped {
+		t.Fatalf("expected the following-week occurrence to match, got Skipped: %s", result.SkipReason)
+	}
+	if result.Name != "Bootcamp Class" {
+		t.Errorf("expected %q, got %q", "Bootcamp Class", result.Name)
+	}
+}
+
 func TestHTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
