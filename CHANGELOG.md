@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.60.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.8...v16.60.0) (2026-07-20)
+
+
+### Features
+
+* **firestore:** persist pending-input source display metadata ([#14](https://github.com/Ripixel-Studio/fitglue-server/issues/14)) ([5560399](https://github.com/Ripixel-Studio/fitglue-server/commit/55603990f6b57b2bd90e7a607362acd71eae71c1))
+
 ### [16.59.8](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.7...v16.59.8) (2026-07-20)
 
 ### [16.59.7](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.59.6...v16.59.7) (2026-07-20)
