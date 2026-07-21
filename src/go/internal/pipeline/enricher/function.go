@@ -246,6 +246,10 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 	}
 
 	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName, fwCtx.Service.Pub)
+	// Enable reverse geocoding for the always-on implicit location step so GPS-tracked
+	// activities get a real place name (showcase page + roundup "where it happened"), not just
+	// coordinates. Unit tests leave this nil to stay offline.
+	orchestrator.geocode = location_naming.ReverseGeocode
 
 	// Register Providers from registry
 	for _, provider := range providers.GetAll() {
