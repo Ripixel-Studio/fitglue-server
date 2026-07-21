@@ -14,6 +14,10 @@ import (
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 )
 
+// nominatimBaseURL is the Nominatim host for ReverseGeocode. Overridable in tests so the HTTP
+// path can be exercised against an httptest server instead of the live service.
+var nominatimBaseURL = "https://nominatim.openstreetmap.org"
+
 // GeocodeFunc reverse-geocodes coordinates to a place name and city. A nil GeocodeFunc means
 // "coordinates only" — the caller wants the raw lat/lng promoted to a location but no network
 // lookup (used to keep unit tests and offline paths free of external calls).
@@ -138,8 +142,8 @@ func ReverseGeocode(ctx context.Context, logger *slog.Logger, latitude, longitud
 	rateLimitMutex.Unlock()
 
 	url := fmt.Sprintf(
-		"https://nominatim.openstreetmap.org/reverse?lat=%.6f&lon=%.6f&format=json&zoom=16",
-		latitude, longitude,
+		"%s/reverse?lat=%.6f&lon=%.6f&format=json&zoom=16",
+		nominatimBaseURL, latitude, longitude,
 	)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
