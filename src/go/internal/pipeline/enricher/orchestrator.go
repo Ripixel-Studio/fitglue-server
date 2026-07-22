@@ -33,6 +33,7 @@ import (
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
+	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/location_naming"
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/user_input"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -54,6 +55,11 @@ type Orchestrator struct {
 	providersByName map[string]providers.Provider
 	providersByType map[pbplugin.EnricherProviderType]providers.Provider
 	publisher       shared.Publisher
+	// geocode reverse-geocodes coordinates for the always-on implicit location step (see the
+	// finalizer). Left nil by NewOrchestrator so unit tests never make external calls; the
+	// production wiring in function.go sets it to location_naming.ReverseGeocode. When nil, the
+	// implicit location carries coordinates only (no place name).
+	geocode location_naming.GeocodeFunc
 }
 
 func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string, publisher shared.Publisher) *Orchestrator {
@@ -979,6 +985,21 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			finalEvent.Enrichments = mergeEnrichments(finalEvent.Enrichments, res.Enrichments)
 		}
 	}
+
+	// Ensure every GPS-tracked activity carries a location, independent of whether the
+	// opt-in, title-generating location_naming enricher ran. Without this, activities that
+	// have GPS (and often weather, which reads the same records) show no place on the
+	// showcased activity page or in the roundup "where it happened" section, because
+	// Enrichments.Location was only ever produced by location_naming. Best-effort and
+	// idempotent: skipped when a location is already set, and never blocks the pipeline.
+	if finalEvent.Enrichments == nil || finalEvent.Enrichments.Location == nil {
+		if loc := location_naming.ResolveLocationSummary(ctx, logger, currentActivity, o.geocode); loc != nil {
+			finalEvent.Enrichments = mergeEnrichments(finalEvent.Enrichments, &pbactivity.ActivityEnrichments{Location: loc})
+			logger.Info("Attached implicit location to GPS-tracked activity",
+				"location_name", loc.LocationName, "lat", loc.Latitude, "lng", loc.Longitude)
+		}
+	}
+
 	// Add branding if it was applied
 	if brandingApplied {
 		finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")

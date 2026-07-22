@@ -55,7 +55,7 @@ import (
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/hybrid_race_tagger"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/ical_title"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/intervals"
-	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/location_naming"
+	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/location_naming"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/location_pinner"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/logic_gate"
 	_ "github.com/fitglue/server/src/go/internal/pipeline/enricher/providers/manual_workout_entry"
@@ -246,6 +246,10 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 	}
 
 	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName, fwCtx.Service.Pub)
+	// Enable reverse geocoding for the always-on implicit location step so GPS-tracked
+	// activities get a real place name (showcase page + roundup "where it happened"), not just
+	// coordinates. Unit tests leave this nil to stay offline.
+	orchestrator.geocode = location_naming.ReverseGeocode
 
 	// Register Providers from registry
 	for _, provider := range providers.GetAll() {
