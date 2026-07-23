@@ -309,11 +309,12 @@ func TestAggregateRoundupEnrichments(t *testing.T) {
 
 	places, weather, efforts, muscles := aggregateRoundupEnrichments(entries)
 
-	// Places: Bushy Park (2) ahead of Richmond (1)
+	// Places: Bushy Park (2) ahead of Richmond (1). The stored "Bushy Park, London"
+	// is shortened to its leading locality for the chip.
 	if len(places) != 2 {
 		t.Fatalf("places = %d, want 2", len(places))
 	}
-	if places[0].Name != "Bushy Park, London" || places[0].ActivityCount != 2 {
+	if places[0].Name != "Bushy Park" || places[0].ActivityCount != 2 {
 		t.Errorf("top place = %+v, want Bushy Park x2", places[0])
 	}
 	if places[0].Country != "United Kingdom" {
@@ -345,6 +346,49 @@ func TestAggregateRoundupEnrichments(t *testing.T) {
 	// Muscles: quads (2) ahead of glutes/chest (1)
 	if len(muscles) != 3 || muscles[0].Name != "quads" || muscles[0].Count != 2 {
 		t.Errorf("top muscle = %+v (n=%d), want quads x2", muscles[0], len(muscles))
+	}
+}
+
+func TestShortLocationName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"Fernwood CP, Newark and Sherwood, Nottinghamshire, East Midlands, England, United Kingdom", "Fernwood CP"},
+		{"West Bridgford, Rushcliffe, Nottinghamshire, East Midlands, England, NG2 6BT, United Kingdom", "West Bridgford"},
+		{"Bushy Park, London", "Bushy Park"},
+		{"West Bridgford", "West Bridgford"}, // already short — unchanged
+		{"  Newark ,  extra", "Newark"},      // trims surrounding whitespace
+		{"", ""},
+	}
+	for _, c := range cases {
+		if got := shortLocationName(c.in); got != c.want {
+			t.Errorf("shortLocationName(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+// TestAggregateRoundupPlacesShortenAndDedup covers the reported "where it happened"
+// bug: full reverse-geocoded blocks are shortened to their locality, and entries that
+// differ only past the first comma roll up into a single chip with the right count.
+func TestAggregateRoundupPlacesShortenAndDedup(t *testing.T) {
+	strptr := func(s string) *string { return &s }
+	full := "Fernwood CP, Newark and Sherwood, Nottinghamshire, East Midlands, England, United Kingdom"
+
+	entries := []*pbactivity.ShowcaseProfileEntry{
+		{LocationName: strptr(full), Country: strptr("United Kingdom")},
+		{LocationName: strptr(full), Country: strptr("United Kingdom")},
+		{LocationName: strptr(full), Country: strptr("United Kingdom")},
+		{LocationName: strptr("West Bridgford, Rushcliffe, Nottinghamshire, East Midlands, England, NG2 6BT, United Kingdom"), Country: strptr("United Kingdom")},
+	}
+
+	places, _, _, _ := aggregateRoundupEnrichments(entries)
+
+	if len(places) != 2 {
+		t.Fatalf("places = %d, want 2", len(places))
+	}
+	if places[0].Name != "Fernwood CP" || places[0].ActivityCount != 3 {
+		t.Errorf("top place = %+v, want Fernwood CP x3", places[0])
+	}
+	if places[1].Name != "West Bridgford" || places[1].ActivityCount != 1 {
+		t.Errorf("second place = %+v, want West Bridgford x1", places[1])
 	}
 }
 
