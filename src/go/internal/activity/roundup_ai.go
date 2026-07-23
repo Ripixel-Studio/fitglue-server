@@ -61,6 +61,20 @@ func computeSessionPeaks(entries []*pbactivity.ShowcaseProfileEntry) (
 	return furthestM, mostCal, biggestVolKg, furthestID, mostCalID, biggestVolID
 }
 
+// shortLocationName trims a stored location label down to its leading, most-specific
+// component for the roundup "where it happened" list. Location names can arrive as full
+// reverse-geocoded strings ("Fernwood CP, Newark and Sherwood, Nottinghamshire, East
+// Midlands, England, United Kingdom") — correct, but far too wordy for a place chip. The
+// roundup only wants the locality ("Fernwood CP"), so we keep everything up to the first
+// comma. Already-short names ("West Bridgford", "Richmond Park") have no comma and pass
+// through unchanged, so this is safe and idempotent across geocoder versions.
+func shortLocationName(name string) string {
+	if i := strings.IndexByte(name, ','); i >= 0 {
+		name = name[:i]
+	}
+	return strings.TrimSpace(name)
+}
+
 // aggregateRoundupEnrichments rolls the per-entry enrichment summaries up into
 // the period-level place list, weather grit, best efforts and muscles worked.
 func aggregateRoundupEnrichments(entries []*pbactivity.ShowcaseProfileEntry) (
@@ -80,19 +94,22 @@ func aggregateRoundupEnrichments(entries []*pbactivity.ShowcaseProfileEntry) (
 	weatherSeen, coldSet, hotSet := false, false, false
 
 	for _, e := range entries {
-		// Places trained
-		if e.LocationName != nil && *e.LocationName != "" {
-			name := *e.LocationName
-			p, ok := placeData[name]
-			if !ok {
-				p = &pbactivity.RoundupPlace{Name: name}
-				if e.Country != nil {
-					p.Country = *e.Country
+		// Places trained. Names are shortened to their leading locality so the
+		// "where it happened" chips stay concise, and deduped on that short form
+		// so the same locality (however verbosely stored) rolls up into one chip.
+		if e.LocationName != nil {
+			if name := shortLocationName(*e.LocationName); name != "" {
+				p, ok := placeData[name]
+				if !ok {
+					p = &pbactivity.RoundupPlace{Name: name}
+					if e.Country != nil {
+						p.Country = *e.Country
+					}
+					placeData[name] = p
+					placeOrder = append(placeOrder, name)
 				}
-				placeData[name] = p
-				placeOrder = append(placeOrder, name)
+				p.ActivityCount++
 			}
-			p.ActivityCount++
 		}
 
 		// Weather grit
