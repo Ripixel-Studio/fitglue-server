@@ -11,14 +11,14 @@ import (
 )
 
 func TestNewParkrunChecker(t *testing.T) {
-	c := NewParkrunChecker(&mocks.MockDatabase{}, nil, infra.NewLogger())
+	c := NewParkrunChecker(&mocks.MockDatabase{}, nil, infra.NewLogger(), nil)
 	if c == nil {
 		t.Fatal("expected checker")
 	}
 }
 
 func TestParkrunChecker_HandleCheck_NoPending(t *testing.T) {
-	c := NewParkrunChecker(&mocks.MockDatabase{}, nil, infra.NewLogger())
+	c := NewParkrunChecker(&mocks.MockDatabase{}, nil, infra.NewLogger(), nil)
 	w := httptest.NewRecorder()
 	c.HandleCheck(w, httptest.NewRequest(http.MethodPost, "/pubsub/parkrun-check", nil))
 	if w.Code != http.StatusOK {
