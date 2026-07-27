@@ -92,7 +92,7 @@ func main() {
 	routerSvc := router.NewRouter(store, pubClient, blobStore, bucketName, logger)
 
 	mux := http.NewServeMux()
-	parkrunChecker := pipeline.NewParkrunChecker(db, svc, logger)
+	parkrunChecker := pipeline.NewParkrunChecker(db, svc, logger, pubClient)
 
 	mux.HandleFunc("/pubsub/raw", handlePubSubPush(logger, splitterSvc.SplitByPipeline))
 	mux.HandleFunc("/pubsub/run", enricher.EnrichActivityHTTP)
