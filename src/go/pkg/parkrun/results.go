@@ -57,30 +57,46 @@ type PlaywrightFetchResponse struct {
 	Error      string `json:"error,omitempty"`
 }
 
+// FetchDiagnostics captures why a fetch/parse produced no result, so a silent
+// nil can be told apart from "results genuinely not published yet" in logs.
+type FetchDiagnostics struct {
+	URL         string // the resolved parkrunner URL we fetched
+	HTMLBytes   int    // length of the HTML returned by the fetcher
+	RowsParsed  int    // number of valid data rows the parser found
+	SlugMatched bool   // did any row match the target event slug?
+	DateMatched bool   // did any slug-matching row also match the expected date?
+}
+
 // FetchResultsForAthlete fetches and parses results from Parkrun website.
 // Uses the Playwright fetcher service to bypass AWS WAF bot protection.
 // expectedDate is the date the parkrun activity took place; only results matching
 // this date will be returned. This prevents returning stale (previous week) results
 // when this week's results haven't been published yet.
 func FetchResultsForAthlete(ctx context.Context, logger *slog.Logger, athleteID, countryURL, eventSlug string, expectedDate time.Time) (*Result, error) {
-	// Extract numeric athlete ID from barcode (A12345 -> 12345)
-	athleteID = strings.TrimPrefix(athleteID, "A")
+	result, _, err := FetchResultsForAthleteWithDiag(ctx, logger, athleteID, countryURL, eventSlug, expectedDate)
+	return result, err
+}
 
-	// Build URL: https://www.parkrun.org.uk/parkrunner/{athlete_id}/all/
-	baseURL := countryURL
-	if baseURL == "" {
-		baseURL = "www.parkrun.org.uk"
-	}
-	parkrunURL := fmt.Sprintf("https://%s/parkrunner/%s/all/", baseURL, athleteID)
+// FetchResultsForAthleteWithDiag is FetchResultsForAthlete but also returns
+// diagnostics describing the fetch. diag.URL is always populated (even on error)
+// so callers can log the exact URL that was hit.
+func FetchResultsForAthleteWithDiag(ctx context.Context, logger *slog.Logger, athleteID, countryURL, eventSlug string, expectedDate time.Time) (*Result, FetchDiagnostics, error) {
+	// Normalize the stored country host and build the parkrunner URL. The stored
+	// CountryUrl is often a short code ("uk") or bare apex ("parkrun.org.uk"),
+	// neither of which is fetchable as-is.
+	parkrunURL := BuildAthleteResultsURL(athleteID, countryURL)
+	diag := FetchDiagnostics{URL: parkrunURL}
 
 	// Get HTML via Playwright fetcher service (bypasses AWS WAF)
 	html, err := FetchViaPlaywright(ctx, logger, parkrunURL)
 	if err != nil {
-		return nil, fmt.Errorf("fetch via playwright: %w", err)
+		return nil, diag, fmt.Errorf("fetch via playwright: %w", err)
 	}
 
 	// Parse the HTML to find matching event by slug and date
-	return ParseAthleteResultsBySlug(logger, html, eventSlug, expectedDate)
+	result, parseDiag, err := ParseAthleteResultsBySlugWithDiag(logger, html, eventSlug, expectedDate)
+	parseDiag.URL = parkrunURL
+	return result, parseDiag, err
 }
 
 // FetchViaPlaywright calls the Playwright fetcher Cloud Run service to get HTML.
@@ -184,6 +200,16 @@ func fetchDirectHTTP(ctx context.Context, client *http.Client, url string) (stri
 // (DD/MM/YYYY format) are considered a valid match. This prevents returning stale results
 // from a previous week when the current week's results haven't been published yet.
 func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug string, expectedDate time.Time) (*Result, error) {
+	result, _, err := ParseAthleteResultsBySlugWithDiag(logger, html, eventSlug, expectedDate)
+	return result, err
+}
+
+// ParseAthleteResultsBySlugWithDiag is ParseAthleteResultsBySlug but also returns
+// diagnostics (rows parsed, whether the slug/date matched). The parsing logic is
+// identical to ParseAthleteResultsBySlug — only the extra bookkeeping differs.
+func ParseAthleteResultsBySlugWithDiag(logger *slog.Logger, html string, eventSlug string, expectedDate time.Time) (*Result, FetchDiagnostics, error) {
+	diag := FetchDiagnostics{HTMLBytes: len(html)}
+
 	// Find rows in the "All Results" table (look for tbody rows to skip header)
 	// Using (?s) for dot-all mode to match across newlines
 	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
@@ -225,6 +251,10 @@ func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug strin
 	insufficientCellRows := 0
 	invalidPositionRows := 0
 	validDataRows := 0
+
+	// Diagnostics: track whether we ever saw the target slug / matching date.
+	anySlugMatch := false
+	anyDateMatchForSlug := false
 
 	for i, rowMatch := range rows {
 		row := rowMatch[1]
@@ -294,6 +324,13 @@ func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug strin
 		containsTarget := strings.Contains(rowLower, targetEventSlugLower)
 		dateMatches := strings.TrimSpace(dateCell) == expectedDateStr
 
+		if containsTarget {
+			anySlugMatch = true
+			if dateMatches {
+				anyDateMatchForSlug = true
+			}
+		}
+
 		if i < 25 || containsTarget { // Log first 25 rows or any matching rows
 			logger.Debug("Row parsing",
 				"row", i,
@@ -340,9 +377,13 @@ func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug strin
 		"valid_data_rows", validDataRows,
 		"target_found", targetResult != nil)
 
+	diag.RowsParsed = validDataRows
+	diag.SlugMatched = anySlugMatch
+	diag.DateMatched = anyDateMatchForSlug
+
 	// If no matching result found
 	if targetResult == nil {
-		return nil, nil
+		return nil, diag, nil
 	}
 
 	// Now calculate PBs by comparing against all OTHER results (excluding target row)
@@ -362,7 +403,7 @@ func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug strin
 	// FirstAtLocation is true only if this is the only run ever at this location
 	targetResult.FirstAtLocation = locationVisits[eventSlugLower] == 1
 
-	return targetResult, nil
+	return targetResult, diag, nil
 }
 
 // extractEventSlugFromRow extracts the event slug from a row's event link.

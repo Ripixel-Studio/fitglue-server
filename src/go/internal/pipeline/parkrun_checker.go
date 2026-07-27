@@ -120,18 +120,32 @@ func (c *ParkrunChecker) processInput(ctx context.Context, input *pbpipeline.Pen
 		return "skipped"
 	}
 
-	results, err := parkrunutil.FetchResultsForAthlete(ctx, slog.Default(),
-		integration.AthleteId, integration.CountryUrl, eventSlug, expectedDate)
+	// Resolve the country host for the athlete's results page. The athlete page
+	// lives on the runner's HOME domain, so prefer the integration's CountryUrl;
+	// fall back to the canonical host stored on the pending input
+	// (provider_metadata["parkrun_country"], e.g. "www.parkrun.org.uk"). The
+	// value is normalized inside FetchResultsForAthlete — see NormalizeCountryHost.
+	countryURL := integration.CountryUrl
+	if countryURL == "" {
+		countryURL = input.ProviderMetadata["parkrun_country"]
+	}
+
+	results, diag, err := parkrunutil.FetchResultsForAthleteWithDiag(ctx, slog.Default(),
+		integration.AthleteId, countryURL, eventSlug, expectedDate)
 	if err != nil {
 		// Transient failure — log and retry at next scheduled check.
 		c.logger.Warn(ctx, "parkrun checker: fetch failed, will retry next cycle",
-			"error", err, "input_id", input.ActivityId, "event", eventSlug)
+			"error", err, "input_id", input.ActivityId, "event", eventSlug,
+			"url", diag.URL, "country_url", countryURL)
 		return "skipped"
 	}
 	if results == nil {
-		// Results not published yet — normal for morning runs.
+		// No matching result. Could be "not published yet" (normal for morning
+		// runs) OR a bad fetch — log the diagnostics so the two are distinguishable.
 		c.logger.Info(ctx, "parkrun checker: results not yet available",
-			"event", eventSlug, "date", expectedDateStr, "input_id", input.ActivityId)
+			"event", eventSlug, "date", expectedDateStr, "input_id", input.ActivityId,
+			"url", diag.URL, "html_bytes", diag.HTMLBytes, "rows_parsed", diag.RowsParsed,
+			"slug_matched", diag.SlugMatched, "date_matched", diag.DateMatched)
 		return "skipped"
 	}
 
