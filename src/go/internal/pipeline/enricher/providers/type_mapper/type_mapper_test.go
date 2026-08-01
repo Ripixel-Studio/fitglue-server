@@ -80,6 +80,27 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
 			expectMetadata: true,
 		},
+		{
+			// Regression: when several substrings match, the first rule in config order
+			// must win. Previously rules were read from a map, whose randomized iteration
+			// order made the outcome non-deterministic.
+			name:           "Multiple matching rules - first in config order wins",
+			activityName:   "Pull focused Hyrox PT",
+			activityType:   pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT,
+			typeRules:      `{"pull": "WeightTraining", "Hyrox": "Crossfit"}`,
+			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+			expectMetadata: true,
+		},
+		{
+			// Same rules, reversed order: the other rule should now win, proving order
+			// is honoured rather than incidental.
+			name:           "Multiple matching rules - reversed config order",
+			activityName:   "Pull focused Hyrox PT",
+			activityType:   pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT,
+			typeRules:      `{"Hyrox": "Crossfit", "pull": "WeightTraining"}`,
+			expectedType:   pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT,
+			expectMetadata: true,
+		},
 	}
 
 	for _, tt := range tests {

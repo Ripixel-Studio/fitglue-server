@@ -4,6 +4,7 @@ package type_mapper
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	"log/slog"
 	"strings"
@@ -50,19 +51,17 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 
 	var rules []TypeMapperRule
 
-	// Check for type_rules JSON map (from web UI: {"title substring": "ACTIVITY_TYPE_..."})
+	// Check for type_rules JSON object (from web UI: {"title substring": "ACTIVITY_TYPE_..."})
+	//
+	// Rules are matched in the order they appear in the config ("first match wins"), so
+	// order must be preserved. Unmarshalling into a map[string]string would lose it: Go
+	// randomizes map iteration order, which made matching non-deterministic when more than
+	// one substring matched a title. We therefore stream-decode the object to keep the
+	// author's ordering.
 	typeRulesJson, hasTypeRules := inputConfig["type_rules"]
 	if hasTypeRules && typeRulesJson != "" {
-		var typeRulesMap map[string]string
-		if err := json.Unmarshal([]byte(typeRulesJson), &typeRulesMap); err == nil {
-			for substring, targetType := range typeRulesMap {
-				if substring != "" && targetType != "" {
-					rules = append(rules, TypeMapperRule{
-						Substring:  substring,
-						TargetType: targetType,
-					})
-				}
-			}
+		if orderedRules, err := parseOrderedTypeRules(typeRulesJson); err == nil {
+			rules = append(rules, orderedRules...)
 			logger.Debug("type_mapper: parsed type_rules",
 				"rule_count", len(rules),
 			)
@@ -156,4 +155,48 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 	return &providers.EnrichmentResult{
 		Metadata: map[string]string{"status": "skipped", "reason": "no_matching_rule", "title": activityTitle},
 	}, nil
+}
+
+// parseOrderedTypeRules decodes a JSON object of {"substring": "target_type"} pairs while
+// preserving the order in which keys appear in the source. This matters because rules are
+// applied "first match wins": decoding into a map[string]string would discard order and,
+// because Go randomizes map iteration, make the winning rule non-deterministic whenever more
+// than one substring matches a title.
+func parseOrderedTypeRules(raw string) ([]TypeMapperRule, error) {
+	dec := json.NewDecoder(strings.NewReader(raw))
+
+	// Expect the opening object delimiter.
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	if delim, ok := tok.(json.Delim); !ok || delim != '{' {
+		return nil, fmt.Errorf("type_rules: expected JSON object, got %v", tok)
+	}
+
+	var rules []TypeMapperRule
+	for dec.More() {
+		keyTok, err := dec.Token()
+		if err != nil {
+			return nil, err
+		}
+		substring, ok := keyTok.(string)
+		if !ok {
+			return nil, fmt.Errorf("type_rules: expected string key, got %v", keyTok)
+		}
+
+		var targetType string
+		if err := dec.Decode(&targetType); err != nil {
+			return nil, err
+		}
+
+		if substring != "" && targetType != "" {
+			rules = append(rules, TypeMapperRule{
+				Substring:  substring,
+				TargetType: targetType,
+			})
+		}
+	}
+
+	return rules, nil
 }
