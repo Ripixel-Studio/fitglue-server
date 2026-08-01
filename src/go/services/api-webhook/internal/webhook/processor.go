@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -52,6 +53,10 @@ type Processor struct {
 	publisher Publisher
 	db        loopprevention.UploadedActivityStore
 	logger    infra.Logger
+
+	// wg tracks in-flight background event processing spawned by HandleEvent.
+	// It lets callers (tests, graceful shutdown) wait for detached work to drain.
+	wg sync.WaitGroup
 }
 
 // NewProcessor creates a new WebhookProcessor
@@ -107,8 +112,21 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 	w.WriteHeader(http.StatusOK)
 
 	if len(events) > 0 {
-		go p.processEvents(provider, events)
+		p.wg.Add(1)
+		go func() {
+			defer p.wg.Done()
+			p.processEvents(provider, events)
+		}()
 	}
+}
+
+// Wait blocks until all in-flight background event processing started by
+// HandleEvent has completed. Because the work is dispatched on detached
+// goroutines (so the HTTP handler can acknowledge immediately), tests use this
+// to observe results deterministically instead of sleeping, and it also gives
+// a shutdown hook a way to drain outstanding work.
+func (p *Processor) Wait() {
+	p.wg.Wait()
 }
 
 // processEvents runs the fetch/bounceback/publish pipeline for each webhook event.

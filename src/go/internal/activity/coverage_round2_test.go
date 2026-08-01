@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -307,13 +308,19 @@ func TestBuildRunArchive_WithPayloadAndFit(t *testing.T) {
 // --- HandleRoundupTrigger success (envelope + period bounds + generation) ---
 
 func TestHandleRoundupTrigger_Success(t *testing.T) {
+	// HandleRoundupTrigger fans out one goroutine per user, so the mock is
+	// invoked concurrently — guard the shared slice to avoid a racy append
+	// (concurrent appends can drop an entry, e.g. "got [u1]" for two users).
+	var mu sync.Mutex
 	var generatedFor []string
 	store := &MockActivityStore{
 		ListAllShowcaseUserIDsFunc: func(_ context.Context) ([]string, error) {
 			return []string{"u1", "u2"}, nil
 		},
 		GetShowcasePreferencesFunc: func(_ context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
+			mu.Lock()
 			generatedFor = append(generatedFor, userID)
+			mu.Unlock()
 			// No settings → generateRoundup returns nil,nil quickly.
 			return &pbactivity.ShowcaseProfile{Slug: userID, RoundupSettings: nil}, nil
 		},
