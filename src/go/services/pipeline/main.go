@@ -98,6 +98,7 @@ func main() {
 	mux.HandleFunc("/pubsub/run", enricher.EnrichActivityHTTP)
 	mux.HandleFunc("/pubsub/enriched", handlePubSubPush(logger, routerSvc.RouteActivity))
 	mux.HandleFunc("/pubsub/parkrun-check", parkrunChecker.HandleCheck)
+	mux.HandleFunc("/internal/parkrun-recheck", parkrunChecker.HandleRecheck)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
