@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -156,7 +155,7 @@ func TestProcessor_HandleEvent(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		processor.HandleEvent(w, req, "testprovider")
-		time.Sleep(100 * time.Millisecond) // allow async processEvents goroutine to complete
+		processor.Wait() // block until the async processEvents goroutine completes
 
 		assert.True(t, mock.parseCalled)
 		assert.True(t, mock.fetchCalled)
@@ -204,6 +203,7 @@ func TestProcessor_HandleEvent(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		processor.HandleEvent(w, req, "testprovider")
+		processor.Wait() // block until the async processEvents goroutine completes
 
 		assert.True(t, mock.parseCalled)
 		assert.False(t, mock.fetchCalled)      // Should not reach fetch
@@ -228,7 +228,7 @@ func TestProcessor_HandleEvent(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		processor.HandleEvent(w, req, "testprovider")
-		time.Sleep(100 * time.Millisecond) // allow async processEvents goroutine to complete
+		processor.Wait() // block until the async processEvents goroutine completes
 
 		assert.True(t, mock.parseCalled)
 		assert.True(t, mock.fetchCalled)
