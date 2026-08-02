@@ -133,24 +133,7 @@ func ExtractSection(description, headerPrefix string) string {
 // existing remote description for a cross-source Update() call. If the pipeline declared
 // a replaceable section (a payloadMetadata entry keyed "section_header_*") and that
 // section already exists remotely, only that section is replaced. Otherwise the payload
-// description is appended — unless one description already wholly contains the other, in
-// which case no append happens.
-//
-// The two containment guards handle the two ways FitGlue re-writes a description it has
-// already touched:
-//
-//   - existing contains payload: a resumed pipeline (e.g. resolving an unrelated
-//     non-blocking pending input) recomputes the same final description and calls
-//     Update() again. Returning the existing description unchanged stops every such
-//     resume from re-appending the whole block.
-//
-//   - payload contains existing: the destination's current description is the user's
-//     original upload text, which the payload already carries at its head (slot 0) ahead
-//     of the freshly-computed enrichment sections. The user-provided description never
-//     has a section heading, so it survives inside the payload verbatim; returning the
-//     payload replaces over what's there without duplicating the user's words or losing
-//     them. When the destination instead holds text FitGlue didn't author (not contained
-//     in the payload), neither guard fires and the payload is appended, preserving it.
+// and existing descriptions are reconciled block-by-block (see mergeBlocks).
 func MergeDescription(existingDescription, payloadDescription string, payloadMetadata map[string]string) string {
 	if payloadDescription == "" {
 		return existingDescription
@@ -175,16 +158,62 @@ func MergeDescription(existingDescription, payloadDescription string, payloadMet
 	if existingDescription == "" {
 		return payloadDescription
 	}
-	if strings.Contains(existingDescription, payloadDescription) {
-		return existingDescription
+
+	return mergeBlocks(existingDescription, payloadDescription)
+}
+
+// mergeBlocks reconciles two FitGlue-authored descriptions at the granularity of
+// "\n\n"-delimited blocks rather than whole strings.
+//
+// FitGlue composes the payload description from ordered blocks: the source's original
+// upload text in slot 0, one block per enricher section, then the branding footer (see
+// buildDescriptionFromSlots in the enricher orchestrator). The destination's remote
+// description is that same block set from an earlier pass — but a non-blocking pending
+// input that had not yet resolved on that pass leaves its slot empty, so its block is
+// MISSING remotely and lands in the MIDDLE of the payload once it resolves. The remote
+// description may also carry extra text the user typed on the destination platform that
+// FitGlue never authored.
+//
+// The previous implementation compared whole strings: it only skipped the re-append when
+// one description wholly contained the other. A freshly-resolved section inserted mid-way
+// shifts every block after it (e.g. the branding footer), so neither string contains the
+// other and the entire payload was appended — duplicating the whole description on every
+// non-blocking resume. Reconciling by block fixes this: any remote block also present in
+// the payload is dropped (the payload re-supplies it in the right place), and only remote
+// blocks FitGlue did NOT author are preserved, ahead of the payload.
+func mergeBlocks(existingDescription, payloadDescription string) string {
+	payloadBlocks := splitBlocks(payloadDescription)
+	inPayload := make(map[string]bool, len(payloadBlocks))
+	for _, b := range payloadBlocks {
+		inPayload[b] = true
 	}
-	// The payload already carries the destination's current description (typically the
-	// user's heading-less upload text) at its head, so replace over it rather than
-	// appending a second copy.
-	if strings.Contains(payloadDescription, existingDescription) {
+
+	var preserved []string
+	for _, b := range splitBlocks(existingDescription) {
+		if !inPayload[b] {
+			preserved = append(preserved, b)
+		}
+	}
+
+	if len(preserved) == 0 {
 		return payloadDescription
 	}
-	return existingDescription + "\n\n" + payloadDescription
+	return strings.Join(append(preserved, payloadDescription), "\n\n")
+}
+
+// splitBlocks splits a description into its "\n\n"-delimited blocks, trimming surrounding
+// whitespace from each and dropping empties. Trimming keeps block matching stable against
+// the minor whitespace normalisation some destinations apply when they store and return a
+// description.
+func splitBlocks(s string) []string {
+	raw := strings.Split(s, "\n\n")
+	blocks := make([]string, 0, len(raw))
+	for _, b := range raw {
+		if t := strings.TrimSpace(b); t != "" {
+			blocks = append(blocks, t)
+		}
+	}
+	return blocks
 }
 
 // RemoveSection removes a section entirely from the description.
