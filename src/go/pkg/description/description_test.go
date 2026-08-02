@@ -243,6 +243,50 @@ func TestMergeDescription_ResumeDoesNotDuplicate(t *testing.T) {
 	}
 }
 
+// TestMergeDescription_NonBlockingResolveInsertsMidBlock is a regression test for the
+// reported bug: an activity from a non-Strava source runs a pipeline with Strava as a
+// destination and a non-blocking pending input. The non-blocking enricher's description
+// block is absent on the first upload (its slot is empty while it waits) and lands in the
+// MIDDLE of the recomputed description once the input resolves — shifting the branding
+// footer down. Whole-string containment missed this and appended the entire description
+// again; block-level reconciliation must instead replace in place.
+func TestMergeDescription_NonBlockingResolveInsertsMidBlock(t *testing.T) {
+	// First Strava upload: the non-blocking section is still pending, so only the
+	// original text, one resolved section, and the branding footer are present.
+	remote := "Morning run\n\n🏃 Pace: 5:12/km\n\nPosted via FitGlue 💪"
+
+	// The non-blocking input resolves; the recomputed description inserts its block
+	// between the pace section and the footer.
+	payload := "Morning run\n\n🏃 Pace: 5:12/km\n\n📸 Photos: 3 added\n\nPosted via FitGlue 💪"
+
+	merged := MergeDescription(remote, payload, nil)
+	if merged != payload {
+		t.Fatalf("mid-block insert should replace in place, not append.\n got: %q\nwant: %q", merged, payload)
+	}
+
+	// A second non-blocking input resolves and inserts another mid-block section. This
+	// must not re-append the earlier copy either.
+	payload2 := "Morning run\n\n🏃 Pace: 5:12/km\n\n📸 Photos: 3 added\n\n💧 hDrop: 0.8L\n\nPosted via FitGlue 💪"
+	merged2 := MergeDescription(merged, payload2, nil)
+	if merged2 != payload2 {
+		t.Fatalf("second mid-block insert duplicated the description.\n got: %q\nwant: %q", merged2, payload2)
+	}
+}
+
+// TestMergeDescription_PreservesUnrelatedRemoteText ensures the block merge still keeps
+// text the user typed on the destination platform (a block FitGlue never authored) while
+// dropping the blocks the payload re-supplies.
+func TestMergeDescription_PreservesUnrelatedRemoteText(t *testing.T) {
+	remote := "Hand-written on Strava\n\n🏃 Pace: 5:12/km\n\nPosted via FitGlue 💪"
+	payload := "🏃 Pace: 5:12/km\n\n📸 Photos: 3 added\n\nPosted via FitGlue 💪"
+
+	merged := MergeDescription(remote, payload, nil)
+	want := "Hand-written on Strava\n\n" + payload
+	if merged != want {
+		t.Fatalf("unrelated remote text not preserved.\n got: %q\nwant: %q", merged, want)
+	}
+}
+
 func TestRemoveSection(t *testing.T) {
 	tests := []struct {
 		name         string
