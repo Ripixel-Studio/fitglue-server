@@ -287,6 +287,68 @@ func TestMergeDescription_PreservesUnrelatedRemoteText(t *testing.T) {
 	}
 }
 
+// TestMergeDescription_RegeneratedSectionNotDuplicated is a regression test for the
+// reported bug: a section that regenerates with DIFFERENT content between runs (e.g. the
+// AI summary rewrites itself once more data is available) is no longer byte-identical to
+// its remote copy. Whole-block equality treated the stale remote copy as user text and
+// preserved it at the top of the description, leaving two copies of the section. Header
+// matching must instead drop the stale copy so the payload's fresh version stands alone.
+func TestMergeDescription_RegeneratedSectionNotDuplicated(t *testing.T) {
+	// Remote holds an earlier AI summary above the user's own upload text.
+	remote := "✨ AI Summary:\nAn early guess with little data.\n\n" +
+		"The Monday morning double done 💪\n\n" +
+		"🔥 Calories: 250 kcal ≈ 0.9 slice of pizza 🍕\n\n" +
+		"Posted via FitGlue 💪"
+
+	// The pipeline reruns with more data: the AI summary is rewritten and the calorie
+	// figure changes. The payload is the full recomputed description.
+	payload := "The Monday morning double done 💪\n\n" +
+		"✨ AI Summary:\nA solid 52-minute Tower Pilates session with controlled heart rate.\n\n" +
+		"🔥 Calories: 303 kcal ≈ 1.1 slice of pizza 🍕\n\n" +
+		"Posted via FitGlue 💪"
+
+	merged := MergeDescription(remote, payload, nil)
+	if merged != payload {
+		t.Fatalf("regenerated sections should replace in place, not duplicate.\n got: %q\nwant: %q", merged, payload)
+	}
+}
+
+// TestMergeDescription_HeaderMatchPreservesUserText ensures header matching does not
+// clobber free text the user typed on the destination — even when that text happens to
+// contain a colon — because such text does not open with an emoji/symbol section header.
+func TestMergeDescription_HeaderMatchPreservesUserText(t *testing.T) {
+	remote := "Note: felt strong today\n\n✨ AI Summary:\nOld summary.\n\nPosted via FitGlue 💪"
+	payload := "✨ AI Summary:\nFresh summary.\n\nPosted via FitGlue 💪"
+
+	merged := MergeDescription(remote, payload, nil)
+	want := "Note: felt strong today\n\n" + payload
+	if merged != want {
+		t.Fatalf("user free text should be preserved.\n got: %q\nwant: %q", merged, want)
+	}
+}
+
+func TestBlockHeaderKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		block string
+		want  string
+	}{
+		{"header line only", "✨ AI Summary:\nsome content", "✨ AI Summary:"},
+		{"header inline with value", "🔥 Calories: 303 kcal ≈ 1.1 slice 🍕", "🔥 Calories:"},
+		{"emoji start no colon", "🏃 My workout", ""},
+		{"plain text with colon", "Note: felt strong", ""},
+		{"branding footer", "Posted via FitGlue 💪", ""},
+		{"empty", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := blockHeaderKey(tt.block); got != tt.want {
+				t.Errorf("blockHeaderKey(%q) = %q, want %q", tt.block, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRemoveSection(t *testing.T) {
 	tests := []struct {
 		name         string

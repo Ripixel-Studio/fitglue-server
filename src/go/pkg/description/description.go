@@ -181,24 +181,63 @@ func MergeDescription(existingDescription, payloadDescription string, payloadMet
 // non-blocking resume. Reconciling by block fixes this: any remote block also present in
 // the payload is dropped (the payload re-supplies it in the right place), and only remote
 // blocks FitGlue did NOT author are preserved, ahead of the payload.
+//
+// Byte-equality alone is not enough for sections that REGENERATE between runs (e.g. the
+// AI summary rewrites itself once more data is available, effort/streak/HR numbers change
+// as inputs resolve). The regenerated remote block is no longer byte-identical to the
+// payload's, so it fell through the equality check and was preserved as if it were user
+// text — leaving a stale copy of the section at the top of the description. So we also
+// match by section header: a remote block whose header (see blockHeaderKey) the payload
+// re-supplies is dropped, letting the payload's fresh version stand in its place.
 func mergeBlocks(existingDescription, payloadDescription string) string {
 	payloadBlocks := splitBlocks(payloadDescription)
 	inPayload := make(map[string]bool, len(payloadBlocks))
+	payloadHeaders := make(map[string]bool, len(payloadBlocks))
 	for _, b := range payloadBlocks {
 		inPayload[b] = true
+		if h := blockHeaderKey(b); h != "" {
+			payloadHeaders[h] = true
+		}
 	}
 
 	var preserved []string
 	for _, b := range splitBlocks(existingDescription) {
-		if !inPayload[b] {
-			preserved = append(preserved, b)
+		if inPayload[b] {
+			continue // payload re-supplies this exact block in the right place
 		}
+		if h := blockHeaderKey(b); h != "" && payloadHeaders[h] {
+			continue // payload re-supplies this section (content regenerated) in the right place
+		}
+		preserved = append(preserved, b)
 	}
 
 	if len(preserved) == 0 {
 		return payloadDescription
 	}
 	return strings.Join(append(preserved, payloadDescription), "\n\n")
+}
+
+// blockHeaderKey returns the stable, content-independent identity of a FitGlue section
+// block, or "" if the block is not a recognisable section. FitGlue sections open with an
+// emoji/symbol and a "Header:" label on their first line — either alone ("✨ AI Summary:")
+// or inline with a value ("🔥 Calories: 303 kcal"). The key is that label up to and
+// including the first colon, so a section still matches after its content regenerates.
+// Blocks without this shape (the user's own upload text, the "Posted via FitGlue" footer,
+// free text typed on the destination) return "" and are matched only by exact content.
+func blockHeaderKey(block string) string {
+	firstLine := block
+	if idx := strings.IndexByte(block, '\n'); idx != -1 {
+		firstLine = block[:idx]
+	}
+	firstLine = strings.TrimSpace(firstLine)
+	if !isEmojiOrSpecialStart(firstLine) {
+		return ""
+	}
+	colon := strings.IndexByte(firstLine, ':')
+	if colon == -1 {
+		return ""
+	}
+	return firstLine[:colon+1]
 }
 
 // splitBlocks splits a description into its "\n\n"-delimited blocks, trimming surrounding
