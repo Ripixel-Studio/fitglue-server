@@ -109,12 +109,17 @@ func TestLocalTimeForLocation(t *testing.T) {
 
 func TestParkrun_EnrichResume(t *testing.T) {
 	p := NewParkrunProvider()
+	// Auto-resolved input: parkrun_checker carries the full stats (total run count +
+	// PB flags) in InputData so EnrichResume can rebuild the complete summary card.
 	pending := &pbpipeline.PendingInput{
 		InputData: map[string]string{
-			"description": "🏃 Parkrun Results:\nGreat run!",
-			"position":    "42",
-			"time":        "25:30",
-			"age_grade":   "55.5%",
+			"description":     "🏃 Parkrun Results:\nGreat run!",
+			"position":        "42",
+			"time":            "25:30",
+			"age_grade":       "55.5%",
+			"total_parkruns":  "137",
+			"is_time_pb":      "true",
+			"is_age_grade_pb": "false",
 		},
 		ProviderMetadata: map[string]string{"parkrun_event_name": "Bushy Park Parkrun"},
 	}
@@ -128,11 +133,49 @@ func TestParkrun_EnrichResume(t *testing.T) {
 	if res.Metadata["parkrun_position"] != "42" || res.Metadata["parkrun_results_state"] != "COMPLETE" {
 		t.Errorf("unexpected metadata %v", res.Metadata)
 	}
+	if res.Metadata["parkrun_total_parkruns"] != "137" {
+		t.Errorf("expected parkrun_total_parkruns=137, got %q", res.Metadata["parkrun_total_parkruns"])
+	}
 	if res.Enrichments == nil || res.Enrichments.Parkrun == nil {
 		t.Fatal("expected Parkrun enrichment")
 	}
-	if res.Enrichments.Parkrun.Position != 42 || res.Enrichments.Parkrun.EventName != "Bushy Park Parkrun" {
-		t.Errorf("unexpected parkrun summary %+v", res.Enrichments.Parkrun)
+	pr := res.Enrichments.Parkrun
+	if pr.Position != 42 || pr.EventName != "Bushy Park Parkrun" {
+		t.Errorf("unexpected parkrun summary %+v", pr)
+	}
+	if pr.TotalParkruns != 137 {
+		t.Errorf("expected TotalParkruns=137, got %d", pr.TotalParkruns)
+	}
+	if !pr.IsTimePb || pr.IsAgeGradePb {
+		t.Errorf("expected IsTimePb=true IsAgeGradePb=false, got %v/%v", pr.IsTimePb, pr.IsAgeGradePb)
+	}
+}
+
+// A genuinely manual entry has no total_parkruns / PB flags in InputData (the fetch
+// never resolved). Those must default cleanly to 0/false rather than erroring, so the
+// card can omit the "TOTAL RUNS" tile instead of showing a bogus zero.
+func TestParkrun_EnrichResume_ManualEntryNoStats(t *testing.T) {
+	p := NewParkrunProvider()
+	pending := &pbpipeline.PendingInput{
+		InputData: map[string]string{
+			"description": "Ran it, felt good",
+			"position":    "42",
+			"time":        "25:30",
+			"age_grade":   "55.5%",
+		},
+		ProviderMetadata: map[string]string{"parkrun_event_name": "Bushy Park Parkrun"},
+	}
+	res, err := p.EnrichResume(context.Background(), &pbactivity.StandardizedActivity{}, &user.Record{}, pending)
+	if err != nil {
+		t.Fatalf("EnrichResume error: %v", err)
+	}
+	pr := res.Enrichments.Parkrun
+	if pr.TotalParkruns != 0 || pr.IsTimePb || pr.IsAgeGradePb {
+		t.Errorf("expected zero-value stats for manual entry, got total=%d timePB=%v agPB=%v",
+			pr.TotalParkruns, pr.IsTimePb, pr.IsAgeGradePb)
+	}
+	if res.Metadata["parkrun_total_parkruns"] != "0" {
+		t.Errorf("expected parkrun_total_parkruns=0, got %q", res.Metadata["parkrun_total_parkruns"])
 	}
 }
 
