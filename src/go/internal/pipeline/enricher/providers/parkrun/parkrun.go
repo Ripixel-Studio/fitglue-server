@@ -76,24 +76,35 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pbactivity
 	ageGrade := pendingInput.InputData["age_grade"]
 
 	pos, _ := strconv.Atoi(position)
+	// Total run count and PB flags are carried in InputData by the auto-resolve path
+	// (parkrun_checker) so the card matches the immediate-fetch path. They are absent
+	// on genuinely manual entries — atoi("")/=="true" default cleanly to 0/false, and
+	// the client omits the "TOTAL RUNS" tile when the count is zero.
+	totalParkruns, _ := strconv.Atoi(pendingInput.InputData["total_parkruns"])
+	isTimePB := pendingInput.InputData["is_time_pb"] == "true"
+	isAgeGradePB := pendingInput.InputData["is_age_grade_pb"] == "true"
 	result := &providers.EnrichmentResult{
 		Description:   description, // description already contains the header from FormatResultsDescription
 		SectionHeader: "🏃 Parkrun Results:",
 		Metadata: map[string]string{
-			"status":                "success",
-			"is_parkrun":            "true",
-			"results_applied":       "true",
-			"parkrun_position":      position,
-			"parkrun_time":          timeStr,
-			"parkrun_age_grade":     ageGrade,
-			"parkrun_results_state": "COMPLETE",
+			"status":                 "success",
+			"is_parkrun":             "true",
+			"results_applied":        "true",
+			"parkrun_position":       position,
+			"parkrun_time":           timeStr,
+			"parkrun_age_grade":      ageGrade,
+			"parkrun_total_parkruns": strconv.Itoa(totalParkruns),
+			"parkrun_results_state":  "COMPLETE",
 		},
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Parkrun: &pbactivity.ParkrunSummary{
-				EventName:  pendingInput.ProviderMetadata["parkrun_event_name"],
-				Position:   int32(pos),
-				FinishTime: timeStr,
-				AgeGrade:   ageGrade,
+				EventName:     pendingInput.ProviderMetadata["parkrun_event_name"],
+				Position:      int32(pos),
+				FinishTime:    timeStr,
+				AgeGrade:      ageGrade,
+				TotalParkruns: int32(totalParkruns),
+				IsTimePb:      isTimePB,
+				IsAgeGradePb:  isAgeGradePB,
 			},
 		},
 	}

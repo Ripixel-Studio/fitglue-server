@@ -365,11 +365,18 @@ func (c *ParkrunChecker) processInput(ctx context.Context, input *pbpipeline.Pen
 	_, submitErr := c.svc.SubmitInput(ctx, &pbsvc.SubmitInputRequest{
 		UserId:         input.UserId,
 		PendingInputId: input.ActivityId,
+		// The stats beyond position/time/age_grade (total run count + PB flags) must
+		// ride along in InputData: EnrichResume rebuilds the ParkrunSummary card solely
+		// from these values, so anything omitted here renders as a zero/false on the
+		// card (e.g. "0 TOTAL RUNS", missing PB stamps) even though the fetch succeeded.
 		InputData: map[string]string{
-			"description": desc,
-			"position":    strconv.Itoa(results.Position),
-			"time":        results.Time,
-			"age_grade":   results.AgeGrade,
+			"description":     desc,
+			"position":        strconv.Itoa(results.Position),
+			"time":            results.Time,
+			"age_grade":       results.AgeGrade,
+			"total_parkruns":  strconv.Itoa(results.TotalAllTime),
+			"is_time_pb":      strconv.FormatBool(results.TimeAllTimePB),
+			"is_age_grade_pb": strconv.FormatBool(results.AgeGradeAllTimePB),
 		},
 	})
 	if submitErr != nil {
