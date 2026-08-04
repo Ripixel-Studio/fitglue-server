@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -151,17 +152,58 @@ func TestParkrun_EnrichResume(t *testing.T) {
 	}
 }
 
-// A genuinely manual entry has no total_parkruns / PB flags in InputData (the fetch
-// never resolved). Those must default cleanly to 0/false rather than erroring, so the
-// card can omit the "TOTAL RUNS" tile instead of showing a bogus zero.
-func TestParkrun_EnrichResume_ManualEntryNoStats(t *testing.T) {
+// Structured manual entry (Option B): the form submits structured fields but NO freeform
+// description. EnrichResume must synthesize the description server-side so the manual entry
+// renders the same formatted card as an auto-fetched one, and populate the ParkrunSummary
+// that drives the web card.
+func TestParkrun_EnrichResume_StructuredManual_Full(t *testing.T) {
 	p := NewParkrunProvider()
 	pending := &pbpipeline.PendingInput{
 		InputData: map[string]string{
-			"description": "Ran it, felt good",
-			"position":    "42",
-			"time":        "25:30",
-			"age_grade":   "55.5%",
+			// note: no "description" — the structured form doesn't collect freeform text
+			"position":        "42",
+			"time":            "25:30",
+			"age_grade":       "55.5%",
+			"total_parkruns":  "137",
+			"is_time_pb":      "true",
+			"is_age_grade_pb": "false",
+		},
+		ProviderMetadata: map[string]string{"parkrun_event_name": "Bushy Park Parkrun"},
+	}
+	res, err := p.EnrichResume(context.Background(), &pbactivity.StandardizedActivity{}, &user.Record{}, pending)
+	if err != nil {
+		t.Fatalf("EnrichResume error: %v", err)
+	}
+	// Description synthesized from structured fields, matching the auto-fetched layout.
+	for _, want := range []string{
+		"🏃 Parkrun Results:",
+		"Position: 42nd",
+		"Time: 25:30 · 🏆 New all-time PB!",
+		"Age Grade: 55.5%",
+		"Location: Bushy Park Parkrun (137 total)",
+	} {
+		if !strings.Contains(res.Description, want) {
+			t.Errorf("synthesized description missing %q\nfull:\n%s", want, res.Description)
+		}
+	}
+	// age grade is NOT a PB here — no badge on that line
+	if strings.Contains(res.Description, "Age Grade: 55.5% · 🏆") {
+		t.Errorf("age grade should have no PB badge, got:\n%s", res.Description)
+	}
+	pr := res.Enrichments.Parkrun
+	if pr.EventName != "Bushy Park Parkrun" || pr.Position != 42 || pr.FinishTime != "25:30" || pr.TotalParkruns != 137 || !pr.IsTimePb || pr.IsAgeGradePb {
+		t.Errorf("unexpected ParkrunSummary %+v", pr)
+	}
+}
+
+// A partial manual entry has only some fields — total_parkruns / PB flags absent. They
+// must default cleanly to 0/false, the synthesized description must not render a bogus
+// "(0 total)", and the card can omit the "TOTAL RUNS" tile instead of showing a zero.
+func TestParkrun_EnrichResume_StructuredManual_Partial(t *testing.T) {
+	p := NewParkrunProvider()
+	pending := &pbpipeline.PendingInput{
+		InputData: map[string]string{
+			"time": "25:30", // only the mandatory field supplied
 		},
 		ProviderMetadata: map[string]string{"parkrun_event_name": "Bushy Park Parkrun"},
 	}
@@ -171,11 +213,39 @@ func TestParkrun_EnrichResume_ManualEntryNoStats(t *testing.T) {
 	}
 	pr := res.Enrichments.Parkrun
 	if pr.TotalParkruns != 0 || pr.IsTimePb || pr.IsAgeGradePb {
-		t.Errorf("expected zero-value stats for manual entry, got total=%d timePB=%v agPB=%v",
+		t.Errorf("expected zero-value stats for partial entry, got total=%d timePB=%v agPB=%v",
 			pr.TotalParkruns, pr.IsTimePb, pr.IsAgeGradePb)
 	}
 	if res.Metadata["parkrun_total_parkruns"] != "0" {
 		t.Errorf("expected parkrun_total_parkruns=0, got %q", res.Metadata["parkrun_total_parkruns"])
+	}
+	if !strings.Contains(res.Description, "Time: 25:30") {
+		t.Errorf("expected synthesized time line, got:\n%s", res.Description)
+	}
+	if strings.Contains(res.Description, "total") {
+		t.Errorf("blank total must not render a bogus count, got:\n%s", res.Description)
+	}
+}
+
+// The auto-resolve path (parkrun_checker) still supplies a pre-built freeform description
+// in InputData. EnrichResume must keep using it verbatim rather than overwriting it with a
+// synthesized one, so this path is unchanged from PR #24.
+func TestParkrun_EnrichResume_AutoDescriptionPreserved(t *testing.T) {
+	p := NewParkrunProvider()
+	pending := &pbpipeline.PendingInput{
+		InputData: map[string]string{
+			"description":    "🏃 Parkrun Results:\n• Location: Newark, 5th Parkrun here (37 total)",
+			"time":           "25:30",
+			"total_parkruns": "37",
+		},
+		ProviderMetadata: map[string]string{"parkrun_event_name": "Newark Parkrun"},
+	}
+	res, err := p.EnrichResume(context.Background(), &pbactivity.StandardizedActivity{}, &user.Record{}, pending)
+	if err != nil {
+		t.Fatalf("EnrichResume error: %v", err)
+	}
+	if !strings.Contains(res.Description, "5th Parkrun here") {
+		t.Errorf("auto-supplied description should be preserved verbatim, got:\n%s", res.Description)
 	}
 }
 

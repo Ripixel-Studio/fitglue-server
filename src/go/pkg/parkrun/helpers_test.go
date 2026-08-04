@@ -232,6 +232,63 @@ func TestFormatResultsDescription(t *testing.T) {
 	}
 }
 
+func TestFormatManualResultsDescription_FullFields(t *testing.T) {
+	out := FormatManualResultsDescription("Newark Parkrun", 42, "25:30", "55.5%", 137, true, true)
+	for _, want := range []string{
+		"🏃 Parkrun Results:",
+		"Position: 42nd",
+		"Time: 25:30 · 🏆 New all-time PB!",
+		"Age Grade: 55.5% · 🏆 New all-time PB!",
+		"Location: Newark Parkrun (137 total)",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("description missing %q\nfull:\n%s", want, out)
+		}
+	}
+}
+
+func TestFormatManualResultsDescription_NoPBs(t *testing.T) {
+	out := FormatManualResultsDescription("Newark Parkrun", 42, "25:30", "55.5%", 137, false, false)
+	if strings.Contains(out, "PB") {
+		t.Errorf("no PB badge expected when flags false, got:\n%s", out)
+	}
+}
+
+// A partial manual entry (only the mandatory finish time) must degrade gracefully:
+// no position/age-grade lines, and the location line must NOT render "(0 total)".
+func TestFormatManualResultsDescription_GracefulDegradation(t *testing.T) {
+	out := FormatManualResultsDescription("Newark Parkrun", 0, "25:30", "", 0, false, false)
+	if !strings.Contains(out, "Time: 25:30") {
+		t.Errorf("expected time line, got:\n%s", out)
+	}
+	if strings.Contains(out, "Position") {
+		t.Errorf("position line should be omitted when zero, got:\n%s", out)
+	}
+	if strings.Contains(out, "Age Grade") {
+		t.Errorf("age grade line should be omitted when blank, got:\n%s", out)
+	}
+	if strings.Contains(out, "total") {
+		t.Errorf("blank total must not render a bogus count, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Location: Newark Parkrun") {
+		t.Errorf("event name should still anchor the location line, got:\n%s", out)
+	}
+}
+
+// No event name and no total: the location line drops entirely rather than printing
+// an empty or zero-count line.
+func TestFormatManualResultsDescription_NoLocation(t *testing.T) {
+	out := FormatManualResultsDescription("", 42, "25:30", "", 0, false, false)
+	if strings.Contains(out, "Location") || strings.Contains(out, "Total parkruns") {
+		t.Errorf("location line should be absent with no event name / total, got:\n%s", out)
+	}
+	// Total supplied but no event name → surface the count on its own line.
+	out2 := FormatManualResultsDescription("", 42, "25:30", "", 250, false, false)
+	if !strings.Contains(out2, "Total parkruns: 250") {
+		t.Errorf("expected standalone total line, got:\n%s", out2)
+	}
+}
+
 func TestFormatResultsDescription_NoAgeGradeNoBadges(t *testing.T) {
 	res := &Result{
 		Time:            "25:00",

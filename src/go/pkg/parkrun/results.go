@@ -566,6 +566,52 @@ func FormatResultsDescription(results *Result, eventName string) string {
 	return sb.String()
 }
 
+// FormatManualResultsDescription builds a results description from the fields a user
+// can supply by hand on the structured manual-entry form (finish time, position, age
+// grade, total parkrun count, and PB flags). It mirrors FormatResultsDescription's
+// layout so a hand-entered parkrun reads the same as an auto-fetched one, but degrades
+// gracefully: any field the user left blank is omitted rather than rendered as a bogus
+// "0"/empty line. In particular a blank total count drops the "(N total)" suffix instead
+// of printing "(0 total)", matching the web card that omits the TOTAL RUNS tile at zero.
+// eventName may be "" (the location line is then dropped). Unlike FormatResultsDescription,
+// there is no "Nth here" / this-year distinction — the manual form can't supply those.
+func FormatManualResultsDescription(eventName string, position int, finishTime, ageGrade string, totalParkruns int, isTimePB, isAgeGradePB bool) string {
+	var sb strings.Builder
+	sb.WriteString("🏃 Parkrun Results:")
+
+	if position > 0 {
+		sb.WriteString(fmt.Sprintf("\n• Position: %s", Ordinal(position)))
+	}
+
+	if finishTime != "" {
+		sb.WriteString(fmt.Sprintf("\n• Time: %s", finishTime))
+		if isTimePB {
+			sb.WriteString(" · 🏆 New all-time PB!")
+		}
+	}
+
+	if ageGrade != "" {
+		sb.WriteString(fmt.Sprintf("\n• Age Grade: %s", ageGrade))
+		if isAgeGradePB {
+			sb.WriteString(" · 🏆 New all-time PB!")
+		}
+	}
+
+	// Location line — only append the total when the user actually supplied it, so a
+	// blank count degrades to just the event name (never "(0 total)").
+	switch {
+	case eventName != "":
+		sb.WriteString(fmt.Sprintf("\n• Location: %s", eventName))
+		if totalParkruns > 0 {
+			sb.WriteString(fmt.Sprintf(" (%d total)", totalParkruns))
+		}
+	case totalParkruns > 0:
+		sb.WriteString(fmt.Sprintf("\n• Total parkruns: %d", totalParkruns))
+	}
+
+	return sb.String()
+}
+
 // Ordinal converts an integer to its ordinal string (1st, 2nd, 3rd, 4th, etc.).
 func Ordinal(n int) string {
 	if n <= 0 {

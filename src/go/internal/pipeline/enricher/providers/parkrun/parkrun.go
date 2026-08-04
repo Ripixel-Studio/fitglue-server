@@ -30,6 +30,34 @@ import (
 // Shared location service instance - initialized at startup
 var locationService *ParkrunLocationsService
 
+// Structured manual-entry form config (Option B). When the official results don't
+// publish before the auto-deadline, the pending input flips to a manual-entry prompt.
+// These fields mirror the immediate-fetch ParkrunSummary so a hand-entered result feeds
+// EnrichResume the same structured data and renders an identical card + description —
+// rather than the old freeform "Results Summary" textarea. Only the finish time is
+// mandatory (manualRequiredFields); everything else is optional (manualOptionalFields)
+// so a user who can't supply a field leaves it blank and it degrades cleanly. Kept as
+// package-level values so the contract is unit-testable and stays in sync with the keys
+// EnrichResume reads from InputData.
+const (
+	manualFieldLabels    = `{"time":"Finish Time","position":"Finish Position","age_grade":"Age Grade %","total_parkruns":"Total parkruns","is_time_pb":"New time PB?","is_age_grade_pb":"New age-grade PB?"}`
+	manualFieldTypes     = `{"time":"text:placeholder=e.g. 25:30","position":"number:placeholder=e.g. 42","age_grade":"text:placeholder=e.g. 55.5%","total_parkruns":"number:placeholder=e.g. 42","is_time_pb":"checkbox","is_age_grade_pb":"checkbox"}`
+	manualOptionalFields = `["position","age_grade","total_parkruns","is_time_pb","is_age_grade_pb"]`
+	manualFormSummary    = "Enter your parkrun results"
+	manualFormTitle      = "Enter Parkrun Results"
+	manualFormHelp       = "Copy these from your finish token or the parkrun app. Leave blank anything you don't have."
+)
+
+// manualRequiredFields is the PendingInput.RequiredFields list — historically both the
+// render list AND the mandatory set for the web form. We keep the core numeric fields
+// here so a web build that predates display.optional_fields still renders them (it just
+// treats them all as mandatory). Newer web builds render requiredFields ∪ optional_fields
+// and make only the fields NOT in optional_fields mandatory — i.e. just the finish time
+// (see manualOptionalFields). The PB checkboxes live only in optional_fields so an older
+// web build, which can't render a checkbox, simply omits them rather than showing a
+// mandatory text box.
+var manualRequiredFields = []string{"time", "position", "age_grade", "total_parkruns"}
+
 func init() {
 	locationService = NewParkrunLocationsService()
 	providers.Register(NewParkrunProvider())
@@ -77,14 +105,29 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pbactivity
 
 	pos, _ := strconv.Atoi(position)
 	// Total run count and PB flags are carried in InputData by the auto-resolve path
-	// (parkrun_checker) so the card matches the immediate-fetch path. They are absent
-	// on genuinely manual entries — atoi("")/=="true" default cleanly to 0/false, and
-	// the client omits the "TOTAL RUNS" tile when the count is zero.
+	// (parkrun_checker) and by the structured manual-entry form, so the card matches the
+	// immediate-fetch path. They are absent on partial manual entries — atoi("")/=="true"
+	// default cleanly to 0/false, and the client omits the "TOTAL RUNS" tile when the
+	// count is zero.
 	totalParkruns, _ := strconv.Atoi(pendingInput.InputData["total_parkruns"])
 	isTimePB := pendingInput.InputData["is_time_pb"] == "true"
 	isAgeGradePB := pendingInput.InputData["is_age_grade_pb"] == "true"
+	eventName := pendingInput.ProviderMetadata["parkrun_event_name"]
+
+	// The auto-resolve path (parkrun_checker) pre-builds a rich description via
+	// FormatResultsDescription and passes it in InputData["description"]. The structured
+	// manual-entry form submits no freeform description — so synthesize one server-side
+	// from the structured fields, producing the SAME formatted card as an auto-fetched
+	// result instead of relying on whatever prose the user typed. Blank fields degrade
+	// gracefully (see FormatManualResultsDescription) rather than rendering bogus zeros.
+	if strings.TrimSpace(description) == "" {
+		description = parkrunutil.FormatManualResultsDescription(
+			eventName, pos, timeStr, ageGrade, totalParkruns, isTimePB, isAgeGradePB,
+		)
+	}
+
 	result := &providers.EnrichmentResult{
-		Description:   description, // description already contains the header from FormatResultsDescription
+		Description:   description, // header included by FormatResultsDescription / FormatManualResultsDescription
 		SectionHeader: "🏃 Parkrun Results:",
 		Metadata: map[string]string{
 			"status":                 "success",
@@ -98,7 +141,7 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pbactivity
 		},
 		Enrichments: &pbactivity.ActivityEnrichments{
 			Parkrun: &pbactivity.ParkrunSummary{
-				EventName:     pendingInput.ProviderMetadata["parkrun_event_name"],
+				EventName:     eventName,
 				Position:      int32(pos),
 				FinishTime:    timeStr,
 				AgeGrade:      ageGrade,
@@ -410,7 +453,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 						ActivityId:                 stableID, // Document ID stays as stableID for uniqueness
 						UserId:                     user.UserId,
 						Status:                     pbpipeline.PendingInput_STATUS_WAITING,
-						RequiredFields:             []string{"description", "position", "time", "age_grade"},
+						RequiredFields:             manualRequiredFields,
 						AutoPopulated:              true,
 						ContinuedWithoutResolution: true,
 						EnricherProviderId:         "parkrun",
@@ -425,10 +468,15 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 							"expected_date":        estimatedLocalTime.Format("02/01/2006"),
 							"source_activity_id":   activity.ExternalId,
 							"source_activity_type": activity.Source.String(),
-							"display.field_labels": `{"description":"Results Summary","position":"Finish Position","time":"Finish Time","age_grade":"Age Grade %"}`,
-							"display.field_types":  `{"description":"textarea:rows=3","position":"text:placeholder=e.g. 42","time":"text:placeholder=e.g. 25:30","age_grade":"text:placeholder=e.g. 55.5%"}`,
-							"display.summary":      "Waiting for Parkrun results",
-							"display.title":        "Enter Parkrun Results",
+							// Structured fields mirror the immediate-fetch ParkrunSummary. total_parkruns
+							// and the PB flags feed EnrichResume so the manual card matches the auto card;
+							// optional_fields keeps everything but the finish time non-mandatory.
+							"display.field_labels":    manualFieldLabels,
+							"display.field_types":     manualFieldTypes,
+							"display.optional_fields": manualOptionalFields,
+							"display.summary":         manualFormSummary,
+							"display.title":           manualFormTitle,
+							"display.help":            manualFormHelp,
 						},
 						CreatedAt: timestamppb.Now(),
 						UpdatedAt: timestamppb.Now(),
