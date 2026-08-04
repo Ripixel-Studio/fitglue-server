@@ -80,18 +80,34 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 		return nil, fmt.Errorf("fitbit integration not enabled")
 	}
 
-	// 2. Parse Activity Times
-	// 2. Parse Activity Times
-	startTime := activity.StartTime.AsTime()
+	// 2. Parse Activity Times.
+	// Slice the HR query window off the FIRST SESSION's start time, not the top-level
+	// activity.StartTime. The top-level field can be stale or shared across two same-day
+	// activities from the same source (e.g. both left at the day's / first activity's start),
+	// which would make both enrich against the identical Fitbit window and inherit the SAME
+	// heart-rate stream — the cross-activity duplication bug. The session start is
+	// per-activity accurate and is what the rest of the pipeline (FIT generation at
+	// file_generators/fit.go, stream alignment in the orchestrator) already treats as
+	// canonical, so deriving the window from it keeps the enricher consistent and correct.
+	durationSec := 3600 // Default
+	var sessionStart time.Time
+	if len(activity.Sessions) > 0 {
+		durationSec = int(activity.Sessions[0].TotalElapsedTime)
+		if ts := activity.Sessions[0].StartTime; ts != nil {
+			sessionStart = ts.AsTime()
+		}
+	}
+
+	startTime := sessionStart
+	if startTime.IsZero() {
+		// No usable per-session start — fall back to the top-level activity start.
+		startTime = activity.StartTime.AsTime()
+	}
 	if startTime.IsZero() {
 		return nil, fmt.Errorf("invalid start time: zero")
 	}
 
 	// Calculate end time
-	durationSec := 3600 // Default
-	if len(activity.Sessions) > 0 {
-		durationSec = int(activity.Sessions[0].TotalElapsedTime)
-	}
 	endTime := startTime.Add(time.Duration(durationSec) * time.Second)
 
 	// 3. Initialize OAuth HTTP Client if not provided (for testing)
