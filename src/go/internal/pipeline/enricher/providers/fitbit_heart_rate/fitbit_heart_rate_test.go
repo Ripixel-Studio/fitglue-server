@@ -116,6 +116,90 @@ func TestFitBitHeartRate_Enrich(t *testing.T) {
 	}
 }
 
+// TestFitBitHeartRate_Enrich_PerSessionWindow is a regression test for the cross-activity HR
+// duplication bug (two same-morning Pilates classes both received the earlier session's HR).
+//
+// Two distinct, non-overlapping activities an hour apart share the SAME stale top-level
+// activity.StartTime (07:00) — the real-world condition where the top-level field is set to the
+// day's / first activity's start — but carry DISTINCT per-session start times (07:00 and 08:00).
+// The enricher must slice its Fitbit query window from the session start, so the two activities
+// query different windows. Sliced from the shared top-level StartTime (the bug), both would query
+// 07:00 and inherit byte-for-byte identical heart-rate streams.
+func TestFitBitHeartRate_Enrich_PerSessionWindow(t *testing.T) {
+	newClient := func() *http.Client {
+		return &http.Client{
+			Transport: &mockTransport{
+				DoFunc: func(req *http.Request) (*http.Response, error) {
+					if strings.Contains(req.URL.Path, "/profile.json") {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       io.NopCloser(bytes.NewBufferString(mockProfileUTC)),
+						}, nil
+					}
+					return &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[{"time":"07:00:00","value":80}]}}`)),
+					}, nil
+				},
+			},
+		}
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	user := &user.Record{
+		UserProfile: &pbuser.UserProfile{UserId: "test-user"},
+		Integrations: &pbuser.UserIntegrations{
+			Fitbit: &pbuser.FitbitIntegration{Enabled: true, AccessToken: "test-token"},
+		},
+	}
+
+	// Shared, stale top-level start (07:00) across both activities.
+	staleTopLevel := timestamppb.New(time.Date(2026, 8, 3, 7, 0, 52, 0, time.UTC))
+
+	// First class: session actually starts at 07:00.
+	slowFlow := &pbactivity.StandardizedActivity{
+		StartTime: staleTopLevel,
+		Sessions: []*pbactivity.Session{
+			{
+				StartTime:        timestamppb.New(time.Date(2026, 8, 3, 7, 0, 52, 0, time.UTC)),
+				TotalElapsedTime: 3120, // ~52 min
+			},
+		},
+	}
+
+	// Second class: session actually starts at 08:00, but the top-level start is still the stale 07:00.
+	tower := &pbactivity.StandardizedActivity{
+		StartTime: staleTopLevel,
+		Sessions: []*pbactivity.Session{
+			{
+				StartTime:        timestamppb.New(time.Date(2026, 8, 3, 8, 0, 43, 0, time.UTC)),
+				TotalElapsedTime: 3120, // ~52 min
+			},
+		},
+	}
+
+	res1, err := provider.EnrichWithClient(context.Background(), slog.Default(), slowFlow, user, nil, newClient(), true)
+	if err != nil {
+		t.Fatalf("Enrich (slow flow) failed: %v", err)
+	}
+	res2, err := provider.EnrichWithClient(context.Background(), slog.Default(), tower, user, nil, newClient(), true)
+	if err != nil {
+		t.Fatalf("Enrich (tower) failed: %v", err)
+	}
+
+	if res1.Metadata["query_start"] != "07:00" {
+		t.Errorf("Expected first activity to query its own 07:00 window, got %s", res1.Metadata["query_start"])
+	}
+	if res2.Metadata["query_start"] != "08:00" {
+		t.Errorf("Expected second activity to query its own 08:00 session window, got %s — the HR window was sliced from the shared top-level StartTime instead of the per-session start", res2.Metadata["query_start"])
+	}
+	if res1.Metadata["query_start"] == res2.Metadata["query_start"] {
+		t.Errorf("Two same-morning activities queried the SAME Fitbit window (%s) — cross-activity HR duplication bug", res1.Metadata["query_start"])
+	}
+}
+
 func TestFitBitHeartRate_Enrich_IntegrationDisabled(t *testing.T) {
 	provider := NewFitBitHeartRate()
 	provider.Service = &bootstrap.Service{}
