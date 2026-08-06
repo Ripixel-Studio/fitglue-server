@@ -6,11 +6,14 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	ical "github.com/arran4/golang-ical"
 	"github.com/teambition/rrule-go"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -27,11 +30,53 @@ const (
 	// rruleSearchBuffer is how far either side of the activity we expand recurring events.
 	// 24 h catches any event that started before or ends after the activity on the same day.
 	rruleSearchBuffer = 24 * time.Hour
+
+	// calendarCacheTTL is how long a fetched feed body is reused before we re-fetch.
+	// Calendars change slowly relative to how often we sync, so a few minutes collapses
+	// the burst of identical requests a bulk/historical sync generates (one per activity,
+	// all hitting the same feed) down to a single upstream fetch — the main driver of 429s.
+	calendarCacheTTL = 5 * time.Minute
+
+	// defaultRateLimitBackoff is used when a 429/503 response carries no usable Retry-After.
+	defaultRateLimitBackoff = 5 * time.Minute
+
+	// userAgent identifies FitGlue to calendar providers. Google's iCal endpoint rate-limits
+	// (HTTP 429) unidentified clients — the Go default "Go-http-client/1.1" reads as a bot —
+	// far more aggressively than a labelled client. This is why the same feed 429s the
+	// enricher while a browser fetch of the URL succeeds.
+	userAgent = "FitGlue-Calendar-Enricher/1.0 (+https://fitglue.tech)"
 )
 
 type ICalTitle struct {
 	Service    *bootstrap.Service
 	httpClient *http.Client
+
+	// cache holds recently-fetched feed bodies keyed by URL, guarded by cacheMu.
+	// sf collapses concurrent fetches of the same URL into one upstream request.
+	cacheMu sync.Mutex
+	cache   map[string]cachedCalendar
+	sf      singleflight.Group
+}
+
+// cachedCalendar is a fetched feed body plus the time it was retrieved.
+// The raw body (not the parsed calendar) is cached so cache entries are immutable
+// strings — safe to share across the concurrent enrichments a single Cloud Run
+// instance runs, with no risk of one goroutine mutating another's parsed calendar.
+type cachedCalendar struct {
+	body      string
+	fetchedAt time.Time
+}
+
+// rateLimitError signals that a feed responded 429 (or 503). It carries the server's
+// requested back-off so enrich can surface it as a providers.RetryableError, which the
+// pipeline honours with a delayed retry instead of failing the run (and paging Sentry).
+type rateLimitError struct {
+	status     int
+	retryAfter time.Duration
+}
+
+func (e *rateLimitError) Error() string {
+	return fmt.Sprintf("ical feed rate-limited: HTTP %d (retry after %v)", e.status, e.retryAfter)
 }
 
 func init() {
@@ -41,6 +86,7 @@ func init() {
 func NewICalTitle() *ICalTitle {
 	return &ICalTitle{
 		httpClient: &http.Client{Timeout: fetchTimeout},
+		cache:      make(map[string]cachedCalendar),
 	}
 }
 
@@ -57,10 +103,10 @@ func (p *ICalTitle) ProviderType() pbplugin.EnricherProviderType {
 }
 
 func (p *ICalTitle) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
-	return p.enrich(ctx, logger, activity, inputs, p.httpClient)
+	return p.enrich(ctx, logger, activity, inputs, p.httpClient, doNotRetry)
 }
 
-func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, inputs map[string]string, client *http.Client) (*providers.EnrichmentResult, error) {
+func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, inputs map[string]string, client *http.Client, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	if activity.StartTime == nil {
 		return nil, fmt.Errorf("activity has no start time")
 	}
@@ -98,11 +144,15 @@ func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *p
 
 	// Try each calendar in priority order; first single-match wins.
 	var firstFetchErr error
+	var firstRateLimit *rateLimitError
 	for i, url := range urls {
-		cal, err := fetchCalendar(ctx, client, url)
+		cal, err := p.fetchCalendar(ctx, client, url, logger)
 		if err != nil {
 			if firstFetchErr == nil {
 				firstFetchErr = err
+			}
+			if rl, ok := err.(*rateLimitError); ok && firstRateLimit == nil {
+				firstRateLimit = rl
 			}
 			logger.Warn("ical_title: failed to fetch calendar", "url_index", i+1, "error", err)
 			continue
@@ -129,6 +179,25 @@ func (p *ICalTitle) enrich(ctx context.Context, logger *slog.Logger, activity *p
 	}
 
 	logger.Info("ical_title: no overlapping events found in any calendar", "activity_start", actStart)
+
+	// A rate-limited feed is a transient condition, not a pipeline failure. Ask the
+	// pipeline to retry after the server's back-off rather than marking the run FAILED
+	// (which pages Sentry and notifies the user). Once the retry budget is exhausted the
+	// orchestrator calls us with doNotRetry, at which point we skip cleanly.
+	if firstRateLimit != nil {
+		if doNotRetry {
+			return &providers.EnrichmentResult{
+				Skipped:    true,
+				SkipReason: "calendar feed rate-limited; gave up after retries",
+			}, nil
+		}
+		backoff := firstRateLimit.retryAfter
+		if backoff <= 0 {
+			backoff = defaultRateLimitBackoff
+		}
+		return nil, providers.NewRetryableError(firstRateLimit, backoff, "ical feed rate-limited (HTTP 429/503)")
+	}
+
 	if firstFetchErr != nil {
 		return nil, firstFetchErr
 	}
@@ -150,31 +219,117 @@ func collectCalendarURLs(inputs map[string]string) []string {
 	return urls
 }
 
-func fetchCalendar(ctx context.Context, client *http.Client, url string) (*ical.Calendar, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+// fetchCalendar returns the parsed feed for url, serving a recently-cached body when
+// available. The parse happens per call (bodies, not parsed calendars, are cached) so
+// callers never share a mutable *ical.Calendar.
+func (p *ICalTitle) fetchCalendar(ctx context.Context, client *http.Client, url string, logger *slog.Logger) (*ical.Calendar, error) {
+	body, err := p.fetchBody(ctx, client, url, logger)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status %d fetching iCal", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading iCal body: %w", err)
-	}
-
-	cal, err := ical.ParseCalendar(strings.NewReader(string(body)))
+	cal, err := ical.ParseCalendar(strings.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("parsing iCal: %w", err)
 	}
 	return cal, nil
+}
+
+// fetchBody returns the raw feed body for url, from cache when fresh, otherwise over the
+// network. Concurrent misses for the same URL are collapsed by singleflight so a burst of
+// activities sharing a feed produces a single upstream request. A 429/503 response is
+// returned as *rateLimitError and is never cached.
+func (p *ICalTitle) fetchBody(ctx context.Context, client *http.Client, url string, logger *slog.Logger) (string, error) {
+	if body, ok := p.cachedBody(url); ok {
+		logger.Debug("ical_title: serving calendar from cache", "url", url)
+		return body, nil
+	}
+
+	v, err, shared := p.sf.Do(url, func() (interface{}, error) {
+		// Re-check the cache inside the singleflight critical section: an earlier
+		// concurrent caller may have populated it while we queued.
+		if body, ok := p.cachedBody(url); ok {
+			return body, nil
+		}
+		return p.doFetch(ctx, client, url)
+	})
+	if err != nil {
+		return "", err
+	}
+	if shared {
+		logger.Debug("ical_title: shared in-flight calendar fetch", "url", url)
+	}
+	return v.(string), nil
+}
+
+// cachedBody returns a cached feed body if one exists and is within the TTL.
+func (p *ICalTitle) cachedBody(url string) (string, bool) {
+	p.cacheMu.Lock()
+	defer p.cacheMu.Unlock()
+	if c, ok := p.cache[url]; ok && time.Since(c.fetchedAt) < calendarCacheTTL {
+		return c.body, true
+	}
+	return "", false
+}
+
+// doFetch performs the actual HTTP GET, applies a descriptive User-Agent (Google
+// rate-limits the Go default UA), stores successful bodies in the cache, and maps
+// 429/503 to *rateLimitError.
+func (p *ICalTitle) doFetch(ctx context.Context, client *http.Client, url string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "text/calendar, text/plain;q=0.9, */*;q=0.8")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
+		return "", &rateLimitError{
+			status:     resp.StatusCode,
+			retryAfter: parseRetryAfter(resp.Header.Get("Retry-After")),
+		}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status %d fetching iCal", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("reading iCal body: %w", err)
+	}
+
+	p.cacheMu.Lock()
+	p.cache[url] = cachedCalendar{body: string(body), fetchedAt: time.Now()}
+	p.cacheMu.Unlock()
+
+	return string(body), nil
+}
+
+// parseRetryAfter interprets a Retry-After header value, which per RFC 7231 is either a
+// number of seconds or an HTTP date. Returns 0 when absent or unparseable so the caller
+// can fall back to a default back-off.
+func parseRetryAfter(v string) time.Duration {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0
+	}
+	if secs, err := strconv.Atoi(v); err == nil {
+		if secs < 0 {
+			return 0
+		}
+		return time.Duration(secs) * time.Second
+	}
+	if t, err := http.ParseTime(v); err == nil {
+		if d := time.Until(t); d > 0 {
+			return d
+		}
+	}
+	return 0
 }
 
 // overlappingEvents returns the summaries of VEVENT entries whose time range

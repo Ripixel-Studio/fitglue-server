@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/storage v1.58.0
 	firebase.google.com/go/v4 v4.19.0
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
+	github.com/arran4/golang-ical v0.3.5
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/cucumber/godog v0.15.1
 	github.com/getsentry/sentry-go v0.27.0
@@ -18,8 +19,11 @@ require (
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v76 v76.25.0
+	github.com/teambition/rrule-go v1.8.2
+	golang.org/x/image v0.42.0
 	golang.org/x/net v0.50.0
 	golang.org/x/oauth2 v0.34.0
+	golang.org/x/sync v0.21.0
 	golang.org/x/text v0.38.0
 	google.golang.org/api v0.262.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217
@@ -44,7 +48,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.54.0 // indirect
 	github.com/MicahParks/keyfunc v1.9.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
-	github.com/arran4/golang-ical v0.3.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f // indirect
 	github.com/cucumber/gherkin/go/v26 v26.2.0 // indirect
@@ -72,7 +75,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
-	github.com/teambition/rrule-go v1.8.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.38.0 // indirect
@@ -86,8 +88,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/image v0.42.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/appengine/v2 v2.0.6 // indirect

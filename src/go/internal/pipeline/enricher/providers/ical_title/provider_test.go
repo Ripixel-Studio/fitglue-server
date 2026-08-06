@@ -5,9 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -94,7 +96,7 @@ func TestName(t *testing.T) {
 func TestNoURL(t *testing.T) {
 	p := NewICalTitle()
 	act := newTestActivity(time.Now(), 3600)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{}, p.httpClient)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{}, p.httpClient, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +114,7 @@ func TestSingleMatch(t *testing.T) {
 
 	p := NewICalTitle()
 	act := newTestActivity(now, 1800)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +135,7 @@ func TestNoOverlap(t *testing.T) {
 
 	p := NewICalTitle()
 	act := newTestActivity(now, 1800)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +158,7 @@ func TestMultipleMatches(t *testing.T) {
 
 	p := NewICalTitle()
 	act := newTestActivity(now, 1800)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +174,7 @@ func TestAllDayEventSkipped(t *testing.T) {
 
 	p := NewICalTitle()
 	act := newTestActivity(now, 3600)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +193,7 @@ func TestMinOverlapRespected(t *testing.T) {
 
 	p := NewICalTitle()
 	act := newTestActivity(now, 3600)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +215,7 @@ func TestCustomMinOverlap(t *testing.T) {
 	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{
 		"ical_url":            srv.URL,
 		"min_overlap_seconds": "10",
-	}, client)
+	}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +247,7 @@ func TestTZIDMatch(t *testing.T) {
 	// Activity 5:31–6:08 UTC (= 6:31–7:08 BST), 37 minutes
 	actStart := time.Date(2026, 5, 21, 5, 31, 0, 0, time.UTC)
 	act := newTestActivity(actStart, 37*60)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +280,7 @@ func TestRRuleExpansion(t *testing.T) {
 	p := NewICalTitle()
 	actStart := time.Date(2026, 5, 21, 5, 31, 0, 0, time.UTC)
 	act := newTestActivity(actStart, 37*60)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +324,7 @@ func TestRecurrenceIdOverrideNoFalseClash(t *testing.T) {
 	p := NewICalTitle()
 	actStart := time.Date(2026, 5, 21, 5, 46, 0, 0, time.UTC) // 6:46 BST
 	act := newTestActivity(actStart, 37*60)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,7 +363,7 @@ func TestRecurrenceIdOverrideOtherOccurrencesUnaffected(t *testing.T) {
 	p := NewICalTitle()
 	actStart := time.Date(2026, 5, 28, 5, 31, 0, 0, time.UTC) // 6:31 BST, next Thursday
 	act := newTestActivity(actStart, 37*60)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,6 +375,116 @@ func TestRecurrenceIdOverrideOtherOccurrencesUnaffected(t *testing.T) {
 	}
 }
 
+// --- 429 / rate-limit handling ---
+
+func TestRateLimitReturnsRetryableError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "120")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	p := NewICalTitle()
+	act := newTestActivity(time.Now(), 3600)
+	_, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, srv.Client(), false)
+	if err == nil {
+		t.Fatal("expected error on HTTP 429")
+	}
+	retryErr, ok := err.(*providers.RetryableError)
+	if !ok {
+		t.Fatalf("expected *providers.RetryableError, got %T: %v", err, err)
+	}
+	if retryErr.RetryAfter != 120*time.Second {
+		t.Errorf("expected RetryAfter of 120s from Retry-After header, got %v", retryErr.RetryAfter)
+	}
+}
+
+func TestRateLimitWithoutRetryAfterUsesDefault(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	p := NewICalTitle()
+	act := newTestActivity(time.Now(), 3600)
+	_, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, srv.Client(), false)
+	retryErr, ok := err.(*providers.RetryableError)
+	if !ok {
+		t.Fatalf("expected *providers.RetryableError, got %T: %v", err, err)
+	}
+	if retryErr.RetryAfter != defaultRateLimitBackoff {
+		t.Errorf("expected default back-off %v, got %v", defaultRateLimitBackoff, retryErr.RetryAfter)
+	}
+}
+
+func TestRateLimitSkipsGracefullyWhenDoNotRetry(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	p := NewICalTitle()
+	act := newTestActivity(time.Now(), 3600)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, srv.Client(), true)
+	if err != nil {
+		t.Fatalf("expected graceful skip when doNotRetry, got error: %v", err)
+	}
+	if !result.Skipped {
+		t.Error("expected Skipped when rate-limited and retries exhausted")
+	}
+}
+
+// --- User-Agent and caching ---
+
+func TestSendsDescriptiveUserAgent(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	var gotUA string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Write([]byte(icalFixture("Morning Run", now.Add(-30*time.Minute), now.Add(30*time.Minute))))
+	}))
+	defer srv.Close()
+
+	p := NewICalTitle()
+	act := newTestActivity(now, 1800)
+	if _, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, srv.Client(), false); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA == "" || strings.HasPrefix(gotUA, "Go-http-client") {
+		t.Errorf("expected a descriptive User-Agent, got %q", gotUA)
+	}
+	if gotUA != userAgent {
+		t.Errorf("expected User-Agent %q, got %q", userAgent, gotUA)
+	}
+}
+
+func TestSecondFetchServedFromCache(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.Write([]byte(icalFixture("Morning Run", now.Add(-30*time.Minute), now.Add(30*time.Minute))))
+	}))
+	defer srv.Close()
+
+	p := NewICalTitle()
+	act := newTestActivity(now, 1800)
+	inputs := map[string]string{"ical_url": srv.URL}
+
+	for i := 0; i < 3; i++ {
+		result, err := p.enrich(context.Background(), slog.Default(), act, inputs, srv.Client(), false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.Name != "Morning Run" {
+			t.Fatalf("call %d: expected %q, got %q (skipped=%v)", i, "Morning Run", result.Name, result.Skipped)
+		}
+	}
+	if hits != 1 {
+		t.Errorf("expected the feed to be fetched once and reused from cache, got %d fetches", hits)
+	}
+}
+
 func TestHTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -381,7 +493,7 @@ func TestHTTPError(t *testing.T) {
 
 	p := NewICalTitle()
 	act := newTestActivity(time.Now(), 3600)
-	_, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, srv.Client())
+	_, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, srv.Client(), false)
 	if err == nil {
 		t.Error("expected error on HTTP 500")
 	}
@@ -401,7 +513,7 @@ func TestFileUploadTitleNotOverridden(t *testing.T) {
 	act.Source = pbactivity.ActivitySource_SOURCE_FILE_UPLOAD
 	act.Name = "My FIT File Title"
 
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -425,7 +537,7 @@ func TestFileUploadWithAutoGeneratedNameGetsCalendarTitle(t *testing.T) {
 	act.Type = pbactivity.ActivityType_ACTIVITY_TYPE_RUN
 	act.Name = "Morning Run" // auto-generated by fit_parser.GenerateActivityName
 
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -449,7 +561,7 @@ func TestFileUploadWithNoNameGetsCalendarTitle(t *testing.T) {
 	act.Source = pbactivity.ActivitySource_SOURCE_FILE_UPLOAD
 	act.Name = "" // no name in the file
 
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -481,7 +593,7 @@ func TestSecondCalendarUsedWhenPrimaryHasNoMatch(t *testing.T) {
 	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{
 		"ical_url":   srv1.URL,
 		"ical_url_2": srv2.URL,
-	}, client)
+	}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -507,7 +619,7 @@ func TestPrimaryCalendarWinsOverSecondary(t *testing.T) {
 	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{
 		"ical_url":   srv1.URL,
 		"ical_url_2": srv2.URL,
-	}, client)
+	}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -542,7 +654,7 @@ func TestExdateSkipsDeletedOccurrence(t *testing.T) {
 	p := NewICalTitle()
 	actStart := time.Date(2026, 5, 21, 5, 31, 0, 0, time.UTC) // 6:31 BST
 	act := newTestActivity(actStart, 37*60)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -571,7 +683,7 @@ func TestExdateDoesNotBlockOtherOccurrences(t *testing.T) {
 	p := NewICalTitle()
 	actStart := time.Date(2026, 5, 28, 5, 31, 0, 0, time.UTC) // 6:31 BST, next Thursday
 	act := newTestActivity(actStart, 37*60)
-	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client)
+	result, err := p.enrich(context.Background(), slog.Default(), act, map[string]string{"ical_url": srv.URL}, client, false)
 	if err != nil {
 		t.Fatal(err)
 	}
