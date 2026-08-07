@@ -33,7 +33,7 @@ variable "base_url" {
 variable "sentry_org" {
   description = "Sentry organization slug"
   type        = string
-  default     = "fitglue"
+  default     = "ripixel-studio"
 }
 
 

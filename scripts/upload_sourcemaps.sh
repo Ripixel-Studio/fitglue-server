@@ -14,7 +14,7 @@ if [ -z "$SENTRY_AUTH_TOKEN" ]; then
   exit 1
 fi
 
-ORG="fitglue"
+ORG="ripixel-studio"
 PROJECT="server"
 TS_ROOT="src/typescript"
 
