@@ -6,6 +6,6 @@ domain_name  = "dev.fitglue.tech"
 base_url     = "https://dev.fitglue.tech"
 
 # Sentry Configuration
-sentry_org      = "fitglue"  # Replace with your Sentry organization slug
+sentry_org      = "ripixel-studio"
 sentry_project  = "server"
-sentry_dsn      = "https://4d64d33ef9f4877b7b18645930a9ec79@o4510752869318656.ingest.de.sentry.io/4510752888520784"
+sentry_dsn      = "https://c5c8e4c0b949c5c7e627557f1e3882c3@o4511870177640448.ingest.de.sentry.io/4511870185701456"
