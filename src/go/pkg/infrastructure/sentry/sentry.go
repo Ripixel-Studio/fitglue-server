@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -16,7 +17,21 @@ type Config struct {
 	ServerName         string
 	TracesSampleRate   float64
 	ProfilesSampleRate float64
+
+	// Transport overrides the Sentry transport. Left nil in production (the SDK
+	// picks its default HTTP transport); set by tests to capture events.
+	Transport sentry.Transport
 }
+
+// pkgPath is the import path of this instrumentation package. Every error in
+// FitGlue is captured to Sentry through CaptureException / SentryHandler.Handle
+// in this package, and none of our error types (*fmt.wrapError, *FitGlueError)
+// carry their own stack trace, so sentry-go synthesises one at capture time.
+// That synthetic stack is rooted here, which made this package the reported
+// "culprit" for every error and collapsed unrelated failures into a single
+// issue. We strip our own frames in beforeSend so the culprit is the real
+// application call site. See stripInstrumentationFrames.
+var pkgPath = reflect.TypeOf(Config{}).PkgPath()
 
 // Init initializes Sentry for Go Cloud Functions.
 // Safe to call multiple times - will only initialize once.
@@ -35,16 +50,8 @@ func Init(cfg Config, logger *slog.Logger) error {
 		ServerName:         cfg.ServerName,
 		TracesSampleRate:   cfg.TracesSampleRate,
 		ProfilesSampleRate: cfg.ProfilesSampleRate,
-		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			// Filter out sensitive data
-			if event.Request != nil {
-				if event.Request.Headers != nil {
-					delete(event.Request.Headers, "Authorization")
-					delete(event.Request.Headers, "Cookie")
-				}
-			}
-			return event
-		},
+		Transport:          cfg.Transport,
+		BeforeSend:         beforeSend,
 	})
 
 	if err != nil {
@@ -59,6 +66,52 @@ func Init(cfg Config, logger *slog.Logger) error {
 	}
 
 	return nil
+}
+
+// beforeSend runs on every outgoing event. It scrubs sensitive request headers
+// and strips this package's instrumentation frames from stack traces so Sentry
+// attributes each error to its real call site instead of to CaptureException.
+func beforeSend(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
+	if event == nil {
+		return event
+	}
+
+	// Filter out sensitive data.
+	if event.Request != nil && event.Request.Headers != nil {
+		delete(event.Request.Headers, "Authorization")
+		delete(event.Request.Headers, "Cookie")
+	}
+
+	stripInstrumentationFrames(event)
+	return event
+}
+
+// stripInstrumentationFrames removes frames belonging to this package from every
+// exception's stack trace. These frames (CaptureException, SentryHandler.Handle,
+// RecoverAndCapture) are the same for every captured error, so leaving them in
+// makes this package the reported culprit and prevents Sentry from telling
+// distinct failures apart. The slog frames beneath them are already flagged
+// not-in-app by sentry-go, so once our frames are gone the youngest in-app frame
+// is the real application code that failed.
+func stripInstrumentationFrames(event *sentry.Event) {
+	for i := range event.Exception {
+		st := event.Exception[i].Stacktrace
+		if st == nil {
+			continue
+		}
+		filtered := make([]sentry.Frame, 0, len(st.Frames))
+		for _, f := range st.Frames {
+			if f.Module == pkgPath {
+				continue
+			}
+			filtered = append(filtered, f)
+		}
+		// Never emit an empty stack trace: if an error somehow originated
+		// entirely within this package, keep the frames we have.
+		if len(filtered) > 0 {
+			st.Frames = filtered
+		}
+	}
 }
 
 // CaptureException captures an exception in Sentry with additional context.
