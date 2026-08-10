@@ -40,15 +40,22 @@ type Service struct {
 	sender     emailsender.Sender
 	authClient AuthClient
 	baseURL    string
+	purger     UserArtifactPurger
 }
 
-func NewService(store Store, logger infra.Logger, sender emailsender.Sender, authClient AuthClient, baseURL string) *Service {
+// UserArtifactPurger removes a user's GCS objects at account deletion.
+type UserArtifactPurger interface {
+	PurgeUser(ctx context.Context, userID string, showcaseExecIDs []string) error
+}
+
+func NewService(store Store, logger infra.Logger, sender emailsender.Sender, authClient AuthClient, baseURL string, purger UserArtifactPurger) *Service {
 	return &Service{
 		store:      store,
 		logger:     logger,
 		sender:     sender,
 		authClient: authClient,
 		baseURL:    baseURL,
+		purger:     purger,
 	}
 }
 
@@ -86,6 +93,21 @@ func (s *Service) UpdateProfile(ctx context.Context, req *pbsvc.UpdateProfileReq
 func (s *Service) DeleteUser(ctx context.Context, req *pbsvc.DeleteUserRequest) (*emptypb.Empty, error) {
 	if req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	// Purge GCS artifacts before deleting Firestore documents: the showcase
+	// docs are needed to locate execution-keyed assets, and a purge failure
+	// must abort deletion so a retry still has everything it needs.
+	if s.purger != nil {
+		execIDs, err := s.store.ListShowcaseExecutionIDs(ctx, req.UserId)
+		if err != nil {
+			s.logger.Error(ctx, "failed to list showcase execution ids for purge", "err", err, "user_id", req.UserId)
+			return nil, status.Error(codes.Internal, "failed to delete user")
+		}
+		if err := s.purger.PurgeUser(ctx, req.UserId, execIDs); err != nil {
+			s.logger.Error(ctx, "failed to purge user artifacts", "err", err, "user_id", req.UserId)
+			return nil, status.Error(codes.Internal, "failed to delete user")
+		}
 	}
 
 	err := s.store.DeleteUser(ctx, req.UserId)

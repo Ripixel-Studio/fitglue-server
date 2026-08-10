@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 // StorageAdapter provides blob storage operations using Google Cloud Storage
@@ -48,6 +49,44 @@ func (a *StorageAdapter) Get(ctx context.Context, bucketName, objectName string)
 func (a *StorageAdapter) Delete(ctx context.Context, bucketName, objectName string) error {
 	bucketName, objectName = parseURI(bucketName, objectName)
 	return a.Client.Bucket(bucketName).Object(objectName).Delete(ctx)
+}
+
+// ListByPrefix returns the names of all objects under prefix in the bucket.
+func (a *StorageAdapter) ListByPrefix(ctx context.Context, bucketName, prefix string) ([]string, error) {
+	bucketName, prefix = parseURI(bucketName, prefix)
+	it := a.Client.Bucket(bucketName).Objects(ctx, &storage.Query{Prefix: prefix})
+	var names []string
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			return names, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		names = append(names, attrs.Name)
+	}
+}
+
+// DeleteByPrefix deletes every object under prefix in the bucket, returning
+// the number deleted. Objects that vanish mid-iteration are not an error.
+func (a *StorageAdapter) DeleteByPrefix(ctx context.Context, bucketName, prefix string) (int, error) {
+	bucketName, prefix = parseURI(bucketName, prefix)
+	names, err := a.ListByPrefix(ctx, bucketName, prefix)
+	if err != nil {
+		return 0, err
+	}
+	deleted := 0
+	for _, name := range names {
+		if err := a.Client.Bucket(bucketName).Object(name).Delete(ctx); err != nil {
+			if err == storage.ErrObjectNotExist {
+				continue
+			}
+			return deleted, err
+		}
+		deleted++
+	}
+	return deleted, nil
 }
 
 // SignedURL generates a V4 signed URL for uploading or downloading an object.

@@ -8,11 +8,13 @@ import (
 	"strconv"
 
 	cloudFirestore "cloud.google.com/go/firestore"
+	gcsstorage "cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"
 	firebaseAuth "firebase.google.com/go/v4/auth"
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/internal/user"
 	emailsender "github.com/fitglue/server/src/go/pkg/infrastructure/email"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -118,7 +120,21 @@ func main() {
 		baseURL = "https://fitglue.tech"
 	}
 
-	svc := user.NewService(store, logger, sender, authWrapper, baseURL)
+	var purger user.UserArtifactPurger
+	artifactBucket := os.Getenv("ARTIFACT_BUCKET")
+	showcaseBucket := os.Getenv("SHOWCASE_ASSETS_BUCKET")
+	if artifactBucket != "" && showcaseBucket != "" {
+		gcsClient, err := gcsstorage.NewClient(ctx)
+		if err != nil {
+			logger.Error(ctx, "failed to create storage client for artifact purger", "err", err)
+			os.Exit(1)
+		}
+		purger = user.NewArtifactPurger(&storage.StorageAdapter{Client: gcsClient}, artifactBucket, showcaseBucket, logger)
+	} else {
+		logger.Warn(ctx, "ARTIFACT_BUCKET/SHOWCASE_ASSETS_BUCKET unset — account deletion will not purge GCS artifacts")
+	}
+
+	svc := user.NewService(store, logger, sender, authWrapper, baseURL, purger)
 
 	server := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pbsvc.RegisterUserServiceServer(server, svc)

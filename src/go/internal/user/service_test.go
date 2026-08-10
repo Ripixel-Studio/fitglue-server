@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ type mockStore struct {
 	profile          *pbuser.UserProfile
 	usersByDateRange []*pbuser.UserProfile
 	err              error
+	deleteCalled     bool
 }
 
 func (m *mockStore) GetProfile(ctx context.Context, userID string) (*pbuser.UserProfile, error) {
@@ -34,7 +36,12 @@ func (m *mockStore) UpdateProfile(ctx context.Context, userID string, profile *p
 }
 
 func (m *mockStore) DeleteUser(ctx context.Context, userID string) error {
+	m.deleteCalled = true
 	return m.err
+}
+
+func (m *mockStore) ListShowcaseExecutionIDs(ctx context.Context, userID string) ([]string, error) {
+	return nil, nil
 }
 
 func (m *mockStore) FindUsersByDateRange(ctx context.Context, start, end time.Time) ([]*pbuser.UserProfile, error) {
@@ -209,7 +216,7 @@ func setupTest() (*Service, *mockStore, *mockEmailSender, *mockAuthClient) {
 	sender := &mockEmailSender{}
 	logger := mockLogger{}
 	authClient := &mockAuthClient{}
-	return NewService(store, logger, sender, authClient, "https://fitglue.tech"), store, sender, authClient
+	return NewService(store, logger, sender, authClient, "https://fitglue.tech", nil), store, sender, authClient
 }
 
 func TestGetProfile(t *testing.T) {
@@ -1031,4 +1038,40 @@ func TestBoosterDataRPCs(t *testing.T) {
 		_, err := svc.DeleteBoosterData(context.Background(), req)
 		assert.NoError(t, err)
 	})
+}
+
+type failingPurger struct{ err error }
+
+func (f *failingPurger) PurgeUser(context.Context, string, []string) error { return f.err }
+
+func TestDeleteUserAbortsWhenPurgeFails(t *testing.T) {
+	store := &mockStore{}
+	svc := NewService(store, infra.NewLoggerWithComponent("test"), nil, nil, "https://fitglue.tech",
+		&failingPurger{err: fmt.Errorf("gcs down")})
+	_, err := svc.DeleteUser(context.Background(), &pbsvc.DeleteUserRequest{UserId: "u1"})
+	if err == nil {
+		t.Fatal("DeleteUser() error = nil, want failure when purge fails")
+	}
+	if store.deleteCalled {
+		t.Error("store.DeleteUser must not run when the artifact purge fails")
+	}
+}
+
+func TestDeleteUserPurgesBeforeStoreDelete(t *testing.T) {
+	store := &mockStore{}
+	okPurger := &recordingPurger{}
+	svc := NewService(store, infra.NewLoggerWithComponent("test"), nil, nil, "https://fitglue.tech", okPurger)
+	if _, err := svc.DeleteUser(context.Background(), &pbsvc.DeleteUserRequest{UserId: "u1"}); err != nil {
+		t.Fatalf("DeleteUser() error = %v", err)
+	}
+	if !okPurger.called || !store.deleteCalled {
+		t.Errorf("purge called=%v storeDelete called=%v; want both", okPurger.called, store.deleteCalled)
+	}
+}
+
+type recordingPurger struct{ called bool }
+
+func (r *recordingPurger) PurgeUser(context.Context, string, []string) error {
+	r.called = true
+	return nil
 }

@@ -185,6 +185,31 @@ func (s *FirestoreStore) DeleteUser(ctx context.Context, userID string) error {
 	return err
 }
 
+// ListShowcaseExecutionIDs returns the pipeline execution IDs recorded on the
+// user's showcase documents. Called before DeleteUser removes those documents,
+// so account deletion can purge execution-keyed showcase assets (route
+// thumbnails) from GCS.
+func (s *FirestoreStore) ListShowcaseExecutionIDs(ctx context.Context, userID string) ([]string, error) {
+	iter := s.client.Collection("showcased_activities").Where("user_id", "==", userID).Documents(ctx)
+	defer iter.Stop()
+	var ids []string
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if v, err := doc.DataAt("pipeline_execution_id"); err == nil {
+			if id, ok := v.(string); ok && id != "" {
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids, nil
+}
+
 func (s *FirestoreStore) FindUsersByDateRange(ctx context.Context, start, end time.Time) ([]*pbuser.UserProfile, error) {
 	var users []*pbuser.UserProfile
 	iter := s.client.Collection("users").
