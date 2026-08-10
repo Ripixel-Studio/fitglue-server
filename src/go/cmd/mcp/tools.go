@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -27,6 +28,12 @@ type emptyArgs struct{}
 type pageArgs struct {
 	Limit     int    `json:"limit,omitempty" jsonschema:"Maximum number of items to return"`
 	PageToken string `json:"page_token,omitempty" jsonschema:"Opaque cursor from a previous response's next_page_token"`
+}
+
+type listActivitiesArgs struct {
+	Limit           int    `json:"limit,omitempty" jsonschema:"Maximum number of items to return"`
+	PageToken       string `json:"page_token,omitempty" jsonschema:"Opaque cursor from a previous response's next_page_token"`
+	IncludeShowcase bool   `json:"include_showcase,omitempty" jsonschema:"Also return the user's showcase index — one summary entry per showcased activity covering the full account history. Use it when activities older than the recent list are needed; fetch detail for an entry with get_showcase"`
 }
 
 func (p pageArgs) query() url.Values {
@@ -82,10 +89,22 @@ func registerTools(server *mcp.Server, api *APIClient) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_activities",
-		Description: "List the user's synchronized activities, newest first. Paginate with limit and page_token.",
+		Description: "List the user's synchronized activities, newest first. Paginate with limit and page_token. Set include_showcase to also get the showcase index, which covers the full account history in summary form.",
 		Annotations: readOnly("List activities"),
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, args pageArgs) (*mcp.CallToolResult, any, error) {
-		return text(api.Get(ctx, "/users/me/activities", args.query()))
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, args listActivitiesArgs) (*mcp.CallToolResult, any, error) {
+		q := pageArgs{Limit: args.Limit, PageToken: args.PageToken}.query()
+		acts, err := api.Get(ctx, "/users/me/activities", q)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !args.IncludeShowcase {
+			return text(acts, nil)
+		}
+		sc, err := api.Get(ctx, "/users/me/showcases", nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("activities fetched, but showcase index failed: %w", err)
+		}
+		return text(mergeJSON(acts, "showcase_index", sc))
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -127,6 +146,14 @@ func registerTools(server *mcp.Server, api *APIClient) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, args pipelineRunsArgs) (*mcp.CallToolResult, any, error) {
 		q := pageArgs{Limit: args.Limit, PageToken: args.PageToken}.query()
 		return text(api.Get(ctx, "/users/me/pipelines/"+url.PathEscape(args.PipelineID)+"/runs", q))
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_showcase",
+		Description: "Get one showcased activity by showcase ID, including the full activity snapshot (sessions, laps, heart-rate records) when the payload is still retained. Works for historical activities where get_activity returns not-found — find IDs via list_activities with include_showcase.",
+		Annotations: readOnly("Get showcase"),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, args idArgs) (*mcp.CallToolResult, any, error) {
+		return text(api.Get(ctx, "/users/me/showcases/"+url.PathEscape(args.ID), nil))
 	})
 
 	mcp.AddTool(server, &mcp.Tool{

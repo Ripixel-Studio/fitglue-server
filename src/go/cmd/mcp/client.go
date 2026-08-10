@@ -81,6 +81,32 @@ func prettyJSON(body []byte) string {
 	return out.String()
 }
 
+// mergeJSON embeds a second JSON document into a base JSON object under the
+// given key, returning pretty-printed JSON. The gateway wraps list responses
+// in a single-key envelope (e.g. {"showcases": [...]}); when the extra
+// document has that shape its inner value is embedded directly.
+func mergeJSON(base, key, extra string) (string, error) {
+	var b map[string]any
+	if err := json.Unmarshal([]byte(base), &b); err != nil {
+		return "", fmt.Errorf("merging %s: base response is not a JSON object: %w", key, err)
+	}
+	var e any
+	if err := json.Unmarshal([]byte(extra), &e); err != nil {
+		return "", fmt.Errorf("merging %s: %w", key, err)
+	}
+	if obj, ok := e.(map[string]any); ok && len(obj) == 1 {
+		for _, v := range obj {
+			e = v
+		}
+	}
+	b[key] = e
+	out, err := json.MarshalIndent(b, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
 // secretKeys matches JSON object keys whose values must never reach the MCP
 // client. The gateway returns the user's own integration credentials (e.g.
 // GET /users/me/integrations includes provider OAuth tokens); an MCP consumer

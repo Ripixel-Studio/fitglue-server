@@ -49,6 +49,7 @@ func TestToolsAreRegisteredWithReadOnlyAnnotations(t *testing.T) {
 		"list_activities": false, "get_activity": false, "get_activity_stats": false,
 		"list_pipelines": false, "get_pipeline": false,
 		"list_pipeline_runs": false, "get_pipeline_run": false,
+		"get_showcase": false,
 	}
 	for _, tool := range res.Tools {
 		if _, ok := want[tool.Name]; !ok {
@@ -130,5 +131,64 @@ func TestListActivitiesPassesPagination(t *testing.T) {
 	}
 	if !strings.Contains(gotQuery, "limit=10") || !strings.Contains(gotQuery, "page_token=tok123") {
 		t.Errorf("query = %q, want limit and page_token", gotQuery)
+	}
+}
+
+func TestListActivitiesIncludeShowcase(t *testing.T) {
+	session := startSession(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v2/users/me/activities":
+			fmt.Fprint(w, `{"activities":[{"id":"a1"}],"nextPageToken":""}`)
+		case "/api/v2/users/me/showcases":
+			fmt.Fprint(w, `{"showcases":[{"showcaseId":"sc-1","title":"Tower Pilates"}]}`)
+		default:
+			http.Error(w, "unexpected "+r.URL.Path, http.StatusTeapot)
+		}
+	})
+
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "list_activities",
+		Arguments: map[string]any{"include_showcase": true},
+	})
+	if err != nil || res.IsError {
+		t.Fatalf("CallTool() err=%v isError=%v content=%+v", err, res != nil && res.IsError, res.Content)
+	}
+	text := res.Content[0].(*mcp.TextContent).Text
+	for _, want := range []string{`"showcase_index"`, "sc-1", "Tower Pilates", `"activities"`} {
+		if !strings.Contains(text, want) {
+			t.Errorf("merged output missing %q", want)
+		}
+	}
+}
+
+func TestGetShowcaseRoutes(t *testing.T) {
+	var gotPath string
+	session := startSession(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		fmt.Fprint(w, `{"activityData":{"name":"Slow Flow"}}`)
+	})
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_showcase",
+		Arguments: map[string]any{"id": "slow-flow-2026-03-09-ab12"},
+	})
+	if err != nil || res.IsError {
+		t.Fatalf("CallTool() err=%v", err)
+	}
+	if gotPath != "/api/v2/users/me/showcases/slow-flow-2026-03-09-ab12" {
+		t.Errorf("path = %q", gotPath)
+	}
+}
+
+func TestMergeJSON(t *testing.T) {
+	out, err := mergeJSON(`{"a":1}`, "extra", `{"showcases":[1,2]}`)
+	if err != nil || !strings.Contains(out, `"extra": [`) {
+		t.Errorf("envelope unwrap failed: %v %q", err, out)
+	}
+	out, err = mergeJSON(`{"a":1}`, "extra", `{"x":1,"y":2}`)
+	if err != nil || !strings.Contains(out, `"x": 1`) {
+		t.Errorf("multi-key object should embed whole: %v %q", err, out)
+	}
+	if _, err = mergeJSON(`[]`, "k", `{}`); err == nil {
+		t.Error("non-object base should error")
 	}
 }

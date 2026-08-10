@@ -47,14 +47,21 @@ Then ask Claude things like "which of my pipelines failed this week and why?".
 ## Tools
 
 All V0 tools are read-only (annotated `readOnlyHint: true`) and return the
-gateway's JSON responses verbatim:
+gateway's JSON responses with credential-keyed fields redacted.
+
+The recent-activities list is backed by pipeline runs; the **showcase index**
+covers the full account history in summary form. Pass
+`include_showcase: true` to `list_activities` to get both in one call, then
+`get_showcase` for a historical activity's full snapshot (heart-rate records
+included, where the payload is still retained).
 
 | Tool | Endpoint |
 |------|----------|
 | `get_profile` | `GET /users/me` |
 | `list_integrations` | `GET /users/me/integrations` |
-| `list_activities` | `GET /users/me/activities` |
+| `list_activities` | `GET /users/me/activities` (+ `GET /users/me/showcases` when `include_showcase` is set) |
 | `get_activity` | `GET /users/me/activities/{id}` |
+| `get_showcase` | `GET /users/me/showcases/{id}` |
 | `get_activity_stats` | `GET /users/me/activities/stats` |
 | `list_pipelines` | `GET /users/me/pipelines` |
 | `get_pipeline` | `GET /users/me/pipelines/{id}` |
