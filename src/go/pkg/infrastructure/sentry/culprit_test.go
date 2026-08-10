@@ -35,6 +35,47 @@ func TestStripInstrumentationFrames_RemovesOwnFrames(t *testing.T) {
 	}
 }
 
+func TestStripInstrumentationFrames_StripsRegisteredLoggerWrapper(t *testing.T) {
+	// Reproduces SERVER-3: an errors.errorString logged via infra's (*slogger).Error.
+	// The shim frame is in-app and sits between the real caller and the not-in-app
+	// slog frames, so stripping only this package's frames leaves (*slogger).Error
+	// as the culprit. Registering the wrapper must strip it too.
+	const loggerPkg = "github.com/fitglue/server/src/go/internal/infra"
+	RegisterLoggerWrapper(loggerPkg, "(*slogger).")
+
+	event := &sentry.Event{
+		Exception: []sentry.Exception{{
+			Type: "*errors.errorString",
+			Stacktrace: &sentry.Stacktrace{Frames: []sentry.Frame{
+				// Ordered oldest→youngest, matching sentry-go.
+				{Module: "github.com/fitglue/server/src/go/internal/pipeline", Function: "run", InApp: true},
+				{Module: loggerPkg, Function: "(*slogger).Error", InApp: true},
+				{Module: "log/slog", Function: "(*Logger).log"},
+				{Module: pkgPath, Function: "(*SentryHandler).Handle", InApp: true},
+				{Module: pkgPath, Function: "CaptureException", InApp: true},
+			}},
+		}},
+	}
+	stripInstrumentationFrames(event)
+
+	frames := event.Exception[0].Stacktrace.Frames
+	for _, f := range frames {
+		if f.Module == pkgPath || f.Function == "(*slogger).Error" {
+			t.Errorf("instrumentation frame not stripped: %s.%s", f.Module, f.Function)
+		}
+	}
+	// Youngest in-app frame must now be the real application call site.
+	var youngestInApp sentry.Frame
+	for _, f := range frames {
+		if f.InApp {
+			youngestInApp = f
+		}
+	}
+	if youngestInApp.Function != "run" {
+		t.Errorf("culprit = %s.%s, want the real caller pipeline.run", youngestInApp.Module, youngestInApp.Function)
+	}
+}
+
 func TestStripInstrumentationFrames_KeepsFramesWhenAllStripped(t *testing.T) {
 	// An event whose stack is entirely instrumentation frames must keep them
 	// rather than emit an empty (invalid) stack trace.
