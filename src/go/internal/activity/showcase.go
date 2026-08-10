@@ -2,9 +2,11 @@ package activity
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"cloud.google.com/go/storage"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
@@ -13,6 +15,52 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+// hydrateShowcaseFromBlob loads ActivityData and Enrichments from the showcase's
+// GCS blob when they are not already inline. The blob is a full
+// EnrichedActivityEvent (stored by PrepareForPublish / offloadShowcaseData), so a
+// single read yields both.
+//
+// A missing blob is treated as a recoverable, expected condition and logged at
+// Warn — not Error. Some showcases (particularly older ones whose activity data
+// lived in the lifecycle-expired artifacts bucket rather than the durable
+// showcase-assets bucket) reference a GCS object that no longer exists. The page
+// still renders correctly from the Firestore metadata; it just lacks hydrated
+// activity detail. Logging that miss at Error routed it to Sentry (issue
+// SERVER-4: storage.ErrObjectNotExist, an *errors.errorString) on every public
+// pageview of such a showcase. Genuine, unexpected GCS failures (auth, network)
+// are still logged at Error so they continue to page us.
+func (s *Service) hydrateShowcaseFromBlob(ctx context.Context, showcase *pbactivity.ShowcasedActivity) {
+	if showcase.ActivityDataUri == "" || (showcase.ActivityData != nil && showcase.Enrichments != nil) {
+		return
+	}
+
+	data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
+	if err != nil {
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			s.logger.Warn(ctx, "showcase activity data blob missing in GCS", "error", err, "uri", showcase.ActivityDataUri)
+		} else {
+			s.logger.Error(ctx, "failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
+		}
+		return
+	}
+	if len(data) == 0 {
+		return
+	}
+
+	var fullEvent pbevents.EnrichedActivityEvent
+	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := unmarshalOpts.Unmarshal(data, &fullEvent); err != nil {
+		s.logger.Error(ctx, "failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
+		return
+	}
+	if showcase.ActivityData == nil {
+		showcase.ActivityData = fullEvent.ActivityData
+	}
+	if showcase.Enrichments == nil {
+		showcase.Enrichments = fullEvent.Enrichments
+	}
+}
 
 func (s *Service) GetShowcase(ctx context.Context, req *pbsvc.GetShowcaseRequest) (*pbactivity.ShowcasedActivity, error) {
 	if req.UserId == "" || req.ShowcaseId == "" {
@@ -28,28 +76,7 @@ func (s *Service) GetShowcase(ctx context.Context, req *pbsvc.GetShowcaseRequest
 		return nil, status.Error(codes.NotFound, "showcase not found")
 	}
 
-	// Fetch data from GCS if unloaded.
-	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish),
-	// so we unmarshal it and extract both ActivityData and Enrichments in one read.
-	if showcase.ActivityDataUri != "" && (showcase.ActivityData == nil || showcase.Enrichments == nil) {
-		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
-		if err == nil && len(data) > 0 {
-			var fullEvent pbevents.EnrichedActivityEvent
-			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
-				if showcase.ActivityData == nil {
-					showcase.ActivityData = fullEvent.ActivityData
-				}
-				if showcase.Enrichments == nil {
-					showcase.Enrichments = fullEvent.Enrichments
-				}
-			} else {
-				s.logger.Error(ctx, "failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
-			}
-		} else if err != nil {
-			s.logger.Error(ctx, "failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
-		}
-	}
+	s.hydrateShowcaseFromBlob(ctx, showcase)
 
 	return showcase, nil
 }
@@ -242,28 +269,7 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 		}
 	}
 
-	// Fetch data from GCS if unloaded.
-	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish),
-	// so we unmarshal it and extract both ActivityData and Enrichments in one read.
-	if showcase.ActivityDataUri != "" && (showcase.ActivityData == nil || showcase.Enrichments == nil) {
-		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
-		if err == nil && len(data) > 0 {
-			var fullEvent pbevents.EnrichedActivityEvent
-			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
-				if showcase.ActivityData == nil {
-					showcase.ActivityData = fullEvent.ActivityData
-				}
-				if showcase.Enrichments == nil {
-					showcase.Enrichments = fullEvent.Enrichments
-				}
-			} else {
-				s.logger.Error(ctx, "failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
-			}
-		} else if err != nil {
-			s.logger.Error(ctx, "failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
-		}
-	}
+	s.hydrateShowcaseFromBlob(ctx, showcase)
 
 	// Final fallback for display name
 	if showcase.OwnerDisplayName == "" {
