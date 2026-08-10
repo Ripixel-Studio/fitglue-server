@@ -132,6 +132,8 @@ build-tools-go:
 	cd $(GO_SRC_DIR) && $(GOBUILD) -o ../../bin/fit-inspect ./cmd/fit-inspect
 	@echo "  Building fit-combine tool..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -o ../../bin/fit-combine ./cmd/fit-combine
+	@echo "  Building fitglue-mcp tool..."
+	cd $(GO_SRC_DIR) && $(GOBUILD) -o ../../bin/fitglue-mcp ./cmd/mcp
 
 test:
 	@echo "Testing Go services (Unit)..."
