@@ -92,3 +92,33 @@ func TestTruncate(t *testing.T) {
 		t.Errorf("truncate short = %q", got)
 	}
 }
+
+func TestScrubSecrets(t *testing.T) {
+	in := []byte(`{
+		"fitbit": {"enabled": true, "accessToken": "tok-a", "refreshToken": "tok-r", "expiresAt": "2026-01-01"},
+		"hevy": {"apiKey": "key-1"},
+		"profile": {"fcmTokens": ["f1", "f2"], "tier": "HOBBYIST"},
+		"pagination": {"next_page_token": "cursor-ok"},
+		"nested": [{"client_secret": "s3cret"}]
+	}`)
+	out := string(scrubSecrets(in))
+	for _, leaked := range []string{"tok-a", "tok-r", "key-1", "f1", "s3cret"} {
+		if strings.Contains(out, leaked) {
+			t.Errorf("scrubSecrets leaked %q", leaked)
+		}
+	}
+	for _, kept := range []string{"2026-01-01", "HOBBYIST", "cursor-ok", "true"} {
+		if !strings.Contains(out, kept) {
+			t.Errorf("scrubSecrets dropped non-secret %q", kept)
+		}
+	}
+	if !strings.Contains(out, "[redacted]") {
+		t.Error("scrubSecrets produced no redaction markers")
+	}
+}
+
+func TestScrubSecretsNonJSONPassthrough(t *testing.T) {
+	if got := string(scrubSecrets([]byte("plain"))); got != "plain" {
+		t.Errorf("scrubSecrets non-JSON = %q", got)
+	}
+}

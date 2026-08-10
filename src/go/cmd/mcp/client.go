@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -68,7 +69,7 @@ func (c *APIClient) Get(ctx context.Context, path string, query url.Values) (str
 		return "", fmt.Errorf("%s returned HTTP %d: %s", path, resp.StatusCode, truncate(string(body), 500))
 	}
 
-	return prettyJSON(body), nil
+	return prettyJSON(scrubSecrets(body)), nil
 }
 
 // prettyJSON re-indents valid JSON and passes anything else through untouched.
@@ -78,4 +79,46 @@ func prettyJSON(body []byte) string {
 		return string(body)
 	}
 	return out.String()
+}
+
+// secretKeys matches JSON object keys whose values must never reach the MCP
+// client. The gateway returns the user's own integration credentials (e.g.
+// GET /users/me/integrations includes provider OAuth tokens); an MCP consumer
+// feeds tool output into LLM context and conversation logs, so those values
+// are redacted here regardless of endpoint.
+var secretKeys = regexp.MustCompile(`(?i)^(accesstoken|refreshtoken|access_token|refresh_token|apikey|api_key|clientsecret|client_secret|password|fcmtokens|fcm_tokens)$`)
+
+// scrubSecrets redacts secret-keyed values anywhere in a JSON document.
+// Non-JSON bodies pass through untouched.
+func scrubSecrets(body []byte) []byte {
+	var doc any
+	if err := json.Unmarshal(body, &doc); err != nil {
+		return body
+	}
+	scrubbed, err := json.Marshal(scrubValue(doc))
+	if err != nil {
+		return body
+	}
+	return scrubbed
+}
+
+func scrubValue(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, val := range t {
+			if secretKeys.MatchString(k) {
+				t[k] = "[redacted]"
+				continue
+			}
+			t[k] = scrubValue(val)
+		}
+		return t
+	case []any:
+		for i, val := range t {
+			t[i] = scrubValue(val)
+		}
+		return t
+	default:
+		return v
+	}
 }
