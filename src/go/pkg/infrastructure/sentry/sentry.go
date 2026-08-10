@@ -133,11 +133,12 @@ func beforeSend(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 // stripInstrumentationFrames removes instrumentation frames from every
 // exception's stack trace. Two kinds are stripped: this package's own frames
 // (CaptureException, SentryHandler.Handle, RecoverAndCapture) and any registered
-// logging-shim frames (e.g. infra's (*slogger).Error — see loggerWrapper). Both
-// are the same for every captured error, so leaving either in makes it the
-// reported culprit and prevents Sentry from telling distinct failures apart. The
-// slog frames between them are already flagged not-in-app by sentry-go, so once
-// the instrumentation frames are gone the youngest in-app frame is the real
+// logging-shim frames (e.g. infra's (*slogger).Error — see loggerWrapper and
+// RegisterLoggerWrapper). Both are the same for every captured error, so leaving
+// either in makes it the reported culprit and prevents Sentry from telling
+// distinct failures apart (the reported SERVER-2 / SERVER-3). The slog frames
+// between them are already flagged not-in-app by sentry-go, so once the
+// instrumentation frames are gone the youngest in-app frame is the real
 // application code that failed.
 func stripInstrumentationFrames(event *sentry.Event) {
 	for i := range event.Exception {

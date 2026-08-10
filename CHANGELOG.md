@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.61.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.60.13...v16.61.0) (2026-08-10)
+
+
+### Features
+
+* **mcp:** add read-only stdio MCP server wrapping api-client ([b09c0a2](https://github.com/Ripixel-Studio/fitglue-server/commit/b09c0a2ff112764ea9843571067e810867c2b4bf))
+
 ### [16.60.13](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.60.12...v16.60.13) (2026-08-08)
 
 ### [16.60.12](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.60.11...v16.60.12) (2026-08-07)

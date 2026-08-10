@@ -36,10 +36,13 @@ func TestStripInstrumentationFrames_RemovesOwnFrames(t *testing.T) {
 }
 
 func TestStripInstrumentationFrames_StripsRegisteredLoggerWrapper(t *testing.T) {
-	// Reproduces SERVER-3: an errors.errorString logged via infra's (*slogger).Error.
-	// The shim frame is in-app and sits between the real caller and the not-in-app
-	// slog frames, so stripping only this package's frames leaves (*slogger).Error
-	// as the culprit. Registering the wrapper must strip it too.
+	// Reproduces SERVER-3 (same class as SERVER-2, one layer up): an
+	// errors.errorString logged via infra's (*slogger).Error. The shim frame is
+	// in-app and sits between the real caller and the not-in-app slog frames, so
+	// stripping only this package's frames leaves (*slogger).Error as the culprit.
+	// Registering the wrapper must strip it too. The infra package cannot be
+	// imported here (it depends on this one), so the wrapper frame is constructed
+	// the way sentry-go would emit it and registered by hand.
 	const loggerPkg = "github.com/fitglue/server/src/go/internal/infra"
 	RegisterLoggerWrapper(loggerPkg, "(*slogger).")
 
