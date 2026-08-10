@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -86,13 +87,35 @@ func beforeSend(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 	return event
 }
 
-// stripInstrumentationFrames removes frames belonging to this package from every
-// exception's stack trace. These frames (CaptureException, SentryHandler.Handle,
-// RecoverAndCapture) are the same for every captured error, so leaving them in
-// makes this package the reported culprit and prevents Sentry from telling
-// distinct failures apart. The slog frames beneath them are already flagged
-// not-in-app by sentry-go, so once our frames are gone the youngest in-app frame
-// is the real application code that failed.
+// isInstrumentationFrame reports whether f belongs to FitGlue's error-capture
+// plumbing rather than to real application code. Two layers qualify:
+//
+//   - This package (CaptureException / SentryHandler.Handle / RecoverAndCapture),
+//     matched by import path.
+//   - The infra logger wrapper's forwarding methods — infra.(*slogger).Error and
+//     its Debug/Info/Warn siblings — which sit between the real caller and the
+//     stdlib slog frames. Production reports errors through infra.NewLogger, so
+//     this wrapper is on the stack of every captured log. slog's own frames are
+//     already flagged not-in-app by sentry-go, but the wrapper's frames are
+//     in-app; leaving them in makes (*slogger).Error the youngest in-app frame,
+//     so every logged error groups together under one generic issue (the reported
+//     SERVER-2, mirroring SERVER-1 one layer up). The infra package imports this
+//     one, so we match it structurally — by package suffix and the unexported
+//     slogger receiver — rather than by type, which would be an import cycle.
+func isInstrumentationFrame(f sentry.Frame) bool {
+	if f.Module == pkgPath {
+		return true
+	}
+	return strings.HasSuffix(f.Module, "/internal/infra") &&
+		strings.HasPrefix(f.Function, "(*slogger).")
+}
+
+// stripInstrumentationFrames removes error-capture plumbing frames from every
+// exception's stack trace (see isInstrumentationFrame). These frames are the same
+// for every captured error, so leaving them in makes the plumbing the reported
+// culprit and prevents Sentry from telling distinct failures apart. Once they are
+// gone — and with the stdlib slog frames already flagged not-in-app by sentry-go —
+// the youngest in-app frame is the real application code that failed.
 func stripInstrumentationFrames(event *sentry.Event) {
 	for i := range event.Exception {
 		st := event.Exception[i].Stacktrace
@@ -101,7 +124,7 @@ func stripInstrumentationFrames(event *sentry.Event) {
 		}
 		filtered := make([]sentry.Frame, 0, len(st.Frames))
 		for _, f := range st.Frames {
-			if f.Module == pkgPath {
+			if isInstrumentationFrame(f) {
 				continue
 			}
 			filtered = append(filtered, f)

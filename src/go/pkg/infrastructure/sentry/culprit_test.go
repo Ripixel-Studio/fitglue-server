@@ -1,6 +1,7 @@
 package sentry
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
@@ -32,6 +33,44 @@ func TestStripInstrumentationFrames_RemovesOwnFrames(t *testing.T) {
 	// Youngest frame is now real application code, which becomes the culprit.
 	if frames[len(frames)-1].Module == pkgPath {
 		t.Error("youngest frame still points at instrumentation package")
+	}
+}
+
+func TestStripInstrumentationFrames_RemovesLoggerWrapperFrames(t *testing.T) {
+	// Reproduces SERVER-2 at the unit level: the infra logger wrapper frame sits
+	// between the real caller and the stdlib slog frames, and is in-app, so unless
+	// it is stripped it becomes the culprit for every logged error. The infra
+	// package cannot be imported here (it depends on this one), so the wrapper
+	// frame is constructed the way sentry-go would emit it.
+	event := &sentry.Event{
+		Exception: []sentry.Exception{{
+			Type: "*errors.errorString",
+			Stacktrace: &sentry.Stacktrace{Frames: []sentry.Frame{
+				{Module: "github.com/fitglue/server/src/go/internal/pipeline", Function: "run", InApp: true},
+				{Module: "github.com/fitglue/server/src/go/internal/infra", Function: "(*slogger).Error", InApp: true},
+				{Module: "log/slog", Function: "(*Logger).ErrorContext"},
+				{Module: pkgPath, Function: "(*SentryHandler).Handle", InApp: true},
+				{Module: pkgPath, Function: "CaptureException", InApp: true},
+			}},
+		}},
+	}
+	stripInstrumentationFrames(event)
+
+	frames := event.Exception[0].Stacktrace.Frames
+	for _, f := range frames {
+		if f.Module == pkgPath || (strings.HasSuffix(f.Module, "/internal/infra") && strings.HasPrefix(f.Function, "(*slogger).")) {
+			t.Errorf("instrumentation frame not stripped: %s.%s", f.Module, f.Function)
+		}
+	}
+	// Youngest in-app frame must now be the real application code.
+	var youngestInApp sentry.Frame
+	for _, f := range frames {
+		if f.InApp {
+			youngestInApp = f
+		}
+	}
+	if youngestInApp.Function != "run" {
+		t.Errorf("youngest in-app frame = %s.%s, want the real caller run", youngestInApp.Module, youngestInApp.Function)
 	}
 }
 
