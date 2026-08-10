@@ -4,9 +4,19 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"reflect"
 
 	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 )
+
+// The slogger wrapper sits on the stack between application code and slog for
+// every captured error. Register it so infrastructure/sentry strips its frames
+// from Sentry stack traces; otherwise (*slogger).Error becomes the reported
+// culprit for every error and Sentry collapses unrelated failures into a single
+// issue (the reported SERVER-3).
+func init() {
+	sentryPkg.RegisterLoggerWrapper(reflect.TypeOf(slogger{}).PkgPath(), "(*slogger).")
+}
 
 // Logger provides a structured logging interface, wrapping slog.
 type Logger interface {

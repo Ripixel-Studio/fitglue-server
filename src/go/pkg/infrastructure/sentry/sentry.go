@@ -34,6 +34,49 @@ type Config struct {
 // application call site. See stripInstrumentationFrames.
 var pkgPath = reflect.TypeOf(Config{}).PkgPath()
 
+// loggerWrapper identifies frames belonging to a logging shim that sits between
+// real application code and the slog machinery. Every logger.Error call passes
+// through such a shim, so its frames are identical for every captured error —
+// exactly like this package's own frames. If they are not stripped, the shim
+// (e.g. infra's (*slogger).Error) becomes the youngest in-app frame and thus the
+// reported culprit for every error, collapsing unrelated failures into one issue
+// (this was the reported SERVER-3).
+//
+// The shim lives in a package that imports this one, so it cannot be referenced
+// directly here without an import cycle. Instead it registers itself via
+// RegisterLoggerWrapper at init time.
+type loggerWrapper struct {
+	module         string
+	functionPrefix string
+}
+
+var loggerWrappers []loggerWrapper
+
+// RegisterLoggerWrapper records a logging-shim frame identity whose frames are
+// stripped from Sentry stack traces (in addition to this package's own frames),
+// so the reported culprit is the real application call site rather than the shim.
+// module is the frame's package path (Sentry's Frame.Module); functionPrefix is
+// matched against the start of the frame's function name, e.g. "(*slogger).".
+// Intended to be called from an init function; not safe for concurrent use.
+func RegisterLoggerWrapper(module, functionPrefix string) {
+	loggerWrappers = append(loggerWrappers, loggerWrapper{module: module, functionPrefix: functionPrefix})
+}
+
+// isInstrumentationFrame reports whether f belongs to this instrumentation
+// package or to a registered logging shim, and should therefore be stripped from
+// a captured stack trace.
+func isInstrumentationFrame(f sentry.Frame) bool {
+	if f.Module == pkgPath {
+		return true
+	}
+	for _, w := range loggerWrappers {
+		if f.Module == w.module && strings.HasPrefix(f.Function, w.functionPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // Init initializes Sentry for Go Cloud Functions.
 // Safe to call multiple times - will only initialize once.
 func Init(cfg Config, logger *slog.Logger) error {
@@ -87,35 +130,16 @@ func beforeSend(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 	return event
 }
 
-// isInstrumentationFrame reports whether f belongs to FitGlue's error-capture
-// plumbing rather than to real application code. Two layers qualify:
-//
-//   - This package (CaptureException / SentryHandler.Handle / RecoverAndCapture),
-//     matched by import path.
-//   - The infra logger wrapper's forwarding methods — infra.(*slogger).Error and
-//     its Debug/Info/Warn siblings — which sit between the real caller and the
-//     stdlib slog frames. Production reports errors through infra.NewLogger, so
-//     this wrapper is on the stack of every captured log. slog's own frames are
-//     already flagged not-in-app by sentry-go, but the wrapper's frames are
-//     in-app; leaving them in makes (*slogger).Error the youngest in-app frame,
-//     so every logged error groups together under one generic issue (the reported
-//     SERVER-2, mirroring SERVER-1 one layer up). The infra package imports this
-//     one, so we match it structurally — by package suffix and the unexported
-//     slogger receiver — rather than by type, which would be an import cycle.
-func isInstrumentationFrame(f sentry.Frame) bool {
-	if f.Module == pkgPath {
-		return true
-	}
-	return strings.HasSuffix(f.Module, "/internal/infra") &&
-		strings.HasPrefix(f.Function, "(*slogger).")
-}
-
-// stripInstrumentationFrames removes error-capture plumbing frames from every
-// exception's stack trace (see isInstrumentationFrame). These frames are the same
-// for every captured error, so leaving them in makes the plumbing the reported
-// culprit and prevents Sentry from telling distinct failures apart. Once they are
-// gone — and with the stdlib slog frames already flagged not-in-app by sentry-go —
-// the youngest in-app frame is the real application code that failed.
+// stripInstrumentationFrames removes instrumentation frames from every
+// exception's stack trace. Two kinds are stripped: this package's own frames
+// (CaptureException, SentryHandler.Handle, RecoverAndCapture) and any registered
+// logging-shim frames (e.g. infra's (*slogger).Error — see loggerWrapper and
+// RegisterLoggerWrapper). Both are the same for every captured error, so leaving
+// either in makes it the reported culprit and prevents Sentry from telling
+// distinct failures apart (the reported SERVER-2 / SERVER-3). The slog frames
+// between them are already flagged not-in-app by sentry-go, so once the
+// instrumentation frames are gone the youngest in-app frame is the real
+// application code that failed.
 func stripInstrumentationFrames(event *sentry.Event) {
 	for i := range event.Exception {
 		st := event.Exception[i].Stacktrace
@@ -130,7 +154,7 @@ func stripInstrumentationFrames(event *sentry.Event) {
 			filtered = append(filtered, f)
 		}
 		// Never emit an empty stack trace: if an error somehow originated
-		// entirely within this package, keep the frames we have.
+		// entirely within instrumentation frames, keep the frames we have.
 		if len(filtered) > 0 {
 			st.Frames = filtered
 		}
