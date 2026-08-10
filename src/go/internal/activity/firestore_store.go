@@ -40,85 +40,97 @@ func (s *FirestoreStore) GetActivity(ctx context.Context, userID, activityID str
 	}
 	return &act, nil
 }
-func (s *FirestoreStore) ListActivities(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbactivity.StandardizedActivity, string, error) {
+
+// maxListLimit caps a caller-supplied page size so one request can't scan an
+// unbounded slice of the collection.
+const maxListLimit = 200
+
+// paginate applies the shared cursor scheme to a created_at-descending
+// collection query: fetch limit+1 docs, return the first limit, and hand back
+// the last *returned* doc's ID as the next-page cursor. The page window is
+// positional over fetched docs, so rows skipped by the caller's decode step
+// don't shift subsequent pages. An unknown cursor doc is an error — silently
+// restarting from the first page would make paginating clients loop forever.
+func paginate(ctx context.Context, col *firestore.CollectionRef, limit int32, pageToken string,
+	decode func(doc *firestore.DocumentSnapshot)) (string, error) {
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > maxListLimit {
+		limit = maxListLimit
+	}
 
-	query := s.client.Collection("users").Doc(userID).Collection("activities").
-		OrderBy("created_at", firestore.Desc).
-		Limit(int(limit) + 1)
-
+	query := col.OrderBy("created_at", firestore.Desc).Limit(int(limit) + 1)
 	if pageToken != "" {
-		cursorDoc, err := s.client.Collection("users").Doc(userID).Collection("activities").Doc(pageToken).Get(ctx)
-		if err == nil {
-			query = query.StartAfter(cursorDoc)
+		cursorDoc, err := col.Doc(pageToken).Get(ctx)
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, "invalid page_token: %v", err)
 		}
+		query = query.StartAfter(cursorDoc)
 	}
 
 	iter := query.Documents(ctx)
 	defer iter.Stop()
 
-	var activities []*pbactivity.StandardizedActivity
-	var lastDocID string
+	var fetched int32
+	var lastReturnedID string
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
-			break
+			return "", nil // fewer than limit+1 docs — no next page
 		}
 		if err != nil {
-			return nil, "", err
+			return "", err
 		}
+		fetched++
+		if fetched > limit {
+			// The limit+1 sentinel doc: don't return it, just signal a next page
+			// starting after the last doc we did return.
+			return lastReturnedID, nil
+		}
+		lastReturnedID = doc.Ref.ID
+		decode(doc)
+	}
+}
 
+func (s *FirestoreStore) ListActivities(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbactivity.StandardizedActivity, string, error) {
+	col := s.client.Collection("users").Doc(userID).Collection("activities")
+	var activities []*pbactivity.StandardizedActivity
+	var decodeErr error
+	next, err := paginate(ctx, col, limit, pageToken, func(doc *firestore.DocumentSnapshot) {
 		var act pbactivity.StandardizedActivity
 		if err := decodeProtoMap(doc.Data(), &act); err != nil {
-			return nil, "", err
+			decodeErr = err
+			return
 		}
 		activities = append(activities, &act)
-		lastDocID = doc.Ref.ID
+	})
+	if err != nil {
+		return nil, "", err
 	}
-
-	var nextPageToken string
-	if int32(len(activities)) > limit {
-		activities = activities[:limit]
-		nextPageToken = lastDocID
+	if decodeErr != nil {
+		return nil, "", decodeErr
 	}
-
-	return activities, nextPageToken, nil
+	return activities, next, nil
 }
 func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbpipeline.PipelineRun, string, error) {
-	if limit <= 0 {
-		limit = 50
-	}
-
-	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
-		OrderBy("created_at", firestore.Desc).
-		Limit(int(limit)).
-		Documents(ctx)
-
-	defer iter.Stop()
-
+	col := s.client.Collection("users").Doc(userID).Collection("pipeline_runs")
 	var runs []*pbpipeline.PipelineRun
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, "", err
-		}
-
+	next, err := paginate(ctx, col, limit, pageToken, func(doc *firestore.DocumentSnapshot) {
 		var run pbpipeline.PipelineRun
 		if err := decodeProtoMap(doc.Data(), &run); err != nil {
 			// A single malformed record (e.g. a legacy/corrupt timestamp) must not
 			// abort the whole listing — skip it so exports and activity lists are
-			// resilient to bad rows.
-			continue
+			// resilient to bad rows. The pagination window is positional, so a
+			// skipped row doesn't shift later pages.
+			return
 		}
 		runs = append(runs, &run)
+	})
+	if err != nil {
+		return nil, "", err
 	}
-
-	return runs, "", nil
+	return runs, next, nil
 }
 func (s *FirestoreStore) DeleteActivity(ctx context.Context, userID, activityID string) error {
 	_, err := s.client.Collection("users").Doc(userID).Collection("activities").Doc(activityID).Delete(ctx)
