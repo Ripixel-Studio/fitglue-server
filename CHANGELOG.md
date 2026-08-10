@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.61.2](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.61.1...v16.61.2) (2026-08-10)
+
+
+### Bug Fixes
+
+* **activity:** make activities/pipeline-runs listing actually paginate ([cd0cae6](https://github.com/Ripixel-Studio/fitglue-server/commit/cd0cae63af304a62297ba9f0f41d57166606bcab))
+
 ### [16.61.1](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.61.0...v16.61.1) (2026-08-10)
 
 ## [16.61.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.60.13...v16.61.0) (2026-08-10)
