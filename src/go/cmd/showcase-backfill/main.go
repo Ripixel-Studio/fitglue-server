@@ -50,6 +50,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/domain/file_generators"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 )
 
 const (
@@ -166,7 +167,16 @@ func restore(ctx context.Context, strava *stravaClient, adapter *storage.Storage
 
 	act := reconstruct(userID, sc, detail, streams)
 
-	jsonBytes, err := protojson.Marshal(act)
+	// GetShowcase hydrates from an EnrichedActivityEvent envelope — a bare
+	// StandardizedActivity unmarshals to an empty event under DiscardUnknown.
+	event := &pbevents.EnrichedActivityEvent{
+		ActivityId:   sc.ActivityId,
+		UserId:       userID,
+		Name:         sc.Title,
+		Description:  act.Description,
+		ActivityData: act,
+	}
+	jsonBytes, err := protojson.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}
