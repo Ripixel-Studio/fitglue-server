@@ -284,15 +284,6 @@ workflows:
     jobs:
       - build-and-test
       - deploy:
-          name: deploy-dev
-          target: dev
-          project_number: "911679924866"
-          requires:
-            - build-and-test
-          filters:
-            branches:
-              only: main
-      - deploy:
           name: deploy-prod
           target: prod
           project_number: "605889586984"

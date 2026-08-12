@@ -83,17 +83,17 @@ resource "google_dns_record_set" "firebase_txt" {
   ]
 }
 
-# Assets subdomain A record - points to Firebase Hosting, which 301s every
-# path to the public showcase-assets GCS bucket (see firebase.tf). Previously
-# pointed at the showcase-assets global LB; 199.36.158.100 is Firebase
-# Hosting's dedicated custom-domain IP.
+# Assets subdomain - CNAME to the Firebase Hosting assets site, which 301s
+# every path to the public showcase-assets GCS bucket (see firebase.tf).
+# Firebase requires the CNAME (not a bare A record) to prove domain
+# ownership before it will issue the managed cert.
 # Domain pattern: dev -> assets.dev.fitglue.tech, test -> assets.test.fitglue.tech, prod -> assets.fitglue.tech
-resource "google_dns_record_set" "assets_a" {
+resource "google_dns_record_set" "assets_cname" {
   managed_zone = google_dns_managed_zone.main.name
   name         = var.environment == "prod" ? "assets.fitglue.tech." : "assets.${var.domain_name}."
-  type         = "A"
+  type         = "CNAME"
   ttl          = 300
-  rrdatas      = ["199.36.158.100"]
+  rrdatas      = ["${google_firebase_hosting_site.assets.site_id}.web.app."]
 }
 
 # DMARC record for email authentication
