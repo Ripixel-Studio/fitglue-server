@@ -46,6 +46,10 @@ resource "google_cloud_run_v2_service" "backend" {
           cpu    = "1000m"
           memory = "512Mi"
         }
+        # Bill CPU only while a request is in flight. The v2 API default is
+        # always-allocated, which billed warm-but-idle instances 24/7.
+        # Nothing here does work outside a request (pub/sub is push-based).
+        cpu_idle = true
       }
 
       # ── Shared env vars (all backend services) ──
@@ -551,6 +555,10 @@ resource "google_cloud_run_v2_service" "frontend" {
           cpu    = "1000m"
           memory = "512Mi"
         }
+        # Bill CPU only while a request is in flight. The v2 API default is
+        # always-allocated, which billed warm-but-idle instances 24/7.
+        # Nothing here does work outside a request (pub/sub is push-based).
+        cpu_idle = true
       }
 
       # ── Shared env vars (all frontend services) ──
@@ -1027,7 +1035,7 @@ resource "google_cloud_run_v2_service_iam_member" "destination_to_activity" {
 # Pub/Sub push subscriptions use OIDC tokens with each service's own SA,
 # so the SA needs run.invoker on itself to authenticate the push.
 locals {
-  pubsub_push_targets = ["pipeline", "destination", "activity", "notification"]
+  pubsub_push_targets = ["pipeline", "destination", "activity", "notification", "billing"]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "pubsub_self_invoke" {
@@ -1056,6 +1064,7 @@ resource "google_cloud_run_v2_service" "parkrun_fetcher" {
           cpu    = "1000m"
           memory = "2Gi"
         }
+        cpu_idle = true
       }
     }
     scaling {

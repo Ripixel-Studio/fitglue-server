@@ -62,7 +62,10 @@ jobs:
     executor:
       name: terraform/default
       tag: "1.5.7"
-    resource_class: xlarge
+    # Docker builds run on the remote-docker VM, not this container — the
+    # primary container only runs terraform/gcloud, so xlarge (40 credits/min)
+    # was paying 4x for idle CPU. Runs twice (dev+prod) per main commit.
+    resource_class: medium
     steps:
       - attach_workspace:
           at: .
