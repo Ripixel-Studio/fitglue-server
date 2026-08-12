@@ -83,14 +83,17 @@ resource "google_dns_record_set" "firebase_txt" {
   ]
 }
 
-# Assets subdomain A record - points to Cloud Load Balancer for showcase assets CDN
+# Assets subdomain A record - points to Firebase Hosting, which 301s every
+# path to the public showcase-assets GCS bucket (see firebase.tf). Previously
+# pointed at the showcase-assets global LB; 199.36.158.100 is Firebase
+# Hosting's dedicated custom-domain IP.
 # Domain pattern: dev -> assets.dev.fitglue.tech, test -> assets.test.fitglue.tech, prod -> assets.fitglue.tech
 resource "google_dns_record_set" "assets_a" {
   managed_zone = google_dns_managed_zone.main.name
   name         = var.environment == "prod" ? "assets.fitglue.tech." : "assets.${var.domain_name}."
   type         = "A"
   ttl          = 300
-  rrdatas      = [google_compute_global_forwarding_rule.showcase_assets_https.ip_address]
+  rrdatas      = ["199.36.158.100"]
 }
 
 # DMARC record for email authentication
