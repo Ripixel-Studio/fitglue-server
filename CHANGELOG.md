@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.62.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.61.5...v16.62.0) (2026-08-13)
+
+
+### Features
+
+* **tools:** showcase-backfill — restore lost payloads from Strava ([a0786ac](https://github.com/Ripixel-Studio/fitglue-server/commit/a0786aceeafeed4add3948275b2bec8124eea793))
+* **user:** purge GCS artifacts on account deletion ([33dbdc5](https://github.com/Ripixel-Studio/fitglue-server/commit/33dbdc558af3751900f491b917dde24e54913349)), closes [#35](https://github.com/Ripixel-Studio/fitglue-server/issues/35)
+
+
+### Bug Fixes
+
+* **storage:** persist activity artifacts forever — drop 7-day lifecycle delete ([e688746](https://github.com/Ripixel-Studio/fitglue-server/commit/e688746013c4dc044c16c9673607164478f6bfae)), closes [#34](https://github.com/Ripixel-Studio/fitglue-server/issues/34)
+* **tools:** wrap backfilled payloads in EnrichedActivityEvent envelope ([0d3e4c8](https://github.com/Ripixel-Studio/fitglue-server/commit/0d3e4c8d902236af02957a85118d5878b049bfc0))
+
 ### [16.61.5](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.61.4...v16.61.5) (2026-08-12)
 
 ### [16.61.4](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.61.3...v16.61.4) (2026-08-12)
