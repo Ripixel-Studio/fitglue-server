@@ -124,6 +124,25 @@ jobs:
             export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
+            # Pushes to Artifact Registry occasionally hit a transient 5xx
+            # (e.g. "received unexpected HTTP status: 502 Bad Gateway"), which
+            # fails the whole deploy and reds the main branch even though the
+            # build itself is fine. Retry registry pushes with backoff so a
+            # single registry hiccup doesn't require a manual rerun.
+            retry() {
+              local n=1 max=5 delay=10
+              until "$@"; do
+                if [ "$n" -ge "$max" ]; then
+                  echo "✗ giving up after ${max} attempts: $*" >&2
+                  return 1
+                fi
+                echo "⚠ attempt ${n}/${max} failed: $* — retrying in ${delay}s..." >&2
+                sleep "$delay"
+                n=$((n + 1))
+                delay=$((delay * 2))
+              done
+            }
+
             TAG="${CIRCLE_SHA1:0:12}"
             REGISTRY="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services"
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination notification"
@@ -143,7 +162,7 @@ jobs:
               if docker pull "$CACHE_IMAGE" 2>/dev/null; then
                 echo "✓ $svc unchanged (cache-$SVC_HASH) — skipping build"
                 docker tag "$CACHE_IMAGE" "$IMAGE"
-                docker push "$IMAGE"
+                retry docker push "$IMAGE"
                 continue
               fi
 
@@ -160,10 +179,10 @@ jobs:
               docker build -t "$IMAGE" --build-arg SERVICE_NAME=$svc "$CTX"
               rm -rf "$CTX"
 
-              docker push "$IMAGE"
+              retry docker push "$IMAGE"
               # Tag with content hash so the next run can skip if nothing changed
               docker tag "$IMAGE" "$CACHE_IMAGE"
-              docker push "$CACHE_IMAGE"
+              retry docker push "$CACHE_IMAGE"
             done
 
             # Build parkrun-fetcher (TypeScript/Playwright — separate Dockerfile)
@@ -173,13 +192,13 @@ jobs:
             if docker pull "$FETCHER_CACHE_IMAGE" 2>/dev/null; then
               echo "✓ parkrun-fetcher unchanged (cache-$FETCHER_HASH) — skipping build"
               docker tag "$FETCHER_CACHE_IMAGE" "$FETCHER_IMAGE"
-              docker push "$FETCHER_IMAGE"
+              retry docker push "$FETCHER_IMAGE"
             else
               echo "→ Building parkrun-fetcher (cache-$FETCHER_HASH)..."
               docker build -t "$FETCHER_IMAGE" src/typescript/parkrun-fetcher
-              docker push "$FETCHER_IMAGE"
+              retry docker push "$FETCHER_IMAGE"
               docker tag "$FETCHER_IMAGE" "$FETCHER_CACHE_IMAGE"
-              docker push "$FETCHER_CACHE_IMAGE"
+              retry docker push "$FETCHER_CACHE_IMAGE"
             fi
       - run:
           name: Deploy Infrastructure (Terraform)
