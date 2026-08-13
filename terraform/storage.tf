@@ -4,14 +4,11 @@ resource "google_storage_bucket" "artifacts_bucket" {
 
   uniform_bucket_level_access = true
 
-  lifecycle_rule {
-    condition {
-      age = 7
-    }
-    action {
-      type = "Delete"
-    }
-  }
+  # No lifecycle rule — activity artifacts (FIT files, activity JSON, pipeline
+  # payloads) persist indefinitely. A 7-day delete rule here silently destroyed
+  # all pre-2026-07-17 showcase detail and made activity detail 404 after a
+  # week. Storage is negligible (median FIT ~18KB; whole bucket 4MB under the
+  # old rule) and user-facing surfaces must never degrade. See issue #34.
 
   cors {
     origin          = [var.base_url]
