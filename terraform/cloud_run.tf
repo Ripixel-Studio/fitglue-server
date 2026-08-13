@@ -147,6 +147,21 @@ resource "google_cloud_run_v2_service" "backend" {
           value = "system@fitglue.tech"
         }
       }
+      # Account deletion purges the user's GCS artifacts from both buckets.
+      dynamic "env" {
+        for_each = each.key == "user" ? [1] : []
+        content {
+          name  = "ARTIFACT_BUCKET"
+          value = google_storage_bucket.artifacts_bucket.name
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "user" ? [1] : []
+        content {
+          name  = "SHOWCASE_ASSETS_BUCKET"
+          value = google_storage_bucket.showcase_assets_bucket.name
+        }
+      }
 
       # ── Activity service env vars ──
       dynamic "env" {
