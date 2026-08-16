@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -32,6 +33,7 @@ type mockProvider struct {
 	parseError    error
 	fetchActivity *pbevents.ActivityPayload
 	fetchError    error
+	fetchDelay    time.Duration // simulate a slow provider fetch; respects ctx
 }
 
 func (m *mockProvider) ID() string {
@@ -54,6 +56,15 @@ func (m *mockProvider) ParseEvent(r *http.Request) ([]*webhook.WebhookEvent, err
 
 func (m *mockProvider) FetchActivity(ctx context.Context, userSvc userpb.UserServiceClient, internalUserID string, evt *webhook.WebhookEvent) (*pbevents.ActivityPayload, error) {
 	m.fetchCalled = true
+	if m.fetchDelay > 0 {
+		// Model a real network fetch that honours the deadline: it either
+		// completes after fetchDelay or is cancelled when ctx expires.
+		select {
+		case <-time.After(m.fetchDelay):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	if m.fetchError != nil {
 		return nil, m.fetchError
 	}
@@ -235,4 +246,57 @@ func TestProcessor_HandleEvent(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)     // Still returns 200 OK
 		assert.Empty(t, publisher.publishedEvents) // Nothing published
 	})
+}
+
+// TestProcessor_PerEventTimeoutBudget is a regression test for SERVER-6
+// (context.deadlineExceededError in (*Processor).processEvents).
+//
+// A single provider webhook can carry a batch of events (Fitbit and the mobile
+// source both fan a batch out to processEvents), and each event runs several
+// sequential network calls before publishing. When the whole batch shared one
+// 30s deadline, the cumulative latency of the earlier events could exhaust it,
+// so the later events' Pub/Sub publish failed with context.DeadlineExceeded —
+// logged at Error and therefore captured by Sentry. Each event must instead get
+// its own timeout budget so a batch whose per-event cost is well under the
+// deadline never starves its own tail.
+func TestProcessor_PerEventTimeoutBudget(t *testing.T) {
+	userClient := &mockUserServiceClient{
+		resolveResp: &userpb.ResolveUserByIntegrationResponse{
+			Profile: &pbuser.UserProfile{UserId: "internal-user-abc"},
+		},
+	}
+	publisher := &mockPublisher{}
+	logger := infra.NewLogger()
+
+	// fetchDelay is comfortably under perEventTimeout, but three of them in
+	// aggregate exceed it. With a single shared batch deadline only the first
+	// event would publish; with a per-event budget all three do.
+	const perEventTimeout = 200 * time.Millisecond
+	const fetchDelay = 120 * time.Millisecond
+
+	processor := webhook.NewProcessor(logger, userClient, publisher, nil,
+		webhook.WithEventTimeout(perEventTimeout))
+
+	events := []*webhook.WebhookEvent{
+		{Provider: "batchprovider", ProviderUID: "uid", ActivityID: "a1", Event: "create"},
+		{Provider: "batchprovider", ProviderUID: "uid", ActivityID: "a2", Event: "create"},
+		{Provider: "batchprovider", ProviderUID: "uid", ActivityID: "a3", Event: "create"},
+	}
+	mock := &mockProvider{
+		id:            "batchprovider",
+		parseEvents:   events,
+		fetchActivity: &pbevents.ActivityPayload{ActivityId: ptr("a")},
+		fetchDelay:    fetchDelay,
+	}
+	processor.Register(mock)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook/batchprovider", bytes.NewBufferString("{}"))
+	w := httptest.NewRecorder()
+
+	processor.HandleEvent(w, req, "batchprovider")
+	processor.Wait() // block until the async processEvents goroutine completes
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Len(t, publisher.publishedEvents, len(events),
+		"every event in the batch should publish; the tail must not be starved by a shared deadline")
 }
