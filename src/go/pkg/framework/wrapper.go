@@ -207,15 +207,29 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 
 		// Log execution result
 		if handlerErr != nil {
-			logger.Error("Function failed", "error", handlerErr)
+			// Transient/retryable failures (e.g. upstream activity data still lagging)
+			// are an expected, self-healing condition: we NACK below so Pub/Sub
+			// redelivers with backoff, but we must NOT report them to Sentry — doing so
+			// turns routine retry traffic into a recurring incident (SERVER-7). A
+			// message that never stops lagging is bounded by the handler itself (the
+			// enricher forces partial enrichment once the event ages past its lag
+			// window), so a genuinely stuck activity still surfaces as a real error.
+			var retryErr *RetryableError
+			if errors.As(handlerErr, &retryErr) {
+				// Warn, not Error: SentryHandler only auto-captures Error-level logs,
+				// so this keeps a breadcrumb in the logs without alerting Sentry.
+				logger.Warn("Function retrying (transient failure)", "error", handlerErr)
+			} else {
+				logger.Error("Function failed", "error", handlerErr)
 
-			// Capture error in Sentry
-			sentryPkg.CaptureException(handlerErr, map[string]interface{}{
-				"service":      serviceName,
-				"execution_id": execID,
-				"user_id":      userID,
-				"trigger_type": triggerType,
-			}, logger)
+				// Capture error in Sentry
+				sentryPkg.CaptureException(handlerErr, map[string]interface{}{
+					"service":      serviceName,
+					"execution_id": execID,
+					"user_id":      userID,
+					"trigger_type": triggerType,
+				}, logger)
+			}
 
 			if logErr := execution.LogFailure(ctx, svc.DB, userID, execID, handlerErr, outputs); logErr != nil {
 				logger.Warn("Failed to log execution failure", "error", logErr)

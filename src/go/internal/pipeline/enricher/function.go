@@ -284,10 +284,12 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 				fwCtx.Logger.Warn("Lag Retry failed (will retry with backoff)", "error", err)
 				// Return error to trigger Pub/Sub retry with backoff (keep status for execution tracking)
 				fwCtx.Logger.Info("Returning error to trigger retry", "status", "STATUS_LAGGED_RETRY")
+				// Return a RetryableError (not a plain error) so the framework NACKs for
+				// Pub/Sub backoff without reporting this expected lag retry to Sentry.
 				return map[string]interface{}{
 					"status": "STATUS_LAGGED_RETRY",
 					"error":  err.Error(),
-				}, fmt.Errorf("lagged retry failed (status=STATUS_LAGGED_RETRY): %w", err)
+				}, framework.NewRetryableError("lagged retry failed (status=STATUS_LAGGED_RETRY)", err)
 			} else {
 				// Preserve the original error before it gets shadowed
 				originalErr := err
