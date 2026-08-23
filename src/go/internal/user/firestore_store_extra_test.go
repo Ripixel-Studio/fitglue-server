@@ -2,11 +2,13 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -98,6 +100,65 @@ func TestNormalizeUserData(t *testing.T) {
 		_, ok := out["isAdmin"]
 		assert.True(t, ok, "isAdmin retained when no snake counterpart")
 	})
+
+	// Regression for SERVER-A ("failed to get profile"): the old TypeScript
+	// backend wrote fields in camelCase; Go services later write the same fields
+	// in snake_case, so legacy user docs accumulate BOTH spellings. Only isAdmin
+	// and trialEndsAt used to be de-duplicated, so fcm_tokens / sync_count_this_month
+	// / streak collisions leaked through and made protojson fail the whole read.
+	t.Run("DropsAllCamelCaseDuplicatesGenerically", func(t *testing.T) {
+		out := normalizeUserData(map[string]interface{}{
+			"fcmTokens":             []interface{}{"a"},
+			"fcm_tokens":            []interface{}{"b"},
+			"syncCountThisMonth":    int64(3),
+			"sync_count_this_month": int64(5),
+			"currentStreakDays":     int64(1),
+			"current_streak_days":   int64(7),
+			"displayName":           "old",
+			"display_name":          "new",
+		})
+		for _, camel := range []string{"fcmTokens", "syncCountThisMonth", "currentStreakDays", "displayName"} {
+			_, has := out[camel]
+			assert.False(t, has, "%s should be dropped", camel)
+		}
+		assert.Equal(t, int64(5), out["sync_count_this_month"], "snake_case value retained")
+		assert.Equal(t, "new", out["display_name"], "snake_case value retained")
+	})
+}
+
+// TestGetProfileParsing_LegacyDuplicateKeys reproduces SERVER-A end to end
+// through the exact marshal → protojson.Unmarshal path GetProfile uses. Before
+// the generic de-duplication these inputs failed with
+// `proto: duplicate field "..."`, which the user service logged as
+// "failed to get profile" and returned as codes.Internal.
+func TestGetProfileParsing_LegacyDuplicateKeys(t *testing.T) {
+	cases := map[string]map[string]interface{}{
+		"fcm_tokens collision (mobile SetFCMToken onto legacy doc)": {
+			"user_id":    "u1",
+			"fcmTokens":  []interface{}{"legacy"},
+			"fcm_tokens": []interface{}{"legacy", "new"},
+		},
+		"sync_count collision (billing increment onto legacy doc)": {
+			"user_id":               "u1",
+			"syncCountThisMonth":    int64(4),
+			"sync_count_this_month": int64(4),
+		},
+		"streak collision": {
+			"user_id":             "u1",
+			"currentStreakDays":   int64(3),
+			"current_streak_days": int64(3),
+		},
+	}
+
+	for name, data := range cases {
+		t.Run(name, func(t *testing.T) {
+			b, err := json.Marshal(normalizeUserData(data))
+			assert.NoError(t, err)
+			var profile pbuser.UserProfile
+			err = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, &profile)
+			assert.NoError(t, err, "normalized legacy doc must unmarshal cleanly")
+		})
+	}
 }
 
 func TestIsApiKeyProvider(t *testing.T) {

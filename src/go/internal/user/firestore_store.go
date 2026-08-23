@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/domain/apikey"
@@ -49,22 +50,49 @@ func normalizeUserData(data map[string]interface{}) map[string]interface{} {
 		}
 	}
 
-	// Remove camelCase duplicates of snake_case fields. The old TS code wrote
-	// some fields in both formats. protojson maps both to the same proto field
-	// and errors on duplicates.
-	camelToSnake := map[string]string{
-		"isAdmin":     "is_admin",
-		"trialEndsAt": "trial_ends_at",
-	}
-	for camel, snake := range camelToSnake {
-		if _, hasCamel := data[camel]; hasCamel {
-			if _, hasSnake := data[snake]; hasSnake {
-				delete(data, camel) // keep snake_case, drop camelCase
-			}
+	// Remove camelCase duplicates of snake_case fields. The old TypeScript
+	// backend wrote fields in camelCase; Go services write the same fields in
+	// snake_case (the proto field names) via targeted Firestore updates —
+	// AddFCMToken writes "fcm_tokens", the billing increment writes
+	// "sync_count_this_month", the streak rollup writes "current_streak_days",
+	// etc. A document touched by both therefore ends up carrying both spellings
+	// of a field, which protojson rejects with a "duplicate field" error and
+	// fails the whole GetProfile read.
+	//
+	// We can't enumerate every field the old backend wrote, so drop *any*
+	// camelCase key whose snake_case counterpart is also present, keeping the
+	// snake_case value (the proto-native form every Go writer uses). A key with
+	// no snake_case counterpart is left untouched — protojson accepts the JSON
+	// (camelCase) name too, so legacy-only documents still parse.
+	for key := range data {
+		snake := camelToSnakeCase(key)
+		if snake == key {
+			continue // already snake_case / single word — nothing to collapse
+		}
+		if _, hasSnake := data[snake]; hasSnake {
+			delete(data, key) // keep snake_case, drop camelCase duplicate
 		}
 	}
 
 	return data
+}
+
+// camelToSnakeCase converts a lowerCamelCase key ("syncCountThisMonth") to its
+// snake_case equivalent ("sync_count_this_month"). Keys that are already
+// snake_case or single-word are returned unchanged.
+func camelToSnakeCase(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			if i > 0 {
+				b.WriteByte('_')
+			}
+			b.WriteRune(r - 'A' + 'a')
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func (s *FirestoreStore) GetProfile(ctx context.Context, userID string) (*pbuser.UserProfile, error) {
