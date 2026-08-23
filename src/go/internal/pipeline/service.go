@@ -19,6 +19,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -519,6 +520,17 @@ func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityR
 	payload["activityId"] = req.ActivityId
 	if req.Destination != "" {
 		payload["repostDestination"] = req.Destination
+	}
+
+	if req.Mode == "full-pipeline" {
+		// The stored original payload still carries the source run's execution ID,
+		// and the splitter's pass-through keeps any ID already present. Reusing it
+		// makes the enricher resolve the *old* run doc — and skip the whole run if
+		// that run was cancelled. A full-pipeline repost must mint a fresh run
+		// (the destination executor's pending-input dedup relies on this too), so
+		// replace the stale ID. Targeted repost modes intentionally reuse the run.
+		delete(payload, "pipeline_execution_id")
+		payload["pipelineExecutionId"] = uuid.NewString()
 	}
 
 	updatedPayloadBytes, err := json.Marshal(payload)
