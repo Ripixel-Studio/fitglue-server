@@ -429,7 +429,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 
 	t.Run("RepostActivity_fullPipeline_success", func(t *testing.T) {
 		store := NewMockStore()
-		payloadBytes := []byte(`{"source":"strava","title":"Morning Run"}`)
+		payloadBytes := []byte(`{"source":"strava","title":"Morning Run","pipelineExecutionId":"stale-exec-p1"}`)
 		uri := "gs://bucket/original/a1.json"
 		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1", OriginalPayloadUri: uri}
 		pub := &MockPublisher{}
@@ -455,6 +455,12 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		if p["activityId"] != "a1" {
 			t.Errorf("expected activityId=a1")
 		}
+		// A full-pipeline repost must mint a fresh run: reusing the stored
+		// execution ID resolves the old run doc, and if that run was cancelled
+		// the enricher skips the repost entirely.
+		if p["pipelineExecutionId"] == "stale-exec-p1" || p["pipelineExecutionId"] == "" || p["pipelineExecutionId"] == nil {
+			t.Errorf("expected fresh pipelineExecutionId, got %v", p["pipelineExecutionId"])
+		}
 	})
 
 	t.Run("RepostActivity_missedDestination_success", func(t *testing.T) {
@@ -462,7 +468,7 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		uri := "gs://bucket/original/a2.json"
 		store.Runs["u1_r2"] = &pipeline.PipelineRun{Id: "r2", ActivityId: "a2", OriginalPayloadUri: uri}
 		pub := &MockPublisher{}
-		blob := &MockBlobStore{Blobs: map[string][]byte{uri: []byte(`{"source":"hevy"}`)}}
+		blob := &MockBlobStore{Blobs: map[string][]byte{uri: []byte(`{"source":"hevy","pipelineExecutionId":"exec-a2-p1"}`)}}
 		svc := NewService(store, pub, blob, mockLogger{}, nil)
 
 		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{
@@ -476,6 +482,11 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		json.Unmarshal(pub.PublishedEvents[0].Data(), &p)
 		if p["repostDestination"] != "DESTINATION_HEVY" {
 			t.Errorf("expected repostDestination=DESTINATION_HEVY, got %v", p["repostDestination"])
+		}
+		// Targeted repost modes reuse the existing run doc, so the stored
+		// execution ID must pass through unchanged.
+		if p["pipelineExecutionId"] != "exec-a2-p1" {
+			t.Errorf("expected pipelineExecutionId to be preserved, got %v", p["pipelineExecutionId"])
 		}
 	})
 }
