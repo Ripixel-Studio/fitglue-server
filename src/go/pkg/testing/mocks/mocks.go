@@ -25,10 +25,11 @@ type MockDatabase struct {
 	GetUserFunc         func(ctx context.Context, id string) (*user.Record, error)
 	UpdateUserFunc      func(ctx context.Context, id string, data map[string]interface{}) error
 
-	CreatePendingInputFunc func(ctx context.Context, userId string, input *pbpipeline.PendingInput) error
-	GetPendingInputFunc    func(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error)
-	UpdatePendingInputFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pbpipeline.PendingInput, error)
+	CreatePendingInputFunc          func(ctx context.Context, userId string, input *pbpipeline.PendingInput) error
+	GetPendingInputFunc             func(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error)
+	UpdatePendingInputFunc          func(ctx context.Context, userId string, id string, data map[string]interface{}) error
+	ListPendingInputsByEnricherFunc func(ctx context.Context, enricherId string, status pbpipeline.PendingInput_Status) ([]*pbpipeline.PendingInput, error)
+	ListPendingInputsFunc           func(ctx context.Context, userID string) ([]*pbpipeline.PendingInput, error)
 
 	GetCounterFunc       func(ctx context.Context, userId string, id string) (*pbuser.Counter, error)
 	SetCounterFunc       func(ctx context.Context, userId string, counter *pbuser.Counter) error
@@ -166,7 +167,9 @@ func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error 
 }
 
 func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pbpipeline.PendingInput_Status) ([]*pbpipeline.PendingInput, error) {
-	// No-op for tests by default
+	if m.ListPendingInputsByEnricherFunc != nil {
+		return m.ListPendingInputsByEnricherFunc(ctx, enricherId, status)
+	}
 	return nil, nil
 }
 
