@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -177,8 +178,18 @@ type aiResult struct {
 // from escaping the data section of the prompt.
 func sanitiseForPrompt(s string) string {
 	const maxLen = 500
+	// Activity names/descriptions come from third-party providers and can carry
+	// invalid UTF-8. The Gemini client marshals the prompt into a proto string
+	// field, which rejects invalid UTF-8 outright ("proto: field ... Part.text
+	// contains invalid UTF-8", SERVER-1) — so strip it before it reaches the API.
+	s = strings.ToValidUTF8(s, "")
 	if len(s) > maxLen {
 		s = s[:maxLen]
+		// A byte-length cut can land mid-rune (emoji are 4 bytes), which would
+		// re-introduce invalid UTF-8; back up to the last rune boundary.
+		for len(s) > 0 && !utf8.ValidString(s) {
+			s = s[:len(s)-1]
+		}
 	}
 	return s
 }
