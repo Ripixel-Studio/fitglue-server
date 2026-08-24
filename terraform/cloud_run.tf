@@ -1097,3 +1097,22 @@ resource "google_cloud_run_v2_service_iam_member" "pipeline_to_parkrun_fetcher" 
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
 }
+
+# ── Parkrun off-cloud fetch agent ──
+# parkrun.org.uk's AWS WAF captcha-walls every request from Google Cloud egress
+# (since 2026-08-22), so the Playwright fetcher above can no longer reach
+# results pages. A small agent on a residential box (Jarvis) polls the pipeline
+# for pending parkrun inputs, fetches the pages itself and posts the HTML back
+# (see src/go/internal/pipeline/parkrun_agent.go). This is its identity: an
+# invoker on the pipeline service only. The key lives on the box, not in state.
+resource "google_service_account" "parkrun_agent" {
+  account_id   = "parkrun-agent"
+  display_name = "Parkrun off-cloud fetch agent (Jarvis box)"
+}
+
+resource "google_cloud_run_v2_service_iam_member" "parkrun_agent_to_pipeline" {
+  name     = google_cloud_run_v2_service.backend["pipeline"].name
+  location = google_cloud_run_v2_service.backend["pipeline"].location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.parkrun_agent.email}"
+}

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -16,6 +17,35 @@ import (
 
 	"google.golang.org/api/idtoken"
 )
+
+// ErrBotChallenge is returned when the fetched page is a bot-protection
+// interstitial (AWS WAF "Human Verification" captcha) rather than parkrun content.
+// Callers must treat it as a fetch failure, never as "results not published":
+// the page parses to zero rows, which is indistinguishable from an unpublished
+// week unless the challenge is detected explicitly.
+var ErrBotChallenge = errors.New("bot_challenge: parkrun served an AWS WAF captcha page instead of results")
+
+// botChallengeMarkers are substrings that only appear in the AWS WAF challenge
+// interstitial, never in a real parkrun results page.
+var botChallengeMarkers = []string{
+	"<title>Human Verification",
+	"window.awsWafCookieDomainList",
+	"window.gokuProps",
+	"awswaf-captcha",
+	"challenge.js",
+}
+
+// IsBotChallenge reports whether html is a WAF/captcha interstitial. Deliberately
+// cheap and marker-based: the interstitial is ~10KB of inline JS with stable
+// AWS-owned identifiers, and a genuine parkrunner page never contains them.
+func IsBotChallenge(html string) bool {
+	for _, m := range botChallengeMarkers {
+		if strings.Contains(html, m) {
+			return true
+		}
+	}
+	return false
+}
 
 // Result represents fetched Parkrun results with PB tracking and location stats.
 type Result struct {
@@ -153,8 +183,17 @@ func FetchViaPlaywright(ctx context.Context, logger *slog.Logger, url string) (s
 		"url", url,
 		"bytes", fetchResp.ByteLength)
 
-	// Warn if HTML is suspiciously small (likely an error page)
-	const minExpectedHTMLBytes = 5000
+	// A captcha interstitial is a successful HTTP fetch of the wrong page. It is
+	// ~10KB, so the size guard below does not catch it; detect it by content.
+	if IsBotChallenge(fetchResp.HTML) {
+		logger.Warn("Parkrun served a bot challenge page instead of results",
+			"bytes", fetchResp.ByteLength, "url", url)
+		return "", fmt.Errorf("%w (bytes=%d)", ErrBotChallenge, fetchResp.ByteLength)
+	}
+
+	// Warn if HTML is suspiciously small (likely an error page). A real
+	// parkrunner /all/ page is 40KB+ even for a handful of runs.
+	const minExpectedHTMLBytes = 15000
 	if fetchResp.ByteLength < minExpectedHTMLBytes {
 		logger.Warn("Parkrun HTML response unusually small",
 			"bytes", fetchResp.ByteLength,

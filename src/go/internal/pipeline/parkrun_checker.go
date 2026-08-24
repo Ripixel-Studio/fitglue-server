@@ -42,6 +42,7 @@ const (
 	reasonFetchFailed     = "fetch_failed"
 	reasonNotPublished    = "results_not_published"
 	reasonSubmitFailed    = "submit_failed"
+	reasonNotWaiting      = "input_not_waiting"
 )
 
 // ParkrunDiagnostic captures the outcome of one resolve attempt plus every
@@ -79,6 +80,9 @@ func (d ParkrunDiagnostic) surfaceable() bool {
 // tests can drive processInput deterministically without hitting the network / WAF.
 type fetchFunc func(ctx context.Context, logger *slog.Logger, athleteID, countryURL, eventSlug string, expectedDate time.Time) (*parkrunutil.Result, parkrunutil.FetchDiagnostics, error)
 
+// submitFunc matches Service.SubmitInput minus the unused Empty return.
+type submitFunc func(ctx context.Context, req *pbsvc.SubmitInputRequest) error
+
 // verifyIdentityFunc validates a bearer identity token for the given audience.
 // Defaults to Google OIDC validation; overridable in tests.
 type verifyIdentityFunc func(ctx context.Context, token, audience string) error
@@ -91,12 +95,16 @@ type ParkrunChecker struct {
 	logger    infra.Logger
 	publisher shared.Publisher
 
-	fetch          fetchFunc
+	fetch fetchFunc
+	// submit records a resolved result against its pending input. Defaults to
+	// the pipeline Service's SubmitInput; a field so tests can capture the
+	// submission without a full Service.
+	submit         submitFunc
 	verifyIdentity verifyIdentityFunc
 }
 
 func NewParkrunChecker(db shared.Database, svc *Service, logger infra.Logger, publisher shared.Publisher) *ParkrunChecker {
-	return &ParkrunChecker{
+	c := &ParkrunChecker{
 		db:             db,
 		svc:            svc,
 		logger:         logger,
@@ -104,7 +112,15 @@ func NewParkrunChecker(db shared.Database, svc *Service, logger infra.Logger, pu
 		fetch:          parkrunutil.FetchResultsForAthleteWithDiag,
 		verifyIdentity: defaultVerifyIdentity,
 	}
+	c.submit = func(ctx context.Context, req *pbsvc.SubmitInputRequest) error {
+		_, err := c.svc.SubmitInput(ctx, req)
+		return err
+	}
+	return c
 }
+
+// slogDefault is the structured logger handed to the parkrun parser.
+func slogDefault() *slog.Logger { return slog.Default() }
 
 // defaultVerifyIdentity validates that token is a live, Google-signed identity
 // token minted for this service's URL — the same OIDC trust model Cloud Run
@@ -361,8 +377,15 @@ func (c *ParkrunChecker) processInput(ctx context.Context, input *pbpipeline.Pen
 		return diag
 	}
 
+	return c.submitResults(ctx, input, eventName, results, diag)
+}
+
+// submitResults records a parsed result against its pending input via the
+// pipeline's SubmitInput (the same path manual entry takes) and finalises diag.
+// Shared by the scheduled checker and the agent-submitted-HTML endpoint.
+func (c *ParkrunChecker) submitResults(ctx context.Context, input *pbpipeline.PendingInput, eventName string, results *parkrunutil.Result, diag ParkrunDiagnostic) ParkrunDiagnostic {
 	desc := parkrunutil.FormatResultsDescription(results, eventName)
-	_, submitErr := c.svc.SubmitInput(ctx, &pbsvc.SubmitInputRequest{
+	submitErr := c.submit(ctx, &pbsvc.SubmitInputRequest{
 		UserId:         input.UserId,
 		PendingInputId: input.ActivityId,
 		// The stats beyond position/time/age_grade (total run count + PB flags) must
