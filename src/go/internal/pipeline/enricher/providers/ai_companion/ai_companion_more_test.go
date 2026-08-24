@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
@@ -35,6 +36,31 @@ func TestSanitiseForPrompt(t *testing.T) {
 	long := strings.Repeat("a", 700)
 	if got := sanitiseForPrompt(long); len(got) != 500 {
 		t.Errorf("expected truncation to 500, got %d", len(got))
+	}
+}
+
+// SERVER-1: Gemini rejected prompts with "proto: field ... Part.text contains
+// invalid UTF-8". Two ways that happened: invalid bytes arriving from a
+// provider, and the 500-byte truncation slicing a multi-byte rune in half.
+func TestSanitiseForPrompt_AlwaysValidUTF8(t *testing.T) {
+	// Truncation boundary lands inside a 4-byte emoji.
+	emoji := strings.Repeat("\U0001F3C3", 200) // 800 bytes
+	got := sanitiseForPrompt(emoji)
+	if !utf8.ValidString(got) {
+		t.Fatalf("truncated output is not valid UTF-8: %q", got[len(got)-4:])
+	}
+	if len(got) > 500 || len(got) < 497 {
+		t.Errorf("expected ~500 bytes on a rune boundary, got %d", len(got))
+	}
+
+	// Invalid bytes are dropped, valid text is kept.
+	in := "Morning run \xff\xfe with friends \xc3"
+	got = sanitiseForPrompt(in)
+	if !utf8.ValidString(got) {
+		t.Fatalf("invalid bytes survived: %q", got)
+	}
+	if got != "Morning run  with friends " {
+		t.Errorf("unexpected sanitised output %q", got)
 	}
 }
 
