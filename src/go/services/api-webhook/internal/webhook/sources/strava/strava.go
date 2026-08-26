@@ -11,6 +11,7 @@ import (
 
 	shared "github.com/fitglue/server/src/go/pkg"
 	stravaapi "github.com/fitglue/server/src/go/pkg/api/strava"
+	stravamap "github.com/fitglue/server/src/go/pkg/domain/sourcemap/strava"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
@@ -128,17 +129,7 @@ func (p *Provider) FetchActivity(ctx context.Context, _ userpb.UserServiceClient
 	// 5. Fetch time-series streams — best-effort, nil if unavailable or not permitted
 	var streams *stravaapi.StreamSet
 	streamResp, streamErr := client.GetActivityStreamsWithResponse(ctx, activityID, &stravaapi.GetActivityStreamsParams{
-		Keys: []stravaapi.GetActivityStreamsParamsKeys{
-			stravaapi.GetActivityStreamsParamsKeysTime,
-			stravaapi.GetActivityStreamsParamsKeysLatlng,
-			stravaapi.GetActivityStreamsParamsKeysAltitude,
-			stravaapi.GetActivityStreamsParamsKeysHeartrate,
-			stravaapi.GetActivityStreamsParamsKeysCadence,
-			stravaapi.GetActivityStreamsParamsKeysVelocitySmooth,
-			stravaapi.GetActivityStreamsParamsKeysDistance,
-			stravaapi.GetActivityStreamsParamsKeysWatts,
-			stravaapi.GetActivityStreamsParamsKeysTemp,
-		},
+		Keys:      stravamap.StreamKeys,
 		KeyByType: true,
 	})
 	if streamErr == nil && streamResp.StatusCode() == http.StatusOK && streamResp.JSON200 != nil {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	stravaapi "github.com/fitglue/server/src/go/pkg/api/strava"
+	stravamap "github.com/fitglue/server/src/go/pkg/domain/sourcemap/strava"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -15,7 +16,7 @@ import (
 
 // stravaAPIBase is the Strava REST API base URL.
 // Changing to https://www.api-v3.strava.com is required before June 1, 2027.
-const stravaAPIBase = "https://www.strava.com/api/v3"
+var stravaAPIBase = "https://www.strava.com/api/v3" // var so tests can point it at a fake server
 
 func init() {
 	register("SOURCE_STRAVA", &stravaProvider{})
@@ -114,10 +115,31 @@ func (p *stravaProvider) FetchActivity(ctx context.Context, integ *userpb.UserIn
 		return nil, fmt.Errorf("strava api error: status=%d body=%s", resp.StatusCode(), string(resp.Body))
 	}
 
+	// Time-series streams are best-effort (nil when the activity has none or the
+	// token lacks activity:read_all); the summary laps are used as a fallback.
+	var streams *stravaapi.StreamSet
+	streamResp, streamErr := client.GetActivityStreamsWithResponse(ctx, activityID, &stravaapi.GetActivityStreamsParams{
+		Keys:      stravamap.StreamKeys,
+		KeyByType: true,
+	})
+	if streamErr == nil && streamResp.StatusCode() == http.StatusOK && streamResp.JSON200 != nil {
+		streams = streamResp.JSON200
+	}
+
+	// The orchestrator requires a populated StandardizedActivity (it does not parse
+	// original_payload_json itself); without this every Strava historical import
+	// failed with "standardized activity is nil".
+	stdActivity, err := stravamap.MapToStandardizedActivity(resp.Body, userID, streams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse strava activity: %w", err)
+	}
+
 	return &pbevents.ActivityPayload{
-		Source:              activitypb.ActivitySource_SOURCE_STRAVA,
-		UserId:              userID,
-		OriginalPayloadJson: string(resp.Body),
-		ActivityId:          &sourceActivityID,
+		Source:               activitypb.ActivitySource_SOURCE_STRAVA,
+		UserId:               userID,
+		OriginalPayloadJson:  string(resp.Body),
+		ActivityId:           &sourceActivityID,
+		StandardizedActivity: stdActivity,
+		Timestamp:            stdActivity.StartTime,
 	}, nil
 }
