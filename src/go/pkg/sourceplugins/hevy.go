@@ -129,6 +129,12 @@ func (p *hevyProvider) FetchActivity(ctx context.Context, integ *userpb.UserInte
 	}, nil
 }
 
+// HevyMapToStandardizedActivity maps a Hevy workout JSON body (bare or {"workout": …})
+// onto a StandardizedActivity with strength sets. Exported for cmd/showcase-reboost.
+func HevyMapToStandardizedActivity(rawJSON []byte, userID string) (*activitypb.StandardizedActivity, error) {
+	return hevyMapToStandardizedActivity(rawJSON, userID)
+}
+
 func hevyMapToStandardizedActivity(rawJSON []byte, userID string) (*activitypb.StandardizedActivity, error) {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(rawJSON, &raw); err != nil {

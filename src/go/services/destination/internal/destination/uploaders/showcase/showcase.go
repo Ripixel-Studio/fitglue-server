@@ -18,6 +18,9 @@ import (
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -78,6 +81,81 @@ func (u *Uploader) persistDurableFitFile(ctx context.Context, logger *slog.Logge
 	}
 
 	return fmt.Sprintf("gs://%s/%s", u.showcaseAssetsBucket, fileName)
+}
+
+// unionStrings returns a ∪ b preserving first-seen order.
+func unionStrings(a, b []string) []string {
+	seen := make(map[string]bool, len(a)+len(b))
+	var out []string
+	for _, list := range [][]string{a, b} {
+		for _, v := range list {
+			if v == "" || seen[v] {
+				continue
+			}
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// readPriorEnrichments loads the typed enrichments from a showcase's current durable
+// blob, or nil when there is no blob / it carries none.
+func (u *Uploader) readPriorEnrichments(ctx context.Context, logger *slog.Logger, uri string) *pbactivity.ActivityEnrichments {
+	if uri == "" {
+		return nil
+	}
+	data, err := u.svc.Store.Get(ctx, "", uri)
+	if err != nil || len(data) == 0 {
+		return nil
+	}
+	var prev pbevents.EnrichedActivityEvent
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(data, &prev); err != nil {
+		logger.Warn("Backfill: could not parse prior showcase blob; not preserving its enrichments", "error", err, "uri", uri)
+		return nil
+	}
+	return prev.Enrichments
+}
+
+// mergePriorEnrichments rewrites the freshly persisted durable blob so that typed
+// enrichments present in the previous blob but absent from the new run are kept.
+// New values win wherever the new run produced them, and applied_enrichments is replaced with the union so the
+// showcase page's module gating still finds the carried-over data.
+func (u *Uploader) mergePriorEnrichments(ctx context.Context, logger *slog.Logger, uri string, prior *pbactivity.ActivityEnrichments, applied []string) {
+	parts := strings.SplitN(strings.TrimPrefix(uri, "gs://"), "/", 2)
+	if len(parts) != 2 {
+		return
+	}
+	data, err := u.svc.Store.Get(ctx, "", uri)
+	if err != nil || len(data) == 0 {
+		logger.Warn("Backfill: could not re-read new showcase blob for enrichment merge", "error", err, "uri", uri)
+		return
+	}
+	var fresh pbevents.EnrichedActivityEvent
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(data, &fresh); err != nil {
+		logger.Warn("Backfill: could not parse new showcase blob for enrichment merge", "error", err, "uri", uri)
+		return
+	}
+	// Field-wise overlay (not proto.Merge, which appends repeated fields such as
+	// HR-zone rows): every top-level enrichment the new run populated replaces the
+	// prior one wholesale; anything it did not populate is kept from before.
+	merged := proto.Clone(prior).(*pbactivity.ActivityEnrichments)
+	if fresh.Enrichments != nil {
+		mm := merged.ProtoReflect()
+		fresh.Enrichments.ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+			mm.Set(fd, v)
+			return true
+		})
+	}
+	fresh.Enrichments = merged
+	fresh.AppliedEnrichments = applied
+	out, err := protojson.Marshal(&fresh)
+	if err != nil {
+		return
+	}
+	if err := u.svc.Store.Write(ctx, parts[0], parts[1], out); err != nil {
+		logger.Warn("Backfill: failed to write merged showcase blob", "error", err, "uri", uri)
+	}
 }
 
 // Name returns the identifier for this uploader
@@ -212,12 +290,42 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		activityName = "Activity"
 	}
 
-	showcaseID, err := u.generateShowcaseID(ctx, activityName, startTime)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate showcase ID: %w", err)
+	// Backfill re-boost (cmd/showcase-reboost): overwrite an existing showcase in
+	// place instead of minting a new one, so its public URL, created_at ordering,
+	// title and photos survive. Anything the new run did not produce (e.g. an AI
+	// summary from a booster that is not in the backfill pipeline) is carried over
+	// from the previous blob rather than dropped.
+	var existing *pbactivity.ShowcasedActivity
+	var priorEnrichments *pbactivity.ActivityEnrichments
+	if target := payload.Metadata["backfill_target_showcase_id"]; target != "" {
+		prev, err := u.svc.DB.GetShowcasedActivity(ctx, target)
+		if err != nil || prev == nil {
+			logger.Warn("Backfill target showcase not found; creating a fresh showcase instead",
+				"target", target, "error", err)
+		} else {
+			existing = prev
+			priorEnrichments = u.readPriorEnrichments(ctx, logger, prev.ActivityDataUri)
+		}
+	}
+
+	var showcaseID string
+	if existing != nil {
+		showcaseID = existing.ShowcaseId
+		if existing.Title != "" {
+			activityName = existing.Title
+		}
+	} else {
+		var err error
+		showcaseID, err = u.generateShowcaseID(ctx, activityName, startTime)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate showcase ID: %w", err)
+		}
 	}
 
 	createdAt := time.Now()
+	if existing != nil && existing.CreatedAt != nil {
+		createdAt = existing.CreatedAt.AsTime()
+	}
 	expiresAt := calculateExpiration(userRec, createdAt)
 
 	activityTypeVal, ok := pbactivity.ActivityType_value[payload.Metadata["activity_type"]]
@@ -243,6 +351,14 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		photoURLs = strings.Split(photoURLsStr, ",")
 	}
 
+	if existing != nil {
+		if len(photoURLs) == 0 {
+			photoURLs = existing.PhotoUrls
+		}
+		tags = unionStrings(existing.Tags, tags)
+		appliedEnrichments = unionStrings(existing.AppliedEnrichments, appliedEnrichments)
+	}
+
 	showcasedActivity := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          showcaseID,
 		ActivityId:          payload.GetActivityId(),
@@ -263,6 +379,9 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {
 		showcasedActivity.ActivityDataUri = u.persistDurableActivityData(ctx, logger, payload.UserId, showcaseID, uri)
+		if showcasedActivity.ActivityDataUri != "" && priorEnrichments != nil {
+			u.mergePriorEnrichments(ctx, logger, showcasedActivity.ActivityDataUri, priorEnrichments, appliedEnrichments)
+		}
 		if showcasedActivity.ActivityDataUri == "" {
 			logger.Warn("No durable ActivityDataUri available - showcase will be missing activity data",
 				"showcase_id", showcaseID,

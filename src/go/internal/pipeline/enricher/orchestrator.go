@@ -901,6 +901,14 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	// Build final description from slots
 	finalDescription := buildDescriptionFromSlots(descriptionSlots)
+	// Backfill mode (cmd/showcase-reboost): the source description is the
+	// description the user already has on Strava/Hevy — for re-ingested history it
+	// typically already contains the previously rendered booster text — so keep it
+	// verbatim rather than stacking freshly generated sections on top of it.
+	// Typed enrichments are unaffected; only the prose is pinned.
+	if payload.GetMetadata()["backfill_verbatim_description"] == "true" {
+		finalDescription = originalDescription
+	}
 	currentActivity.Description = finalDescription
 
 	// Build final event structure (no Fan-In needed - currentActivity is already fully enriched)
@@ -943,6 +951,15 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// already-uploaded idempotency guard for an explicit retry/missed-destination Magic
 	// Action (these reuse the original run, whose prior SUCCESS outcome would otherwise
 	// make the repost a silent no-op).
+	// Forward backfill_* hints to the destination service (e.g. the showcase
+	// uploader's in-place target). Only this namespace is forwarded so arbitrary
+	// caller metadata cannot collide with enricher/destination config keys.
+	for k, v := range payload.GetMetadata() {
+		if strings.HasPrefix(k, "backfill_") {
+			finalEvent.EnrichmentMetadata[k] = v
+		}
+	}
+
 	if payload.IsRepost {
 		finalEvent.EnrichmentMetadata["is_repost"] = "true"
 		if payload.RepostMode != "" {
@@ -1127,6 +1144,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 		evt := cloneEnrichedEvent(finalEvent)
 		evt.Description = filteredDesc
+		if payload.GetMetadata()["backfill_verbatim_description"] == "true" {
+			evt.Description = originalDescription
+		}
 		evt.AppliedEnrichments = filteredApplied
 		evt.Destinations = dests
 		events = append(events, evt)
