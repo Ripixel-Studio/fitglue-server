@@ -155,7 +155,9 @@ func (t *UsageTrackingTransport) RoundTrip(req *http.Request) (*http.Response, e
 const MaxErrorBodySize = 500
 
 // ErrorLoggingTransport wraps a RoundTripper and logs HTTP error responses
-// with their response bodies for better debugging and error messages.
+// with their response bodies for better debugging and error messages. The log
+// is emitted at Warn level (not Error) so it stays out of Sentry — see the note
+// in RoundTrip. Error classification and alerting are the caller's job.
 type ErrorLoggingTransport struct {
 	Base   http.RoundTripper
 	Logger *slog.Logger
@@ -188,7 +190,17 @@ func (t *ErrorLoggingTransport) RoundTrip(req *http.Request) (*http.Response, er
 				logger = slog.Default()
 			}
 
-			logger.Error("HTTP error response",
+			// Logged at Warn, not Error, on purpose. This is a diagnostic wrapper
+			// that captures third-party provider error bodies for debugging; the
+			// caller inspects resp.StatusCode itself and returns a classified error
+			// (see pkg/errors) that drives retries and any real alerting. Logging
+			// here at Error routes into the SentryHandler, and because the message
+			// is the constant "HTTP error response" with no error attribute, every
+			// provider 4xx/5xx across all users collapses into one Sentry issue
+			// (the reported SERVER-C) — expected conditions like 401 token expiry,
+			// 429 rate limits and 400/409 validation spam production. Warn keeps the
+			// body in Cloud Logging without capturing it to Sentry.
+			logger.Warn("HTTP error response",
 				"url", req.URL.String(),
 				"method", req.Method,
 				"status", resp.StatusCode,
