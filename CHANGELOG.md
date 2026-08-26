@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.63.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.62.5...v16.63.0) (2026-08-26)
+
+
+### Features
+
+* **showcase:** in-place backfill re-boost, Strava import fix, showcase-reboost tool ([#52](https://github.com/Ripixel-Studio/fitglue-server/issues/52)) ([e452d14](https://github.com/Ripixel-Studio/fitglue-server/commit/e452d14dbe775b575cadf51348263397186586a4)), closes [#38](https://github.com/Ripixel-Studio/fitglue-server/issues/38)
+
 ### [16.62.5](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.62.4...v16.62.5) (2026-08-26)
 
 ### [16.62.4](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.62.3...v16.62.4) (2026-08-24)
