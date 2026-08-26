@@ -3,6 +3,7 @@ package destination
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync/atomic"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
+	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/testing/mocks"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
@@ -477,6 +479,80 @@ func TestUploadExecutor_Resume_UpdatesAlreadySucceededDestination(t *testing.T) 
 	}
 	if len(titles) != 1 || titles[0] != "Activity Updated: " {
 		t.Errorf("expected a single lighter 'Activity Updated' notification, got %v", titles)
+	}
+}
+
+// TestUploadExecutor_AuthFailure_PromptsReconnect reproduces the reported SERVER-B symptom: a
+// destination upload failing on an expired/revoked credential. Destination APIs surface this as
+// HTTP 401/403, which uploaders return as *httputil.HTTPError. The executor must recognise it,
+// prompt the user to reconnect (previously dead code — no uploader set CodeIntegrationAuthFailed),
+// and log at Warn so it is not alerted to Sentry as a code fault. Genuine faults (500) and
+// unclassified errors must NOT trigger a reconnect prompt (they still log at Error → Sentry).
+func TestUploadExecutor_AuthFailure_PromptsReconnect(t *testing.T) {
+	run := func(t *testing.T, uploadErr error) []pbnotification.NotificationType {
+		t.Helper()
+		registry := NewRegistry()
+		registry.Register(pbplugin.DestinationType_DESTINATION_STRAVA, &mockUploader{name: "strava", err: uploadErr})
+
+		userClient := &mockUserServiceClient{
+			GetProfileFunc: func(ctx context.Context, in *userpb.GetProfileRequest, opts ...grpc.CallOption) (*pbuser.UserProfile, error) {
+				return &pbuser.UserProfile{UserId: in.UserId}, nil
+			},
+		}
+		var notifTypes []pbnotification.NotificationType
+		pub := &mocks.MockPublisher{PublishJSONFunc: func(ctx context.Context, topic string, data []byte) error {
+			var req pbnotification.NotificationRequest
+			if err := protojson.Unmarshal(data, &req); err != nil {
+				return err
+			}
+			notifTypes = append(notifTypes, req.Type)
+			return nil
+		}}
+		// No pipelineRunId on the payload, so UpdateStatus is skipped and the only publish that can
+		// occur is the reconnect prompt — isolating the behaviour under test.
+		executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, &mocks.MockDatabase{}, nil, pub, infra.NewLogger())
+
+		payload := &pbevents.EnrichedActivityEvent{
+			UserId:       "user-1",
+			ActivityId:   "act-1",
+			Destinations: []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA},
+			ActivityData: &pbactivity.StandardizedActivity{ExternalId: "ext-1"},
+		}
+		payloadBytes, err := protojson.Marshal(payload)
+		assert.NoError(t, err)
+		ce := event.New()
+		ce.SetID("test-id")
+		ce.SetType("com.fitglue.event.enriched")
+		ce.SetSource("test")
+		ce.SetData("application/json", payloadBytes)
+		assert.NoError(t, executor.Process(context.Background(), &ce))
+		return notifTypes
+	}
+
+	hasReconnect := func(types []pbnotification.NotificationType) bool {
+		for _, ty := range types {
+			if ty == pbnotification.NotificationType_NOTIFICATION_TYPE_CONNECTION_ACTION {
+				return true
+			}
+		}
+		return false
+	}
+
+	// 401 = expired/revoked credential → prompt reconnect.
+	if got := run(t, &httputil.HTTPError{StatusCode: http.StatusUnauthorized, Status: "Unauthorized", Message: "Strava upload failed"}); !hasReconnect(got) {
+		t.Errorf("401 auth failure: expected a reconnect (CONNECTION_ACTION) notification, got %v", got)
+	}
+	// 403 = revoked access → prompt reconnect.
+	if got := run(t, &httputil.HTTPError{StatusCode: http.StatusForbidden, Status: "Forbidden"}); !hasReconnect(got) {
+		t.Errorf("403 auth failure: expected a reconnect (CONNECTION_ACTION) notification, got %v", got)
+	}
+	// 500 = genuine fault → no reconnect prompt (still an Error-level Sentry alert).
+	if got := run(t, &httputil.HTTPError{StatusCode: http.StatusInternalServerError, Status: "Internal Server Error"}); hasReconnect(got) {
+		t.Errorf("500 fault: expected no reconnect notification, got %v", got)
+	}
+	// Plain unclassified error → no reconnect prompt.
+	if got := run(t, fmt.Errorf("upstream boom")); hasReconnect(got) {
+		t.Errorf("plain error: expected no reconnect notification, got %v", got)
 	}
 }
 

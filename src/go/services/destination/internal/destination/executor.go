@@ -18,6 +18,7 @@ import (
 	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	fitglueerrors "github.com/fitglue/server/src/go/pkg/errors"
+	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	"github.com/fitglue/server/src/go/pkg/notificationpub"
 	pbactivitymodel "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
@@ -379,10 +380,16 @@ destinations:
 					e.logger.Warn(ctx, "Failed to release destination create claim", "destination", destEnum.String(), "error", relErr)
 				}
 			}
-			e.logger.Error(ctx, "Destination uploader failed", "destination", destEnum.String(), "error", uploadErr)
-			var fgErr *fitglueerrors.FitGlueError
-			if errors.As(uploadErr, &fgErr) && fgErr.Code == fitglueerrors.CodeIntegrationAuthFailed {
+			// An expired or revoked destination credential (HTTP 401/403, or a classified
+			// integration-auth FitGlueError) is a user-actionable condition, not an engineering
+			// fault: the user must reconnect the integration. Prompt them to reconnect and log at
+			// Warn so it does not flood Sentry as a code error — genuine faults still log at Error.
+			// Either way the destination is still recorded FAILED below.
+			if isDestinationAuthFailure(uploadErr) {
+				e.logger.Warn(ctx, "Destination upload failed: credential needs reconnection", "destination", destEnum.String(), "error", uploadErr)
 				e.enqueueConnectionActionNotification(ctx, payload.UserId, destEnum)
+			} else {
+				e.logger.Error(ctx, "Destination uploader failed", "destination", destEnum.String(), "error", uploadErr)
 			}
 			if pipelineRunId != "" {
 				destination.UpdateStatus(ctx, e.db, e.publisher, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger, nonBlockingPendingIDs, wasAlreadySynced)
@@ -497,6 +504,26 @@ func existingExternalID(
 		return payload.StandardizedActivity.GetExternalId()
 	}
 	return ""
+}
+
+// isDestinationAuthFailure reports whether an upload error represents an expired or revoked
+// destination credential — the user must reconnect the integration — rather than a transient
+// or server-side fault. It matches both structured FitGlueError auth codes and raw HTTP 401/403
+// responses, since destination APIs surface an invalidated OAuth token / API key as 401 or 403
+// (uploaders return these as *httputil.HTTPError via httputil.WrapResponseError).
+func isDestinationAuthFailure(err error) bool {
+	var fgErr *fitglueerrors.FitGlueError
+	if errors.As(err, &fgErr) {
+		switch fgErr.Code {
+		case fitglueerrors.CodeIntegrationAuthFailed, fitglueerrors.CodeIntegrationExpired:
+			return true
+		}
+	}
+	var httpErr *httputil.HTTPError
+	if errors.As(err, &httpErr) && httpErr.IsAuthFailure() {
+		return true
+	}
+	return false
 }
 
 // enqueueConnectionActionNotification publishes a CONNECTION_ACTION notification so the user
