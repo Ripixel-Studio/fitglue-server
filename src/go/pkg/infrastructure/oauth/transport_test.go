@@ -145,6 +145,54 @@ func TestErrorLoggingTransport(t *testing.T) {
 	})
 }
 
+// levelCaptureHandler records the level of every log record it handles.
+type levelCaptureHandler struct {
+	levels []slog.Level
+}
+
+func (h *levelCaptureHandler) Enabled(context.Context, slog.Level) bool { return true }
+func (h *levelCaptureHandler) Handle(_ context.Context, r slog.Record) error {
+	h.levels = append(h.levels, r.Level)
+	return nil
+}
+func (h *levelCaptureHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h *levelCaptureHandler) WithGroup(string) slog.Handler      { return h }
+
+// TestErrorLoggingTransport_LogsBelowErrorLevel is a regression test for the
+// reported SERVER-C. Every provider response with status >= 400 was logged at
+// Error level; the production slog default is wrapped in a SentryHandler that
+// captures Error-level records, so each one was reported to Sentry as the
+// constant message "HTTP error response". That collapsed unrelated, mostly
+// expected provider failures (401 token expiry, 429 rate limits, 400/409
+// validation) from every user into a single noisy issue. The diagnostic log
+// must stay below Error level so it is never captured to Sentry.
+func TestErrorLoggingTransport_LogsBelowErrorLevel(t *testing.T) {
+	for _, status := range []int{
+		http.StatusBadRequest,
+		http.StatusUnauthorized,
+		http.StatusTooManyRequests,
+		http.StatusConflict,
+		http.StatusInternalServerError,
+	} {
+		capture := &levelCaptureHandler{}
+		base := roundTripFunc(func(*http.Request) (*http.Response, error) {
+			return makeResp(status, "boom"), nil
+		})
+		tr := &ErrorLoggingTransport{Base: base, Logger: slog.New(capture)}
+
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		if _, err := tr.RoundTrip(req); err != nil {
+			t.Fatalf("status %d: unexpected err: %v", status, err)
+		}
+		if len(capture.levels) != 1 {
+			t.Fatalf("status %d: expected exactly 1 log record, got %d", status, len(capture.levels))
+		}
+		if capture.levels[0] >= slog.LevelError {
+			t.Errorf("status %d: logged at %v; must be below Error so it is not captured to Sentry", status, capture.levels[0])
+		}
+	}
+}
+
 func TestNewClientWithErrorLogging(t *testing.T) {
 	c := NewClientWithErrorLogging(slog.Default(), "hevy", 0)
 	if c == nil {
