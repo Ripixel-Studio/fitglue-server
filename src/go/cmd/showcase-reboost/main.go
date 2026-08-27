@@ -63,6 +63,8 @@ import (
 	"github.com/fitglue/server/src/go/pkg/sourceplugins"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 )
 
 const (
@@ -195,7 +197,7 @@ func main() {
 			skipped++
 			continue
 		}
-		if *limit > 0 && published >= *limit {
+		if *limit > 0 && published+failed >= *limit {
 			log.Printf("limit %d reached", *limit)
 			break
 		}
@@ -512,23 +514,27 @@ func waitForRun(ctx context.Context, fs *firestore.Client, userID, execID string
 		}
 		data := doc.Data()
 		runStatus := fmt.Sprint(data["status"])
-		// 2=SUCCESS 3=FAILED 7=SKIPPED (pipeline.ExecutionStatus)
-		if runStatus == "3" || runStatus == "7" || runStatus == "STATUS_FAILED" || runStatus == "STATUS_SKIPPED" {
-			return map[string]string{"3": "FAILED", "7": "SKIPPED"}[runStatus] + "", ""
-		}
-		if runStatus != "2" && runStatus != "STATUS_SUCCESS" {
+		switch runStatus {
+		case fmt.Sprint(int(pbpipeline.ExecutionStatus_STATUS_FAILED)), pbpipeline.ExecutionStatus_STATUS_FAILED.String():
+			return "FAILED", ""
+		case fmt.Sprint(int(pbpipeline.ExecutionStatus_STATUS_SKIPPED)), pbpipeline.ExecutionStatus_STATUS_SKIPPED.String():
+			return "SKIPPED", ""
+		case fmt.Sprint(int(pbpipeline.ExecutionStatus_STATUS_SUCCESS)), pbpipeline.ExecutionStatus_STATUS_SUCCESS.String():
+		default:
 			continue
 		}
+		showcaseEnum := fmt.Sprint(int(pbplugin.DestinationType_DESTINATION_SHOWCASE))
 		dests, _ := data["destinations"].([]interface{})
 		for _, d := range dests {
 			m, _ := d.(map[string]interface{})
-			if fmt.Sprint(m["destination"]) != "DESTINATION_SHOWCASE" && fmt.Sprint(m["destination"]) != "8" {
+			dest := fmt.Sprint(m["destination"])
+			if dest != pbplugin.DestinationType_DESTINATION_SHOWCASE.String() && dest != showcaseEnum {
 				continue
 			}
 			switch fmt.Sprint(m["status"]) {
-			case "2", "STATUS_SUCCESS":
+			case fmt.Sprint(int(pbpipeline.ExecutionStatus_STATUS_SUCCESS)), pbpipeline.ExecutionStatus_STATUS_SUCCESS.String():
 				return "SUCCESS", fmt.Sprint(m["external_id"])
-			case "3", "STATUS_FAILED":
+			case fmt.Sprint(int(pbpipeline.ExecutionStatus_STATUS_FAILED)), pbpipeline.ExecutionStatus_STATUS_FAILED.String():
 				return "DEST_FAILED", ""
 			}
 		}
@@ -712,24 +718,34 @@ type hevyClient struct {
 }
 
 func (h *hevyClient) getRaw(ctx context.Context, path string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, hevyAPI+path, nil)
-	if err != nil {
-		return nil, err
+	for attempt := 0; ; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, hevyAPI+path, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("api-key", h.key)
+		resp, err := h.http.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == http.StatusTooManyRequests && attempt < 6 {
+			// Hevy's limit is per-minute; back off and retry rather than dropping the
+			// session out of the chronological run.
+			wait := time.Duration(30*(attempt+1)) * time.Second
+			log.Printf("        hevy 429 — sleeping %s (attempt %d)", wait, attempt+1)
+			time.Sleep(wait)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("hevy %s: HTTP %d: %.200s", path, resp.StatusCode, body)
+		}
+		return body, nil
 	}
-	req.Header.Set("api-key", h.key)
-	resp, err := h.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("hevy %s: HTTP %d: %.200s", path, resp.StatusCode, body)
-	}
-	return body, nil
 }
 
 func (h *hevyClient) list(ctx context.Context, after time.Time) ([]*hevyWorkout, error) {
