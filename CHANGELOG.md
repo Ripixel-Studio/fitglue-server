@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.63.1](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.63.0...v16.63.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **tools:** showcase-reboost — proto-enum status polling, Hevy 429 backoff ([#53](https://github.com/Ripixel-Studio/fitglue-server/issues/53)) ([cbbc8f5](https://github.com/Ripixel-Studio/fitglue-server/commit/cbbc8f5cc58a629070226c8a6a363afb3ecd4df2))
+
 ## [16.63.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.62.5...v16.63.0) (2026-08-26)
 
 
