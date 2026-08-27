@@ -718,24 +718,34 @@ type hevyClient struct {
 }
 
 func (h *hevyClient) getRaw(ctx context.Context, path string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, hevyAPI+path, nil)
-	if err != nil {
-		return nil, err
+	for attempt := 0; ; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, hevyAPI+path, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("api-key", h.key)
+		resp, err := h.http.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == http.StatusTooManyRequests && attempt < 6 {
+			// Hevy's limit is per-minute; back off and retry rather than dropping the
+			// session out of the chronological run.
+			wait := time.Duration(30*(attempt+1)) * time.Second
+			log.Printf("        hevy 429 — sleeping %s (attempt %d)", wait, attempt+1)
+			time.Sleep(wait)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("hevy %s: HTTP %d: %.200s", path, resp.StatusCode, body)
+		}
+		return body, nil
 	}
-	req.Header.Set("api-key", h.key)
-	resp, err := h.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("hevy %s: HTTP %d: %.200s", path, resp.StatusCode, body)
-	}
-	return body, nil
 }
 
 func (h *hevyClient) list(ctx context.Context, after time.Time) ([]*hevyWorkout, error) {
