@@ -192,7 +192,14 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		return nil, fmt.Errorf("failed to resolve pipeline: %w", err)
 	}
 	if pipeline == nil {
-		logger.Error("Targeted pipeline not found or disabled", "pipeline_id", pipelineID)
+		// A missing/disabled pipeline here is an expected race, not an exception: the
+		// splitter snapshots enabled pipelines when it fans out, but the targeted message
+		// can reach the enricher after the user disables or deletes that pipeline (Pub/Sub
+		// delivery lag/redelivery, or a resume/repost pass-through that never re-checks
+		// disabled state). The pipeline was valid when queued, so this is a controlled skip.
+		// Log below ERROR so SentryHandler doesn't capture it as an exception (SERVER-D) —
+		// same rule the enricher applies to other expected control-flow outcomes below.
+		logger.Warn("Targeted pipeline not found or disabled — skipping", "pipeline_id", pipelineID)
 		return &ProcessResult{
 			Events:             []*pbevents.EnrichedActivityEvent{},
 			ProviderExecutions: []ProviderExecution{},

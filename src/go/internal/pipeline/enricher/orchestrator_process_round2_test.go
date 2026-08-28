@@ -935,6 +935,74 @@ func TestProcess_CancelledRunSkips(t *testing.T) {
 	}
 }
 
+// levelCaptureHandler is a minimal slog.Handler that records the highest log
+// level it has seen. It mirrors how the production SentryHandler decides what to
+// capture: any record at slog.LevelError or above is reported to Sentry as an
+// exception. Asserting no ERROR record is emitted is equivalent to asserting no
+// Sentry issue is raised.
+type levelCaptureHandler struct{ maxLevel slog.Level }
+
+func (h *levelCaptureHandler) Enabled(context.Context, slog.Level) bool { return true }
+func (h *levelCaptureHandler) Handle(_ context.Context, r slog.Record) error {
+	if r.Level > h.maxLevel {
+		h.maxLevel = r.Level
+	}
+	return nil
+}
+func (h *levelCaptureHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h *levelCaptureHandler) WithGroup(string) slog.Handler      { return h }
+
+// TestProcess_DisabledPipelineSkipsWithoutSentry reproduces SERVER-D: a targeted
+// message reaches the enricher for a pipeline the user has since disabled (a race
+// between the splitter's fan-out and delivery). Process must skip cleanly —
+// STATUS_SKIPPED, no events, nil error — and must NOT log at ERROR level, because
+// SentryHandler auto-captures every ERROR log as an exception. Before the fix this
+// path logged "Targeted pipeline not found or disabled" at ERROR, spamming Sentry
+// for an expected controlled halt.
+func TestProcess_DisabledPipelineSkipsWithoutSentry(t *testing.T) {
+	cases := map[string]*MockDatabase{
+		"disabled": {
+			GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+				return &user.Record{UserProfile: &pbuser.UserProfile{UserId: id}}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
+				return []*pbpipeline.PipelineConfig{{Id: "p1", Source: "SOURCE_HEVY", Disabled: true}}, nil
+			},
+		},
+		"deleted": {
+			GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+				return &user.Record{UserProfile: &pbuser.UserProfile{UserId: id}}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
+				// Pipeline "p1" is gone entirely — only an unrelated one remains.
+				return []*pbpipeline.PipelineConfig{{Id: "other", Source: "SOURCE_HEVY"}}, nil
+			},
+		},
+	}
+
+	for name, db := range cases {
+		t.Run(name, func(t *testing.T) {
+			h := &levelCaptureHandler{maxLevel: slog.LevelDebug}
+			logger := slog.New(h)
+			o := NewOrchestrator(db, &MockBlobStore{}, "bucket", nil)
+
+			res, err := o.Process(context.Background(), logger, enricherPayload(), "parent", "exec", false)
+			if err != nil {
+				t.Fatalf("disabled/deleted pipeline should not error, got %v", err)
+			}
+			if res.Status != pbpipeline.ExecutionStatus_STATUS_SKIPPED {
+				t.Errorf("expected SKIPPED, got %v", res.Status)
+			}
+			if len(res.Events) != 0 {
+				t.Errorf("expected 0 events, got %d", len(res.Events))
+			}
+			if h.maxLevel >= slog.LevelError {
+				t.Errorf("expected no ERROR-level log (SentryHandler would capture it as an exception), got max level %v", h.maxLevel)
+			}
+		})
+	}
+}
+
 // TestProcess_ResumeMissingActivityID covers the resume-mode validation that
 // activity_id must be provided.
 func TestProcess_ResumeMissingActivityID(t *testing.T) {
