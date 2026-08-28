@@ -232,6 +232,7 @@ func main() {
 			Metadata: map[string]string{
 				"backfill":                      "true",
 				"backfill_verbatim_description": "true",
+				"backfill_verbatim_title":       "true",
 				"backfill_session_key":          s.key,
 			},
 		}

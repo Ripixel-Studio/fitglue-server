@@ -304,6 +304,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Use slot-based description to preserve pipeline ordering when deferred enrichers
 	// are executed out of order (Phase 2). Each enricher writes to its pipeline index.
 	originalDescription := currentActivity.Description
+	originalName := currentActivity.Name
 	descriptionSlots := make([]string, len(configs)+1) // +1 for original description slot
 	if originalDescription != "" {
 		descriptionSlots[0] = originalDescription
@@ -910,6 +911,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		finalDescription = originalDescription
 	}
 	currentActivity.Description = finalDescription
+	// Same idea for the title: history imports keep the name the user gave the
+	// activity on Strava/Hevy rather than one derived from today's calendar,
+	// location or condition rules.
+	if payload.GetMetadata()["backfill_verbatim_title"] == "true" && originalName != "" {
+		currentActivity.Name = originalName
+	}
 
 	// Build final event structure (no Fan-In needed - currentActivity is already fully enriched)
 	finalEvent := &pbevents.EnrichedActivityEvent{
