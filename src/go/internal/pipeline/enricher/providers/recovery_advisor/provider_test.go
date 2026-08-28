@@ -16,6 +16,7 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/testing/mocks"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func makeActivity(durationMinutes int, heartRate int32) *pbactivity.StandardizedActivity {
@@ -460,4 +461,58 @@ func TestCountConsecutiveHardDays(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A backdated activity (history import, late upload) must land on its own date:
+// the 7/28-day windows are anchored on the activity's start time, not on when
+// the pipeline happened to run.
+func TestRecoveryAdvisor_AnchorsOnActivityDate(t *testing.T) {
+	activityDay := time.Now().AddDate(0, 0, -40).UTC().Truncate(24 * time.Hour)
+	dayKey := activityDay.Format("2006-01-02")
+	weekBefore := activityDay.AddDate(0, 0, -3).Format("2006-01-02")
+	today := time.Now().Format("2006-01-02")
+
+	var saved map[string]interface{}
+	mockDB := &mocks.MockDatabase{
+		GetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+			// 100 TRIMP three days before the activity, and a big load "today" that
+			// must NOT be counted because it is 40 days after the activity.
+			return map[string]interface{}{weekBefore: 100.0, today: 900.0}, nil
+		},
+		SetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+			saved = data
+			return nil
+		},
+	}
+	provider := NewRecoveryAdvisor()
+	provider.Service = &bootstrap.Service{DB: mockDB}
+
+	activity := makeActivity(30, 150)
+	activity.StartTime = timestamppb.New(activityDay.Add(8 * time.Hour))
+	user := &user.Record{UserProfile: &pbuser.UserProfile{UserId: "test-user"}}
+
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+	if _, ok := saved[dayKey]; !ok {
+		t.Fatalf("expected today's load saved under the activity date %s, got keys %v", dayKey, keysOf(saved))
+	}
+	if _, ok := saved[today]; ok {
+		t.Errorf("load must not be written under processing date %s", today)
+	}
+	var acute float64
+	fmt.Sscanf(result.Metadata["acute_load"], "%f", &acute)
+	// 100 (three days earlier) + this session; the 900 from 40 days later is excluded.
+	if acute < 100 || acute >= 900 {
+		t.Errorf("acute load %.0f should include the earlier 100 and exclude the later 900", acute)
+	}
+}
+
+func keysOf(m map[string]interface{}) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
 }
