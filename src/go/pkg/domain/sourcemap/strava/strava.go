@@ -6,6 +6,7 @@ package strava
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	stravaapi "github.com/fitglue/server/src/go/pkg/api/strava"
@@ -217,7 +218,25 @@ func MapActivityType(t stravaapi.ActivityType) activitypb.ActivityType {
 	if mapped, ok := stravaTypeMap[t]; ok {
 		return mapped
 	}
+	// Strava's newer sport_type values (HighIntensityIntervalTraining, Pilates,
+	// TrailRun, GravelRide, …) are not in the legacy ActivityType enum the table
+	// above is keyed on, but their names match ours once CamelCase becomes
+	// UPPER_SNAKE. Try that before giving up.
+	if v, ok := activitypb.ActivityType_value["ACTIVITY_TYPE_"+camelToUpperSnake(string(t))]; ok {
+		return activitypb.ActivityType(v)
+	}
 	return activitypb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
+func camelToUpperSnake(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			b.WriteByte('_')
+		}
+		b.WriteRune(r)
+	}
+	return strings.ToUpper(b.String())
 }
 
 // StreamKeys is the full set of stream types FitGlue asks Strava for.
