@@ -109,16 +109,17 @@ type journalEntry struct {
 
 func main() {
 	var (
-		userID   = flag.String("user", "", "FitGlue user ID (required)")
-		pipeline = flag.String("pipeline", "", "showcase-only pipeline ID to run (required)")
-		project  = flag.String("project", "fitglue-server-prod", "GCP project")
-		from     = flag.String("from", "2026-01-01", "earliest session date (YYYY-MM-DD, UTC)")
-		apply    = flag.Bool("apply", false, "publish (default is dry-run)")
-		limit    = flag.Int("limit", 0, "max sessions to publish this run (0 = all)")
-		only     = flag.String("only", "", "comma-separated session keys to process (see dry-run output)")
-		state    = flag.String("state", "showcase-reboost-state.json", "journal of completed sessions (resume support)")
-		timeout  = flag.Duration("timeout", 6*time.Minute, "max wait per pipeline run before moving on")
-		newOnly  = flag.Bool("new-only", false, "skip sessions that already have a showcase")
+		userID    = flag.String("user", "", "FitGlue user ID (required)")
+		pipeline  = flag.String("pipeline", "", "showcase-only pipeline ID to run (required)")
+		project   = flag.String("project", "fitglue-server-prod", "GCP project")
+		from      = flag.String("from", "2026-01-01", "earliest session date (YYYY-MM-DD, UTC)")
+		apply     = flag.Bool("apply", false, "publish (default is dry-run)")
+		limit     = flag.Int("limit", 0, "max sessions to publish this run (0 = all)")
+		only      = flag.String("only", "", "comma-separated session keys to process (see dry-run output)")
+		state     = flag.String("state", "showcase-reboost-state.json", "journal of completed sessions (resume support)")
+		timeout   = flag.Duration("timeout", 6*time.Minute, "max wait per pipeline run before moving on")
+		newOnly   = flag.Bool("new-only", false, "skip sessions that already have a showcase")
+		existOnly = flag.Bool("existing-only", false, "only re-boost sessions that already have a showcase (never create)")
 	)
 	flag.Parse()
 	if *userID == "" || *pipeline == "" {
@@ -191,6 +192,9 @@ func main() {
 			continue
 		}
 		if *newOnly && s.existing != nil {
+			continue
+		}
+		if *existOnly && s.existing == nil {
 			continue
 		}
 		if j, ok := journal[s.key]; ok && j.Status == "SUCCESS" {
