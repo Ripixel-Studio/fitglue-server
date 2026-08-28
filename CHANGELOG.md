@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.64.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.63.1...v16.64.0) (2026-08-28)
+
+
+### Features
+
+* **backfill:** verbatim titles for history imports; showcase-reboost -existing-only ([#55](https://github.com/Ripixel-Studio/fitglue-server/issues/55)) ([d89a3c5](https://github.com/Ripixel-Studio/fitglue-server/commit/d89a3c5aff28af237209929778324d462d128d1e))
+
+
+### Bug Fixes
+
+* **boosters:** anchor recovery windows on the activity date; quiet roundup notifications for old periods ([#54](https://github.com/Ripixel-Studio/fitglue-server/issues/54)) ([427868b](https://github.com/Ripixel-Studio/fitglue-server/commit/427868b1958bc139cc4944ccbbf6cf4706ef4357))
+* **strava:** map newer sport_type values (HIIT, Pilates, TrailRun, …) onto ActivityType ([#56](https://github.com/Ripixel-Studio/fitglue-server/issues/56)) ([282c9c3](https://github.com/Ripixel-Studio/fitglue-server/commit/282c9c36d6f1fac5ae262fa63ec4b2866566d892))
+
 ### [16.63.1](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.63.0...v16.63.1) (2026-08-27)
 
 
