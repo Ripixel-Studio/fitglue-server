@@ -114,7 +114,14 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 
 	// --- Fetch 28-day training load history ---
 	boosterId := "recovery_advisor"
+	// Anchor the 7/28-day windows on the activity's own date, not processing
+	// time: backdated uploads and history replays must land on the day they
+	// happened, otherwise every replayed session piles into "today" and the
+	// acute/chronic loads become the sum of the whole history.
 	now := time.Now()
+	if activity.StartTime != nil {
+		now = activity.StartTime.AsTime()
+	}
 	var data map[string]interface{}
 
 	var lastExternalId string

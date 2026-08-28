@@ -319,7 +319,12 @@ func (s *Service) generateRoundup(ctx context.Context, userID string, periodType
 		return nil, fmt.Errorf("save roundup: %w", err)
 	}
 
-	s.sendRoundupNotification(ctx, userID, roundup)
+	// Only tell the user about a roundup for a period that just ended. Backfilled
+	// or recomputed history (a period that closed more than two weeks ago) is
+	// silent — nobody wants forty pushes for last spring.
+	if time.Since(periodEnd) <= 14*24*time.Hour {
+		s.sendRoundupNotification(ctx, userID, roundup)
+	}
 
 	return roundup, nil
 }
