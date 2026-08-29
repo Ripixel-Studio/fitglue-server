@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.64.2](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.64.1...v16.64.2) (2026-08-29)
+
+
+### Bug Fixes
+
+* **tools:** showcase-reboost — refresh the Strava access token on 401 ([#58](https://github.com/Ripixel-Studio/fitglue-server/issues/58)) ([22b5ff6](https://github.com/Ripixel-Studio/fitglue-server/commit/22b5ff647cb59d6589aff4eebd63e8ed75e850c9))
+
 ### [16.64.1](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.64.0...v16.64.1) (2026-08-28)
 
 ## [16.64.0](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.63.1...v16.64.0) (2026-08-28)
