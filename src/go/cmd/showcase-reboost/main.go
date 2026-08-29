@@ -588,8 +588,9 @@ func str(m map[string]interface{}, keys ...string) string {
 }
 
 type stravaClient struct {
-	http  *http.Client
-	token string
+	http    *http.Client
+	token   string
+	refresh func(ctx context.Context) (string, error) // re-mints the access token (they expire after ~6h)
 }
 
 func newStravaClient(ctx context.Context, project string, integ map[string]map[string]interface{}) (*stravaClient, error) {
@@ -638,7 +639,15 @@ func newStravaClient(ctx context.Context, project string, integ map[string]map[s
 	if err := json.Unmarshal(body, &tok); err != nil || tok.AccessToken == "" {
 		return nil, fmt.Errorf("strava token refresh: bad response")
 	}
-	return &stravaClient{http: &http.Client{Timeout: 60 * time.Second}, token: tok.AccessToken}, nil
+	c := &stravaClient{http: &http.Client{Timeout: 60 * time.Second}, token: tok.AccessToken}
+	c.refresh = func(ctx context.Context) (string, error) {
+		fresh, err := newStravaClient(ctx, project, integ)
+		if err != nil {
+			return "", err
+		}
+		return fresh.token, nil
+	}
+	return c, nil
 }
 
 func (c *stravaClient) getRaw(ctx context.Context, path string) ([]byte, error) {
@@ -656,6 +665,14 @@ func (c *stravaClient) getRaw(ctx context.Context, path string) ([]byte, error) 
 		_ = resp.Body.Close()
 		if err != nil {
 			return nil, err
+		}
+		if resp.StatusCode == http.StatusUnauthorized && attempt < 2 && c.refresh != nil {
+			// Access tokens last ~6h; a long run outlives one. Re-mint and retry.
+			log.Printf("        strava 401 — refreshing access token")
+			if t, err := c.refresh(ctx); err == nil {
+				c.token = t
+				continue
+			}
 		}
 		if resp.StatusCode == http.StatusTooManyRequests && attempt < 3 {
 			// 15-minute window; wait it out rather than fail a chronological run.
