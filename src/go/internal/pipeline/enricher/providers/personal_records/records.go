@@ -72,17 +72,10 @@ const (
 	SuffixSetVolume StrengthRecordSuffix = "_set_volume"
 	SuffixVolume    StrengthRecordSuffix = "_volume"
 	SuffixReps      StrengthRecordSuffix = "_reps"
-)
-
-// StrengthRecordType defines singular strength records that are scoped to the
-// whole activity rather than to a specific exercise (unlike the per-exercise
-// suffixed records above).
-type StrengthRecordType string
-
-const (
-	// RecordHeaviestWeight is the single heaviest weight (in kg) lifted in any
-	// set across all exercises in a strength activity. Higher is better.
-	RecordHeaviestWeight StrengthRecordType = "heaviest_weight"
+	// SuffixHeaviestWeight keys the heaviest single weight (in kg) lifted for a
+	// given exercise, e.g. deadlift_heaviest_weight. Tracked per-exercise like
+	// _1rm, so each lift has its own heaviest-weight record. Higher is better.
+	SuffixHeaviestWeight StrengthRecordSuffix = "_heaviest_weight"
 )
 
 // Distance thresholds in meters

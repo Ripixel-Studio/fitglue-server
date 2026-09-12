@@ -179,9 +179,9 @@ func TestFormatRecordTypeForDisplay_Strength(t *testing.T) {
 }
 
 func TestFormatRecordTypeForDisplay_HeaviestWeight(t *testing.T) {
-	got := formatRecordTypeForDisplay(string(RecordHeaviestWeight))
-	if got != "Heaviest Weight" {
-		t.Errorf("formatRecordTypeForDisplay(heaviest_weight) = %q, want %q", got, "Heaviest Weight")
+	got := formatRecordTypeForDisplay("deadlift" + string(SuffixHeaviestWeight))
+	if got != "Deadlift Heaviest Weight" {
+		t.Errorf("formatRecordTypeForDisplay(deadlift_heaviest_weight) = %q, want %q", got, "Deadlift Heaviest Weight")
 	}
 }
 
@@ -268,7 +268,7 @@ func TestFormatPRMessage_Reps(t *testing.T) {
 
 func TestFormatPRMessage_HeaviestWeight(t *testing.T) {
 	p := NewPersonalRecordsProvider()
-	msg := p.formatPRMessage(string(RecordHeaviestWeight), 140.0, nil, nil, "kg", false)
+	msg := p.formatPRMessage("deadlift"+string(SuffixHeaviestWeight), 140.0, nil, nil, "kg", false)
 	if !strings.Contains(msg, "🏋️") {
 		t.Errorf("expected 🏋️ emoji for heaviest weight record, got %q", msg)
 	}

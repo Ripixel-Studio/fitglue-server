@@ -284,25 +284,17 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 
 	// Group sets by normalized exercise name
 	exerciseData := make(map[string]struct {
-		Best1RM       float64
-		BestSetVolume float64
-		TotalVolume   float64
-		MaxReps       int32
+		Best1RM        float64
+		BestSetVolume  float64
+		TotalVolume    float64
+		MaxReps        int32
+		HeaviestWeight float64
 	})
-
-	// Heaviest single weight lifted across every exercise in the activity.
-	// Tracked activity-wide (not per-exercise) so it mirrors the singular
-	// longest_run / longest_ride cardio records.
-	var heaviestWeightKg float64
 
 	for _, session := range activity.Sessions {
 		for _, set := range session.StrengthSets {
 			if set.WeightKg <= 0 || set.Reps <= 0 {
 				continue
-			}
-
-			if set.WeightKg > heaviestWeightKg {
-				heaviestWeightKg = set.WeightKg
 			}
 
 			// Normalize exercise name using muscle_heatmap fuzzy matcher
@@ -312,6 +304,11 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 			}
 
 			data := exerciseData[normalizedName]
+
+			// Track the heaviest single weight lifted for this exercise
+			if set.WeightKg > data.HeaviestWeight {
+				data.HeaviestWeight = set.WeightKg
+			}
 
 			// Calculate 1RM for this set
 			estimated1RM := Calculate1RM(set.WeightKg, set.Reps)
@@ -380,15 +377,16 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 				results = append(results, *pr)
 			}
 		}
-	}
 
-	// Check heaviest single weight lifted (activity-wide, across all exercises)
-	if heaviestWeightKg > 0 {
-		pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordHeaviestWeight), heaviestWeightKg, "kg", activity, false)
-		if err != nil {
-			logger.Warn("Failed to check heaviest weight record", "error", err)
-		} else if pr != nil {
-			results = append(results, *pr)
+		// Check heaviest single weight lifted for this exercise
+		if data.HeaviestWeight > 0 {
+			recordType := exerciseName + string(SuffixHeaviestWeight)
+			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, data.HeaviestWeight, "kg", activity, false)
+			if err != nil {
+				logger.Warn("Failed to check heaviest weight record", "error", err, "exercise", exerciseName)
+			} else if pr != nil {
+				results = append(results, *pr)
+			}
 		}
 	}
 
@@ -584,7 +582,7 @@ func (p *PersonalRecordsProvider) checkAndUpdateRecord(ctx context.Context, user
 func (p *PersonalRecordsProvider) formatPRMessage(recordType string, newValue float64, previousValue, improvement *float64, unit string, lowerIsBetter bool) string {
 	// Determine emoji based on record type
 	emoji := "🏆"
-	if recordType == string(RecordHeaviestWeight) {
+	if strings.HasSuffix(recordType, string(SuffixHeaviestWeight)) {
 		emoji = "🏋️"
 	} else if strings.Contains(recordType, "_set_volume") {
 		emoji = "💪"
@@ -677,11 +675,13 @@ func formatRecordTypeForDisplay(recordType string) string {
 		return "Longest Ride"
 	case string(RecordHighestElevationGain):
 		return "Highest Elevation Gain"
-	case string(RecordHeaviestWeight):
-		return "Heaviest Weight"
 	}
 
 	// Handle strength record types
+	if strings.HasSuffix(recordType, string(SuffixHeaviestWeight)) {
+		exerciseName := strings.TrimSuffix(recordType, string(SuffixHeaviestWeight))
+		return formatExerciseName(exerciseName) + " Heaviest Weight"
+	}
 	if strings.HasSuffix(recordType, string(Suffix1RM)) {
 		exerciseName := strings.TrimSuffix(recordType, string(Suffix1RM))
 		return formatExerciseName(exerciseName) + " 1RM"
