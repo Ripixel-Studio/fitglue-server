@@ -594,15 +594,17 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 		s.logger.Warn(ctx, "failed to fetch personal records for profile", "error", err)
 	} else {
 		// Separate into time PRs (lower = better) and weight PRs (higher = better).
-		// For weight, only include 1RM records — exclude volume/set_volume which are
-		// always the largest numbers and not representative of actual weight lifted.
 		var timePRs, weightPRs []*pbactivity.ShowcaseTopPR
 		for _, pr := range allPRs {
 			switch pr.Unit {
 			case "seconds":
 				timePRs = append(timePRs, pr)
 			case "kg":
-				if strings.HasSuffix(pr.RecordType, "_1rm") {
+				// Include 1RM (estimated one-rep max) and heaviest_weight
+				// (the actual heaviest single lift) — both represent real
+				// weight lifted. Exclude volume/set_volume which are always
+				// the largest numbers and not representative of weight lifted.
+				if strings.HasSuffix(pr.RecordType, "_1rm") || pr.RecordType == "heaviest_weight" {
 					weightPRs = append(weightPRs, pr)
 				}
 			}
