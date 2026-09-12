@@ -341,6 +341,52 @@ func TestUploadExecutor_ConcurrentResume_SingleCreate(t *testing.T) {
 	}
 }
 
+// TestUploadExecutor_CancelledRun_SkipsUploads verifies the cancellation guard: if the run was
+// cancelled (status CANCELLED) after the enricher published this event, the executor must not
+// upload to any destination. Without the guard, hitting "stop" on a running pipeline still lands
+// the activity on Strava et al.
+func TestUploadExecutor_CancelledRun_SkipsUploads(t *testing.T) {
+	registry := NewRegistry()
+	uploader := &countingUploader{name: "strava", id: "strava-1"}
+	registry.Register(pbplugin.DestinationType_DESTINATION_STRAVA, uploader)
+
+	userClient := &mockUserServiceClient{
+		GetProfileFunc: func(ctx context.Context, in *userpb.GetProfileRequest, opts ...grpc.CallOption) (*pbuser.UserProfile, error) {
+			return &pbuser.UserProfile{UserId: in.UserId}, nil
+		},
+	}
+	execID := "exec-cancelled"
+	db := &mocks.MockDatabase{
+		GetPipelineRunFunc: func(_ context.Context, _ string, id string) (*pbpipeline.PipelineRun, error) {
+			return &pbpipeline.PipelineRun{
+				Id:     id,
+				Status: pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED,
+			}, nil
+		},
+	}
+	executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, db, nil, &mocks.MockPublisher{}, infra.NewLogger())
+
+	payload := &pbevents.EnrichedActivityEvent{
+		UserId:              "user-1",
+		ActivityId:          "act-1",
+		PipelineExecutionId: &execID,
+		Destinations:        []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA},
+		ActivityData:        &pbactivity.StandardizedActivity{ExternalId: "ext-1"},
+	}
+	payloadBytes, err := protojson.Marshal(payload)
+	assert.NoError(t, err)
+	ce := event.New()
+	ce.SetID("test-cancelled")
+	ce.SetType("com.fitglue.event.enriched")
+	ce.SetSource("test")
+	ce.SetData("application/json", payloadBytes)
+
+	assert.NoError(t, executor.Process(context.Background(), &ce))
+
+	assert.Equal(t, int32(0), atomic.LoadInt32(&uploader.createCalls), "cancelled run must not create on the destination")
+	assert.Equal(t, int32(0), atomic.LoadInt32(&uploader.updateCalls), "cancelled run must not update on the destination")
+}
+
 // TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard verifies that an explicit
 // retry/missed-destination Magic Action re-uploads even when the (reused) pipeline run
 // already has a SUCCESS outcome for that destination. Without the bypass the repost is a
