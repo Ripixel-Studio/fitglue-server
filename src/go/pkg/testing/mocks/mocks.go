@@ -49,6 +49,9 @@ type MockDatabase struct {
 	// Override to return prior destination outcomes (e.g. to exercise the
 	// already-uploaded idempotency guard).
 	GetDestinationOutcomesFunc func(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error)
+
+	// Override to return a specific pipeline run (e.g. to exercise the cancellation guard).
+	GetPipelineRunFunc func(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error)
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
@@ -308,6 +311,9 @@ func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run
 }
 
 func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error) {
+	if m.GetPipelineRunFunc != nil {
+		return m.GetPipelineRunFunc(ctx, userId, id)
+	}
 	// No-op for tests by default
 	return nil, nil
 }

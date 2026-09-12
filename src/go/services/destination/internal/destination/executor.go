@@ -236,6 +236,16 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		}
 	}
 
+	// Cancellation guard: the user may have cancelled the run (CancelPipelineRun sets status
+	// CANCELLED) after the enricher published this event but before we upload. Honour it here so
+	// "stop the pipeline" actually prevents outward-facing uploads, not just the Firestore status.
+	// Mirrors the enricher-side guard in the orchestrator; ack the message with no side effects and
+	// leave the run CANCELLED (do not call UpdateStatus, which would recompute a terminal status).
+	if pr != nil && pr.Status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_CANCELLED {
+		e.logger.Info(ctx, "Pipeline run cancelled — skipping destination uploads", "pipelineRunId", pipelineRunId, "target_dest", targetDest.String())
+		return nil
+	}
+
 	// Pre-fetch destination outcomes once; used below to skip already-succeeded destinations
 	// on Pub/Sub redelivery (prevents double-posting).
 	var priorOutcomes []*pbpipeline.DestinationOutcome
