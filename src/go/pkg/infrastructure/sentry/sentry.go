@@ -161,23 +161,28 @@ func stripInstrumentationFrames(event *sentry.Event) {
 	}
 }
 
+// applyContext attaches each key/value as its own Sentry context card. It runs
+// inside sentry.WithScope so the values belong to this one event only — the
+// previous ConfigureScope approach wrote them onto the hub's persistent scope,
+// where they leaked onto every later event from the same process.
+func applyContext(scope *sentry.Scope, context map[string]interface{}) {
+	for key, value := range context {
+		scope.SetContext(key, sentry.Context(map[string]interface{}{
+			"value": value,
+		}))
+	}
+}
+
 // CaptureException captures an exception in Sentry with additional context.
 func CaptureException(err error, context map[string]interface{}, logger *slog.Logger) {
 	if err == nil {
 		return
 	}
 
-	if context != nil {
-		sentry.ConfigureScope(func(scope *sentry.Scope) {
-			for key, value := range context {
-				scope.SetContext(key, sentry.Context(map[string]interface{}{
-					"value": value,
-				}))
-			}
-		})
-	}
-
-	sentry.CaptureException(err)
+	sentry.WithScope(func(scope *sentry.Scope) {
+		applyContext(scope, context)
+		sentry.CaptureException(err)
+	})
 
 	if logger != nil {
 		logger.Debug("Exception captured in Sentry", "error", err.Error())
@@ -186,17 +191,11 @@ func CaptureException(err error, context map[string]interface{}, logger *slog.Lo
 
 // CaptureMessage captures a message in Sentry.
 func CaptureMessage(message string, level sentry.Level, context map[string]interface{}, logger *slog.Logger) {
-	if context != nil {
-		sentry.ConfigureScope(func(scope *sentry.Scope) {
-			for key, value := range context {
-				scope.SetContext(key, sentry.Context(map[string]interface{}{
-					"value": value,
-				}))
-			}
-		})
-	}
-
-	sentry.CaptureMessage(message)
+	sentry.WithScope(func(scope *sentry.Scope) {
+		scope.SetLevel(level)
+		applyContext(scope, context)
+		sentry.CaptureMessage(message)
+	})
 
 	if logger != nil {
 		logger.Debug("Message captured in Sentry", "message", message, "level", level)
@@ -250,11 +249,13 @@ func (h *SentryHandler) Handle(ctx context.Context, r slog.Record) error {
 				CaptureException(err, context, nil)
 			} else {
 				// Error is a string or other type
-				sentry.CaptureMessage(fmt.Sprintf("%s: %v", r.Message, errVal))
+				CaptureMessage(fmt.Sprintf("%s: %v", r.Message, errVal), sentry.LevelError, context, nil)
 			}
 		} else {
-			// No error attribute, capture as message
-			sentry.CaptureMessage(r.Message)
+			// No error attribute, capture as message. The attrs still ride along —
+			// without them a message like "failed to send verification email" reaches
+			// Sentry with no "err"/"reason"/"user_id" and is undiagnosable (SERVER-8/9).
+			CaptureMessage(r.Message, sentry.LevelError, context, nil)
 		}
 	}
 
