@@ -346,11 +346,19 @@ func TestUploadExecutor_ConcurrentResume_SingleCreate(t *testing.T) {
 // already has a SUCCESS outcome for that destination. Without the bypass the repost is a
 // silent no-op ("Skipping already-uploaded destination"), so the user never gets a new
 // upload and the run stays wedged in RUNNING.
+//
+// It further verifies the create-vs-update decision: a retry-destination to a destination the
+// activity already reached must Update the existing entry — a Create would be blocked by the
+// cross-execution create claim within its TTL (silent no-op) and would duplicate the activity
+// once the claim lapses. A missed-destination targets a destination with no prior success, so
+// it must still Create.
 func TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard(t *testing.T) {
+	extID := "strava-existing"
 	priorStravaSuccess := func(_ context.Context, _ string, _ string) ([]*pbpipeline.DestinationOutcome, error) {
 		return []*pbpipeline.DestinationOutcome{{
 			Destination: pbplugin.DestinationType_DESTINATION_STRAVA,
 			Status:      pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+			ExternalId:  &extID,
 		}}, nil
 	}
 
@@ -366,7 +374,9 @@ func TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard(t *testing.T) {
 		}
 	}
 
-	run := func(t *testing.T, meta map[string]string) int32 {
+	// run drives Process with the given prior-outcome fixture and metadata, returning
+	// (createCalls, updateCalls).
+	run := func(t *testing.T, outcomes func(context.Context, string, string) ([]*pbpipeline.DestinationOutcome, error), meta map[string]string) (int32, int32) {
 		t.Helper()
 		registry := NewRegistry()
 		uploader := &countingUploader{name: "strava", id: "strava-1"}
@@ -377,7 +387,7 @@ func TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard(t *testing.T) {
 				return &pbuser.UserProfile{UserId: in.UserId}, nil
 			},
 		}
-		db := &mocks.MockDatabase{GetDestinationOutcomesFunc: priorStravaSuccess}
+		db := &mocks.MockDatabase{GetDestinationOutcomesFunc: outcomes}
 		executor := NewUploadExecutor(registry, userClient, &mockActivityServiceClient{}, db, nil, &mocks.MockPublisher{}, infra.NewLogger())
 
 		payloadBytes, err := protojson.Marshal(newPayload(meta))
@@ -388,17 +398,26 @@ func TestUploadExecutor_TargetedRepost_BypassesIdempotencyGuard(t *testing.T) {
 		ce.SetSource("test")
 		ce.SetData("application/json", payloadBytes)
 		assert.NoError(t, executor.Process(context.Background(), &ce))
-		return atomic.LoadInt32(&uploader.createCalls)
+		return atomic.LoadInt32(&uploader.createCalls), atomic.LoadInt32(&uploader.updateCalls)
 	}
 
 	// Without repost metadata: the prior SUCCESS must short-circuit the upload.
-	if got := run(t, nil); got != 0 {
-		t.Errorf("expected guard to skip create (0 Create calls), got %d", got)
+	if c, u := run(t, priorStravaSuccess, nil); c != 0 || u != 0 {
+		t.Errorf("expected guard to skip (0 create, 0 update), got %d create, %d update", c, u)
 	}
 
-	// Targeted repost: the guard must be bypassed and the upload re-attempted.
-	if got := run(t, map[string]string{"is_repost": "true", "repost_mode": "retry-destination"}); got != 1 {
-		t.Errorf("expected targeted repost to bypass guard (1 Create call), got %d", got)
+	// retry-destination to an already-synced destination: the guard is bypassed and the
+	// existing entry is Updated (not Created).
+	if c, u := run(t, priorStravaSuccess, map[string]string{"is_repost": "true", "repost_mode": "retry-destination"}); c != 0 || u != 1 {
+		t.Errorf("expected retry-destination to update existing entry (0 create, 1 update), got %d create, %d update", c, u)
+	}
+
+	// missed-destination targets a destination with no prior success, so it must Create.
+	noOutcomes := func(_ context.Context, _ string, _ string) ([]*pbpipeline.DestinationOutcome, error) {
+		return nil, nil
+	}
+	if c, u := run(t, noOutcomes, map[string]string{"is_repost": "true", "repost_mode": "missed-destination"}); c != 1 || u != 0 {
+		t.Errorf("expected missed-destination to create (1 create, 0 update), got %d create, %d update", c, u)
 	}
 }
 

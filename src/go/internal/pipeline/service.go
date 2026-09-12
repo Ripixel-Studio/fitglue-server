@@ -521,6 +521,20 @@ func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityR
 		payload["repostDestination"] = req.Destination
 	}
 
+	// full-pipeline must mint a FRESH pipeline run. The stored original payload carries the
+	// original pipeline_execution_id; if we replay it unchanged the enricher and destination
+	// executor key off that same run id, whose prior SUCCESS destination outcomes trip the
+	// redelivery idempotency guard — so every full-pipeline re-run is a silent no-op that
+	// uploads nothing and leaves the run wedged. Clearing it makes the splitter generate a new
+	// run id (a genuinely fresh run with no prior outcomes), which is exactly what the
+	// destination executor's guard assumes for full-pipeline. Targeted reposts
+	// (missed-destination / retry-destination) intentionally KEEP the id so they reuse the
+	// original run (that's how their guard-bypass and Update-with-existing-external-id work).
+	if req.Mode == "full-pipeline" {
+		delete(payload, "pipelineExecutionId")
+		delete(payload, "pipeline_execution_id")
+	}
+
 	updatedPayloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to serialize repost payload")
