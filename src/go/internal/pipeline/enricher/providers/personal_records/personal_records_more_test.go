@@ -187,6 +187,52 @@ func TestPersonalRecords_Enrich_StrengthFirstPR(t *testing.T) {
 	}
 }
 
+func TestPersonalRecords_Enrich_HeaviestWeight(t *testing.T) {
+	// MockDatabase.GetPersonalRecord returns (nil,nil) → first record (new PR).
+	p := NewPersonalRecordsProvider()
+	p.SetService(&bootstrap.Service{DB: &mocks.MockDatabase{}})
+
+	// Two exercises; the heaviest single weight lifted is the 180kg deadlift.
+	activity := &pbactivity.StandardizedActivity{
+		Name: "Leg Day",
+		Type: pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		Sessions: []*pbactivity.Session{
+			{
+				StrengthSets: []*pbactivity.StrengthSet{
+					{ExerciseName: "Squat", WeightKg: 140, Reps: 5},
+					{ExerciseName: "Deadlift", WeightKg: 180, Reps: 1},
+				},
+			},
+		},
+	}
+	u := &user.Record{UserProfile: &pbuser.UserProfile{UserId: "u1"}}
+
+	res, err := p.Enrich(context.Background(), discardLogger(), activity, u, nil, false)
+	if err != nil {
+		t.Fatalf("Enrich error: %v", err)
+	}
+	if res.Enrichments == nil || res.Enrichments.PersonalRecords == nil {
+		t.Fatal("expected PersonalRecords enrichments populated")
+	}
+
+	var heaviest *pbactivity.PersonalRecord
+	for _, rec := range res.Enrichments.PersonalRecords.Records {
+		if rec.RecordType == string(RecordHeaviestWeight) {
+			heaviest = rec
+			break
+		}
+	}
+	if heaviest == nil {
+		t.Fatal("expected a heaviest_weight record among detected PRs")
+	}
+	if heaviest.NewValue != 180 {
+		t.Errorf("heaviest_weight NewValue = %v, want 180", heaviest.NewValue)
+	}
+	if heaviest.Unit != "kg" {
+		t.Errorf("heaviest_weight Unit = %q, want kg", heaviest.Unit)
+	}
+}
+
 func TestPersonalRecords_Enrich_CardioRunFirstPR(t *testing.T) {
 	p := NewPersonalRecordsProvider()
 	p.SetService(&bootstrap.Service{DB: &mocks.MockDatabase{}})

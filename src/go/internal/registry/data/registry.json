@@ -2733,7 +2733,7 @@
         {
           "key": "strength_records",
           "label": "Track Strength PRs",
-          "description": "Track PRs for weightlifting (1RM, volume, max reps)",
+          "description": "Track PRs for weightlifting (1RM, heaviest weight, volume, max reps)",
           "fieldType": 3,
           "required": false,
           "defaultValue": "true",
@@ -2753,7 +2753,7 @@
           "valueOptions": []
         }
       ],
-      "marketingDescription": "\n### Automatic Personal Record Detection\nNever miss a PR again! FitGlue automatically detects when you've achieved a new personal record and adds a celebration to your activity.\n\n### Cardio Records Tracked\n- **Fastest 5K, 10K, Half Marathon**: Time-based records for running\n- **Longest Run**: Your greatest single-run distance\n- **Longest Ride**: Your greatest single-ride distance\n- **Highest Elevation Gain**: Most climbing in one activity\n\n### Strength Records Tracked (per exercise)\n- **1RM**: Uses the Epley formula to estimate your one-rep max\n- **Volume**: Most total volume (sets × reps × weight) in one session\n- **Reps**: Most reps in a single set\n\nAll records are stored in Firestore, so your PRs persist across time.\n  ",
+      "marketingDescription": "\n### Automatic Personal Record Detection\nNever miss a PR again! FitGlue automatically detects when you've achieved a new personal record and adds a celebration to your activity.\n\n### Cardio Records Tracked\n- **Fastest 5K, 10K, Half Marathon**: Time-based records for running\n- **Longest Run**: Your greatest single-run distance\n- **Longest Ride**: Your greatest single-ride distance\n- **Highest Elevation Gain**: Most climbing in one activity\n\n### Strength Records Tracked (per exercise)\n- **1RM**: Uses the Epley formula to estimate your one-rep max\n- **Volume**: Most total volume (sets × reps × weight) in one session\n- **Reps**: Most reps in a single set\n\n### Strength Records Tracked (whole activity)\n- **Heaviest Weight**: The heaviest single weight you've lifted across all exercises\n\nAll records are stored in Firestore, so your PRs persist across time.\n",
       "features": [
         "✅ Automatic PR detection for cardio and strength",
         "✅ Epley formula for estimated 1RM",

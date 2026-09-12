@@ -74,6 +74,17 @@ const (
 	SuffixReps      StrengthRecordSuffix = "_reps"
 )
 
+// StrengthRecordType defines singular strength records that are scoped to the
+// whole activity rather than to a specific exercise (unlike the per-exercise
+// suffixed records above).
+type StrengthRecordType string
+
+const (
+	// RecordHeaviestWeight is the single heaviest weight (in kg) lifted in any
+	// set across all exercises in a strength activity. Higher is better.
+	RecordHeaviestWeight StrengthRecordType = "heaviest_weight"
+)
+
 // Distance thresholds in meters
 const (
 	// Sprint distances
