@@ -600,11 +600,12 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 			case "seconds":
 				timePRs = append(timePRs, pr)
 			case "kg":
-				// Include 1RM (estimated one-rep max) and heaviest_weight
-				// (the actual heaviest single lift) — both represent real
-				// weight lifted. Exclude volume/set_volume which are always
-				// the largest numbers and not representative of weight lifted.
-				if strings.HasSuffix(pr.RecordType, "_1rm") || pr.RecordType == "heaviest_weight" {
+				// Include per-exercise 1RM (estimated one-rep max) and
+				// heaviest_weight (the actual heaviest single lift) — both
+				// represent real weight lifted. Exclude volume/set_volume which
+				// are always the largest numbers and not representative of
+				// weight lifted.
+				if strings.HasSuffix(pr.RecordType, "_1rm") || strings.HasSuffix(pr.RecordType, "_heaviest_weight") {
 					weightPRs = append(weightPRs, pr)
 				}
 			}

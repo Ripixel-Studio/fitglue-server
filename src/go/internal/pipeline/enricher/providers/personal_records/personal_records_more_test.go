@@ -192,14 +192,16 @@ func TestPersonalRecords_Enrich_HeaviestWeight(t *testing.T) {
 	p := NewPersonalRecordsProvider()
 	p.SetService(&bootstrap.Service{DB: &mocks.MockDatabase{}})
 
-	// Two exercises; the heaviest single weight lifted is the 180kg deadlift.
+	// Two exercises; each gets its own heaviest-weight record — Squat 140kg,
+	// Deadlift 180kg. Heaviest weight is tracked per-exercise, like 1RM.
 	activity := &pbactivity.StandardizedActivity{
 		Name: "Leg Day",
 		Type: pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
 		Sessions: []*pbactivity.Session{
 			{
 				StrengthSets: []*pbactivity.StrengthSet{
-					{ExerciseName: "Squat", WeightKg: 140, Reps: 5},
+					{ExerciseName: "Squat", WeightKg: 120, Reps: 5},
+					{ExerciseName: "Squat", WeightKg: 140, Reps: 3},
 					{ExerciseName: "Deadlift", WeightKg: 180, Reps: 1},
 				},
 			},
@@ -215,21 +217,25 @@ func TestPersonalRecords_Enrich_HeaviestWeight(t *testing.T) {
 		t.Fatal("expected PersonalRecords enrichments populated")
 	}
 
-	var heaviest *pbactivity.PersonalRecord
+	// Collect the per-exercise heaviest-weight records keyed by exercise.
+	heaviestByExercise := make(map[string]float64)
 	for _, rec := range res.Enrichments.PersonalRecords.Records {
-		if rec.RecordType == string(RecordHeaviestWeight) {
-			heaviest = rec
-			break
+		if strings.HasSuffix(rec.RecordType, string(SuffixHeaviestWeight)) {
+			exercise := strings.TrimSuffix(rec.RecordType, string(SuffixHeaviestWeight))
+			heaviestByExercise[exercise] = rec.NewValue
+			if rec.Unit != "kg" {
+				t.Errorf("%s Unit = %q, want kg", rec.RecordType, rec.Unit)
+			}
 		}
 	}
-	if heaviest == nil {
-		t.Fatal("expected a heaviest_weight record among detected PRs")
+	if len(heaviestByExercise) != 2 {
+		t.Fatalf("expected 2 per-exercise heaviest_weight records, got %d: %v", len(heaviestByExercise), heaviestByExercise)
 	}
-	if heaviest.NewValue != 180 {
-		t.Errorf("heaviest_weight NewValue = %v, want 180", heaviest.NewValue)
+	if got := heaviestByExercise["squat"]; got != 140 {
+		t.Errorf("squat_heaviest_weight NewValue = %v, want 140 (heaviest of its sets, not most recent)", got)
 	}
-	if heaviest.Unit != "kg" {
-		t.Errorf("heaviest_weight Unit = %q, want kg", heaviest.Unit)
+	if got := heaviestByExercise["deadlift"]; got != 180 {
+		t.Errorf("deadlift_heaviest_weight NewValue = %v, want 180", got)
 	}
 }
 
