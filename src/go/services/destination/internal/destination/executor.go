@@ -322,6 +322,16 @@ destinations:
 			}
 		} else if isTargetedRepost {
 			e.logger.Info(ctx, "Targeted repost: bypassing already-uploaded idempotency guard", "destination", destEnum.String(), "repost_mode", repostMode)
+			// retry-destination re-sends to a destination this activity already reached, so it
+			// must Update the existing entry, not Create a second one. A Create here would be
+			// blocked by the cross-execution create claim within its 5-minute TTL (silent no-op)
+			// and would produce a duplicate activity once the claim lapses — neither is what the
+			// user asked for. missed-destination targets a destination with no prior success
+			// (wasAlreadySynced=false), so it correctly falls through to Create below.
+			if wasAlreadySynced && !effectiveIsUpdate {
+				e.logger.Info(ctx, "Targeted repost: updating already-succeeded destination", "destination", destEnum.String())
+				effectiveIsUpdate = true
+			}
 		}
 
 		e.logger.Info(ctx, "Triggering destination uploader", "destination", destEnum.String(), "is_update", effectiveIsUpdate)
