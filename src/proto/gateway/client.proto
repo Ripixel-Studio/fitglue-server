@@ -297,6 +297,13 @@ service ClientGatewayService {
       get: "/users/me/activities/{id}"
     };
   }
+  // RefreshActivitySource re-pulls the activity from its source and refreshes the
+  // immutable source layer of the persisted record, returning the resolved activity.
+  rpc RefreshActivitySource(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/refresh-source"
+    };
+  }
   rpc DeleteActivity(ActivityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/users/me/activities/{id}"

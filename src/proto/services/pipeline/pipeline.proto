@@ -5,6 +5,7 @@ package fitglue.services.pipeline;
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
+import "models/activity/standardized.proto";
 import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
 import "models/pipeline/pending_input.proto";
@@ -76,7 +77,22 @@ service PipelineService {
       body: "*"
     };
   }
-  
+
+  // RefreshActivitySource re-pulls the activity from its origin (Strava / Garmin /
+  // Apple Health …) and refreshes the immutable source layer of the persisted layered
+  // record: the parsed source snapshot, a freshly-stored raw payload, and the ingest /
+  // prune timestamps. Enrichers are NOT re-run (that is a separate, user-triggered
+  // action — see the editable-activities spec); the derived activity is rebased onto the
+  // freshly-pulled source and the user-edit overlay is preserved and still wins on read.
+  // Returns the resolved (source + user overlay) activity so the caller can show the
+  // refreshed data immediately.
+  rpc RefreshActivitySource(RefreshActivitySourceRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activities/{activity_id}/refresh-source"
+    };
+  }
+
+
   rpc GetPipelineRun(GetPipelineRunRequest) returns (fitglue.models.pipeline.PipelineRun) {
     option (google.api.http) = {
       get: "/v2/users/{user_id}/pipeline-runs/{run_id}"
@@ -186,6 +202,11 @@ message RepostActivityRequest {
   string mode = 3;
   // Target destination (required for missed-destination and retry-destination modes)
   string destination = 4;
+}
+
+message RefreshActivitySourceRequest {
+  string user_id = 1;
+  string activity_id = 2;
 }
 
 message GetPipelineRunRequest {

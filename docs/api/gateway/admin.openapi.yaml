@@ -1389,6 +1389,19 @@ components:
                     type: string
                 enrichedEventUri:
                     type: string
+                activityRecordUri:
+                    type: string
+                    description: |-
+                        GCS URI of the durable, layered ActivityRecord written on pipeline completion
+                         (fitglue.models.activity.ActivityRecord as protojson). Empty for legacy runs
+                         created before layered storage, which fall back to enriched_event_uri.
+                rawPayloadExpiresAt:
+                    type: string
+                    description: |-
+                        When the raw provider payload at original_payload_uri is pruned (ingest + 30d,
+                         spec DECISION 1a). Informational; deletion is enforced by a GCS lifecycle rule
+                         on the payloads/ prefix. After this, reprocessing relies on a re-pull.
+                    format: date-time
                 nonBlockingPendingInputIds:
                     type: array
                     items:

@@ -41,6 +41,16 @@ func ActivityRecordURI(bucket, userID, activityID string) string {
 	return fmt.Sprintf("gs://%s/%s", bucket, ActivityRecordObjectPath(userID, activityID))
 }
 
+// RepulledSourcePayloadObjectPath returns the GCS object path for a raw provider payload
+// captured by a re-pull-from-source. It lives under the payloads/ prefix so the same GCS
+// lifecycle rule that prunes original ingest payloads after RawPayloadRetentionDays also
+// prunes re-pulled ones (spec DECISION 1a). The nanosecond suffix keeps successive
+// re-pulls from clobbering each other (and the pipeline's original payload), so history
+// is not silently overwritten.
+func RepulledSourcePayloadObjectPath(userID, activityID string, at time.Time) string {
+	return fmt.Sprintf("payloads/%s/%s-repull-%d.json", userID, activityID, at.UnixNano())
+}
+
 // LoadActivityRecord fetches and unmarshals a layered ActivityRecord from GCS.
 // Returns (nil, nil) when uri is empty so callers can treat "no record yet" as a
 // non-error (e.g. the first run for an activity, or a legacy pre-layered run).

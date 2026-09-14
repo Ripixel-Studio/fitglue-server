@@ -8,6 +8,7 @@ package pipeline
 
 import (
 	context "context"
+	activity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -32,6 +33,7 @@ const (
 	PipelineService_CancelPipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/CancelPipeline"
 	PipelineService_CancelPipelineRun_FullMethodName     = "/fitglue.services.pipeline.PipelineService/CancelPipelineRun"
 	PipelineService_RepostActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/RepostActivity"
+	PipelineService_RefreshActivitySource_FullMethodName = "/fitglue.services.pipeline.PipelineService/RefreshActivitySource"
 	PipelineService_GetPipelineRun_FullMethodName        = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
 	PipelineService_ListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
 	PipelineService_AdminListPipelineRuns_FullMethodName = "/fitglue.services.pipeline.PipelineService/AdminListPipelineRuns"
@@ -54,6 +56,15 @@ type PipelineServiceClient interface {
 	CancelPipeline(ctx context.Context, in *CancelPipelineRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	CancelPipelineRun(ctx context.Context, in *CancelPipelineRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RepostActivity(ctx context.Context, in *RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// RefreshActivitySource re-pulls the activity from its origin (Strava / Garmin /
+	// Apple Health …) and refreshes the immutable source layer of the persisted layered
+	// record: the parsed source snapshot, a freshly-stored raw payload, and the ingest /
+	// prune timestamps. Enrichers are NOT re-run (that is a separate, user-triggered
+	// action — see the editable-activities spec); the derived activity is rebased onto the
+	// freshly-pulled source and the user-edit overlay is preserved and still wins on read.
+	// Returns the resolved (source + user overlay) activity so the caller can show the
+	// refreshed data immediately.
+	RefreshActivitySource(ctx context.Context, in *RefreshActivitySourceRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsRequest, opts ...grpc.CallOption) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(ctx context.Context, in *AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*AdminListPipelineRunsResponse, error)
@@ -179,6 +190,16 @@ func (c *pipelineServiceClient) RepostActivity(ctx context.Context, in *RepostAc
 	return out, nil
 }
 
+func (c *pipelineServiceClient) RefreshActivitySource(ctx context.Context, in *RefreshActivitySourceRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.StandardizedActivity)
+	err := c.cc.Invoke(ctx, PipelineService_RefreshActivitySource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *pipelineServiceClient) GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pipeline.PipelineRun)
@@ -244,6 +265,15 @@ type PipelineServiceServer interface {
 	CancelPipeline(context.Context, *CancelPipelineRequest) (*emptypb.Empty, error)
 	CancelPipelineRun(context.Context, *CancelPipelineRunRequest) (*emptypb.Empty, error)
 	RepostActivity(context.Context, *RepostActivityRequest) (*emptypb.Empty, error)
+	// RefreshActivitySource re-pulls the activity from its origin (Strava / Garmin /
+	// Apple Health …) and refreshes the immutable source layer of the persisted layered
+	// record: the parsed source snapshot, a freshly-stored raw payload, and the ingest /
+	// prune timestamps. Enrichers are NOT re-run (that is a separate, user-triggered
+	// action — see the editable-activities spec); the derived activity is rebased onto the
+	// freshly-pulled source and the user-edit overlay is preserved and still wins on read.
+	// Returns the resolved (source + user overlay) activity so the caller can show the
+	// refreshed data immediately.
+	RefreshActivitySource(context.Context, *RefreshActivitySourceRequest) (*activity.StandardizedActivity, error)
 	GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error)
@@ -291,6 +321,9 @@ func (UnimplementedPipelineServiceServer) CancelPipelineRun(context.Context, *Ca
 }
 func (UnimplementedPipelineServiceServer) RepostActivity(context.Context, *RepostActivityRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method RepostActivity not implemented")
+}
+func (UnimplementedPipelineServiceServer) RefreshActivitySource(context.Context, *RefreshActivitySourceRequest) (*activity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
 }
 func (UnimplementedPipelineServiceServer) GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPipelineRun not implemented")
@@ -526,6 +559,24 @@ func _PipelineService_RepostActivity_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_RefreshActivitySource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshActivitySourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).RefreshActivitySource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_RefreshActivitySource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).RefreshActivitySource(ctx, req.(*RefreshActivitySourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PipelineService_GetPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPipelineRunRequest)
 	if err := dec(in); err != nil {
@@ -666,6 +717,10 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RepostActivity",
 			Handler:    _PipelineService_RepostActivity_Handler,
+		},
+		{
+			MethodName: "RefreshActivitySource",
+			Handler:    _PipelineService_RefreshActivitySource_Handler,
 		},
 		{
 			MethodName: "GetPipelineRun",
