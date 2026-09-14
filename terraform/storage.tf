@@ -4,11 +4,26 @@ resource "google_storage_bucket" "artifacts_bucket" {
 
   uniform_bucket_level_access = true
 
-  # No lifecycle rule — activity artifacts (FIT files, activity JSON, pipeline
-  # payloads) persist indefinitely. A 7-day delete rule here silently destroyed
-  # all pre-2026-07-17 showcase detail and made activity detail 404 after a
-  # week. Storage is negligible (median FIT ~18KB; whole bucket 4MB under the
-  # old rule) and user-facing surfaces must never degrade. See issue #34.
+  # Raw provider payloads (payloads/ prefix) are pruned after 30 days; everything
+  # else — FIT files (activities/), enriched events (enriched_events/) and the durable
+  # layered activity records (activity_records/) — persists indefinitely.
+  #
+  # This rule is deliberately PREFIX-SCOPED. A previous unscoped 7-day delete rule
+  # silently destroyed all pre-2026-07-17 showcase detail and made activity detail 404
+  # after a week (issue #34); matches_prefix confines deletion to the raw payloads that
+  # layered storage now makes disposable. The parsed source and enricher outputs are
+  # kept in the activity_records/ blob (no TTL), so pruning the raw payload only means
+  # reprocessing an activity older than 30 days relies on a re-pull from the source
+  # (editable-activities spec, DECISION 1a).
+  lifecycle_rule {
+    condition {
+      age            = 30
+      matches_prefix = ["payloads/"]
+    }
+    action {
+      type = "Delete"
+    }
+  }
 
   cors {
     origin          = [var.base_url]

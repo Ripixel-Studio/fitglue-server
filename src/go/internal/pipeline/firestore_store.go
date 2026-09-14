@@ -395,8 +395,10 @@ func normalizeRunData(data map[string]interface{}) map[string]interface{} {
 		"updatedAt":          "updated_at",
 		"statusMessage":      "status_message",
 		"pendingInputId":     "pending_input_id",
-		"originalPayloadUri": "original_payload_uri",
-		"enrichedEventUri":   "enriched_event_uri",
+		"originalPayloadUri":  "original_payload_uri",
+		"enrichedEventUri":    "enriched_event_uri",
+		"activityRecordUri":   "activity_record_uri",
+		"rawPayloadExpiresAt": "raw_payload_expires_at",
 	}
 	for camel, snake := range camelToSnake {
 		if _, hasCamel := data[camel]; hasCamel {

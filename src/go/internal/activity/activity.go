@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 
+	activitydomain "github.com/fitglue/server/src/go/pkg/domain/activity"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
@@ -28,6 +29,19 @@ func (s *Service) GetActivity(ctx context.Context, req *pbsvc.GetActivityRequest
 	}
 	if run == nil {
 		return nil, status.Error(codes.NotFound, "activity not found")
+	}
+
+	// Prefer the durable, layered ActivityRecord when present (replaces the pass-through
+	// model). The effective activity is the derived (source + enrichers) activity with the
+	// user-edit overlay applied. Fall back to the legacy enriched-event blob below for runs
+	// created before layered storage, or if the record can't be read.
+	if run.ActivityRecordUri != "" {
+		rec, err := activitydomain.LoadActivityRecord(ctx, run.ActivityRecordUri, s.blobStore)
+		if err != nil {
+			s.logger.Warn(ctx, "failed to read layered activity record, falling back to enriched-event blob", "error", err, "uri", run.ActivityRecordUri)
+		} else if eff := activitydomain.EffectiveActivity(rec); eff != nil {
+			return eff, nil
+		}
 	}
 
 	// Resolve the GCS URI where the actual giant payload is stored
@@ -107,6 +121,9 @@ func (s *Service) DeleteActivity(ctx context.Context, req *pbsvc.DeleteActivityR
 		}
 		if run.OriginalPayloadUri != "" && run.OriginalPayloadUri != run.EnrichedEventUri {
 			_ = s.blobStore.Delete(ctx, "", run.OriginalPayloadUri)
+		}
+		if run.ActivityRecordUri != "" {
+			_ = s.blobStore.Delete(ctx, "", run.ActivityRecordUri)
 		}
 
 		// Delete the Firestore record

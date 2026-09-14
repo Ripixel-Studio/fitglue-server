@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package fitglue.models.activity;
+
+import "google/protobuf/timestamp.proto";
+import "models/activity/source.proto";
+import "models/activity/standardized.proto";
+import "models/activity/enrichments.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
+
+// ActivityRecord is the durable, layered representation of a synchronised activity,
+// written once the enrichment pipeline completes. It replaces the pass-through model
+// where only the final merged StandardizedActivity (the enriched-event blob) survived
+// and the parsed source + per-enricher contributions were discarded.
+//
+// The record is composed of three layers:
+//   - source_layer      immutable snapshot of the parsed source activity (before any
+//                       enricher ran) plus a pointer to the raw provider payload;
+//   - enricher_layers   append-only, one entry per enricher execution, capturing what
+//                       that enricher contributed and how it ran;
+//   - user_edit_overlay mutable field-level overrides authored by the user, applied on
+//                       top of the derived activity.
+//
+// derived_activity is the deterministic fold of source_layer + enricher_layers (the
+// value destinations were uploaded with). enrichments holds the final merged typed
+// enricher outputs. The user-facing "effective" activity is derived_activity with
+// user_edit_overlay applied over it.
+//
+// Retention (spec DECISION 1a): parsed source + enricher outputs (this whole record)
+// are kept indefinitely; the raw provider payload referenced by
+// source_layer.raw_payload_uri is pruned after RawPayloadRetentionDays (see
+// pkg/domain/activity), after which reprocessing relies on a re-pull from the source.
+message ActivityRecord {
+  string activity_id = 1;
+  string user_id = 2;
+  ActivitySource source = 3;
+  string external_id = 4;
+  string pipeline_id = 5;
+  string pipeline_run_id = 6;
+
+  // Immutable parsed source layer.
+  ActivitySourceLayer source_layer = 7;
+
+  // Append-only enricher-run layers, in execution order.
+  repeated EnricherRunLayer enricher_layers = 8;
+
+  // Mutable user-edit overlay. Empty on first write.
+  ActivityUserEditOverlay user_edit_overlay = 9;
+
+  // Deterministic result of applying every enricher layer to the source (pre-overlay).
+  StandardizedActivity derived_activity = 10;
+
+  // Final merged typed enricher outputs.
+  ActivityEnrichments enrichments = 11;
+
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+
+  // Storage schema version, so future readers can migrate older records.
+  int32 schema_version = 14;
+}
+
+// ActivitySourceLayer is the immutable parsed source activity exactly as it arrived,
+// before any enricher mutated it. `parsed` is kept indefinitely. `raw_payload_uri`
+// points at the raw provider payload in GCS, which is retained until
+// `raw_payload_expires_at` and then pruned (reprocessing re-pulls from the source).
+message ActivitySourceLayer {
+  StandardizedActivity parsed = 1;
+  string raw_payload_uri = 2;
+  google.protobuf.Timestamp ingested_at = 3;
+  google.protobuf.Timestamp raw_payload_expires_at = 4;
+}
+
+// EnricherRunLayer is one append-only record of a single enricher execution.
+message EnricherRunLayer {
+  string provider_name = 1;
+  string provider_type = 2;
+  string execution_id = 3;
+
+  // Terminal execution status: SUCCESS / SKIPPED / FAILED / REPLAYED / WAITING ...
+  string status = 4;
+
+  // Typed output this enricher produced (nil if it contributed no typed enrichment).
+  ActivityEnrichments enrichments = 5;
+
+  // Free-form execution metadata (skip reasons, provider context, replay journal, ...).
+  map<string, string> metadata = 6;
+
+  google.protobuf.Timestamp run_at = 7;
+  int64 duration_ms = 8;
+}
+
+// ActivityUserEditOverlay holds mutable, user-authored overrides applied on top of the
+// derived activity. Only the set fields override; unset fields fall through to the
+// derived value. Empty on first write; mutated by user edits (a separate slice).
+message ActivityUserEditOverlay {
+  optional string name = 1;
+  optional string description = 2;
+  optional ActivityType type = 3;
+  repeated string tags = 4;
+  google.protobuf.Timestamp edited_at = 5;
+}
