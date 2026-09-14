@@ -1646,6 +1646,14 @@ func PipelineRunToFirestore(p *pbpipeline.PipelineRun) map[string]interface{} {
 	}
 	// Note: original_payload is now stored in GCS via original_payload_uri
 
+	// Layered activity record (durable, GCS-backed) + raw-payload prune boundary.
+	if p.ActivityRecordUri != "" {
+		m["activity_record_uri"] = p.ActivityRecordUri
+	}
+	if p.RawPayloadExpiresAt != nil {
+		m["raw_payload_expires_at"] = p.RawPayloadExpiresAt.AsTime()
+	}
+
 	return m
 }
 
@@ -1798,6 +1806,10 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
 	p.EnrichedEventUri = getString(m, "enriched_event_uri")
 
 	// Note: original_payload is now stored in GCS via original_payload_uri
+
+	// Layered activity record (durable, GCS-backed) + raw-payload prune boundary.
+	p.ActivityRecordUri = getString(m, "activity_record_uri")
+	p.RawPayloadExpiresAt = getTime(m, "raw_payload_expires_at")
 
 	return p
 }

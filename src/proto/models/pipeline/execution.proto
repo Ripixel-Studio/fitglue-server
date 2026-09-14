@@ -34,6 +34,16 @@ message PipelineRun {
   string original_payload_uri = 22;
   string enriched_event_uri = 23;
 
+  // GCS URI of the durable, layered ActivityRecord written on pipeline completion
+  // (fitglue.models.activity.ActivityRecord as protojson). Empty for legacy runs
+  // created before layered storage, which fall back to enriched_event_uri.
+  string activity_record_uri = 27;
+
+  // When the raw provider payload at original_payload_uri is pruned (ingest + 30d,
+  // spec DECISION 1a). Informational; deletion is enforced by a GCS lifecycle rule
+  // on the payloads/ prefix. After this, reprocessing relies on a re-pull.
+  google.protobuf.Timestamp raw_payload_expires_at = 28;
+
   // IDs of non-blocking PendingInputs still awaiting user input for this run.
   // Cleared as each one is resolved; when empty the status transitions to SYNCED.
   repeated string non_blocking_pending_input_ids = 25;

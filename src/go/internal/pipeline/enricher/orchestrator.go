@@ -306,6 +306,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Use the activity directly - no cloning needed since we process exactly one pipeline
 	currentActivity := payload.StandardizedActivity
 
+	// Snapshot the parsed source activity BEFORE any enricher mutates it in place. This
+	// becomes the immutable source layer of the durable ActivityRecord written on
+	// completion (layered activity storage — replaces the pass-through model).
+	sourceSnapshot := cloneActivity(payload.StandardizedActivity)
+
 	// Save the original description and build enriched description separately
 	// to prevent stacking across reposts.
 	// Use slot-based description to preserve pipeline ordering when deferred enrichers
@@ -1102,6 +1107,13 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	// Finalize PipelineRun with enriched data (initial run was created at start)
 	o.finalizePipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, originalPayloadUri)
+
+	// Persist the durable, layered ActivityRecord (immutable source layer + append-only
+	// enricher-run layers + mutable user-edit overlay). This is the write that replaces
+	// the pass-through model, keeping the parsed source and enricher outputs indefinitely
+	// (spec DECISION 1a). Best-effort — never fails the pipeline.
+	o.writeActivityRecord(ctx, logger, payload.UserId, activityId, pipeline.ID, pipelineExecutionID,
+		sourceSnapshot, finalEvent, providerExecutions, results, configs, originalPayloadUri)
 
 	// Note: Success/partial notifications are now sent by destination.UpdateStatus
 	// when all destinations have reported their final status (SYNCED or PARTIAL).
