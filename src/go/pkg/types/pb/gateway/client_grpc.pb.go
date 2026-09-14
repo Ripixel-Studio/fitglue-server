@@ -69,6 +69,7 @@ const (
 	ClientGatewayService_RepostActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/RepostActivity"
 	ClientGatewayService_ListActivities_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ListActivities"
 	ClientGatewayService_GetActivity_FullMethodName                        = "/fitglue.gateway.ClientGatewayService/GetActivity"
+	ClientGatewayService_RefreshActivitySource_FullMethodName              = "/fitglue.gateway.ClientGatewayService/RefreshActivitySource"
 	ClientGatewayService_DeleteActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/DeleteActivity"
 	ClientGatewayService_GetActivityStats_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/GetActivityStats"
 	ClientGatewayService_ListShowcases_FullMethodName                      = "/fitglue.gateway.ClientGatewayService/ListShowcases"
@@ -184,6 +185,9 @@ type ClientGatewayServiceClient interface {
 	// ===================== Activities =====================
 	ListActivities(ctx context.Context, in *ListActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListActivitiesGatewayResponse, error)
 	GetActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// RefreshActivitySource re-pulls the activity from its source and refreshes the
+	// immutable source layer of the persisted record, returning the resolved activity.
+	RefreshActivitySource(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
 	DeleteActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetActivityStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*GetActivityStatsGatewayResponse, error)
 	// ===================== Showcases =====================
@@ -703,6 +707,16 @@ func (c *clientGatewayServiceClient) GetActivity(ctx context.Context, in *Activi
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) RefreshActivitySource(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.StandardizedActivity)
+	err := c.cc.Invoke(ctx, ClientGatewayService_RefreshActivitySource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) DeleteActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -1212,6 +1226,9 @@ type ClientGatewayServiceServer interface {
 	// ===================== Activities =====================
 	ListActivities(context.Context, *ListActivitiesGatewayRequest) (*ListActivitiesGatewayResponse, error)
 	GetActivity(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error)
+	// RefreshActivitySource re-pulls the activity from its source and refreshes the
+	// immutable source layer of the persisted record, returning the resolved activity.
+	RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error)
 	DeleteActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error)
 	GetActivityStats(context.Context, *EmptyRequest) (*GetActivityStatsGatewayResponse, error)
 	// ===================== Showcases =====================
@@ -1415,6 +1432,9 @@ func (UnimplementedClientGatewayServiceServer) ListActivities(context.Context, *
 }
 func (UnimplementedClientGatewayServiceServer) GetActivity(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActivity not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) DeleteActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteActivity not implemented")
@@ -2375,6 +2395,24 @@ func _ClientGatewayService_GetActivity_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClientGatewayServiceServer).GetActivity(ctx, req.(*ActivityIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_RefreshActivitySource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivityIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).RefreshActivitySource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_RefreshActivitySource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).RefreshActivitySource(ctx, req.(*ActivityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3357,6 +3395,10 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActivity",
 			Handler:    _ClientGatewayService_GetActivity_Handler,
+		},
+		{
+			MethodName: "RefreshActivitySource",
+			Handler:    _ClientGatewayService_RefreshActivitySource_Handler,
 		},
 		{
 			MethodName: "DeleteActivity",

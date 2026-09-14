@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	pbactivitym "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"

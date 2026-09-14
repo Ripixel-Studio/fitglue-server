@@ -37,6 +37,7 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 	r.Post("/users/me/pending-inputs/{inputId}/cancel", s.handleCancelPipeline)
 	r.Post("/users/me/pipeline-runs/{runId}/cancel", s.handleCancelPipelineRun)
 	r.Post("/users/me/activities/{id}/repost", s.handleRepostActivity)
+	r.Post("/users/me/activities/{id}/refresh-source", s.handleRefreshActivitySource)
 }
 
 func (s *APIServer) handleListPipelines(w http.ResponseWriter, r *http.Request) {
@@ -352,6 +353,29 @@ func (s *APIServer) handleRepostActivity(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleRefreshActivitySource re-pulls the activity from its source and returns the
+// refreshed, resolved activity (fresh source + user-edit overlay).
+func (s *APIServer) handleRefreshActivitySource(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.RefreshActivitySourceRequest{
+		UserId:     token.UID,
+		ActivityId: chi.URLParam(r, "id"),
+	}
+
+	res, err := s.pipelineSvc.RefreshActivitySource(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
 }
 
 // handleGetPipelineRunPayload returns a short-lived signed GCS download URL for the
