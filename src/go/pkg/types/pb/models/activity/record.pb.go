@@ -22,6 +22,60 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ProvenanceLayer identifies which layer of the deterministic resolution stack
+// (source → enricher runs in order → user overlay) set or contributed to a field.
+type ProvenanceLayer int32
+
+const (
+	ProvenanceLayer_PROVENANCE_LAYER_UNSPECIFIED  ProvenanceLayer = 0
+	ProvenanceLayer_PROVENANCE_LAYER_SOURCE       ProvenanceLayer = 1 // the immutable parsed source activity
+	ProvenanceLayer_PROVENANCE_LAYER_ENRICHER     ProvenanceLayer = 2 // an enricher run (see provider_name / enricher_index)
+	ProvenanceLayer_PROVENANCE_LAYER_USER_OVERLAY ProvenanceLayer = 3 // a user edit (always wins)
+)
+
+// Enum value maps for ProvenanceLayer.
+var (
+	ProvenanceLayer_name = map[int32]string{
+		0: "PROVENANCE_LAYER_UNSPECIFIED",
+		1: "PROVENANCE_LAYER_SOURCE",
+		2: "PROVENANCE_LAYER_ENRICHER",
+		3: "PROVENANCE_LAYER_USER_OVERLAY",
+	}
+	ProvenanceLayer_value = map[string]int32{
+		"PROVENANCE_LAYER_UNSPECIFIED":  0,
+		"PROVENANCE_LAYER_SOURCE":       1,
+		"PROVENANCE_LAYER_ENRICHER":     2,
+		"PROVENANCE_LAYER_USER_OVERLAY": 3,
+	}
+)
+
+func (x ProvenanceLayer) Enum() *ProvenanceLayer {
+	p := new(ProvenanceLayer)
+	*p = x
+	return p
+}
+
+func (x ProvenanceLayer) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ProvenanceLayer) Descriptor() protoreflect.EnumDescriptor {
+	return file_models_activity_record_proto_enumTypes[0].Descriptor()
+}
+
+func (ProvenanceLayer) Type() protoreflect.EnumType {
+	return &file_models_activity_record_proto_enumTypes[0]
+}
+
+func (x ProvenanceLayer) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ProvenanceLayer.Descriptor instead.
+func (ProvenanceLayer) EnumDescriptor() ([]byte, []int) {
+	return file_models_activity_record_proto_rawDescGZIP(), []int{0}
+}
+
 // ActivityRecord is the durable, layered representation of a synchronised activity,
 // written once the enrichment pipeline completes. It replaces the pass-through model
 // where only the final merged StandardizedActivity (the enriched-event blob) survived
@@ -281,9 +335,16 @@ type EnricherRunLayer struct {
 	// Typed output this enricher produced (nil if it contributed no typed enrichment).
 	Enrichments *ActivityEnrichments `protobuf:"bytes,5,opt,name=enrichments,proto3" json:"enrichments,omitempty"`
 	// Free-form execution metadata (skip reasons, provider context, replay journal, ...).
-	Metadata      map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	RunAt         *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=run_at,json=runAt,proto3" json:"run_at,omitempty"`
-	DurationMs    int64                  `protobuf:"varint,8,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	Metadata   map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	RunAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=run_at,json=runAt,proto3" json:"run_at,omitempty"`
+	DurationMs int64                  `protobuf:"varint,8,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	// Activity-field contributions this enricher made to the layerable fields (name,
+	// type, description section, tags, time markers, hybrid-race summary), mirroring how
+	// the orchestrator folds an EnrichmentResult onto the running activity. The resolution
+	// engine (pkg/domain/activity Resolve) walks these in order to attribute per-field
+	// provenance. Nil on layers whose enricher produced no layerable change (or on legacy
+	// records written before contributions were captured).
+	Contribution  *EnricherContribution `protobuf:"bytes,9,opt,name=contribution,proto3" json:"contribution,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -374,6 +435,257 @@ func (x *EnricherRunLayer) GetDurationMs() int64 {
 	return 0
 }
 
+func (x *EnricherRunLayer) GetContribution() *EnricherContribution {
+	if x != nil {
+		return x.Contribution
+	}
+	return nil
+}
+
+// EnricherContribution captures the layerable activity fields a single enricher set,
+// so the resolution engine can determine which run last set each field. It mirrors the
+// subset of EnrichmentResult the orchestrator applies onto the running activity: unset
+// (nil / empty) fields mean the enricher did not touch that field.
+type EnricherContribution struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Name              *string                `protobuf:"bytes,1,opt,name=name,proto3,oneof" json:"name,omitempty"`                                                // replaces the activity name
+	NameSuffix        *string                `protobuf:"bytes,2,opt,name=name_suffix,json=nameSuffix,proto3,oneof" json:"name_suffix,omitempty"`                  // appended to the activity name (e.g. " (#5)")
+	Type              *ActivityType          `protobuf:"varint,3,opt,name=type,proto3,enum=fitglue.models.activity.ActivityType,oneof" json:"type,omitempty"`     // replaces the type (when != UNSPECIFIED)
+	Tags              []string               `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`                                                      // appended to the tag set
+	TimeMarkers       []*TimeMarker          `protobuf:"bytes,5,rep,name=time_markers,json=timeMarkers,proto3" json:"time_markers,omitempty"`                     // appended to the time markers
+	Description       *string                `protobuf:"bytes,6,opt,name=description,proto3,oneof" json:"description,omitempty"`                                  // description section this enricher contributed
+	HybridRaceSummary *HybridRaceSummary     `protobuf:"bytes,7,opt,name=hybrid_race_summary,json=hybridRaceSummary,proto3" json:"hybrid_race_summary,omitempty"` // replaces the hybrid-race summary
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EnricherContribution) Reset() {
+	*x = EnricherContribution{}
+	mi := &file_models_activity_record_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnricherContribution) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnricherContribution) ProtoMessage() {}
+
+func (x *EnricherContribution) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_record_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnricherContribution.ProtoReflect.Descriptor instead.
+func (*EnricherContribution) Descriptor() ([]byte, []int) {
+	return file_models_activity_record_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *EnricherContribution) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *EnricherContribution) GetNameSuffix() string {
+	if x != nil && x.NameSuffix != nil {
+		return *x.NameSuffix
+	}
+	return ""
+}
+
+func (x *EnricherContribution) GetType() ActivityType {
+	if x != nil && x.Type != nil {
+		return *x.Type
+	}
+	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
+func (x *EnricherContribution) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *EnricherContribution) GetTimeMarkers() []*TimeMarker {
+	if x != nil {
+		return x.TimeMarkers
+	}
+	return nil
+}
+
+func (x *EnricherContribution) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
+func (x *EnricherContribution) GetHybridRaceSummary() *HybridRaceSummary {
+	if x != nil {
+		return x.HybridRaceSummary
+	}
+	return nil
+}
+
+// FieldProvenance attributes one resolved field (or one element of a repeated field) to
+// the layer that set it. Scalar fields (name, type, description, hybrid_race_summary)
+// produce a single winning entry; composite fields (tags, time_markers) produce one
+// entry per element, and description may produce several (one per contributing section).
+type FieldProvenance struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Field name: "name" | "type" | "description" | "tags" | "time_markers" |
+	// "hybrid_race_summary".
+	Field string          `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
+	Layer ProvenanceLayer `protobuf:"varint,2,opt,name=layer,proto3,enum=fitglue.models.activity.ProvenanceLayer" json:"layer,omitempty"`
+	// Set only when layer == PROVENANCE_LAYER_ENRICHER.
+	ProviderName  string `protobuf:"bytes,3,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
+	ExecutionId   string `protobuf:"bytes,4,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`
+	EnricherIndex int32  `protobuf:"varint,5,opt,name=enricher_index,json=enricherIndex,proto3" json:"enricher_index,omitempty"` // index into ActivityRecord.enricher_layers; -1 otherwise
+	// For repeated fields (tags, time_markers): the element index in the resolved
+	// activity this entry attributes. Unset for scalar fields.
+	ElementIndex  *int32 `protobuf:"varint,6,opt,name=element_index,json=elementIndex,proto3,oneof" json:"element_index,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FieldProvenance) Reset() {
+	*x = FieldProvenance{}
+	mi := &file_models_activity_record_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FieldProvenance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FieldProvenance) ProtoMessage() {}
+
+func (x *FieldProvenance) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_record_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FieldProvenance.ProtoReflect.Descriptor instead.
+func (*FieldProvenance) Descriptor() ([]byte, []int) {
+	return file_models_activity_record_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *FieldProvenance) GetField() string {
+	if x != nil {
+		return x.Field
+	}
+	return ""
+}
+
+func (x *FieldProvenance) GetLayer() ProvenanceLayer {
+	if x != nil {
+		return x.Layer
+	}
+	return ProvenanceLayer_PROVENANCE_LAYER_UNSPECIFIED
+}
+
+func (x *FieldProvenance) GetProviderName() string {
+	if x != nil {
+		return x.ProviderName
+	}
+	return ""
+}
+
+func (x *FieldProvenance) GetExecutionId() string {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return ""
+}
+
+func (x *FieldProvenance) GetEnricherIndex() int32 {
+	if x != nil {
+		return x.EnricherIndex
+	}
+	return 0
+}
+
+func (x *FieldProvenance) GetElementIndex() int32 {
+	if x != nil && x.ElementIndex != nil {
+		return *x.ElementIndex
+	}
+	return 0
+}
+
+// ResolvedActivity is the first-class output of the resolution engine: the resolved
+// activity value (derived fold with the user overlay applied) alongside the per-field
+// provenance explaining which layer/run set each resolved field.
+type ResolvedActivity struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Activity      *StandardizedActivity  `protobuf:"bytes,1,opt,name=activity,proto3" json:"activity,omitempty"`
+	Provenance    []*FieldProvenance     `protobuf:"bytes,2,rep,name=provenance,proto3" json:"provenance,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolvedActivity) Reset() {
+	*x = ResolvedActivity{}
+	mi := &file_models_activity_record_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolvedActivity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolvedActivity) ProtoMessage() {}
+
+func (x *ResolvedActivity) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_record_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolvedActivity.ProtoReflect.Descriptor instead.
+func (*ResolvedActivity) Descriptor() ([]byte, []int) {
+	return file_models_activity_record_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ResolvedActivity) GetActivity() *StandardizedActivity {
+	if x != nil {
+		return x.Activity
+	}
+	return nil
+}
+
+func (x *ResolvedActivity) GetProvenance() []*FieldProvenance {
+	if x != nil {
+		return x.Provenance
+	}
+	return nil
+}
+
 // ActivityUserEditOverlay holds mutable, user-authored overrides applied on top of the
 // derived activity. Only the set fields override; unset fields fall through to the
 // derived value. Empty on first write; mutated by user edits (a separate slice).
@@ -390,7 +702,7 @@ type ActivityUserEditOverlay struct {
 
 func (x *ActivityUserEditOverlay) Reset() {
 	*x = ActivityUserEditOverlay{}
-	mi := &file_models_activity_record_proto_msgTypes[3]
+	mi := &file_models_activity_record_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -402,7 +714,7 @@ func (x *ActivityUserEditOverlay) String() string {
 func (*ActivityUserEditOverlay) ProtoMessage() {}
 
 func (x *ActivityUserEditOverlay) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_record_proto_msgTypes[3]
+	mi := &file_models_activity_record_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -415,7 +727,7 @@ func (x *ActivityUserEditOverlay) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivityUserEditOverlay.ProtoReflect.Descriptor instead.
 func (*ActivityUserEditOverlay) Descriptor() ([]byte, []int) {
-	return file_models_activity_record_proto_rawDescGZIP(), []int{3}
+	return file_models_activity_record_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ActivityUserEditOverlay) GetName() string {
@@ -484,7 +796,7 @@ const file_models_activity_record_proto_rawDesc = "" +
 	"\x0fraw_payload_uri\x18\x02 \x01(\tR\rrawPayloadUri\x12;\n" +
 	"\vingested_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"ingestedAt\x12O\n" +
-	"\x16raw_payload_expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x13rawPayloadExpiresAt\"\xcd\x03\n" +
+	"\x16raw_payload_expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x13rawPayloadExpiresAt\"\xa0\x04\n" +
 	"\x10EnricherRunLayer\x12#\n" +
 	"\rprovider_name\x18\x01 \x01(\tR\fproviderName\x12#\n" +
 	"\rprovider_type\x18\x02 \x01(\tR\fproviderType\x12!\n" +
@@ -494,10 +806,37 @@ const file_models_activity_record_proto_rawDesc = "" +
 	"\bmetadata\x18\x06 \x03(\v27.fitglue.models.activity.EnricherRunLayer.MetadataEntryR\bmetadata\x121\n" +
 	"\x06run_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x05runAt\x12\x1f\n" +
 	"\vduration_ms\x18\b \x01(\x03R\n" +
-	"durationMs\x1a;\n" +
+	"durationMs\x12Q\n" +
+	"\fcontribution\x18\t \x01(\v2-.fitglue.models.activity.EnricherContributionR\fcontribution\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa6\x03\n" +
+	"\x14EnricherContribution\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x88\x01\x01\x12$\n" +
+	"\vname_suffix\x18\x02 \x01(\tH\x01R\n" +
+	"nameSuffix\x88\x01\x01\x12>\n" +
+	"\x04type\x18\x03 \x01(\x0e2%.fitglue.models.activity.ActivityTypeH\x02R\x04type\x88\x01\x01\x12\x12\n" +
+	"\x04tags\x18\x04 \x03(\tR\x04tags\x12F\n" +
+	"\ftime_markers\x18\x05 \x03(\v2#.fitglue.models.activity.TimeMarkerR\vtimeMarkers\x12%\n" +
+	"\vdescription\x18\x06 \x01(\tH\x03R\vdescription\x88\x01\x01\x12Z\n" +
+	"\x13hybrid_race_summary\x18\a \x01(\v2*.fitglue.models.activity.HybridRaceSummaryR\x11hybridRaceSummaryB\a\n" +
+	"\x05_nameB\x0e\n" +
+	"\f_name_suffixB\a\n" +
+	"\x05_typeB\x0e\n" +
+	"\f_description\"\x92\x02\n" +
+	"\x0fFieldProvenance\x12\x14\n" +
+	"\x05field\x18\x01 \x01(\tR\x05field\x12>\n" +
+	"\x05layer\x18\x02 \x01(\x0e2(.fitglue.models.activity.ProvenanceLayerR\x05layer\x12#\n" +
+	"\rprovider_name\x18\x03 \x01(\tR\fproviderName\x12!\n" +
+	"\fexecution_id\x18\x04 \x01(\tR\vexecutionId\x12%\n" +
+	"\x0eenricher_index\x18\x05 \x01(\x05R\renricherIndex\x12(\n" +
+	"\relement_index\x18\x06 \x01(\x05H\x00R\felementIndex\x88\x01\x01B\x10\n" +
+	"\x0e_element_index\"\xa7\x01\n" +
+	"\x10ResolvedActivity\x12I\n" +
+	"\bactivity\x18\x01 \x01(\v2-.fitglue.models.activity.StandardizedActivityR\bactivity\x12H\n" +
+	"\n" +
+	"provenance\x18\x02 \x03(\v2(.fitglue.models.activity.FieldProvenanceR\n" +
+	"provenance\"\x88\x02\n" +
 	"\x17ActivityUserEditOverlay\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x88\x01\x01\x12%\n" +
 	"\vdescription\x18\x02 \x01(\tH\x01R\vdescription\x88\x01\x01\x12>\n" +
@@ -506,7 +845,12 @@ const file_models_activity_record_proto_rawDesc = "" +
 	"\tedited_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\beditedAtB\a\n" +
 	"\x05_nameB\x0e\n" +
 	"\f_descriptionB\a\n" +
-	"\x05_typeB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
+	"\x05_type*\x92\x01\n" +
+	"\x0fProvenanceLayer\x12 \n" +
+	"\x1cPROVENANCE_LAYER_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17PROVENANCE_LAYER_SOURCE\x10\x01\x12\x1d\n" +
+	"\x19PROVENANCE_LAYER_ENRICHER\x10\x02\x12!\n" +
+	"\x1dPROVENANCE_LAYER_USER_OVERLAY\x10\x03B?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
 
 var (
 	file_models_activity_record_proto_rawDescOnce sync.Once
@@ -520,41 +864,55 @@ func file_models_activity_record_proto_rawDescGZIP() []byte {
 	return file_models_activity_record_proto_rawDescData
 }
 
-var file_models_activity_record_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_models_activity_record_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_models_activity_record_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_models_activity_record_proto_goTypes = []any{
-	(*ActivityRecord)(nil),          // 0: fitglue.models.activity.ActivityRecord
-	(*ActivitySourceLayer)(nil),     // 1: fitglue.models.activity.ActivitySourceLayer
-	(*EnricherRunLayer)(nil),        // 2: fitglue.models.activity.EnricherRunLayer
-	(*ActivityUserEditOverlay)(nil), // 3: fitglue.models.activity.ActivityUserEditOverlay
-	nil,                             // 4: fitglue.models.activity.EnricherRunLayer.MetadataEntry
-	(ActivitySource)(0),             // 5: fitglue.models.activity.ActivitySource
-	(*StandardizedActivity)(nil),    // 6: fitglue.models.activity.StandardizedActivity
-	(*ActivityEnrichments)(nil),     // 7: fitglue.models.activity.ActivityEnrichments
-	(*timestamppb.Timestamp)(nil),   // 8: google.protobuf.Timestamp
-	(ActivityType)(0),               // 9: fitglue.models.activity.ActivityType
+	(ProvenanceLayer)(0),            // 0: fitglue.models.activity.ProvenanceLayer
+	(*ActivityRecord)(nil),          // 1: fitglue.models.activity.ActivityRecord
+	(*ActivitySourceLayer)(nil),     // 2: fitglue.models.activity.ActivitySourceLayer
+	(*EnricherRunLayer)(nil),        // 3: fitglue.models.activity.EnricherRunLayer
+	(*EnricherContribution)(nil),    // 4: fitglue.models.activity.EnricherContribution
+	(*FieldProvenance)(nil),         // 5: fitglue.models.activity.FieldProvenance
+	(*ResolvedActivity)(nil),        // 6: fitglue.models.activity.ResolvedActivity
+	(*ActivityUserEditOverlay)(nil), // 7: fitglue.models.activity.ActivityUserEditOverlay
+	nil,                             // 8: fitglue.models.activity.EnricherRunLayer.MetadataEntry
+	(ActivitySource)(0),             // 9: fitglue.models.activity.ActivitySource
+	(*StandardizedActivity)(nil),    // 10: fitglue.models.activity.StandardizedActivity
+	(*ActivityEnrichments)(nil),     // 11: fitglue.models.activity.ActivityEnrichments
+	(*timestamppb.Timestamp)(nil),   // 12: google.protobuf.Timestamp
+	(ActivityType)(0),               // 13: fitglue.models.activity.ActivityType
+	(*TimeMarker)(nil),              // 14: fitglue.models.activity.TimeMarker
+	(*HybridRaceSummary)(nil),       // 15: fitglue.models.activity.HybridRaceSummary
 }
 var file_models_activity_record_proto_depIdxs = []int32{
-	5,  // 0: fitglue.models.activity.ActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
-	1,  // 1: fitglue.models.activity.ActivityRecord.source_layer:type_name -> fitglue.models.activity.ActivitySourceLayer
-	2,  // 2: fitglue.models.activity.ActivityRecord.enricher_layers:type_name -> fitglue.models.activity.EnricherRunLayer
-	3,  // 3: fitglue.models.activity.ActivityRecord.user_edit_overlay:type_name -> fitglue.models.activity.ActivityUserEditOverlay
-	6,  // 4: fitglue.models.activity.ActivityRecord.derived_activity:type_name -> fitglue.models.activity.StandardizedActivity
-	7,  // 5: fitglue.models.activity.ActivityRecord.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
-	8,  // 6: fitglue.models.activity.ActivityRecord.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 7: fitglue.models.activity.ActivityRecord.updated_at:type_name -> google.protobuf.Timestamp
-	6,  // 8: fitglue.models.activity.ActivitySourceLayer.parsed:type_name -> fitglue.models.activity.StandardizedActivity
-	8,  // 9: fitglue.models.activity.ActivitySourceLayer.ingested_at:type_name -> google.protobuf.Timestamp
-	8,  // 10: fitglue.models.activity.ActivitySourceLayer.raw_payload_expires_at:type_name -> google.protobuf.Timestamp
-	7,  // 11: fitglue.models.activity.EnricherRunLayer.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
-	4,  // 12: fitglue.models.activity.EnricherRunLayer.metadata:type_name -> fitglue.models.activity.EnricherRunLayer.MetadataEntry
-	8,  // 13: fitglue.models.activity.EnricherRunLayer.run_at:type_name -> google.protobuf.Timestamp
-	9,  // 14: fitglue.models.activity.ActivityUserEditOverlay.type:type_name -> fitglue.models.activity.ActivityType
-	8,  // 15: fitglue.models.activity.ActivityUserEditOverlay.edited_at:type_name -> google.protobuf.Timestamp
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	9,  // 0: fitglue.models.activity.ActivityRecord.source:type_name -> fitglue.models.activity.ActivitySource
+	2,  // 1: fitglue.models.activity.ActivityRecord.source_layer:type_name -> fitglue.models.activity.ActivitySourceLayer
+	3,  // 2: fitglue.models.activity.ActivityRecord.enricher_layers:type_name -> fitglue.models.activity.EnricherRunLayer
+	7,  // 3: fitglue.models.activity.ActivityRecord.user_edit_overlay:type_name -> fitglue.models.activity.ActivityUserEditOverlay
+	10, // 4: fitglue.models.activity.ActivityRecord.derived_activity:type_name -> fitglue.models.activity.StandardizedActivity
+	11, // 5: fitglue.models.activity.ActivityRecord.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
+	12, // 6: fitglue.models.activity.ActivityRecord.created_at:type_name -> google.protobuf.Timestamp
+	12, // 7: fitglue.models.activity.ActivityRecord.updated_at:type_name -> google.protobuf.Timestamp
+	10, // 8: fitglue.models.activity.ActivitySourceLayer.parsed:type_name -> fitglue.models.activity.StandardizedActivity
+	12, // 9: fitglue.models.activity.ActivitySourceLayer.ingested_at:type_name -> google.protobuf.Timestamp
+	12, // 10: fitglue.models.activity.ActivitySourceLayer.raw_payload_expires_at:type_name -> google.protobuf.Timestamp
+	11, // 11: fitglue.models.activity.EnricherRunLayer.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
+	8,  // 12: fitglue.models.activity.EnricherRunLayer.metadata:type_name -> fitglue.models.activity.EnricherRunLayer.MetadataEntry
+	12, // 13: fitglue.models.activity.EnricherRunLayer.run_at:type_name -> google.protobuf.Timestamp
+	4,  // 14: fitglue.models.activity.EnricherRunLayer.contribution:type_name -> fitglue.models.activity.EnricherContribution
+	13, // 15: fitglue.models.activity.EnricherContribution.type:type_name -> fitglue.models.activity.ActivityType
+	14, // 16: fitglue.models.activity.EnricherContribution.time_markers:type_name -> fitglue.models.activity.TimeMarker
+	15, // 17: fitglue.models.activity.EnricherContribution.hybrid_race_summary:type_name -> fitglue.models.activity.HybridRaceSummary
+	0,  // 18: fitglue.models.activity.FieldProvenance.layer:type_name -> fitglue.models.activity.ProvenanceLayer
+	10, // 19: fitglue.models.activity.ResolvedActivity.activity:type_name -> fitglue.models.activity.StandardizedActivity
+	5,  // 20: fitglue.models.activity.ResolvedActivity.provenance:type_name -> fitglue.models.activity.FieldProvenance
+	13, // 21: fitglue.models.activity.ActivityUserEditOverlay.type:type_name -> fitglue.models.activity.ActivityType
+	12, // 22: fitglue.models.activity.ActivityUserEditOverlay.edited_at:type_name -> google.protobuf.Timestamp
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_record_proto_init() }
@@ -566,18 +924,21 @@ func file_models_activity_record_proto_init() {
 	file_models_activity_standardized_proto_init()
 	file_models_activity_enrichments_proto_init()
 	file_models_activity_record_proto_msgTypes[3].OneofWrappers = []any{}
+	file_models_activity_record_proto_msgTypes[4].OneofWrappers = []any{}
+	file_models_activity_record_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_record_proto_rawDesc), len(file_models_activity_record_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   5,
+			NumEnums:      1,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_models_activity_record_proto_goTypes,
 		DependencyIndexes: file_models_activity_record_proto_depIdxs,
+		EnumInfos:         file_models_activity_record_proto_enumTypes,
 		MessageInfos:      file_models_activity_record_proto_msgTypes,
 	}.Build()
 	File_models_activity_record_proto = out.File

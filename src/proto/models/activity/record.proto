@@ -89,6 +89,65 @@ message EnricherRunLayer {
 
   google.protobuf.Timestamp run_at = 7;
   int64 duration_ms = 8;
+
+  // Activity-field contributions this enricher made to the layerable fields (name,
+  // type, description section, tags, time markers, hybrid-race summary), mirroring how
+  // the orchestrator folds an EnrichmentResult onto the running activity. The resolution
+  // engine (pkg/domain/activity Resolve) walks these in order to attribute per-field
+  // provenance. Nil on layers whose enricher produced no layerable change (or on legacy
+  // records written before contributions were captured).
+  EnricherContribution contribution = 9;
+}
+
+// EnricherContribution captures the layerable activity fields a single enricher set,
+// so the resolution engine can determine which run last set each field. It mirrors the
+// subset of EnrichmentResult the orchestrator applies onto the running activity: unset
+// (nil / empty) fields mean the enricher did not touch that field.
+message EnricherContribution {
+  optional string name = 1;              // replaces the activity name
+  optional string name_suffix = 2;       // appended to the activity name (e.g. " (#5)")
+  optional ActivityType type = 3;        // replaces the type (when != UNSPECIFIED)
+  repeated string tags = 4;              // appended to the tag set
+  repeated TimeMarker time_markers = 5;  // appended to the time markers
+  optional string description = 6;       // description section this enricher contributed
+  HybridRaceSummary hybrid_race_summary = 7; // replaces the hybrid-race summary
+}
+
+// ProvenanceLayer identifies which layer of the deterministic resolution stack
+// (source → enricher runs in order → user overlay) set or contributed to a field.
+enum ProvenanceLayer {
+  PROVENANCE_LAYER_UNSPECIFIED = 0;
+  PROVENANCE_LAYER_SOURCE = 1;        // the immutable parsed source activity
+  PROVENANCE_LAYER_ENRICHER = 2;      // an enricher run (see provider_name / enricher_index)
+  PROVENANCE_LAYER_USER_OVERLAY = 3;  // a user edit (always wins)
+}
+
+// FieldProvenance attributes one resolved field (or one element of a repeated field) to
+// the layer that set it. Scalar fields (name, type, description, hybrid_race_summary)
+// produce a single winning entry; composite fields (tags, time_markers) produce one
+// entry per element, and description may produce several (one per contributing section).
+message FieldProvenance {
+  // Field name: "name" | "type" | "description" | "tags" | "time_markers" |
+  // "hybrid_race_summary".
+  string field = 1;
+  ProvenanceLayer layer = 2;
+
+  // Set only when layer == PROVENANCE_LAYER_ENRICHER.
+  string provider_name = 3;
+  string execution_id = 4;
+  int32 enricher_index = 5;   // index into ActivityRecord.enricher_layers; -1 otherwise
+
+  // For repeated fields (tags, time_markers): the element index in the resolved
+  // activity this entry attributes. Unset for scalar fields.
+  optional int32 element_index = 6;
+}
+
+// ResolvedActivity is the first-class output of the resolution engine: the resolved
+// activity value (derived fold with the user overlay applied) alongside the per-field
+// provenance explaining which layer/run set each resolved field.
+message ResolvedActivity {
+  StandardizedActivity activity = 1;
+  repeated FieldProvenance provenance = 2;
 }
 
 // ActivityUserEditOverlay holds mutable, user-authored overrides applied on top of the

@@ -4,6 +4,7 @@ package enricher
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
@@ -48,15 +49,26 @@ func (o *Orchestrator) writeActivityRecord(
 
 	now := time.Now()
 
-	// Correlate each enricher's typed output (indexed by config) to its provider name,
-	// so run layers can carry the enrichments that provider produced.
+	// Correlate each enricher's output (indexed by config) to its provider name, so run
+	// layers can carry both the typed enrichments that provider produced and the
+	// layerable field contribution the resolution engine attributes provenance from.
 	enrichByProvider := make(map[string]*pbactivity.ActivityEnrichments)
+	contribByProvider := make(map[string]*pbactivity.EnricherContribution)
+	typeByProvider := make(map[string]string)
 	for i, res := range results {
-		if res == nil || res.Enrichments == nil || i >= len(configs) {
+		if res == nil || i >= len(configs) {
 			continue
 		}
-		if p, ok := o.providersByType[configs[i].ProviderType]; ok {
+		p, ok := o.providersByType[configs[i].ProviderType]
+		if !ok {
+			continue
+		}
+		typeByProvider[p.Name()] = configs[i].ProviderType.String()
+		if res.Enrichments != nil {
 			enrichByProvider[p.Name()] = res.Enrichments
+		}
+		if c := enricherContribution(res); c != nil {
+			contribByProvider[p.Name()] = c
 		}
 	}
 
@@ -75,7 +87,7 @@ func (o *Orchestrator) writeActivityRecord(
 		finalEvent.Source, sourceSnapshot.GetExternalId(),
 		sourceSnapshot, finalEvent.ActivityData, finalEvent.Enrichments,
 		rawPayloadURI, now,
-		providerExecs, enrichByProvider,
+		providerExecs, enrichByProvider, contribByProvider, typeByProvider,
 	)
 
 	data, err := protojson.Marshal(record)
@@ -119,6 +131,8 @@ func buildActivityRecord(
 	now time.Time,
 	execs []ProviderExecution,
 	enrichByProvider map[string]*pbactivity.ActivityEnrichments,
+	contribByProvider map[string]*pbactivity.EnricherContribution,
+	typeByProvider map[string]string,
 ) *pbactivity.ActivityRecord {
 	nowPb := timestamppb.New(now)
 
@@ -146,7 +160,7 @@ func buildActivityRecord(
 	}
 
 	// Append this run's enricher layers (append-only across resumes).
-	record.EnricherLayers = append(record.EnricherLayers, buildEnricherLayers(execs, enrichByProvider, nowPb)...)
+	record.EnricherLayers = append(record.EnricherLayers, buildEnricherLayers(execs, enrichByProvider, contribByProvider, typeByProvider, nowPb)...)
 
 	// Refresh the composed views and bookkeeping.
 	record.DerivedActivity = cloneActivity(derived)
@@ -161,12 +175,15 @@ func buildActivityRecord(
 }
 
 // buildEnricherLayers converts this run's provider executions into append-only run
-// layers, attaching the typed enrichments each provider produced where available.
-func buildEnricherLayers(execs []ProviderExecution, enrichByProvider map[string]*pbactivity.ActivityEnrichments, runAt *timestamppb.Timestamp) []*pbactivity.EnricherRunLayer {
+// layers, attaching the typed enrichments and the layerable field contribution each
+// provider produced where available. The contribution is what the resolution engine
+// walks to attribute per-field provenance.
+func buildEnricherLayers(execs []ProviderExecution, enrichByProvider map[string]*pbactivity.ActivityEnrichments, contribByProvider map[string]*pbactivity.EnricherContribution, typeByProvider map[string]string, runAt *timestamppb.Timestamp) []*pbactivity.EnricherRunLayer {
 	layers := make([]*pbactivity.EnricherRunLayer, 0, len(execs))
 	for _, pe := range execs {
 		layer := &pbactivity.EnricherRunLayer{
 			ProviderName: pe.ProviderName,
+			ProviderType: typeByProvider[pe.ProviderName],
 			ExecutionId:  pe.ExecutionID,
 			Status:       pe.Status,
 			DurationMs:   pe.DurationMs,
@@ -176,9 +193,57 @@ func buildEnricherLayers(execs []ProviderExecution, enrichByProvider map[string]
 		if enr, ok := enrichByProvider[pe.ProviderName]; ok {
 			layer.Enrichments = enr
 		}
+		if c, ok := contribByProvider[pe.ProviderName]; ok {
+			layer.Contribution = c
+		}
 		layers = append(layers, layer)
 	}
 	return layers
+}
+
+// enricherContribution extracts the layerable field contribution from an enrichment
+// result — the subset of fields the orchestrator folds onto the running activity (see
+// the apply block in orchestrator.Process). Returns nil when the enricher touched none
+// of these fields, so layers stay contribution-less when there is nothing to attribute.
+func enricherContribution(res *providers.EnrichmentResult) *pbactivity.EnricherContribution {
+	if res == nil {
+		return nil
+	}
+	c := &pbactivity.EnricherContribution{}
+	touched := false
+	if res.Name != "" {
+		c.Name = proto.String(res.Name)
+		touched = true
+	}
+	if res.NameSuffix != "" {
+		c.NameSuffix = proto.String(res.NameSuffix)
+		touched = true
+	}
+	if res.ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+		t := res.ActivityType
+		c.Type = &t
+		touched = true
+	}
+	if len(res.Tags) > 0 {
+		c.Tags = append([]string(nil), res.Tags...)
+		touched = true
+	}
+	if len(res.TimeMarkers) > 0 {
+		c.TimeMarkers = res.TimeMarkers
+		touched = true
+	}
+	if trimmed := strings.TrimSpace(res.Description); trimmed != "" {
+		c.Description = proto.String(trimmed)
+		touched = true
+	}
+	if res.HybridRaceSummary != nil {
+		c.HybridRaceSummary = res.HybridRaceSummary
+		touched = true
+	}
+	if !touched {
+		return nil
+	}
+	return c
 }
 
 // cloneActivity deep-copies a StandardizedActivity so the stored layer is independent of

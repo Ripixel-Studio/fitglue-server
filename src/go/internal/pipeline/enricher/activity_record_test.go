@@ -43,7 +43,7 @@ func TestBuildActivityRecord_FreshRecordLayering(t *testing.T) {
 		pbactivity.ActivitySource_SOURCE_STRAVA, "ext-123",
 		source, derived, merged,
 		"gs://bucket/payloads/user-1/act-1.json", now,
-		execs, enrichByProvider,
+		execs, enrichByProvider, nil, nil,
 	)
 
 	if rec.ActivityId != "act-1" || rec.UserId != "user-1" || rec.PipelineRunId != "run-1" {
@@ -102,7 +102,7 @@ func TestBuildActivityRecord_SourceLayerIsIndependentSnapshot(t *testing.T) {
 	rec := buildActivityRecord(
 		nil, "u", "a", "p", "r",
 		pbactivity.ActivitySource_SOURCE_STRAVA, "ext",
-		source, sampleSource(), nil, "", now, nil, nil,
+		source, sampleSource(), nil, "", now, nil, nil, nil, nil,
 	)
 
 	// Mutating the caller's source after the build must not affect the stored snapshot.
@@ -121,7 +121,7 @@ func TestBuildActivityRecord_ResumeAppendsAndPreservesImmutableLayers(t *testing
 		pbactivity.ActivitySource_SOURCE_STRAVA, "ext",
 		sampleSource(), sampleSource(), nil,
 		"gs://bucket/payloads/u/a.json", first,
-		[]ProviderExecution{{ProviderName: "weather", Status: "SUCCESS"}}, nil,
+		[]ProviderExecution{{ProviderName: "weather", Status: "SUCCESS"}}, nil, nil, nil,
 	)
 	// Simulate a user edit landing on the record between runs.
 	existing.UserEditOverlay.Name = ptr("user edit")
@@ -132,7 +132,7 @@ func TestBuildActivityRecord_ResumeAppendsAndPreservesImmutableLayers(t *testing
 		pbactivity.ActivitySource_SOURCE_STRAVA, "ext",
 		sampleSource(), derived2, nil,
 		"gs://bucket/payloads/u/a.json", second,
-		[]ProviderExecution{{ProviderName: "ai_companion", Status: "SUCCESS"}}, nil,
+		[]ProviderExecution{{ProviderName: "ai_companion", Status: "SUCCESS"}}, nil, nil, nil,
 	)
 
 	// Enricher layers are append-only across runs.
