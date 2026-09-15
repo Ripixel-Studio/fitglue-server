@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
 import "models/activity/roundup.proto";
+import "models/activity/record.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/services/activity";
 
@@ -19,6 +20,22 @@ service ActivityService {
   rpc ListActivities(ListActivitiesRequest) returns (ListActivitiesResponse) {
     option (google.api.http) = {
       get: "/v2/users/{user_id}/activities"
+    };
+  }
+  // GetResolvedActivity returns the resolved activity (the derived source+enricher fold
+  // with the user-edit overlay applied) together with per-field provenance attributing
+  // each resolved field to the layer/run that set it. Runs written before layered storage
+  // resolve with the effective activity and empty provenance.
+  rpc GetResolvedActivity(GetResolvedActivityRequest) returns (fitglue.models.activity.ResolvedActivity) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/activities/{activity_id}/resolved"
+    };
+  }
+  // ListResolvedActivities is the paged list counterpart of GetResolvedActivity: one
+  // ResolvedActivity (activity + provenance) per run in the page.
+  rpc ListResolvedActivities(ListResolvedActivitiesRequest) returns (ListResolvedActivitiesResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/resolved-activities"
     };
   }
   rpc DeleteActivity(DeleteActivityRequest) returns (google.protobuf.Empty) {
@@ -219,6 +236,22 @@ message ListActivitiesRequest {
 
 message ListActivitiesResponse {
   repeated fitglue.models.activity.StandardizedActivity activities = 1;
+  string next_page_token = 2;
+}
+
+message GetResolvedActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+}
+
+message ListResolvedActivitiesRequest {
+  string user_id = 1;
+  int32 limit = 2;
+  string page_token = 3;
+}
+
+message ListResolvedActivitiesResponse {
+  repeated fitglue.models.activity.ResolvedActivity activities = 1;
   string next_page_token = 2;
 }
 

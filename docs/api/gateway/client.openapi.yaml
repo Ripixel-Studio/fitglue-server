@@ -544,6 +544,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/resolved:
+        get:
+            tags:
+                - ClientGatewayService
+            description: |-
+                GetResolvedActivity returns the resolved activity plus per-field provenance,
+                 explaining which layer (source, an enricher run, or the user overlay) set each field.
+            operationId: ClientGatewayService_GetResolvedActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ResolvedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/activity-photos/upload-url:
         post:
             tags:
@@ -1641,6 +1668,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/resolved-activities:
+        get:
+            tags:
+                - ClientGatewayService
+            description: |-
+                ListResolvedActivities returns a page of resolved activities, each with per-field
+                 provenance. Kept on a distinct path from /activities to avoid colliding with
+                 /activities/{id}.
+            operationId: ClientGatewayService_ListResolvedActivities
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListResolvedActivitiesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/showcase-management/preferences:
         get:
             tags:
@@ -2649,6 +2708,41 @@ components:
                     type: string
                 expiresAt:
                     type: string
+        FieldProvenance:
+            type: object
+            properties:
+                field:
+                    type: string
+                    description: |-
+                        Field name: "name" | "type" | "description" | "tags" | "time_markers" |
+                         "hybrid_race_summary".
+                layer:
+                    enum:
+                        - PROVENANCE_LAYER_UNSPECIFIED
+                        - PROVENANCE_LAYER_SOURCE
+                        - PROVENANCE_LAYER_ENRICHER
+                        - PROVENANCE_LAYER_USER_OVERLAY
+                    type: string
+                    format: enum
+                providerName:
+                    type: string
+                    description: Set only when layer == PROVENANCE_LAYER_ENRICHER.
+                executionId:
+                    type: string
+                enricherIndex:
+                    type: integer
+                    format: int32
+                elementIndex:
+                    type: integer
+                    description: |-
+                        For repeated fields (tags, time_markers): the element index in the resolved
+                         activity this entry attributes. Unset for scalar fields.
+                    format: int32
+            description: |-
+                FieldProvenance attributes one resolved field (or one element of a repeated field) to
+                 the layer that set it. Scalar fields (name, type, description, hybrid_race_summary)
+                 produce a single winning entry; composite fields (tags, time_markers) produce one
+                 entry per element, and description may produce several (one per contributing section).
         FitbitIntegration:
             type: object
             properties:
@@ -3210,6 +3304,15 @@ components:
                     additionalProperties:
                         type: object
             description: Plugin Defaults
+        ListResolvedActivitiesGatewayResponse:
+            type: object
+            properties:
+                activities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ResolvedActivity'
+                nextPageToken:
+                    type: string
         ListShowcaseViewStatsGatewayResponse:
             type: object
             properties:
@@ -3920,6 +4023,19 @@ components:
                 destination:
                     type: string
             description: Repost Variants
+        ResolvedActivity:
+            type: object
+            properties:
+                activity:
+                    $ref: '#/components/schemas/StandardizedActivity'
+                provenance:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FieldProvenance'
+            description: |-
+                ResolvedActivity is the first-class output of the resolution engine: the resolved
+                 activity value (derived fold with the user overlay applied) alongside the per-field
+                 provenance explaining which layer/run set each resolved field.
         RoundupActivityTypeBreakdown:
             type: object
             properties:

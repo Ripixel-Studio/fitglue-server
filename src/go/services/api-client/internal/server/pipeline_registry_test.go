@@ -49,6 +49,9 @@ func (m *mockPipelineServiceClient) GetPipeline(ctx context.Context, in *pipelin
 	}
 	return &pbpipeline.PipelineConfig{}, nil
 }
+func (m *mockPipelineServiceClient) RefreshActivitySource(ctx context.Context, in *pipelinepb.RefreshActivitySourceRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
+}
 func (m *mockPipelineServiceClient) CreatePipeline(ctx context.Context, in *pipelinepb.CreatePipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error) {
 	if m.createPipeline != nil {
 		return m.createPipeline(ctx, in, opts...)

@@ -15,6 +15,7 @@ import "models/plugin/manifest.proto";
 import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
 
+import "models/activity/record.proto";
 import "models/activity/roundup.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
@@ -295,6 +296,21 @@ service ClientGatewayService {
   rpc GetActivity(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
     option (google.api.http) = {
       get: "/users/me/activities/{id}"
+    };
+  }
+  // GetResolvedActivity returns the resolved activity plus per-field provenance,
+  // explaining which layer (source, an enricher run, or the user overlay) set each field.
+  rpc GetResolvedActivity(ActivityIdRequest) returns (fitglue.models.activity.ResolvedActivity) {
+    option (google.api.http) = {
+      get: "/users/me/activities/{id}/resolved"
+    };
+  }
+  // ListResolvedActivities returns a page of resolved activities, each with per-field
+  // provenance. Kept on a distinct path from /activities to avoid colliding with
+  // /activities/{id}.
+  rpc ListResolvedActivities(ListActivitiesGatewayRequest) returns (ListResolvedActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/resolved-activities"
     };
   }
   // RefreshActivitySource re-pulls the activity from its source and refreshes the
@@ -740,6 +756,11 @@ message ListActivitiesGatewayRequest {
   int32 limit = 1;
   string page_token = 2;
 }
+message ListResolvedActivitiesGatewayResponse {
+  repeated fitglue.models.activity.ResolvedActivity activities = 1;
+  string next_page_token = 2;
+}
+
 message ListActivitiesGatewayResponse {
   repeated fitglue.models.activity.StandardizedActivity activities = 1;
   string next_page_token = 2;

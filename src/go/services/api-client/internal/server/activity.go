@@ -20,6 +20,12 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Delete("/users/me/activities/{id}", s.handleDeleteActivity)
 	r.Get("/users/me/activities/stats", s.handleGetActivityStats)
 
+	// Resolved reads — the effective activity plus per-field provenance (which layer /
+	// enricher run / user edit set each field). Distinct path for the list so it does not
+	// collide with /activities/{id}.
+	r.Get("/users/me/activities/{id}/resolved", s.handleGetResolvedActivity)
+	r.Get("/users/me/resolved-activities", s.handleListResolvedActivities)
+
 	r.Get("/users/me/showcases", s.handleListShowcases)
 	r.Get("/users/me/showcases/{id}", s.handleGetShowcase)
 	r.Post("/users/me/showcases", s.handleCreateShowcase)
@@ -98,6 +104,58 @@ func (s *APIServer) handleGetActivity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := s.activitySvc.GetActivity(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleGetResolvedActivity returns the resolved activity plus per-field provenance for
+// a single activity owned by the authenticated user.
+func (s *APIServer) handleGetResolvedActivity(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.activitySvc.GetResolvedActivity(r.Context(), &activitypb.GetResolvedActivityRequest{
+		UserId:     token.UID,
+		ActivityId: chi.URLParam(r, "id"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleListResolvedActivities returns a page of resolved activities (each with per-field
+// provenance) for the authenticated user.
+func (s *APIServer) handleListResolvedActivities(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	pageToken := r.URL.Query().Get("page_token")
+	var limit int32 = 50
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = int32(l)
+		}
+	}
+
+	res, err := s.activitySvc.ListResolvedActivities(r.Context(), &activitypb.ListResolvedActivitiesRequest{
+		UserId:    token.UID,
+		Limit:     limit,
+		PageToken: pageToken,
+	})
 	if err != nil {
 		WriteError(w, err)
 		return

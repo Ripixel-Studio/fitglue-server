@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/fitglue/server/src/go/internal/infra"
+	pbactivitym "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
@@ -157,6 +158,9 @@ func (m *adminNopPipelineClient) ListPipelines(_ context.Context, _ *pipelinepb.
 }
 func (m *adminNopPipelineClient) GetPipeline(_ context.Context, _ *pipelinepb.GetPipelineRequest, _ ...grpc.CallOption) (*pbpipeline.PipelineConfig, error) {
 	return &pbpipeline.PipelineConfig{}, nil
+}
+func (m *adminNopPipelineClient) RefreshActivitySource(_ context.Context, _ *pipelinepb.RefreshActivitySourceRequest, _ ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
 }
 func (m *adminNopPipelineClient) CreatePipeline(_ context.Context, _ *pipelinepb.CreatePipelineRequest, _ ...grpc.CallOption) (*pbpipeline.PipelineConfig, error) {
 	return nil, nil

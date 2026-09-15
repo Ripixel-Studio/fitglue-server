@@ -27,6 +27,8 @@ import (
 type mockActivityServiceClient struct {
 	listActivities            func(ctx context.Context, in *activitypb.ListActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListActivitiesResponse, error)
 	getActivity               func(ctx context.Context, in *activitypb.GetActivityRequest, opts ...grpc.CallOption) (*pbactivity.StandardizedActivity, error)
+	getResolvedActivity       func(ctx context.Context, in *activitypb.GetResolvedActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error)
+	listResolvedActivities    func(ctx context.Context, in *activitypb.ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error)
 	deleteActivity            func(ctx context.Context, in *activitypb.DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	listShowcases             func(ctx context.Context, in *activitypb.ListShowcasesRequest, opts ...grpc.CallOption) (*activitypb.ListShowcasesResponse, error)
 	getShowcase               func(ctx context.Context, in *activitypb.GetShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error)
@@ -50,6 +52,18 @@ func (m *mockActivityServiceClient) ListActivities(ctx context.Context, in *acti
 		return m.listActivities(ctx, in, opts...)
 	}
 	return &activitypb.ListActivitiesResponse{}, nil
+}
+func (m *mockActivityServiceClient) GetResolvedActivity(ctx context.Context, in *activitypb.GetResolvedActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+	if m.getResolvedActivity != nil {
+		return m.getResolvedActivity(ctx, in, opts...)
+	}
+	return &pbactivity.ResolvedActivity{}, nil
+}
+func (m *mockActivityServiceClient) ListResolvedActivities(ctx context.Context, in *activitypb.ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error) {
+	if m.listResolvedActivities != nil {
+		return m.listResolvedActivities(ctx, in, opts...)
+	}
+	return &activitypb.ListResolvedActivitiesResponse{}, nil
 }
 func (m *mockActivityServiceClient) DeleteActivity(ctx context.Context, in *activitypb.DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	if m.deleteActivity != nil {

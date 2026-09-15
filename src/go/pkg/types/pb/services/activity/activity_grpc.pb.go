@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ActivityService_GetActivity_FullMethodName                        = "/fitglue.services.activity.ActivityService/GetActivity"
 	ActivityService_ListActivities_FullMethodName                     = "/fitglue.services.activity.ActivityService/ListActivities"
+	ActivityService_GetResolvedActivity_FullMethodName                = "/fitglue.services.activity.ActivityService/GetResolvedActivity"
+	ActivityService_ListResolvedActivities_FullMethodName             = "/fitglue.services.activity.ActivityService/ListResolvedActivities"
 	ActivityService_DeleteActivity_FullMethodName                     = "/fitglue.services.activity.ActivityService/DeleteActivity"
 	ActivityService_GetShowcase_FullMethodName                        = "/fitglue.services.activity.ActivityService/GetShowcase"
 	ActivityService_ListShowcases_FullMethodName                      = "/fitglue.services.activity.ActivityService/ListShowcases"
@@ -61,6 +63,14 @@ const (
 type ActivityServiceClient interface {
 	GetActivity(ctx context.Context, in *GetActivityRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
 	ListActivities(ctx context.Context, in *ListActivitiesRequest, opts ...grpc.CallOption) (*ListActivitiesResponse, error)
+	// GetResolvedActivity returns the resolved activity (the derived source+enricher fold
+	// with the user-edit overlay applied) together with per-field provenance attributing
+	// each resolved field to the layer/run that set it. Runs written before layered storage
+	// resolve with the effective activity and empty provenance.
+	GetResolvedActivity(ctx context.Context, in *GetResolvedActivityRequest, opts ...grpc.CallOption) (*activity.ResolvedActivity, error)
+	// ListResolvedActivities is the paged list counterpart of GetResolvedActivity: one
+	// ResolvedActivity (activity + provenance) per run in the page.
+	ListResolvedActivities(ctx context.Context, in *ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*ListResolvedActivitiesResponse, error)
 	DeleteActivity(ctx context.Context, in *DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetShowcase(ctx context.Context, in *GetShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
 	ListShowcases(ctx context.Context, in *ListShowcasesRequest, opts ...grpc.CallOption) (*ListShowcasesResponse, error)
@@ -131,6 +141,26 @@ func (c *activityServiceClient) ListActivities(ctx context.Context, in *ListActi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListActivitiesResponse)
 	err := c.cc.Invoke(ctx, ActivityService_ListActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetResolvedActivity(ctx context.Context, in *GetResolvedActivityRequest, opts ...grpc.CallOption) (*activity.ResolvedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ResolvedActivity)
+	err := c.cc.Invoke(ctx, ActivityService_GetResolvedActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) ListResolvedActivities(ctx context.Context, in *ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*ListResolvedActivitiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListResolvedActivitiesResponse)
+	err := c.cc.Invoke(ctx, ActivityService_ListResolvedActivities_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -443,6 +473,14 @@ func (c *activityServiceClient) ListShowcaseViewStats(ctx context.Context, in *L
 type ActivityServiceServer interface {
 	GetActivity(context.Context, *GetActivityRequest) (*activity.StandardizedActivity, error)
 	ListActivities(context.Context, *ListActivitiesRequest) (*ListActivitiesResponse, error)
+	// GetResolvedActivity returns the resolved activity (the derived source+enricher fold
+	// with the user-edit overlay applied) together with per-field provenance attributing
+	// each resolved field to the layer/run that set it. Runs written before layered storage
+	// resolve with the effective activity and empty provenance.
+	GetResolvedActivity(context.Context, *GetResolvedActivityRequest) (*activity.ResolvedActivity, error)
+	// ListResolvedActivities is the paged list counterpart of GetResolvedActivity: one
+	// ResolvedActivity (activity + provenance) per run in the page.
+	ListResolvedActivities(context.Context, *ListResolvedActivitiesRequest) (*ListResolvedActivitiesResponse, error)
 	DeleteActivity(context.Context, *DeleteActivityRequest) (*emptypb.Empty, error)
 	GetShowcase(context.Context, *GetShowcaseRequest) (*activity.ShowcasedActivity, error)
 	ListShowcases(context.Context, *ListShowcasesRequest) (*ListShowcasesResponse, error)
@@ -504,6 +542,12 @@ func (UnimplementedActivityServiceServer) GetActivity(context.Context, *GetActiv
 }
 func (UnimplementedActivityServiceServer) ListActivities(context.Context, *ListActivitiesRequest) (*ListActivitiesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListActivities not implemented")
+}
+func (UnimplementedActivityServiceServer) GetResolvedActivity(context.Context, *GetResolvedActivityRequest) (*activity.ResolvedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetResolvedActivity not implemented")
+}
+func (UnimplementedActivityServiceServer) ListResolvedActivities(context.Context, *ListResolvedActivitiesRequest) (*ListResolvedActivitiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListResolvedActivities not implemented")
 }
 func (UnimplementedActivityServiceServer) DeleteActivity(context.Context, *DeleteActivityRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteActivity not implemented")
@@ -648,6 +692,42 @@ func _ActivityService_ListActivities_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ActivityServiceServer).ListActivities(ctx, req.(*ListActivitiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetResolvedActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetResolvedActivityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetResolvedActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetResolvedActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetResolvedActivity(ctx, req.(*GetResolvedActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_ListResolvedActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListResolvedActivitiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).ListResolvedActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_ListResolvedActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).ListResolvedActivities(ctx, req.(*ListResolvedActivitiesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1206,6 +1286,14 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListActivities",
 			Handler:    _ActivityService_ListActivities_Handler,
+		},
+		{
+			MethodName: "GetResolvedActivity",
+			Handler:    _ActivityService_GetResolvedActivity_Handler,
+		},
+		{
+			MethodName: "ListResolvedActivities",
+			Handler:    _ActivityService_ListResolvedActivities_Handler,
 		},
 		{
 			MethodName: "DeleteActivity",

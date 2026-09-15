@@ -8,6 +8,7 @@ import (
 	activitydomain "github.com/fitglue/server/src/go/pkg/domain/activity"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -44,6 +45,15 @@ func (s *Service) GetActivity(ctx context.Context, req *pbsvc.GetActivityRequest
 		}
 	}
 
+	return s.legacyActivityFromRun(ctx, req.UserId, run)
+}
+
+// legacyActivityFromRun reconstructs the effective activity for a run that has no usable
+// layered ActivityRecord: from the pre-layered enriched-event / original-payload blob, or
+// from the run metadata when no blob exists at all. It is the fallback shared by
+// GetActivity and the resolved-read path (which attaches empty provenance to the result,
+// since a legacy run carries no per-field attribution).
+func (s *Service) legacyActivityFromRun(ctx context.Context, userID string, run *pbpipeline.PipelineRun) (*pbactivity.StandardizedActivity, error) {
 	// Resolve the GCS URI where the actual giant payload is stored
 	uri := run.EnrichedEventUri
 	if uri == "" && run.OriginalPayloadUri != "" {
@@ -60,7 +70,7 @@ func (s *Service) GetActivity(ctx context.Context, req *pbsvc.GetActivityRequest
 		return &pbactivity.StandardizedActivity{
 			Source:     sourceEnum,
 			ExternalId: run.ActivityId,
-			UserId:     req.UserId,
+			UserId:     userID,
 			StartTime:  run.StartTime,
 			Name:       run.Title,
 			Type:       run.Type,
@@ -101,6 +111,80 @@ func (s *Service) GetActivity(ctx context.Context, req *pbsvc.GetActivityRequest
 	}
 
 	return nil, status.Error(codes.Internal, "failed to parse activity data from blob")
+}
+
+// GetResolvedActivity returns the resolved activity (the derived source+enricher fold with
+// the user-edit overlay applied) together with per-field provenance attributing each
+// resolved field to the layer/run that set it. When a run predates layered storage (or its
+// record can't be read), it resolves the effective activity from the legacy blob and
+// returns empty provenance rather than failing — the field attribution simply isn't known.
+func (s *Service) GetResolvedActivity(ctx context.Context, req *pbsvc.GetResolvedActivityRequest) (*pbactivity.ResolvedActivity, error) {
+	if req.UserId == "" || req.ActivityId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")
+	}
+
+	// ActivityId maps to the PipelineRun ID (Activity Storage Consolidation, Rule E37).
+	run, err := s.store.GetPipelineRun(ctx, req.UserId, req.ActivityId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get pipeline run for resolved activity", "error", err)
+		return nil, status.Error(codes.Internal, "failed to read activity metadata")
+	}
+	if run == nil {
+		return nil, status.Error(codes.NotFound, "activity not found")
+	}
+
+	return s.resolveFromRun(ctx, req.UserId, run)
+}
+
+// ListResolvedActivities is the paged list counterpart of GetResolvedActivity: it resolves
+// every run in the page to a ResolvedActivity (activity + provenance). A run that fails to
+// resolve is skipped rather than failing the whole page.
+func (s *Service) ListResolvedActivities(ctx context.Context, req *pbsvc.ListResolvedActivitiesRequest) (*pbsvc.ListResolvedActivitiesResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	runs, nextToken, err := s.store.ListPipelineRuns(ctx, req.UserId, req.Limit, req.PageToken)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list resolved activities", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list activities")
+	}
+
+	activities := make([]*pbactivity.ResolvedActivity, 0, len(runs))
+	for _, run := range runs {
+		resolved, err := s.resolveFromRun(ctx, req.UserId, run)
+		if err != nil {
+			s.logger.Warn(ctx, "skipping activity that failed to resolve", "error", err, "run_id", run.GetId())
+			continue
+		}
+		activities = append(activities, resolved)
+	}
+
+	return &pbsvc.ListResolvedActivitiesResponse{
+		Activities:    activities,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+// resolveFromRun resolves a single run to a ResolvedActivity. It prefers the layered
+// ActivityRecord (full per-field provenance); for runs written before layered storage —
+// or when the record can't be read — it falls back to the legacy effective activity with
+// empty provenance.
+func (s *Service) resolveFromRun(ctx context.Context, userID string, run *pbpipeline.PipelineRun) (*pbactivity.ResolvedActivity, error) {
+	if run.GetActivityRecordUri() != "" {
+		rec, err := activitydomain.LoadActivityRecord(ctx, run.GetActivityRecordUri(), s.blobStore)
+		if err != nil {
+			s.logger.Warn(ctx, "failed to read layered activity record, resolving from legacy blob without provenance", "error", err, "uri", run.GetActivityRecordUri())
+		} else if resolved := activitydomain.Resolve(rec); resolved.GetActivity() != nil {
+			return resolved, nil
+		}
+	}
+
+	act, err := s.legacyActivityFromRun(ctx, userID, run)
+	if err != nil {
+		return nil, err
+	}
+	return &pbactivity.ResolvedActivity{Activity: act}, nil
 }
 
 func (s *Service) DeleteActivity(ctx context.Context, req *pbsvc.DeleteActivityRequest) (*emptypb.Empty, error) {
