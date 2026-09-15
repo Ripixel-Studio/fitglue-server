@@ -496,6 +496,95 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/enrichers/{providerName}/invoke:
+        post:
+            tags:
+                - ClientGatewayService
+            description: |-
+                InvokeEnricher re-runs a single enricher out-of-band and records a proposed
+                 enricher-run layer (propose → accept/dismiss). Returns the proposal and a preview.
+            operationId: ClientGatewayService_InvokeEnricher
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: providerName
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InvokeEnricherGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/proposed-enrichers/{executionId}/accept:
+        post:
+            tags:
+                - ClientGatewayService
+            description: AcceptProposedEnricherRun applies a proposed enricher-run layer; returns the resolved activity.
+            operationId: ClientGatewayService_AcceptProposedEnricherRun
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: executionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StandardizedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/proposed-enrichers/{executionId}/dismiss:
+        post:
+            tags:
+                - ClientGatewayService
+            description: DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+            operationId: ClientGatewayService_DismissProposedEnricherRun
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: executionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/activities/{id}/refresh-source:
         post:
             tags:
@@ -2552,6 +2641,122 @@ components:
                         type: string
                 nonBlocking:
                     type: boolean
+        EnricherContribution:
+            type: object
+            properties:
+                name:
+                    type: string
+                nameSuffix:
+                    type: string
+                type:
+                    enum:
+                        - ACTIVITY_TYPE_UNSPECIFIED
+                        - ACTIVITY_TYPE_ALPINE_SKI
+                        - ACTIVITY_TYPE_BACKCOUNTRY_SKI
+                        - ACTIVITY_TYPE_BADMINTON
+                        - ACTIVITY_TYPE_CANOEING
+                        - ACTIVITY_TYPE_CROSSFIT
+                        - ACTIVITY_TYPE_EBIKE_RIDE
+                        - ACTIVITY_TYPE_ELLIPTICAL
+                        - ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE
+                        - ACTIVITY_TYPE_GOLF
+                        - ACTIVITY_TYPE_GRAVEL_RIDE
+                        - ACTIVITY_TYPE_HANDCYCLE
+                        - ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING
+                        - ACTIVITY_TYPE_HIKE
+                        - ACTIVITY_TYPE_ICE_SKATE
+                        - ACTIVITY_TYPE_INLINE_SKATE
+                        - ACTIVITY_TYPE_KAYAKING
+                        - ACTIVITY_TYPE_KITESURF
+                        - ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE
+                        - ACTIVITY_TYPE_NORDIC_SKI
+                        - ACTIVITY_TYPE_PICKLEBALL
+                        - ACTIVITY_TYPE_PILATES
+                        - ACTIVITY_TYPE_RACQUETBALL
+                        - ACTIVITY_TYPE_RIDE
+                        - ACTIVITY_TYPE_ROCK_CLIMBING
+                        - ACTIVITY_TYPE_ROLLER_SKI
+                        - ACTIVITY_TYPE_ROWING
+                        - ACTIVITY_TYPE_RUN
+                        - ACTIVITY_TYPE_SAIL
+                        - ACTIVITY_TYPE_SKATEBOARD
+                        - ACTIVITY_TYPE_SNOWBOARD
+                        - ACTIVITY_TYPE_SNOWSHOE
+                        - ACTIVITY_TYPE_SOCCER
+                        - ACTIVITY_TYPE_SQUASH
+                        - ACTIVITY_TYPE_STAIR_STEPPER
+                        - ACTIVITY_TYPE_STAND_UP_PADDLING
+                        - ACTIVITY_TYPE_SURFING
+                        - ACTIVITY_TYPE_SWIM
+                        - ACTIVITY_TYPE_TABLE_TENNIS
+                        - ACTIVITY_TYPE_TENNIS
+                        - ACTIVITY_TYPE_TRAIL_RUN
+                        - ACTIVITY_TYPE_VELOMOBILE
+                        - ACTIVITY_TYPE_VIRTUAL_RIDE
+                        - ACTIVITY_TYPE_VIRTUAL_ROW
+                        - ACTIVITY_TYPE_VIRTUAL_RUN
+                        - ACTIVITY_TYPE_WALK
+                        - ACTIVITY_TYPE_WEIGHT_TRAINING
+                        - ACTIVITY_TYPE_WHEELCHAIR
+                        - ACTIVITY_TYPE_WINDSURF
+                        - ACTIVITY_TYPE_WORKOUT
+                        - ACTIVITY_TYPE_YOGA
+                    type: string
+                    format: enum
+                tags:
+                    type: array
+                    items:
+                        type: string
+                timeMarkers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TimeMarker'
+                description:
+                    type: string
+                hybridRaceSummary:
+                    $ref: '#/components/schemas/HybridRaceSummary'
+            description: |-
+                EnricherContribution captures the layerable activity fields a single enricher set,
+                 so the resolution engine can determine which run last set each field. It mirrors the
+                 subset of EnrichmentResult the orchestrator applies onto the running activity: unset
+                 (nil / empty) fields mean the enricher did not touch that field.
+        EnricherRunLayer:
+            type: object
+            properties:
+                providerName:
+                    type: string
+                providerType:
+                    type: string
+                executionId:
+                    type: string
+                status:
+                    type: string
+                    description: 'Terminal execution status: SUCCESS / SKIPPED / FAILED / REPLAYED / WAITING ...'
+                enrichments:
+                    allOf:
+                        - $ref: '#/components/schemas/ActivityEnrichments'
+                    description: Typed output this enricher produced (nil if it contributed no typed enrichment).
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: Free-form execution metadata (skip reasons, provider context, replay journal, ...).
+                runAt:
+                    type: string
+                    format: date-time
+                durationMs:
+                    type: string
+                contribution:
+                    allOf:
+                        - $ref: '#/components/schemas/EnricherContribution'
+                    description: |-
+                        Activity-field contributions this enricher made to the layerable fields (name,
+                         type, description section, tags, time markers, hybrid-race summary), mirroring how
+                         the orchestrator folds an EnrichmentResult onto the running activity. The resolution
+                         engine (pkg/domain/activity Resolve) walks these in order to attribute per-field
+                         provenance. Nil on layers whose enricher produced no layerable change (or on legacy
+                         records written before contributions were captured).
+            description: EnricherRunLayer is one append-only record of a single enricher execution.
         EntrySparkline:
             type: object
             properties:
@@ -3119,6 +3324,15 @@ components:
                         $ref: '#/components/schemas/IntervalSegment'
                 workoutName:
                     type: string
+        InvokeEnricherGatewayResponse:
+            type: object
+            properties:
+                proposed:
+                    $ref: '#/components/schemas/EnricherRunLayer'
+                preview:
+                    $ref: '#/components/schemas/StandardizedActivity'
+                proposedCreated:
+                    type: boolean
         Lap:
             type: object
             properties:

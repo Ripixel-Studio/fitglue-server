@@ -59,6 +59,16 @@ message ActivityRecord {
 
   // Storage schema version, so future readers can migrate older records.
   int32 schema_version = 14;
+
+  // Proposed enricher-run layers from out-of-band, individually-invoked enricher
+  // re-runs (editable-activities spec, DECISION 2a: propose → accept/dismiss). Each
+  // entry is a candidate EnricherRunLayer that has NOT been applied: it is deliberately
+  // excluded from derived_activity, from the resolution engine's provenance walk, and
+  // from the effective (user-facing) activity, so it can never clobber the user overlay.
+  // Accepting a proposal folds its contribution into derived_activity and moves it into
+  // enricher_layers (append-only history); dismissing drops it. Identified by
+  // EnricherRunLayer.execution_id. Empty on a record with no outstanding proposals.
+  repeated EnricherRunLayer proposed_enricher_layers = 15;
 }
 
 // ActivitySourceLayer is the immutable parsed source activity exactly as it arrived,

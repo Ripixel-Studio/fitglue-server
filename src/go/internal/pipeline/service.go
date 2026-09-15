@@ -33,6 +33,12 @@ type Service struct {
 	blobStore BlobStore
 	logger    infra.Logger
 	userSvc   userpb.UserServiceClient
+
+	// Optional dependencies for out-of-band single-enricher invocation, wired via
+	// SetEnricherInvocation. Nil until wired (unit tests and the InvokeEnricher endpoints
+	// treat nil as "not configured").
+	userDB  enricherUserSource
+	invoker EnricherInvoker
 }
 
 func NewService(store PipelineStore, publisher Publisher, blobStore BlobStore, logger infra.Logger, userSvc userpb.UserServiceClient) *Service {

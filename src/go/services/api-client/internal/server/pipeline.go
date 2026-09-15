@@ -38,6 +38,10 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 	r.Post("/users/me/pipeline-runs/{runId}/cancel", s.handleCancelPipelineRun)
 	r.Post("/users/me/activities/{id}/repost", s.handleRepostActivity)
 	r.Post("/users/me/activities/{id}/refresh-source", s.handleRefreshActivitySource)
+
+	r.Post("/users/me/activities/{id}/enrichers/{providerName}/invoke", s.handleInvokeEnricher)
+	r.Post("/users/me/activities/{id}/proposed-enrichers/{executionId}/accept", s.handleAcceptProposedEnricherRun)
+	r.Post("/users/me/activities/{id}/proposed-enrichers/{executionId}/dismiss", s.handleDismissProposedEnricherRun)
 }
 
 func (s *APIServer) handleListPipelines(w http.ResponseWriter, r *http.Request) {
@@ -376,6 +380,77 @@ func (s *APIServer) handleRefreshActivitySource(w http.ResponseWriter, r *http.R
 	}
 
 	WriteJSON(w, res)
+}
+
+// handleInvokeEnricher re-runs a single enricher out-of-band against a persisted activity
+// and records a proposed enricher-run layer. Returns the proposal and a preview.
+func (s *APIServer) handleInvokeEnricher(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.InvokeEnricherRequest{
+		UserId:       token.UID,
+		ActivityId:   chi.URLParam(r, "id"),
+		ProviderName: chi.URLParam(r, "providerName"),
+	}
+
+	res, err := s.pipelineSvc.InvokeEnricher(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleAcceptProposedEnricherRun applies a proposed enricher-run layer, returning the
+// resolved activity (derived + user overlay).
+func (s *APIServer) handleAcceptProposedEnricherRun(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.AcceptProposedEnricherRunRequest{
+		UserId:      token.UID,
+		ActivityId:  chi.URLParam(r, "id"),
+		ExecutionId: chi.URLParam(r, "executionId"),
+	}
+
+	res, err := s.pipelineSvc.AcceptProposedEnricherRun(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleDismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+func (s *APIServer) handleDismissProposedEnricherRun(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.DismissProposedEnricherRunRequest{
+		UserId:      token.UID,
+		ActivityId:  chi.URLParam(r, "id"),
+		ExecutionId: chi.URLParam(r, "executionId"),
+	}
+
+	_, err := s.pipelineSvc.DismissProposedEnricherRun(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // handleGetPipelineRunPayload returns a short-lived signed GCS download URL for the

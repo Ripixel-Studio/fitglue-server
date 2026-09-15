@@ -22,23 +22,26 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PipelineService_ListPipelines_FullMethodName         = "/fitglue.services.pipeline.PipelineService/ListPipelines"
-	PipelineService_GetPipeline_FullMethodName           = "/fitglue.services.pipeline.PipelineService/GetPipeline"
-	PipelineService_CreatePipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/CreatePipeline"
-	PipelineService_UpdatePipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/UpdatePipeline"
-	PipelineService_DeletePipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/DeletePipeline"
-	PipelineService_SubmitInput_FullMethodName           = "/fitglue.services.pipeline.PipelineService/SubmitInput"
-	PipelineService_ListPendingInputs_FullMethodName     = "/fitglue.services.pipeline.PipelineService/ListPendingInputs"
-	PipelineService_ResolvePendingInput_FullMethodName   = "/fitglue.services.pipeline.PipelineService/ResolvePendingInput"
-	PipelineService_CancelPipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/CancelPipeline"
-	PipelineService_CancelPipelineRun_FullMethodName     = "/fitglue.services.pipeline.PipelineService/CancelPipelineRun"
-	PipelineService_RepostActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/RepostActivity"
-	PipelineService_RefreshActivitySource_FullMethodName = "/fitglue.services.pipeline.PipelineService/RefreshActivitySource"
-	PipelineService_GetPipelineRun_FullMethodName        = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
-	PipelineService_ListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
-	PipelineService_AdminListPipelineRuns_FullMethodName = "/fitglue.services.pipeline.PipelineService/AdminListPipelineRuns"
-	PipelineService_ListSourceActivities_FullMethodName  = "/fitglue.services.pipeline.PipelineService/ListSourceActivities"
-	PipelineService_BackfillActivities_FullMethodName    = "/fitglue.services.pipeline.PipelineService/BackfillActivities"
+	PipelineService_ListPipelines_FullMethodName              = "/fitglue.services.pipeline.PipelineService/ListPipelines"
+	PipelineService_GetPipeline_FullMethodName                = "/fitglue.services.pipeline.PipelineService/GetPipeline"
+	PipelineService_CreatePipeline_FullMethodName             = "/fitglue.services.pipeline.PipelineService/CreatePipeline"
+	PipelineService_UpdatePipeline_FullMethodName             = "/fitglue.services.pipeline.PipelineService/UpdatePipeline"
+	PipelineService_DeletePipeline_FullMethodName             = "/fitglue.services.pipeline.PipelineService/DeletePipeline"
+	PipelineService_SubmitInput_FullMethodName                = "/fitglue.services.pipeline.PipelineService/SubmitInput"
+	PipelineService_ListPendingInputs_FullMethodName          = "/fitglue.services.pipeline.PipelineService/ListPendingInputs"
+	PipelineService_ResolvePendingInput_FullMethodName        = "/fitglue.services.pipeline.PipelineService/ResolvePendingInput"
+	PipelineService_CancelPipeline_FullMethodName             = "/fitglue.services.pipeline.PipelineService/CancelPipeline"
+	PipelineService_CancelPipelineRun_FullMethodName          = "/fitglue.services.pipeline.PipelineService/CancelPipelineRun"
+	PipelineService_RepostActivity_FullMethodName             = "/fitglue.services.pipeline.PipelineService/RepostActivity"
+	PipelineService_RefreshActivitySource_FullMethodName      = "/fitglue.services.pipeline.PipelineService/RefreshActivitySource"
+	PipelineService_InvokeEnricher_FullMethodName             = "/fitglue.services.pipeline.PipelineService/InvokeEnricher"
+	PipelineService_AcceptProposedEnricherRun_FullMethodName  = "/fitglue.services.pipeline.PipelineService/AcceptProposedEnricherRun"
+	PipelineService_DismissProposedEnricherRun_FullMethodName = "/fitglue.services.pipeline.PipelineService/DismissProposedEnricherRun"
+	PipelineService_GetPipelineRun_FullMethodName             = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
+	PipelineService_ListPipelineRuns_FullMethodName           = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
+	PipelineService_AdminListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/AdminListPipelineRuns"
+	PipelineService_ListSourceActivities_FullMethodName       = "/fitglue.services.pipeline.PipelineService/ListSourceActivities"
+	PipelineService_BackfillActivities_FullMethodName         = "/fitglue.services.pipeline.PipelineService/BackfillActivities"
 )
 
 // PipelineServiceClient is the client API for PipelineService service.
@@ -65,6 +68,25 @@ type PipelineServiceClient interface {
 	// Returns the resolved (source + user overlay) activity so the caller can show the
 	// refreshed data immediately.
 	RefreshActivitySource(ctx context.Context, in *RefreshActivitySourceRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// InvokeEnricher re-runs a SINGLE enricher out-of-band against a persisted, layered
+	// activity and records the result as a *proposed* enricher-run layer (editable-activities
+	// spec, DECISION 2a). The enricher runs against the derived activity (source + already
+	// applied enricher layers); its contribution is recorded in
+	// ActivityRecord.proposed_enricher_layers WITHOUT touching derived_activity, the applied
+	// enricher_layers, or the user-edit overlay — so a proposal can never clobber the user's
+	// edits. The response carries the proposed layer and a preview of what accepting would
+	// produce (with the user overlay still applied on top). Only idempotent, input-free
+	// enrichers are individually invokable; non-idempotent enrichers (counters, external
+	// side-effects) and ones that require user input are rejected.
+	InvokeEnricher(ctx context.Context, in *InvokeEnricherRequest, opts ...grpc.CallOption) (*InvokeEnricherResponse, error)
+	// AcceptProposedEnricherRun applies a previously proposed enricher-run layer: it folds the
+	// proposal's contribution into the derived activity, moves it into the append-only
+	// enricher_layers as real history, and removes it from proposed_enricher_layers. The
+	// user-edit overlay is left untouched and still wins on read. Returns the resolved
+	// (derived + overlay) activity.
+	AcceptProposedEnricherRun(ctx context.Context, in *AcceptProposedEnricherRunRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+	DismissProposedEnricherRun(ctx context.Context, in *DismissProposedEnricherRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsRequest, opts ...grpc.CallOption) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(ctx context.Context, in *AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*AdminListPipelineRunsResponse, error)
@@ -200,6 +222,36 @@ func (c *pipelineServiceClient) RefreshActivitySource(ctx context.Context, in *R
 	return out, nil
 }
 
+func (c *pipelineServiceClient) InvokeEnricher(ctx context.Context, in *InvokeEnricherRequest, opts ...grpc.CallOption) (*InvokeEnricherResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InvokeEnricherResponse)
+	err := c.cc.Invoke(ctx, PipelineService_InvokeEnricher_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelineServiceClient) AcceptProposedEnricherRun(ctx context.Context, in *AcceptProposedEnricherRunRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.StandardizedActivity)
+	err := c.cc.Invoke(ctx, PipelineService_AcceptProposedEnricherRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelineServiceClient) DismissProposedEnricherRun(ctx context.Context, in *DismissProposedEnricherRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PipelineService_DismissProposedEnricherRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *pipelineServiceClient) GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pipeline.PipelineRun)
@@ -274,6 +326,25 @@ type PipelineServiceServer interface {
 	// Returns the resolved (source + user overlay) activity so the caller can show the
 	// refreshed data immediately.
 	RefreshActivitySource(context.Context, *RefreshActivitySourceRequest) (*activity.StandardizedActivity, error)
+	// InvokeEnricher re-runs a SINGLE enricher out-of-band against a persisted, layered
+	// activity and records the result as a *proposed* enricher-run layer (editable-activities
+	// spec, DECISION 2a). The enricher runs against the derived activity (source + already
+	// applied enricher layers); its contribution is recorded in
+	// ActivityRecord.proposed_enricher_layers WITHOUT touching derived_activity, the applied
+	// enricher_layers, or the user-edit overlay — so a proposal can never clobber the user's
+	// edits. The response carries the proposed layer and a preview of what accepting would
+	// produce (with the user overlay still applied on top). Only idempotent, input-free
+	// enrichers are individually invokable; non-idempotent enrichers (counters, external
+	// side-effects) and ones that require user input are rejected.
+	InvokeEnricher(context.Context, *InvokeEnricherRequest) (*InvokeEnricherResponse, error)
+	// AcceptProposedEnricherRun applies a previously proposed enricher-run layer: it folds the
+	// proposal's contribution into the derived activity, moves it into the append-only
+	// enricher_layers as real history, and removes it from proposed_enricher_layers. The
+	// user-edit overlay is left untouched and still wins on read. Returns the resolved
+	// (derived + overlay) activity.
+	AcceptProposedEnricherRun(context.Context, *AcceptProposedEnricherRunRequest) (*activity.StandardizedActivity, error)
+	// DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+	DismissProposedEnricherRun(context.Context, *DismissProposedEnricherRunRequest) (*emptypb.Empty, error)
 	GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error)
@@ -324,6 +395,15 @@ func (UnimplementedPipelineServiceServer) RepostActivity(context.Context, *Repos
 }
 func (UnimplementedPipelineServiceServer) RefreshActivitySource(context.Context, *RefreshActivitySourceRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
+}
+func (UnimplementedPipelineServiceServer) InvokeEnricher(context.Context, *InvokeEnricherRequest) (*InvokeEnricherResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InvokeEnricher not implemented")
+}
+func (UnimplementedPipelineServiceServer) AcceptProposedEnricherRun(context.Context, *AcceptProposedEnricherRunRequest) (*activity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptProposedEnricherRun not implemented")
+}
+func (UnimplementedPipelineServiceServer) DismissProposedEnricherRun(context.Context, *DismissProposedEnricherRunRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DismissProposedEnricherRun not implemented")
 }
 func (UnimplementedPipelineServiceServer) GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPipelineRun not implemented")
@@ -577,6 +657,60 @@ func _PipelineService_RefreshActivitySource_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_InvokeEnricher_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InvokeEnricherRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).InvokeEnricher(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_InvokeEnricher_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).InvokeEnricher(ctx, req.(*InvokeEnricherRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelineService_AcceptProposedEnricherRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptProposedEnricherRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).AcceptProposedEnricherRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_AcceptProposedEnricherRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).AcceptProposedEnricherRun(ctx, req.(*AcceptProposedEnricherRunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelineService_DismissProposedEnricherRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DismissProposedEnricherRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).DismissProposedEnricherRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_DismissProposedEnricherRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).DismissProposedEnricherRun(ctx, req.(*DismissProposedEnricherRunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PipelineService_GetPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPipelineRunRequest)
 	if err := dec(in); err != nil {
@@ -721,6 +855,18 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefreshActivitySource",
 			Handler:    _PipelineService_RefreshActivitySource_Handler,
+		},
+		{
+			MethodName: "InvokeEnricher",
+			Handler:    _PipelineService_InvokeEnricher_Handler,
+		},
+		{
+			MethodName: "AcceptProposedEnricherRun",
+			Handler:    _PipelineService_AcceptProposedEnricherRun_Handler,
+		},
+		{
+			MethodName: "DismissProposedEnricherRun",
+			Handler:    _PipelineService_DismissProposedEnricherRun_Handler,
 		},
 		{
 			MethodName: "GetPipelineRun",

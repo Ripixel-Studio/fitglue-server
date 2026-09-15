@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/fitglue/server/src/go/internal/infra"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
@@ -199,6 +200,18 @@ func (m *adminNopPipelineClient) ListSourceActivities(_ context.Context, _ *pipe
 }
 func (m *adminNopPipelineClient) BackfillActivities(_ context.Context, _ *pipelinepb.BackfillActivitiesRequest, _ ...grpc.CallOption) (*pipelinepb.BackfillActivitiesResponse, error) {
 	return &pipelinepb.BackfillActivitiesResponse{}, nil
+}
+func (m *adminNopPipelineClient) RefreshActivitySource(_ context.Context, _ *pipelinepb.RefreshActivitySourceRequest, _ ...grpc.CallOption) (*pbactivity.StandardizedActivity, error) {
+	return &pbactivity.StandardizedActivity{}, nil
+}
+func (m *adminNopPipelineClient) InvokeEnricher(_ context.Context, _ *pipelinepb.InvokeEnricherRequest, _ ...grpc.CallOption) (*pipelinepb.InvokeEnricherResponse, error) {
+	return &pipelinepb.InvokeEnricherResponse{}, nil
+}
+func (m *adminNopPipelineClient) AcceptProposedEnricherRun(_ context.Context, _ *pipelinepb.AcceptProposedEnricherRunRequest, _ ...grpc.CallOption) (*pbactivity.StandardizedActivity, error) {
+	return &pbactivity.StandardizedActivity{}, nil
+}
+func (m *adminNopPipelineClient) DismissProposedEnricherRun(_ context.Context, _ *pipelinepb.DismissProposedEnricherRunRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
 }
 
 // ---- Helpers ----

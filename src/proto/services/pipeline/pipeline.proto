@@ -6,6 +6,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 import "models/activity/standardized.proto";
+import "models/activity/record.proto";
 import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
 import "models/pipeline/pending_input.proto";
@@ -89,6 +90,40 @@ service PipelineService {
   rpc RefreshActivitySource(RefreshActivitySourceRequest) returns (fitglue.models.activity.StandardizedActivity) {
     option (google.api.http) = {
       post: "/v2/users/{user_id}/activities/{activity_id}/refresh-source"
+    };
+  }
+
+  // InvokeEnricher re-runs a SINGLE enricher out-of-band against a persisted, layered
+  // activity and records the result as a *proposed* enricher-run layer (editable-activities
+  // spec, DECISION 2a). The enricher runs against the derived activity (source + already
+  // applied enricher layers); its contribution is recorded in
+  // ActivityRecord.proposed_enricher_layers WITHOUT touching derived_activity, the applied
+  // enricher_layers, or the user-edit overlay — so a proposal can never clobber the user's
+  // edits. The response carries the proposed layer and a preview of what accepting would
+  // produce (with the user overlay still applied on top). Only idempotent, input-free
+  // enrichers are individually invokable; non-idempotent enrichers (counters, external
+  // side-effects) and ones that require user input are rejected.
+  rpc InvokeEnricher(InvokeEnricherRequest) returns (InvokeEnricherResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activities/{activity_id}/enrichers/{provider_name}/invoke"
+    };
+  }
+
+  // AcceptProposedEnricherRun applies a previously proposed enricher-run layer: it folds the
+  // proposal's contribution into the derived activity, moves it into the append-only
+  // enricher_layers as real history, and removes it from proposed_enricher_layers. The
+  // user-edit overlay is left untouched and still wins on read. Returns the resolved
+  // (derived + overlay) activity.
+  rpc AcceptProposedEnricherRun(AcceptProposedEnricherRunRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activities/{activity_id}/proposed-enrichers/{execution_id}/accept"
+    };
+  }
+
+  // DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+  rpc DismissProposedEnricherRun(DismissProposedEnricherRunRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activities/{activity_id}/proposed-enrichers/{execution_id}/dismiss"
     };
   }
 
@@ -207,6 +242,40 @@ message RepostActivityRequest {
 message RefreshActivitySourceRequest {
   string user_id = 1;
   string activity_id = 2;
+}
+
+message InvokeEnricherRequest {
+  string user_id = 1;
+  string activity_id = 2;
+  // provider_name is the enricher provider's registry name (Provider.Name()), e.g.
+  // "heart-rate-summary", "weather".
+  string provider_name = 3;
+}
+
+message InvokeEnricherResponse {
+  // The proposed enricher-run layer recorded on the activity. Unset when the enricher
+  // ran but produced no layerable change (proposed_created = false).
+  fitglue.models.activity.EnricherRunLayer proposed = 1;
+  // Preview of the resolved activity if the proposal were accepted: the derived activity
+  // with this proposal's contribution folded in and the user-edit overlay applied on top
+  // (the overlay still wins). Non-persistent.
+  fitglue.models.activity.StandardizedActivity preview = 2;
+  // True when the enricher produced a change that was recorded as a proposal.
+  bool proposed_created = 3;
+}
+
+message AcceptProposedEnricherRunRequest {
+  string user_id = 1;
+  string activity_id = 2;
+  // execution_id identifies the proposed EnricherRunLayer to accept.
+  string execution_id = 3;
+}
+
+message DismissProposedEnricherRunRequest {
+  string user_id = 1;
+  string activity_id = 2;
+  // execution_id identifies the proposed EnricherRunLayer to dismiss.
+  string execution_id = 3;
 }
 
 message GetPipelineRunRequest {

@@ -70,6 +70,9 @@ const (
 	ClientGatewayService_ListActivities_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ListActivities"
 	ClientGatewayService_GetActivity_FullMethodName                        = "/fitglue.gateway.ClientGatewayService/GetActivity"
 	ClientGatewayService_RefreshActivitySource_FullMethodName              = "/fitglue.gateway.ClientGatewayService/RefreshActivitySource"
+	ClientGatewayService_InvokeEnricher_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/InvokeEnricher"
+	ClientGatewayService_AcceptProposedEnricherRun_FullMethodName          = "/fitglue.gateway.ClientGatewayService/AcceptProposedEnricherRun"
+	ClientGatewayService_DismissProposedEnricherRun_FullMethodName         = "/fitglue.gateway.ClientGatewayService/DismissProposedEnricherRun"
 	ClientGatewayService_DeleteActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/DeleteActivity"
 	ClientGatewayService_GetActivityStats_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/GetActivityStats"
 	ClientGatewayService_ListShowcases_FullMethodName                      = "/fitglue.gateway.ClientGatewayService/ListShowcases"
@@ -188,6 +191,13 @@ type ClientGatewayServiceClient interface {
 	// RefreshActivitySource re-pulls the activity from its source and refreshes the
 	// immutable source layer of the persisted record, returning the resolved activity.
 	RefreshActivitySource(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// InvokeEnricher re-runs a single enricher out-of-band and records a proposed
+	// enricher-run layer (propose → accept/dismiss). Returns the proposal and a preview.
+	InvokeEnricher(ctx context.Context, in *InvokeEnricherGatewayRequest, opts ...grpc.CallOption) (*InvokeEnricherGatewayResponse, error)
+	// AcceptProposedEnricherRun applies a proposed enricher-run layer; returns the resolved activity.
+	AcceptProposedEnricherRun(ctx context.Context, in *ProposedEnricherRunGatewayRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+	DismissProposedEnricherRun(ctx context.Context, in *ProposedEnricherRunGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DeleteActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetActivityStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*GetActivityStatsGatewayResponse, error)
 	// ===================== Showcases =====================
@@ -717,6 +727,36 @@ func (c *clientGatewayServiceClient) RefreshActivitySource(ctx context.Context, 
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) InvokeEnricher(ctx context.Context, in *InvokeEnricherGatewayRequest, opts ...grpc.CallOption) (*InvokeEnricherGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InvokeEnricherGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_InvokeEnricher_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) AcceptProposedEnricherRun(ctx context.Context, in *ProposedEnricherRunGatewayRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.StandardizedActivity)
+	err := c.cc.Invoke(ctx, ClientGatewayService_AcceptProposedEnricherRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) DismissProposedEnricherRun(ctx context.Context, in *ProposedEnricherRunGatewayRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ClientGatewayService_DismissProposedEnricherRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) DeleteActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -1229,6 +1269,13 @@ type ClientGatewayServiceServer interface {
 	// RefreshActivitySource re-pulls the activity from its source and refreshes the
 	// immutable source layer of the persisted record, returning the resolved activity.
 	RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error)
+	// InvokeEnricher re-runs a single enricher out-of-band and records a proposed
+	// enricher-run layer (propose → accept/dismiss). Returns the proposal and a preview.
+	InvokeEnricher(context.Context, *InvokeEnricherGatewayRequest) (*InvokeEnricherGatewayResponse, error)
+	// AcceptProposedEnricherRun applies a proposed enricher-run layer; returns the resolved activity.
+	AcceptProposedEnricherRun(context.Context, *ProposedEnricherRunGatewayRequest) (*activity.StandardizedActivity, error)
+	// DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+	DismissProposedEnricherRun(context.Context, *ProposedEnricherRunGatewayRequest) (*emptypb.Empty, error)
 	DeleteActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error)
 	GetActivityStats(context.Context, *EmptyRequest) (*GetActivityStatsGatewayResponse, error)
 	// ===================== Showcases =====================
@@ -1435,6 +1482,15 @@ func (UnimplementedClientGatewayServiceServer) GetActivity(context.Context, *Act
 }
 func (UnimplementedClientGatewayServiceServer) RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) InvokeEnricher(context.Context, *InvokeEnricherGatewayRequest) (*InvokeEnricherGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InvokeEnricher not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) AcceptProposedEnricherRun(context.Context, *ProposedEnricherRunGatewayRequest) (*activity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptProposedEnricherRun not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) DismissProposedEnricherRun(context.Context, *ProposedEnricherRunGatewayRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DismissProposedEnricherRun not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) DeleteActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteActivity not implemented")
@@ -2413,6 +2469,60 @@ func _ClientGatewayService_RefreshActivitySource_Handler(srv interface{}, ctx co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClientGatewayServiceServer).RefreshActivitySource(ctx, req.(*ActivityIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_InvokeEnricher_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InvokeEnricherGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).InvokeEnricher(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_InvokeEnricher_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).InvokeEnricher(ctx, req.(*InvokeEnricherGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_AcceptProposedEnricherRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProposedEnricherRunGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).AcceptProposedEnricherRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_AcceptProposedEnricherRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).AcceptProposedEnricherRun(ctx, req.(*ProposedEnricherRunGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_DismissProposedEnricherRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProposedEnricherRunGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).DismissProposedEnricherRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_DismissProposedEnricherRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).DismissProposedEnricherRun(ctx, req.(*ProposedEnricherRunGatewayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3399,6 +3509,18 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefreshActivitySource",
 			Handler:    _ClientGatewayService_RefreshActivitySource_Handler,
+		},
+		{
+			MethodName: "InvokeEnricher",
+			Handler:    _ClientGatewayService_InvokeEnricher_Handler,
+		},
+		{
+			MethodName: "AcceptProposedEnricherRun",
+			Handler:    _ClientGatewayService_AcceptProposedEnricherRun_Handler,
+		},
+		{
+			MethodName: "DismissProposedEnricherRun",
+			Handler:    _ClientGatewayService_DismissProposedEnricherRun_Handler,
 		},
 		{
 			MethodName: "DeleteActivity",

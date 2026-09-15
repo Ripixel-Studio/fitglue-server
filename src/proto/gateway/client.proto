@@ -17,6 +17,7 @@ import "models/pipeline/execution.proto";
 
 import "models/activity/roundup.proto";
 import "models/activity/standardized.proto";
+import "models/activity/record.proto";
 import "models/activity/uploaded.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/gateway";
@@ -302,6 +303,25 @@ service ClientGatewayService {
   rpc RefreshActivitySource(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
     option (google.api.http) = {
       post: "/users/me/activities/{id}/refresh-source"
+    };
+  }
+  // InvokeEnricher re-runs a single enricher out-of-band and records a proposed
+  // enricher-run layer (propose → accept/dismiss). Returns the proposal and a preview.
+  rpc InvokeEnricher(InvokeEnricherGatewayRequest) returns (InvokeEnricherGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/enrichers/{provider_name}/invoke"
+    };
+  }
+  // AcceptProposedEnricherRun applies a proposed enricher-run layer; returns the resolved activity.
+  rpc AcceptProposedEnricherRun(ProposedEnricherRunGatewayRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/proposed-enrichers/{execution_id}/accept"
+    };
+  }
+  // DismissProposedEnricherRun drops a proposed enricher-run layer without applying it.
+  rpc DismissProposedEnricherRun(ProposedEnricherRunGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/proposed-enrichers/{execution_id}/dismiss"
     };
   }
   rpc DeleteActivity(ActivityIdRequest) returns (google.protobuf.Empty) {
@@ -733,6 +753,21 @@ message CancelPipelineRunGatewayRequest {
 }
 message RepostActivityGatewayRequest {
   string id = 1; // activity_id from path
+}
+
+// Individual enricher invocation (propose → accept/dismiss)
+message InvokeEnricherGatewayRequest {
+  string id = 1;            // activity_id from path
+  string provider_name = 2; // enricher provider registry name from path
+}
+message InvokeEnricherGatewayResponse {
+  fitglue.models.activity.EnricherRunLayer proposed = 1;
+  fitglue.models.activity.StandardizedActivity preview = 2;
+  bool proposed_created = 3;
+}
+message ProposedEnricherRunGatewayRequest {
+  string id = 1;           // activity_id from path
+  string execution_id = 2; // proposed enricher-run layer id from path
 }
 
 // Activities

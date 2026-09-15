@@ -35,6 +35,11 @@ type mockPipelineServiceClient struct {
 	getPipelineRun   func(ctx context.Context, in *pipelinepb.GetPipelineRunRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineRun, error)
 	submitInput      func(ctx context.Context, in *pipelinepb.SubmitInputRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	repostActivity   func(ctx context.Context, in *pipelinepb.RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+
+	refreshActivitySource      func(ctx context.Context, in *pipelinepb.RefreshActivitySourceRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error)
+	invokeEnricher             func(ctx context.Context, in *pipelinepb.InvokeEnricherRequest, opts ...grpc.CallOption) (*pipelinepb.InvokeEnricherResponse, error)
+	acceptProposedEnricherRun  func(ctx context.Context, in *pipelinepb.AcceptProposedEnricherRunRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error)
+	dismissProposedEnricherRun func(ctx context.Context, in *pipelinepb.DismissProposedEnricherRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 func (m *mockPipelineServiceClient) ListPipelines(ctx context.Context, in *pipelinepb.ListPipelinesRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelinesResponse, error) {
@@ -111,6 +116,30 @@ func (m *mockPipelineServiceClient) ListSourceActivities(ctx context.Context, in
 }
 func (m *mockPipelineServiceClient) BackfillActivities(ctx context.Context, in *pipelinepb.BackfillActivitiesRequest, opts ...grpc.CallOption) (*pipelinepb.BackfillActivitiesResponse, error) {
 	return &pipelinepb.BackfillActivitiesResponse{}, nil
+}
+func (m *mockPipelineServiceClient) RefreshActivitySource(ctx context.Context, in *pipelinepb.RefreshActivitySourceRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	if m.refreshActivitySource != nil {
+		return m.refreshActivitySource(ctx, in, opts...)
+	}
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *mockPipelineServiceClient) InvokeEnricher(ctx context.Context, in *pipelinepb.InvokeEnricherRequest, opts ...grpc.CallOption) (*pipelinepb.InvokeEnricherResponse, error) {
+	if m.invokeEnricher != nil {
+		return m.invokeEnricher(ctx, in, opts...)
+	}
+	return &pipelinepb.InvokeEnricherResponse{}, nil
+}
+func (m *mockPipelineServiceClient) AcceptProposedEnricherRun(ctx context.Context, in *pipelinepb.AcceptProposedEnricherRunRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	if m.acceptProposedEnricherRun != nil {
+		return m.acceptProposedEnricherRun(ctx, in, opts...)
+	}
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *mockPipelineServiceClient) DismissProposedEnricherRun(ctx context.Context, in *pipelinepb.DismissProposedEnricherRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	if m.dismissProposedEnricherRun != nil {
+		return m.dismissProposedEnricherRun(ctx, in, opts...)
+	}
+	return &emptypb.Empty{}, nil
 }
 
 // =============================================================

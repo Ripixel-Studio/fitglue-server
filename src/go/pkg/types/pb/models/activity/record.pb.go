@@ -120,8 +120,17 @@ type ActivityRecord struct {
 	UpdatedAt   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// Storage schema version, so future readers can migrate older records.
 	SchemaVersion int32 `protobuf:"varint,14,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Proposed enricher-run layers from out-of-band, individually-invoked enricher
+	// re-runs (editable-activities spec, DECISION 2a: propose → accept/dismiss). Each
+	// entry is a candidate EnricherRunLayer that has NOT been applied: it is deliberately
+	// excluded from derived_activity, from the resolution engine's provenance walk, and
+	// from the effective (user-facing) activity, so it can never clobber the user overlay.
+	// Accepting a proposal folds its contribution into derived_activity and moves it into
+	// enricher_layers (append-only history); dismissing drops it. Identified by
+	// EnricherRunLayer.execution_id. Empty on a record with no outstanding proposals.
+	ProposedEnricherLayers []*EnricherRunLayer `protobuf:"bytes,15,rep,name=proposed_enricher_layers,json=proposedEnricherLayers,proto3" json:"proposed_enricher_layers,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *ActivityRecord) Reset() {
@@ -250,6 +259,13 @@ func (x *ActivityRecord) GetSchemaVersion() int32 {
 		return x.SchemaVersion
 	}
 	return 0
+}
+
+func (x *ActivityRecord) GetProposedEnricherLayers() []*EnricherRunLayer {
+	if x != nil {
+		return x.ProposedEnricherLayers
+	}
+	return nil
 }
 
 // ActivitySourceLayer is the immutable parsed source activity exactly as it arrived,
@@ -769,7 +785,7 @@ var File_models_activity_record_proto protoreflect.FileDescriptor
 
 const file_models_activity_record_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/activity/record.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\"models/activity/standardized.proto\x1a!models/activity/enrichments.proto\"\xbf\x06\n" +
+	"\x1cmodels/activity/record.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\"models/activity/standardized.proto\x1a!models/activity/enrichments.proto\"\xa4\a\n" +
 	"\x0eActivityRecord\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -790,7 +806,8 @@ const file_models_activity_record_proto_rawDesc = "" +
 	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12%\n" +
-	"\x0eschema_version\x18\x0e \x01(\x05R\rschemaVersion\"\x92\x02\n" +
+	"\x0eschema_version\x18\x0e \x01(\x05R\rschemaVersion\x12c\n" +
+	"\x18proposed_enricher_layers\x18\x0f \x03(\v2).fitglue.models.activity.EnricherRunLayerR\x16proposedEnricherLayers\"\x92\x02\n" +
 	"\x13ActivitySourceLayer\x12E\n" +
 	"\x06parsed\x18\x01 \x01(\v2-.fitglue.models.activity.StandardizedActivityR\x06parsed\x12&\n" +
 	"\x0fraw_payload_uri\x18\x02 \x01(\tR\rrawPayloadUri\x12;\n" +
@@ -893,26 +910,27 @@ var file_models_activity_record_proto_depIdxs = []int32{
 	11, // 5: fitglue.models.activity.ActivityRecord.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
 	12, // 6: fitglue.models.activity.ActivityRecord.created_at:type_name -> google.protobuf.Timestamp
 	12, // 7: fitglue.models.activity.ActivityRecord.updated_at:type_name -> google.protobuf.Timestamp
-	10, // 8: fitglue.models.activity.ActivitySourceLayer.parsed:type_name -> fitglue.models.activity.StandardizedActivity
-	12, // 9: fitglue.models.activity.ActivitySourceLayer.ingested_at:type_name -> google.protobuf.Timestamp
-	12, // 10: fitglue.models.activity.ActivitySourceLayer.raw_payload_expires_at:type_name -> google.protobuf.Timestamp
-	11, // 11: fitglue.models.activity.EnricherRunLayer.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
-	8,  // 12: fitglue.models.activity.EnricherRunLayer.metadata:type_name -> fitglue.models.activity.EnricherRunLayer.MetadataEntry
-	12, // 13: fitglue.models.activity.EnricherRunLayer.run_at:type_name -> google.protobuf.Timestamp
-	4,  // 14: fitglue.models.activity.EnricherRunLayer.contribution:type_name -> fitglue.models.activity.EnricherContribution
-	13, // 15: fitglue.models.activity.EnricherContribution.type:type_name -> fitglue.models.activity.ActivityType
-	14, // 16: fitglue.models.activity.EnricherContribution.time_markers:type_name -> fitglue.models.activity.TimeMarker
-	15, // 17: fitglue.models.activity.EnricherContribution.hybrid_race_summary:type_name -> fitglue.models.activity.HybridRaceSummary
-	0,  // 18: fitglue.models.activity.FieldProvenance.layer:type_name -> fitglue.models.activity.ProvenanceLayer
-	10, // 19: fitglue.models.activity.ResolvedActivity.activity:type_name -> fitglue.models.activity.StandardizedActivity
-	5,  // 20: fitglue.models.activity.ResolvedActivity.provenance:type_name -> fitglue.models.activity.FieldProvenance
-	13, // 21: fitglue.models.activity.ActivityUserEditOverlay.type:type_name -> fitglue.models.activity.ActivityType
-	12, // 22: fitglue.models.activity.ActivityUserEditOverlay.edited_at:type_name -> google.protobuf.Timestamp
-	23, // [23:23] is the sub-list for method output_type
-	23, // [23:23] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	3,  // 8: fitglue.models.activity.ActivityRecord.proposed_enricher_layers:type_name -> fitglue.models.activity.EnricherRunLayer
+	10, // 9: fitglue.models.activity.ActivitySourceLayer.parsed:type_name -> fitglue.models.activity.StandardizedActivity
+	12, // 10: fitglue.models.activity.ActivitySourceLayer.ingested_at:type_name -> google.protobuf.Timestamp
+	12, // 11: fitglue.models.activity.ActivitySourceLayer.raw_payload_expires_at:type_name -> google.protobuf.Timestamp
+	11, // 12: fitglue.models.activity.EnricherRunLayer.enrichments:type_name -> fitglue.models.activity.ActivityEnrichments
+	8,  // 13: fitglue.models.activity.EnricherRunLayer.metadata:type_name -> fitglue.models.activity.EnricherRunLayer.MetadataEntry
+	12, // 14: fitglue.models.activity.EnricherRunLayer.run_at:type_name -> google.protobuf.Timestamp
+	4,  // 15: fitglue.models.activity.EnricherRunLayer.contribution:type_name -> fitglue.models.activity.EnricherContribution
+	13, // 16: fitglue.models.activity.EnricherContribution.type:type_name -> fitglue.models.activity.ActivityType
+	14, // 17: fitglue.models.activity.EnricherContribution.time_markers:type_name -> fitglue.models.activity.TimeMarker
+	15, // 18: fitglue.models.activity.EnricherContribution.hybrid_race_summary:type_name -> fitglue.models.activity.HybridRaceSummary
+	0,  // 19: fitglue.models.activity.FieldProvenance.layer:type_name -> fitglue.models.activity.ProvenanceLayer
+	10, // 20: fitglue.models.activity.ResolvedActivity.activity:type_name -> fitglue.models.activity.StandardizedActivity
+	5,  // 21: fitglue.models.activity.ResolvedActivity.provenance:type_name -> fitglue.models.activity.FieldProvenance
+	13, // 22: fitglue.models.activity.ActivityUserEditOverlay.type:type_name -> fitglue.models.activity.ActivityType
+	12, // 23: fitglue.models.activity.ActivityUserEditOverlay.edited_at:type_name -> google.protobuf.Timestamp
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_record_proto_init() }
