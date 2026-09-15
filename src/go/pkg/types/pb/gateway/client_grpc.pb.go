@@ -69,6 +69,8 @@ const (
 	ClientGatewayService_RepostActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/RepostActivity"
 	ClientGatewayService_ListActivities_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ListActivities"
 	ClientGatewayService_GetActivity_FullMethodName                        = "/fitglue.gateway.ClientGatewayService/GetActivity"
+	ClientGatewayService_ListResolvedActivities_FullMethodName             = "/fitglue.gateway.ClientGatewayService/ListResolvedActivities"
+	ClientGatewayService_GetResolvedActivity_FullMethodName                = "/fitglue.gateway.ClientGatewayService/GetResolvedActivity"
 	ClientGatewayService_RefreshActivitySource_FullMethodName              = "/fitglue.gateway.ClientGatewayService/RefreshActivitySource"
 	ClientGatewayService_UpdateActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/UpdateActivity"
 	ClientGatewayService_ResendActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ResendActivity"
@@ -187,6 +189,12 @@ type ClientGatewayServiceClient interface {
 	// ===================== Activities =====================
 	ListActivities(ctx context.Context, in *ListActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListActivitiesGatewayResponse, error)
 	GetActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// ListResolvedActivities returns a page of resolved activities, each with per-field
+	// provenance, for the activity list / editing surface.
+	ListResolvedActivities(ctx context.Context, in *ListResolvedActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListResolvedActivitiesGatewayResponse, error)
+	// GetResolvedActivity returns a single resolved activity (source → enricher runs →
+	// user overlay) with per-field provenance for the activity detail / editing page.
+	GetResolvedActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.ResolvedActivity, error)
 	// RefreshActivitySource re-pulls the activity from its source and refreshes the
 	// immutable source layer of the persisted record, returning the resolved activity.
 	RefreshActivitySource(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
@@ -711,6 +719,26 @@ func (c *clientGatewayServiceClient) GetActivity(ctx context.Context, in *Activi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(activity.StandardizedActivity)
 	err := c.cc.Invoke(ctx, ClientGatewayService_GetActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) ListResolvedActivities(ctx context.Context, in *ListResolvedActivitiesGatewayRequest, opts ...grpc.CallOption) (*ListResolvedActivitiesGatewayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListResolvedActivitiesGatewayResponse)
+	err := c.cc.Invoke(ctx, ClientGatewayService_ListResolvedActivities_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) GetResolvedActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.ResolvedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ResolvedActivity)
+	err := c.cc.Invoke(ctx, ClientGatewayService_GetResolvedActivity_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1256,6 +1284,12 @@ type ClientGatewayServiceServer interface {
 	// ===================== Activities =====================
 	ListActivities(context.Context, *ListActivitiesGatewayRequest) (*ListActivitiesGatewayResponse, error)
 	GetActivity(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error)
+	// ListResolvedActivities returns a page of resolved activities, each with per-field
+	// provenance, for the activity list / editing surface.
+	ListResolvedActivities(context.Context, *ListResolvedActivitiesGatewayRequest) (*ListResolvedActivitiesGatewayResponse, error)
+	// GetResolvedActivity returns a single resolved activity (source → enricher runs →
+	// user overlay) with per-field provenance for the activity detail / editing page.
+	GetResolvedActivity(context.Context, *ActivityIdRequest) (*activity.ResolvedActivity, error)
 	// RefreshActivitySource re-pulls the activity from its source and refreshes the
 	// immutable source layer of the persisted record, returning the resolved activity.
 	RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error)
@@ -1470,6 +1504,12 @@ func (UnimplementedClientGatewayServiceServer) ListActivities(context.Context, *
 }
 func (UnimplementedClientGatewayServiceServer) GetActivity(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActivity not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) ListResolvedActivities(context.Context, *ListResolvedActivitiesGatewayRequest) (*ListResolvedActivitiesGatewayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListResolvedActivities not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) GetResolvedActivity(context.Context, *ActivityIdRequest) (*activity.ResolvedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetResolvedActivity not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
@@ -2439,6 +2479,42 @@ func _ClientGatewayService_GetActivity_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClientGatewayServiceServer).GetActivity(ctx, req.(*ActivityIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_ListResolvedActivities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListResolvedActivitiesGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).ListResolvedActivities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_ListResolvedActivities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).ListResolvedActivities(ctx, req.(*ListResolvedActivitiesGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_GetResolvedActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivityIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).GetResolvedActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_GetResolvedActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).GetResolvedActivity(ctx, req.(*ActivityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3475,6 +3551,14 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActivity",
 			Handler:    _ClientGatewayService_GetActivity_Handler,
+		},
+		{
+			MethodName: "ListResolvedActivities",
+			Handler:    _ClientGatewayService_ListResolvedActivities_Handler,
+		},
+		{
+			MethodName: "GetResolvedActivity",
+			Handler:    _ClientGatewayService_GetResolvedActivity_Handler,
 		},
 		{
 			MethodName: "RefreshActivitySource",
