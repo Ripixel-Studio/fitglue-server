@@ -17,6 +17,8 @@ import (
 func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Get("/users/me/activities", s.handleListActivities)
 	r.Get("/users/me/activities/{id}", s.handleGetActivity)
+	r.Patch("/users/me/activities/{id}", s.handleUpdateActivity)
+	r.Post("/users/me/activities/{id}/resend", s.handleReSendActivity)
 	r.Delete("/users/me/activities/{id}", s.handleDeleteActivity)
 	r.Get("/users/me/activities/stats", s.handleGetActivityStats)
 
@@ -98,6 +100,67 @@ func (s *APIServer) handleGetActivity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := s.activitySvc.GetActivity(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleUpdateActivity writes the user-edit overlay for the named fields and returns the
+// freshly resolved activity + per-field provenance (the value a re-send will push).
+func (s *APIServer) handleUpdateActivity(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody activitypb.UpdateActivityRequest
+	if err := decodeProto(r, &reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+	reqBody.ActivityId = chi.URLParam(r, "id")
+
+	res, err := s.activitySvc.UpdateActivity(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleReSendActivity re-resolves the activity and pushes it to its destinations,
+// reflecting user edits without re-running the enricher pipeline.
+func (s *APIServer) handleReSendActivity(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	// Body is optional: {"destinations": ["DESTINATION_STRAVA", ...]}. An empty/absent body
+	// re-sends to every destination the activity was originally sent to.
+	var reqBody activitypb.ReSendActivityRequest
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	if len(body) > 0 {
+		if err := protoUnmarshaler.Unmarshal(body, &reqBody); err != nil {
+			WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+			return
+		}
+	}
+	reqBody.UserId = token.UID
+	reqBody.ActivityId = chi.URLParam(r, "id")
+
+	res, err := s.activitySvc.ReSendActivity(r.Context(), &reqBody)
 	if err != nil {
 		WriteError(w, err)
 		return

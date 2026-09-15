@@ -91,6 +91,9 @@ func (m *mockPipelineServiceClient) RepostActivity(ctx context.Context, in *pipe
 	}
 	return &emptypb.Empty{}, nil
 }
+func (m *mockPipelineServiceClient) RefreshActivitySource(ctx context.Context, in *pipelinepb.RefreshActivitySourceRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
+}
 func (m *mockPipelineServiceClient) GetPipelineRun(ctx context.Context, in *pipelinepb.GetPipelineRunRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineRun, error) {
 	if m.getPipelineRun != nil {
 		return m.getPipelineRun(ctx, in, opts...)

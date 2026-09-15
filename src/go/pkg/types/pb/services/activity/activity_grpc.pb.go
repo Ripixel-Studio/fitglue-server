@@ -24,6 +24,8 @@ const (
 	ActivityService_GetActivity_FullMethodName                        = "/fitglue.services.activity.ActivityService/GetActivity"
 	ActivityService_ListActivities_FullMethodName                     = "/fitglue.services.activity.ActivityService/ListActivities"
 	ActivityService_DeleteActivity_FullMethodName                     = "/fitglue.services.activity.ActivityService/DeleteActivity"
+	ActivityService_UpdateActivity_FullMethodName                     = "/fitglue.services.activity.ActivityService/UpdateActivity"
+	ActivityService_ReSendActivity_FullMethodName                     = "/fitglue.services.activity.ActivityService/ReSendActivity"
 	ActivityService_GetShowcase_FullMethodName                        = "/fitglue.services.activity.ActivityService/GetShowcase"
 	ActivityService_ListShowcases_FullMethodName                      = "/fitglue.services.activity.ActivityService/ListShowcases"
 	ActivityService_CreateShowcase_FullMethodName                     = "/fitglue.services.activity.ActivityService/CreateShowcase"
@@ -62,6 +64,15 @@ type ActivityServiceClient interface {
 	GetActivity(ctx context.Context, in *GetActivityRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
 	ListActivities(ctx context.Context, in *ListActivitiesRequest, opts ...grpc.CallOption) (*ListActivitiesResponse, error)
 	DeleteActivity(ctx context.Context, in *DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// UpdateActivity writes the user-edit overlay for the named fields of a persisted,
+	// layered activity and returns the freshly resolved activity (derived layers with the
+	// updated overlay applied) plus its per-field provenance — the exact value a re-send
+	// would push. The core correction loop's edit half (spec Phase 1).
+	UpdateActivity(ctx context.Context, in *UpdateActivityRequest, opts ...grpc.CallOption) (*activity.ResolvedActivity, error)
+	// ReSendActivity re-resolves a persisted activity and pushes it to its destinations,
+	// reflecting any user edits without re-running the enricher pipeline. The correction
+	// loop's push half (spec Phase 1): re-send = re-resolve + push.
+	ReSendActivity(ctx context.Context, in *ReSendActivityRequest, opts ...grpc.CallOption) (*ReSendActivityResponse, error)
 	GetShowcase(ctx context.Context, in *GetShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
 	ListShowcases(ctx context.Context, in *ListShowcasesRequest, opts ...grpc.CallOption) (*ListShowcasesResponse, error)
 	CreateShowcase(ctx context.Context, in *CreateShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
@@ -141,6 +152,26 @@ func (c *activityServiceClient) DeleteActivity(ctx context.Context, in *DeleteAc
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, ActivityService_DeleteActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) UpdateActivity(ctx context.Context, in *UpdateActivityRequest, opts ...grpc.CallOption) (*activity.ResolvedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ResolvedActivity)
+	err := c.cc.Invoke(ctx, ActivityService_UpdateActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) ReSendActivity(ctx context.Context, in *ReSendActivityRequest, opts ...grpc.CallOption) (*ReSendActivityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReSendActivityResponse)
+	err := c.cc.Invoke(ctx, ActivityService_ReSendActivity_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -444,6 +475,15 @@ type ActivityServiceServer interface {
 	GetActivity(context.Context, *GetActivityRequest) (*activity.StandardizedActivity, error)
 	ListActivities(context.Context, *ListActivitiesRequest) (*ListActivitiesResponse, error)
 	DeleteActivity(context.Context, *DeleteActivityRequest) (*emptypb.Empty, error)
+	// UpdateActivity writes the user-edit overlay for the named fields of a persisted,
+	// layered activity and returns the freshly resolved activity (derived layers with the
+	// updated overlay applied) plus its per-field provenance — the exact value a re-send
+	// would push. The core correction loop's edit half (spec Phase 1).
+	UpdateActivity(context.Context, *UpdateActivityRequest) (*activity.ResolvedActivity, error)
+	// ReSendActivity re-resolves a persisted activity and pushes it to its destinations,
+	// reflecting any user edits without re-running the enricher pipeline. The correction
+	// loop's push half (spec Phase 1): re-send = re-resolve + push.
+	ReSendActivity(context.Context, *ReSendActivityRequest) (*ReSendActivityResponse, error)
 	GetShowcase(context.Context, *GetShowcaseRequest) (*activity.ShowcasedActivity, error)
 	ListShowcases(context.Context, *ListShowcasesRequest) (*ListShowcasesResponse, error)
 	CreateShowcase(context.Context, *CreateShowcaseRequest) (*activity.ShowcasedActivity, error)
@@ -507,6 +547,12 @@ func (UnimplementedActivityServiceServer) ListActivities(context.Context, *ListA
 }
 func (UnimplementedActivityServiceServer) DeleteActivity(context.Context, *DeleteActivityRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteActivity not implemented")
+}
+func (UnimplementedActivityServiceServer) UpdateActivity(context.Context, *UpdateActivityRequest) (*activity.ResolvedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateActivity not implemented")
+}
+func (UnimplementedActivityServiceServer) ReSendActivity(context.Context, *ReSendActivityRequest) (*ReSendActivityResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReSendActivity not implemented")
 }
 func (UnimplementedActivityServiceServer) GetShowcase(context.Context, *GetShowcaseRequest) (*activity.ShowcasedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetShowcase not implemented")
@@ -666,6 +712,42 @@ func _ActivityService_DeleteActivity_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ActivityServiceServer).DeleteActivity(ctx, req.(*DeleteActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_UpdateActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateActivityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).UpdateActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_UpdateActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).UpdateActivity(ctx, req.(*UpdateActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_ReSendActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReSendActivityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).ReSendActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_ReSendActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).ReSendActivity(ctx, req.(*ReSendActivityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1210,6 +1292,14 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteActivity",
 			Handler:    _ActivityService_DeleteActivity_Handler,
+		},
+		{
+			MethodName: "UpdateActivity",
+			Handler:    _ActivityService_UpdateActivity_Handler,
+		},
+		{
+			MethodName: "ReSendActivity",
+			Handler:    _ActivityService_ReSendActivity_Handler,
 		},
 		{
 			MethodName: "GetShowcase",

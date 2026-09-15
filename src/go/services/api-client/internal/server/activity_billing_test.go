@@ -28,6 +28,8 @@ type mockActivityServiceClient struct {
 	listActivities            func(ctx context.Context, in *activitypb.ListActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListActivitiesResponse, error)
 	getActivity               func(ctx context.Context, in *activitypb.GetActivityRequest, opts ...grpc.CallOption) (*pbactivity.StandardizedActivity, error)
 	deleteActivity            func(ctx context.Context, in *activitypb.DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	updateActivity            func(ctx context.Context, in *activitypb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error)
+	reSendActivity            func(ctx context.Context, in *activitypb.ReSendActivityRequest, opts ...grpc.CallOption) (*activitypb.ReSendActivityResponse, error)
 	listShowcases             func(ctx context.Context, in *activitypb.ListShowcasesRequest, opts ...grpc.CallOption) (*activitypb.ListShowcasesResponse, error)
 	getShowcase               func(ctx context.Context, in *activitypb.GetShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error)
 	createShowcase            func(ctx context.Context, in *activitypb.CreateShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error)
@@ -56,6 +58,18 @@ func (m *mockActivityServiceClient) DeleteActivity(ctx context.Context, in *acti
 		return m.deleteActivity(ctx, in, opts...)
 	}
 	return &emptypb.Empty{}, nil
+}
+func (m *mockActivityServiceClient) UpdateActivity(ctx context.Context, in *activitypb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+	if m.updateActivity != nil {
+		return m.updateActivity(ctx, in, opts...)
+	}
+	return &pbactivity.ResolvedActivity{}, nil
+}
+func (m *mockActivityServiceClient) ReSendActivity(ctx context.Context, in *activitypb.ReSendActivityRequest, opts ...grpc.CallOption) (*activitypb.ReSendActivityResponse, error) {
+	if m.reSendActivity != nil {
+		return m.reSendActivity(ctx, in, opts...)
+	}
+	return &activitypb.ReSendActivityResponse{}, nil
 }
 func (m *mockActivityServiceClient) GetShowcase(ctx context.Context, in *activitypb.GetShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error) {
 	if m.getShowcase != nil {

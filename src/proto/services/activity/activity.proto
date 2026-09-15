@@ -7,6 +7,8 @@ import "google/api/annotations.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
 import "models/activity/roundup.proto";
+import "models/activity/record.proto";
+import "models/plugin/provider.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/services/activity";
 
@@ -26,7 +28,29 @@ service ActivityService {
       delete: "/v2/users/{user_id}/activities/{activity_id}"
     };
   }
-  
+
+  // UpdateActivity writes the user-edit overlay for the named fields of a persisted,
+  // layered activity and returns the freshly resolved activity (derived layers with the
+  // updated overlay applied) plus its per-field provenance — the exact value a re-send
+  // would push. The core correction loop's edit half (spec Phase 1).
+  rpc UpdateActivity(UpdateActivityRequest) returns (fitglue.models.activity.ResolvedActivity) {
+    option (google.api.http) = {
+      patch: "/v2/users/{user_id}/activities/{activity_id}"
+      body: "*"
+    };
+  }
+
+  // ReSendActivity re-resolves a persisted activity and pushes it to its destinations,
+  // reflecting any user edits without re-running the enricher pipeline. The correction
+  // loop's push half (spec Phase 1): re-send = re-resolve + push.
+  rpc ReSendActivity(ReSendActivityRequest) returns (ReSendActivityResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activities/{activity_id}/resend"
+      body: "*"
+    };
+  }
+
+
   rpc GetShowcase(GetShowcaseRequest) returns (fitglue.models.activity.ShowcasedActivity) {
     option (google.api.http) = {
       get: "/v2/users/{user_id}/showcases/{showcase_id}"
@@ -225,6 +249,37 @@ message ListActivitiesResponse {
 message DeleteActivityRequest {
   string user_id = 1;
   string activity_id = 2;
+}
+
+message UpdateActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+
+  // Desired overlay values. Only the fields named in update_fields are applied; every
+  // other stored overlay field is left untouched.
+  fitglue.models.activity.ActivityUserEditOverlay overlay = 3;
+
+  // Field mask selecting which overlay fields this call writes. Valid values:
+  // "name", "description", "type", "tags". A named scalar field whose overlay value is
+  // unset CLEARS that user override (the field falls back to the derived value); a named
+  // field with a value sets/replaces the override. For "tags", a non-empty list replaces
+  // the tag override and an empty/omitted list clears it (an explicit empty tag set is
+  // not distinguishable from clearing). At least one field is required.
+  repeated string update_fields = 4;
+}
+
+message ReSendActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+
+  // Optional subset of destinations to re-send to. Empty = every destination the activity
+  // was originally sent to. Any destination the activity was never sent to is ignored.
+  repeated fitglue.models.plugin.DestinationType destinations = 3;
+}
+
+message ReSendActivityResponse {
+  // The destinations the re-send was queued for.
+  repeated fitglue.models.plugin.DestinationType destinations = 1;
 }
 
 message GetShowcaseRequest {

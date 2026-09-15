@@ -137,6 +137,12 @@ func (m *mockActivityServiceClient) ListActivities(ctx context.Context, in *acti
 func (m *mockActivityServiceClient) DeleteActivity(ctx context.Context, in *activitypb.DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	return nil, nil
 }
+func (m *mockActivityServiceClient) UpdateActivity(ctx context.Context, in *activitypb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) ReSendActivity(ctx context.Context, in *activitypb.ReSendActivityRequest, opts ...grpc.CallOption) (*activitypb.ReSendActivityResponse, error) {
+	return nil, nil
+}
 func (m *mockActivityServiceClient) GetShowcase(ctx context.Context, in *activitypb.GetShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error) {
 	return nil, nil
 }

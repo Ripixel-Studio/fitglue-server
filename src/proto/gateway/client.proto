@@ -18,6 +18,8 @@ import "models/pipeline/execution.proto";
 import "models/activity/roundup.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
+import "models/activity/record.proto";
+import "models/plugin/provider.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/gateway";
 
@@ -302,6 +304,22 @@ service ClientGatewayService {
   rpc RefreshActivitySource(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
     option (google.api.http) = {
       post: "/users/me/activities/{id}/refresh-source"
+    };
+  }
+  // UpdateActivity writes the user-edit overlay for the named fields and returns the
+  // freshly resolved activity + per-field provenance (what a re-send will push).
+  rpc UpdateActivity(UpdateActivityGatewayRequest) returns (fitglue.models.activity.ResolvedActivity) {
+    option (google.api.http) = {
+      patch: "/users/me/activities/{id}"
+      body: "*"
+    };
+  }
+  // ReSendActivity re-resolves the activity and pushes it to its destinations,
+  // reflecting user edits without re-running the enricher pipeline.
+  rpc ReSendActivity(ReSendActivityGatewayRequest) returns (ReSendActivityGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/resend"
+      body: "*"
     };
   }
   rpc DeleteActivity(ActivityIdRequest) returns (google.protobuf.Empty) {
@@ -733,6 +751,21 @@ message CancelPipelineRunGatewayRequest {
 }
 message RepostActivityGatewayRequest {
   string id = 1; // activity_id from path
+}
+message UpdateActivityGatewayRequest {
+  string id = 1; // activity_id from path
+  // Desired overlay values; only fields named in update_fields are applied.
+  fitglue.models.activity.ActivityUserEditOverlay overlay = 2;
+  // Which overlay fields to write: "name", "description", "type", "tags".
+  repeated string update_fields = 3;
+}
+message ReSendActivityGatewayRequest {
+  string id = 1; // activity_id from path
+  // Optional subset of destinations; empty = all destinations the activity was sent to.
+  repeated fitglue.models.plugin.DestinationType destinations = 2;
+}
+message ReSendActivityGatewayResponse {
+  repeated fitglue.models.plugin.DestinationType destinations = 1;
 }
 
 // Activities
