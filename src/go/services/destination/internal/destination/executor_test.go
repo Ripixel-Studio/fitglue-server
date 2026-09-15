@@ -684,3 +684,10 @@ func TestUploadExecutor_Process_GetProfileError_WritesFailure(t *testing.T) {
 	_ = writtenOutcomes
 	_ = tracker
 }
+
+func (m *mockActivityServiceClient) GetResolvedActivity(ctx context.Context, in *activitypb.GetResolvedActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) ListResolvedActivities(ctx context.Context, in *activitypb.ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error) {
+	return nil, nil
+}

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/fitglue/server/src/go/internal/infra"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 )
@@ -257,4 +258,8 @@ func TestServeHTTP_HealthRoute(t *testing.T) {
 	svc.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "ok")
+}
+
+func (m *adminErrPipelineClient) RefreshActivitySource(_ context.Context, _ *pipelinepb.RefreshActivitySourceRequest, _ ...grpc.CallOption) (*pbactivity.StandardizedActivity, error) {
+	return nil, nil
 }
