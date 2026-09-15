@@ -103,6 +103,100 @@ func (s *Service) GetActivity(ctx context.Context, req *pbsvc.GetActivityRequest
 	return nil, status.Error(codes.Internal, "failed to parse activity data from blob")
 }
 
+// GetResolvedActivity returns the resolved activity together with per-field provenance:
+// the deterministic fold of the layered ActivityRecord (source → enricher runs → user
+// overlay) plus, for each layerable field, which layer/run set the winning value. This is
+// the read the web editing surface renders. Runs written before layered storage have no
+// record and thus no provenance — the resolved activity is still returned (reconstructed
+// via the same fallback GetActivity uses), with an empty provenance slice, so the read
+// contract stays uniform.
+func (s *Service) GetResolvedActivity(ctx context.Context, req *pbsvc.GetResolvedActivityRequest) (*pbactivity.ResolvedActivity, error) {
+	if req.UserId == "" || req.ActivityId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")
+	}
+
+	// ActivityId maps to the PipelineRun ID (Rule E37, Activity Storage Consolidation).
+	run, err := s.store.GetPipelineRun(ctx, req.UserId, req.ActivityId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get pipeline run for resolved activity", "error", err)
+		return nil, status.Error(codes.Internal, "failed to read activity metadata")
+	}
+	if run == nil {
+		return nil, status.Error(codes.NotFound, "activity not found")
+	}
+
+	// Prefer the durable, layered ActivityRecord so we can emit first-class provenance.
+	if run.ActivityRecordUri != "" {
+		rec, err := activitydomain.LoadActivityRecord(ctx, run.ActivityRecordUri, s.blobStore)
+		if err != nil {
+			s.logger.Warn(ctx, "failed to read layered activity record, resolving without provenance", "error", err, "uri", run.ActivityRecordUri)
+		} else if resolved := activitydomain.Resolve(rec); resolved != nil && resolved.Activity != nil {
+			return resolved, nil
+		}
+	}
+
+	// Legacy / no-record fallback: reuse GetActivity (which reconstructs the activity from
+	// the enriched-event blob or run metadata) and wrap it with empty provenance.
+	act, err := s.GetActivity(ctx, &pbsvc.GetActivityRequest{UserId: req.UserId, ActivityId: req.ActivityId})
+	if err != nil {
+		return nil, err
+	}
+	return &pbactivity.ResolvedActivity{Activity: act}, nil
+}
+
+// ListResolvedActivities is GetResolvedActivity over a page of the user's activities: each
+// entry carries the resolved activity and its per-field provenance. Activities with a
+// layered record are resolved (provenance included); pre-layered runs (or records that
+// fail to load) fall back to a lightweight activity built from the run metadata with no
+// provenance, mirroring ListActivities. Note this loads one record blob per activity in
+// the page, so the page size (req.Limit) bounds the fan-out.
+func (s *Service) ListResolvedActivities(ctx context.Context, req *pbsvc.ListResolvedActivitiesRequest) (*pbsvc.ListResolvedActivitiesResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	runs, nextToken, err := s.store.ListPipelineRuns(ctx, req.UserId, req.Limit, req.PageToken)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list resolved activities", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list activities")
+	}
+
+	activities := make([]*pbactivity.ResolvedActivity, 0, len(runs))
+	for _, run := range runs {
+		if run.ActivityRecordUri != "" {
+			rec, err := activitydomain.LoadActivityRecord(ctx, run.ActivityRecordUri, s.blobStore)
+			if err != nil {
+				s.logger.Warn(ctx, "failed to read layered activity record for list, using run summary", "error", err, "uri", run.ActivityRecordUri, "run_id", run.Id)
+			} else if resolved := activitydomain.Resolve(rec); resolved != nil && resolved.Activity != nil {
+				activities = append(activities, resolved)
+				continue
+			}
+		}
+
+		sourceEnum := pbactivity.ActivitySource_SOURCE_UNSPECIFIED
+		if val, ok := pbactivity.ActivitySource_value[run.Source]; ok {
+			sourceEnum = pbactivity.ActivitySource(val)
+		}
+		activities = append(activities, &pbactivity.ResolvedActivity{
+			Activity: &pbactivity.StandardizedActivity{
+				Id:                run.Id,
+				PipelineRunStatus: run.Status.String(),
+				Source:            sourceEnum,
+				ExternalId:        run.ActivityId,
+				UserId:            req.UserId,
+				StartTime:         run.StartTime,
+				Name:              run.Title,
+				Type:              run.Type,
+			},
+		})
+	}
+
+	return &pbsvc.ListResolvedActivitiesResponse{
+		Activities:    activities,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Service) DeleteActivity(ctx context.Context, req *pbsvc.DeleteActivityRequest) (*emptypb.Empty, error) {
 	if req.UserId == "" || req.ActivityId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")

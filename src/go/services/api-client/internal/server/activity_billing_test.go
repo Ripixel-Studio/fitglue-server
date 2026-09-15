@@ -27,6 +27,8 @@ import (
 type mockActivityServiceClient struct {
 	listActivities            func(ctx context.Context, in *activitypb.ListActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListActivitiesResponse, error)
 	getActivity               func(ctx context.Context, in *activitypb.GetActivityRequest, opts ...grpc.CallOption) (*pbactivity.StandardizedActivity, error)
+	getResolvedActivity       func(ctx context.Context, in *activitypb.GetResolvedActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error)
+	listResolvedActivities    func(ctx context.Context, in *activitypb.ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error)
 	deleteActivity            func(ctx context.Context, in *activitypb.DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	updateActivity            func(ctx context.Context, in *activitypb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error)
 	reSendActivity            func(ctx context.Context, in *activitypb.ReSendActivityRequest, opts ...grpc.CallOption) (*activitypb.ReSendActivityResponse, error)
@@ -52,6 +54,18 @@ func (m *mockActivityServiceClient) ListActivities(ctx context.Context, in *acti
 		return m.listActivities(ctx, in, opts...)
 	}
 	return &activitypb.ListActivitiesResponse{}, nil
+}
+func (m *mockActivityServiceClient) GetResolvedActivity(ctx context.Context, in *activitypb.GetResolvedActivityRequest, opts ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+	if m.getResolvedActivity != nil {
+		return m.getResolvedActivity(ctx, in, opts...)
+	}
+	return &pbactivity.ResolvedActivity{}, nil
+}
+func (m *mockActivityServiceClient) ListResolvedActivities(ctx context.Context, in *activitypb.ListResolvedActivitiesRequest, opts ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error) {
+	if m.listResolvedActivities != nil {
+		return m.listResolvedActivities(ctx, in, opts...)
+	}
+	return &activitypb.ListResolvedActivitiesResponse{}, nil
 }
 func (m *mockActivityServiceClient) DeleteActivity(ctx context.Context, in *activitypb.DeleteActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	if m.deleteActivity != nil {
@@ -310,6 +324,114 @@ func TestHandleGetActivity_NoToken(t *testing.T) {
 	s.handleGetActivity(w, r)
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestHandleGetResolvedActivity_Success(t *testing.T) {
+	var gotID string
+	svc := &mockActivityServiceClient{
+		getResolvedActivity: func(_ context.Context, in *activitypb.GetResolvedActivityRequest, _ ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+			gotID = in.GetActivityId()
+			return &pbactivity.ResolvedActivity{
+				Activity: &pbactivity.StandardizedActivity{Name: "Resolved Run"},
+				Provenance: []*pbactivity.FieldProvenance{
+					{Field: "name", Layer: pbactivity.ProvenanceLayer_PROVENANCE_LAYER_ENRICHER, ProviderName: "ai_title"},
+				},
+			}, nil
+		},
+	}
+	s := buildActivityServer(svc)
+	r := httptest.NewRequest(http.MethodGet, "/api/v2/users/me/activities/act123/resolved", nil)
+	r = withURLParam(r, "id", "act123")
+	r = withToken(r, "user1")
+	w := httptest.NewRecorder()
+	s.handleGetResolvedActivity(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if gotID != "act123" {
+		t.Errorf("expected activity_id act123 forwarded, got %q", gotID)
+	}
+	if !strings.Contains(w.Body.String(), "provenance") {
+		t.Errorf("expected provenance in body, got %s", w.Body.String())
+	}
+}
+
+func TestHandleGetResolvedActivity_NoToken(t *testing.T) {
+	s := buildActivityServer(&mockActivityServiceClient{})
+	r := httptest.NewRequest(http.MethodGet, "/api/v2/users/me/activities/act123/resolved", nil)
+	w := httptest.NewRecorder()
+	s.handleGetResolvedActivity(w, r)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestHandleGetResolvedActivity_NotFound(t *testing.T) {
+	svc := &mockActivityServiceClient{
+		getResolvedActivity: func(_ context.Context, _ *activitypb.GetResolvedActivityRequest, _ ...grpc.CallOption) (*pbactivity.ResolvedActivity, error) {
+			return nil, status.Error(codes.NotFound, "activity not found")
+		},
+	}
+	s := buildActivityServer(svc)
+	r := httptest.NewRequest(http.MethodGet, "/api/v2/users/me/activities/nope/resolved", nil)
+	r = withToken(r, "user1")
+	w := httptest.NewRecorder()
+	s.handleGetResolvedActivity(w, r)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", w.Code)
+	}
+}
+
+func TestHandleListResolvedActivities_Success(t *testing.T) {
+	var gotLimit int32
+	svc := &mockActivityServiceClient{
+		listResolvedActivities: func(_ context.Context, in *activitypb.ListResolvedActivitiesRequest, _ ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error) {
+			gotLimit = in.GetLimit()
+			return &activitypb.ListResolvedActivitiesResponse{
+				Activities: []*pbactivity.ResolvedActivity{
+					{Activity: &pbactivity.StandardizedActivity{Name: "Resolved Run"}},
+				},
+				NextPageToken: "next",
+			}, nil
+		},
+	}
+	s := buildActivityServer(svc)
+	r := httptest.NewRequest(http.MethodGet, "/api/v2/users/me/activities/resolved?limit=10&page_token=abc", nil)
+	r = withToken(r, "user1")
+	w := httptest.NewRecorder()
+	s.handleListResolvedActivities(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if gotLimit != 10 {
+		t.Errorf("expected limit 10 forwarded, got %d", gotLimit)
+	}
+}
+
+func TestHandleListResolvedActivities_NoToken(t *testing.T) {
+	s := buildActivityServer(&mockActivityServiceClient{})
+	r := httptest.NewRequest(http.MethodGet, "/api/v2/users/me/activities/resolved", nil)
+	w := httptest.NewRecorder()
+	s.handleListResolvedActivities(w, r)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestHandleListResolvedActivities_ServiceError(t *testing.T) {
+	svc := &mockActivityServiceClient{
+		listResolvedActivities: func(_ context.Context, _ *activitypb.ListResolvedActivitiesRequest, _ ...grpc.CallOption) (*activitypb.ListResolvedActivitiesResponse, error) {
+			return nil, status.Error(codes.Internal, "db error")
+		},
+	}
+	s := buildActivityServer(svc)
+	r := httptest.NewRequest(http.MethodGet, "/api/v2/users/me/activities/resolved", nil)
+	r = withToken(r, "user1")
+	w := httptest.NewRecorder()
+	s.handleListResolvedActivities(w, r)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
 	}
 }
 

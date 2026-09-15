@@ -16,6 +16,10 @@ import (
 
 func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Get("/users/me/activities", s.handleListActivities)
+	// Resolved reads (activity + per-field provenance) for the web editing surface.
+	// Registered before the "{id}" route; chi matches the static "resolved" segment first.
+	r.Get("/users/me/activities/resolved", s.handleListResolvedActivities)
+	r.Get("/users/me/activities/{id}/resolved", s.handleGetResolvedActivity)
 	r.Get("/users/me/activities/{id}", s.handleGetActivity)
 	r.Patch("/users/me/activities/{id}", s.handleUpdateActivity)
 	r.Post("/users/me/activities/{id}/resend", s.handleReSendActivity)
@@ -100,6 +104,58 @@ func (s *APIServer) handleGetActivity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := s.activitySvc.GetActivity(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleListResolvedActivities returns a page of resolved activities, each with per-field
+// provenance, for the activity list / editing surface.
+func (s *APIServer) handleListResolvedActivities(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	pageToken := r.URL.Query().Get("page_token")
+	var limit int32 = 50
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = int32(l)
+		}
+	}
+
+	res, err := s.activitySvc.ListResolvedActivities(r.Context(), &activitypb.ListResolvedActivitiesRequest{
+		UserId:    token.UID,
+		Limit:     limit,
+		PageToken: pageToken,
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleGetResolvedActivity returns a single resolved activity (source → enricher runs →
+// user overlay) with per-field provenance for the activity detail / editing page.
+func (s *APIServer) handleGetResolvedActivity(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.activitySvc.GetResolvedActivity(r.Context(), &activitypb.GetResolvedActivityRequest{
+		UserId:     token.UID,
+		ActivityId: chi.URLParam(r, "id"),
+	})
 	if err != nil {
 		WriteError(w, err)
 		return

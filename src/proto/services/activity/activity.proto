@@ -23,6 +23,26 @@ service ActivityService {
       get: "/v2/users/{user_id}/activities"
     };
   }
+
+  // GetResolvedActivity returns the resolved activity — the deterministic fold of the
+  // layered ActivityRecord (source → enricher runs → user overlay) — together with
+  // per-field provenance describing which layer/run set each resolved field. This is
+  // the read the web editing surface renders. Runs written before layered storage have
+  // no record: the resolved activity is still returned (reconstructed), with empty
+  // provenance.
+  rpc GetResolvedActivity(GetResolvedActivityRequest) returns (fitglue.models.activity.ResolvedActivity) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/activities/{activity_id}/resolved"
+    };
+  }
+  // ListResolvedActivities is GetResolvedActivity over a page of the user's activities:
+  // each entry carries the resolved activity and its per-field provenance.
+  rpc ListResolvedActivities(ListResolvedActivitiesRequest) returns (ListResolvedActivitiesResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/activities/resolved"
+    };
+  }
+
   rpc DeleteActivity(DeleteActivityRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/v2/users/{user_id}/activities/{activity_id}"
@@ -243,6 +263,22 @@ message ListActivitiesRequest {
 
 message ListActivitiesResponse {
   repeated fitglue.models.activity.StandardizedActivity activities = 1;
+  string next_page_token = 2;
+}
+
+message GetResolvedActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+}
+
+message ListResolvedActivitiesRequest {
+  string user_id = 1;
+  int32 limit = 2;
+  string page_token = 3;
+}
+
+message ListResolvedActivitiesResponse {
+  repeated fitglue.models.activity.ResolvedActivity activities = 1;
   string next_page_token = 2;
 }
 

@@ -299,6 +299,20 @@ service ClientGatewayService {
       get: "/users/me/activities/{id}"
     };
   }
+  // ListResolvedActivities returns a page of resolved activities, each with per-field
+  // provenance, for the activity list / editing surface.
+  rpc ListResolvedActivities(ListResolvedActivitiesGatewayRequest) returns (ListResolvedActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/activities/resolved"
+    };
+  }
+  // GetResolvedActivity returns a single resolved activity (source → enricher runs →
+  // user overlay) with per-field provenance for the activity detail / editing page.
+  rpc GetResolvedActivity(ActivityIdRequest) returns (fitglue.models.activity.ResolvedActivity) {
+    option (google.api.http) = {
+      get: "/users/me/activities/{id}/resolved"
+    };
+  }
   // RefreshActivitySource re-pulls the activity from its source and refreshes the
   // immutable source layer of the persisted record, returning the resolved activity.
   rpc RefreshActivitySource(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
@@ -775,6 +789,14 @@ message ListActivitiesGatewayRequest {
 }
 message ListActivitiesGatewayResponse {
   repeated fitglue.models.activity.StandardizedActivity activities = 1;
+  string next_page_token = 2;
+}
+message ListResolvedActivitiesGatewayRequest {
+  int32 limit = 1;
+  string page_token = 2;
+}
+message ListResolvedActivitiesGatewayResponse {
+  repeated fitglue.models.activity.ResolvedActivity activities = 1;
   string next_page_token = 2;
 }
 message GetActivityStatsGatewayResponse {
