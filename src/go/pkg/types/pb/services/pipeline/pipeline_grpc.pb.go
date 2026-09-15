@@ -34,6 +34,8 @@ const (
 	PipelineService_CancelPipelineRun_FullMethodName     = "/fitglue.services.pipeline.PipelineService/CancelPipelineRun"
 	PipelineService_RepostActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/RepostActivity"
 	PipelineService_RefreshActivitySource_FullMethodName = "/fitglue.services.pipeline.PipelineService/RefreshActivitySource"
+	PipelineService_UpdateActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/UpdateActivity"
+	PipelineService_ResendActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/ResendActivity"
 	PipelineService_GetPipelineRun_FullMethodName        = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
 	PipelineService_ListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
 	PipelineService_AdminListPipelineRuns_FullMethodName = "/fitglue.services.pipeline.PipelineService/AdminListPipelineRuns"
@@ -65,6 +67,21 @@ type PipelineServiceClient interface {
 	// Returns the resolved (source + user overlay) activity so the caller can show the
 	// refreshed data immediately.
 	RefreshActivitySource(ctx context.Context, in *RefreshActivitySourceRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// UpdateActivity writes the user-edit overlay of the persisted layered record: only
+	// the editable fields named in update_mask (name / description / type / tags) are set
+	// on the mutable overlay, which always wins on read. The immutable source layer and
+	// the append-only enricher layers are left untouched — an edit never rewrites history.
+	// The mask distinguishes clearing a field (named in the mask with an empty value) from
+	// leaving it unchanged (absent from the mask). Returns the resolved (derived + overlay)
+	// activity so the caller can render the edit immediately.
+	UpdateActivity(ctx context.Context, in *UpdateActivityRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// ResendActivity re-resolves the persisted layered activity (the derived fold with the
+	// user-edit overlay applied) and re-pushes that resolved result to the activity's
+	// configured destinations. Enrichers are NOT re-run — re-send sends the current
+	// resolved state, so "what will be sent" is exactly the resolved activity the read API
+	// shows. Destinations that already received the activity are updated in place rather
+	// than duplicated.
+	ResendActivity(ctx context.Context, in *ResendActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsRequest, opts ...grpc.CallOption) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(ctx context.Context, in *AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*AdminListPipelineRunsResponse, error)
@@ -200,6 +217,26 @@ func (c *pipelineServiceClient) RefreshActivitySource(ctx context.Context, in *R
 	return out, nil
 }
 
+func (c *pipelineServiceClient) UpdateActivity(ctx context.Context, in *UpdateActivityRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.StandardizedActivity)
+	err := c.cc.Invoke(ctx, PipelineService_UpdateActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelineServiceClient) ResendActivity(ctx context.Context, in *ResendActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PipelineService_ResendActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *pipelineServiceClient) GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pipeline.PipelineRun)
@@ -274,6 +311,21 @@ type PipelineServiceServer interface {
 	// Returns the resolved (source + user overlay) activity so the caller can show the
 	// refreshed data immediately.
 	RefreshActivitySource(context.Context, *RefreshActivitySourceRequest) (*activity.StandardizedActivity, error)
+	// UpdateActivity writes the user-edit overlay of the persisted layered record: only
+	// the editable fields named in update_mask (name / description / type / tags) are set
+	// on the mutable overlay, which always wins on read. The immutable source layer and
+	// the append-only enricher layers are left untouched — an edit never rewrites history.
+	// The mask distinguishes clearing a field (named in the mask with an empty value) from
+	// leaving it unchanged (absent from the mask). Returns the resolved (derived + overlay)
+	// activity so the caller can render the edit immediately.
+	UpdateActivity(context.Context, *UpdateActivityRequest) (*activity.StandardizedActivity, error)
+	// ResendActivity re-resolves the persisted layered activity (the derived fold with the
+	// user-edit overlay applied) and re-pushes that resolved result to the activity's
+	// configured destinations. Enrichers are NOT re-run — re-send sends the current
+	// resolved state, so "what will be sent" is exactly the resolved activity the read API
+	// shows. Destinations that already received the activity are updated in place rather
+	// than duplicated.
+	ResendActivity(context.Context, *ResendActivityRequest) (*emptypb.Empty, error)
 	GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error)
 	AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error)
@@ -324,6 +376,12 @@ func (UnimplementedPipelineServiceServer) RepostActivity(context.Context, *Repos
 }
 func (UnimplementedPipelineServiceServer) RefreshActivitySource(context.Context, *RefreshActivitySourceRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
+}
+func (UnimplementedPipelineServiceServer) UpdateActivity(context.Context, *UpdateActivityRequest) (*activity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateActivity not implemented")
+}
+func (UnimplementedPipelineServiceServer) ResendActivity(context.Context, *ResendActivityRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResendActivity not implemented")
 }
 func (UnimplementedPipelineServiceServer) GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPipelineRun not implemented")
@@ -577,6 +635,42 @@ func _PipelineService_RefreshActivitySource_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_UpdateActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateActivityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).UpdateActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_UpdateActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).UpdateActivity(ctx, req.(*UpdateActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelineService_ResendActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendActivityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).ResendActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_ResendActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).ResendActivity(ctx, req.(*ResendActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PipelineService_GetPipelineRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPipelineRunRequest)
 	if err := dec(in); err != nil {
@@ -721,6 +815,14 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefreshActivitySource",
 			Handler:    _PipelineService_RefreshActivitySource_Handler,
+		},
+		{
+			MethodName: "UpdateActivity",
+			Handler:    _PipelineService_UpdateActivity_Handler,
+		},
+		{
+			MethodName: "ResendActivity",
+			Handler:    _PipelineService_ResendActivity_Handler,
 		},
 		{
 			MethodName: "GetPipelineRun",

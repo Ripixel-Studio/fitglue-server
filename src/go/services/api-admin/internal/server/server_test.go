@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/fitglue/server/src/go/internal/infra"
+	pbactivitym "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
@@ -199,6 +200,15 @@ func (m *adminNopPipelineClient) ListSourceActivities(_ context.Context, _ *pipe
 }
 func (m *adminNopPipelineClient) BackfillActivities(_ context.Context, _ *pipelinepb.BackfillActivitiesRequest, _ ...grpc.CallOption) (*pipelinepb.BackfillActivitiesResponse, error) {
 	return &pipelinepb.BackfillActivitiesResponse{}, nil
+}
+func (m *adminNopPipelineClient) RefreshActivitySource(_ context.Context, _ *pipelinepb.RefreshActivitySourceRequest, _ ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *adminNopPipelineClient) UpdateActivity(_ context.Context, _ *pipelinepb.UpdateActivityRequest, _ ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *adminNopPipelineClient) ResendActivity(_ context.Context, _ *pipelinepb.ResendActivityRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
 }
 
 // ---- Helpers ----

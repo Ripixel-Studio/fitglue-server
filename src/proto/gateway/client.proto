@@ -16,6 +16,7 @@ import "models/pipeline/config.proto";
 import "models/pipeline/execution.proto";
 
 import "models/activity/roundup.proto";
+import "models/activity/source.proto";
 import "models/activity/standardized.proto";
 import "models/activity/uploaded.proto";
 import "models/activity/record.proto";
@@ -317,6 +318,23 @@ service ClientGatewayService {
   rpc RefreshActivitySource(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
     option (google.api.http) = {
       post: "/users/me/activities/{id}/refresh-source"
+    };
+  }
+  // UpdateActivity writes the user-edit overlay for the given fields (only those named
+  // in update_mask are applied) and returns the resolved activity with the edit applied.
+  // The immutable source and append-only enricher layers are never modified.
+  rpc UpdateActivity(UpdateActivityGatewayRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      patch: "/users/me/activities/{id}"
+      body: "*"
+    };
+  }
+  // ResendActivity re-resolves the activity and re-pushes the resolved result to its
+  // configured destinations. Enrichers are not re-run; destinations that already have
+  // the activity are updated in place rather than duplicated.
+  rpc ResendActivity(ActivityIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/resend"
     };
   }
   rpc DeleteActivity(ActivityIdRequest) returns (google.protobuf.Empty) {
@@ -748,6 +766,19 @@ message CancelPipelineRunGatewayRequest {
 }
 message RepostActivityGatewayRequest {
   string id = 1; // activity_id from path
+}
+
+// UpdateActivityGatewayRequest is the web PATCH body for editing an activity. Only the
+// fields named in update_mask are applied to the user-edit overlay; the rest are left
+// unchanged. Mirrors ActivityUserEditOverlay's editable fields.
+message UpdateActivityGatewayRequest {
+  string id = 1; // activity_id from path
+  string name = 2;
+  string description = 3;
+  fitglue.models.activity.ActivityType type = 4;
+  repeated string tags = 5;
+  // Editable overlay fields to apply: "name" | "description" | "type" | "tags".
+  repeated string update_mask = 6;
 }
 
 // Activities
