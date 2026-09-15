@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.64.6](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.64.5...v16.64.6) (2026-09-15)
+
+
+### Bug Fixes
+
+* gofmt firestore_store.go; test mocks for the new activity/pipeline RPCs ([#73](https://github.com/Ripixel-Studio/fitglue-server/issues/73)) ([1bcbfc9](https://github.com/Ripixel-Studio/fitglue-server/commit/1bcbfc9ce7d4a8d256d686d8e755291433016e1d)), closes [#64](https://github.com/Ripixel-Studio/fitglue-server/issues/64) [#65](https://github.com/Ripixel-Studio/fitglue-server/issues/65) [#66](https://github.com/Ripixel-Studio/fitglue-server/issues/66) [#67](https://github.com/Ripixel-Studio/fitglue-server/issues/67)
+
 ### [16.64.5](https://github.com/Ripixel-Studio/fitglue-server/compare/v16.64.4...v16.64.5) (2026-09-12)
 
 
