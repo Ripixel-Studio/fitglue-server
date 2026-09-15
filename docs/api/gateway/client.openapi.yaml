@@ -434,6 +434,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /users/me/activities/resolved:
+        get:
+            tags:
+                - ClientGatewayService
+            description: |-
+                ListResolvedActivities returns a page of resolved activities, each with per-field
+                 provenance, for the activity list / editing surface.
+            operationId: ClientGatewayService_ListResolvedActivities
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListResolvedActivitiesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/activities/stats:
         get:
             tags:
@@ -496,6 +527,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - ClientGatewayService
+            description: |-
+                UpdateActivity writes the user-edit overlay for the given fields (only those named
+                 in update_mask are applied) and returns the resolved activity with the edit applied.
+                 The immutable source and append-only enricher layers are never modified.
+            operationId: ClientGatewayService_UpdateActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateActivityGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StandardizedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /users/me/activities/{id}/refresh-source:
         post:
             tags:
@@ -538,6 +602,58 @@ paths:
                 "200":
                     description: OK
                     content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/resend:
+        post:
+            tags:
+                - ClientGatewayService
+            description: |-
+                ResendActivity re-resolves the activity and re-pushes the resolved result to its
+                 configured destinations. Enrichers are not re-run; destinations that already have
+                 the activity are updated in place rather than duplicated.
+            operationId: ClientGatewayService_ResendActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/resolved:
+        get:
+            tags:
+                - ClientGatewayService
+            description: |-
+                GetResolvedActivity returns a single resolved activity (source → enricher runs →
+                 user overlay) with per-field provenance for the activity detail / editing page.
+            operationId: ClientGatewayService_GetResolvedActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ResolvedActivity'
                 default:
                     description: Default error response
                     content:
@@ -2649,6 +2765,41 @@ components:
                     type: string
                 expiresAt:
                     type: string
+        FieldProvenance:
+            type: object
+            properties:
+                field:
+                    type: string
+                    description: |-
+                        Field name: "name" | "type" | "description" | "tags" | "time_markers" |
+                         "hybrid_race_summary".
+                layer:
+                    enum:
+                        - PROVENANCE_LAYER_UNSPECIFIED
+                        - PROVENANCE_LAYER_SOURCE
+                        - PROVENANCE_LAYER_ENRICHER
+                        - PROVENANCE_LAYER_USER_OVERLAY
+                    type: string
+                    format: enum
+                providerName:
+                    type: string
+                    description: Set only when layer == PROVENANCE_LAYER_ENRICHER.
+                executionId:
+                    type: string
+                enricherIndex:
+                    type: integer
+                    format: int32
+                elementIndex:
+                    type: integer
+                    description: |-
+                        For repeated fields (tags, time_markers): the element index in the resolved
+                         activity this entry attributes. Unset for scalar fields.
+                    format: int32
+            description: |-
+                FieldProvenance attributes one resolved field (or one element of a repeated field) to
+                 the layer that set it. Scalar fields (name, type, description, hybrid_race_summary)
+                 produce a single winning entry; composite fields (tags, time_markers) produce one
+                 entry per element, and description may produce several (one per contributing section).
         FitbitIntegration:
             type: object
             properties:
@@ -3210,6 +3361,15 @@ components:
                     additionalProperties:
                         type: object
             description: Plugin Defaults
+        ListResolvedActivitiesGatewayResponse:
+            type: object
+            properties:
+                activities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ResolvedActivity'
+                nextPageToken:
+                    type: string
         ListShowcaseViewStatsGatewayResponse:
             type: object
             properties:
@@ -3920,6 +4080,19 @@ components:
                 destination:
                     type: string
             description: Repost Variants
+        ResolvedActivity:
+            type: object
+            properties:
+                activity:
+                    $ref: '#/components/schemas/StandardizedActivity'
+                provenance:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FieldProvenance'
+            description: |-
+                ResolvedActivity is the first-class output of the resolution engine: the resolved
+                 activity value (derived fold with the user overlay applied) alongside the per-field
+                 provenance explaining which layer/run set each resolved field.
         RoundupActivityTypeBreakdown:
             type: object
             properties:
@@ -5390,6 +5563,83 @@ components:
                     type: string
                 afterHtml:
                     type: string
+        UpdateActivityGatewayRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                type:
+                    enum:
+                        - ACTIVITY_TYPE_UNSPECIFIED
+                        - ACTIVITY_TYPE_ALPINE_SKI
+                        - ACTIVITY_TYPE_BACKCOUNTRY_SKI
+                        - ACTIVITY_TYPE_BADMINTON
+                        - ACTIVITY_TYPE_CANOEING
+                        - ACTIVITY_TYPE_CROSSFIT
+                        - ACTIVITY_TYPE_EBIKE_RIDE
+                        - ACTIVITY_TYPE_ELLIPTICAL
+                        - ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE
+                        - ACTIVITY_TYPE_GOLF
+                        - ACTIVITY_TYPE_GRAVEL_RIDE
+                        - ACTIVITY_TYPE_HANDCYCLE
+                        - ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING
+                        - ACTIVITY_TYPE_HIKE
+                        - ACTIVITY_TYPE_ICE_SKATE
+                        - ACTIVITY_TYPE_INLINE_SKATE
+                        - ACTIVITY_TYPE_KAYAKING
+                        - ACTIVITY_TYPE_KITESURF
+                        - ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE
+                        - ACTIVITY_TYPE_NORDIC_SKI
+                        - ACTIVITY_TYPE_PICKLEBALL
+                        - ACTIVITY_TYPE_PILATES
+                        - ACTIVITY_TYPE_RACQUETBALL
+                        - ACTIVITY_TYPE_RIDE
+                        - ACTIVITY_TYPE_ROCK_CLIMBING
+                        - ACTIVITY_TYPE_ROLLER_SKI
+                        - ACTIVITY_TYPE_ROWING
+                        - ACTIVITY_TYPE_RUN
+                        - ACTIVITY_TYPE_SAIL
+                        - ACTIVITY_TYPE_SKATEBOARD
+                        - ACTIVITY_TYPE_SNOWBOARD
+                        - ACTIVITY_TYPE_SNOWSHOE
+                        - ACTIVITY_TYPE_SOCCER
+                        - ACTIVITY_TYPE_SQUASH
+                        - ACTIVITY_TYPE_STAIR_STEPPER
+                        - ACTIVITY_TYPE_STAND_UP_PADDLING
+                        - ACTIVITY_TYPE_SURFING
+                        - ACTIVITY_TYPE_SWIM
+                        - ACTIVITY_TYPE_TABLE_TENNIS
+                        - ACTIVITY_TYPE_TENNIS
+                        - ACTIVITY_TYPE_TRAIL_RUN
+                        - ACTIVITY_TYPE_VELOMOBILE
+                        - ACTIVITY_TYPE_VIRTUAL_RIDE
+                        - ACTIVITY_TYPE_VIRTUAL_ROW
+                        - ACTIVITY_TYPE_VIRTUAL_RUN
+                        - ACTIVITY_TYPE_WALK
+                        - ACTIVITY_TYPE_WEIGHT_TRAINING
+                        - ACTIVITY_TYPE_WHEELCHAIR
+                        - ACTIVITY_TYPE_WINDSURF
+                        - ACTIVITY_TYPE_WORKOUT
+                        - ACTIVITY_TYPE_YOGA
+                    type: string
+                    format: enum
+                tags:
+                    type: array
+                    items:
+                        type: string
+                updateMask:
+                    type: array
+                    items:
+                        type: string
+                    description: 'Editable overlay fields to apply: "name" | "description" | "type" | "tags".'
+            description: |-
+                UpdateActivityGatewayRequest is the web PATCH body for editing an activity. Only the
+                 fields named in update_mask are applied to the user-edit overlay; the rest are left
+                 unchanged. Mirrors ActivityUserEditOverlay's editable fields.
         UpdateCounterGatewayRequest:
             type: object
             properties:

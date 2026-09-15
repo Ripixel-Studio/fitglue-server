@@ -72,6 +72,8 @@ const (
 	ClientGatewayService_ListResolvedActivities_FullMethodName             = "/fitglue.gateway.ClientGatewayService/ListResolvedActivities"
 	ClientGatewayService_GetResolvedActivity_FullMethodName                = "/fitglue.gateway.ClientGatewayService/GetResolvedActivity"
 	ClientGatewayService_RefreshActivitySource_FullMethodName              = "/fitglue.gateway.ClientGatewayService/RefreshActivitySource"
+	ClientGatewayService_UpdateActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/UpdateActivity"
+	ClientGatewayService_ResendActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/ResendActivity"
 	ClientGatewayService_DeleteActivity_FullMethodName                     = "/fitglue.gateway.ClientGatewayService/DeleteActivity"
 	ClientGatewayService_GetActivityStats_FullMethodName                   = "/fitglue.gateway.ClientGatewayService/GetActivityStats"
 	ClientGatewayService_ListShowcases_FullMethodName                      = "/fitglue.gateway.ClientGatewayService/ListShowcases"
@@ -196,6 +198,14 @@ type ClientGatewayServiceClient interface {
 	// RefreshActivitySource re-pulls the activity from its source and refreshes the
 	// immutable source layer of the persisted record, returning the resolved activity.
 	RefreshActivitySource(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// UpdateActivity writes the user-edit overlay for the given fields (only those named
+	// in update_mask are applied) and returns the resolved activity with the edit applied.
+	// The immutable source and append-only enricher layers are never modified.
+	UpdateActivity(ctx context.Context, in *UpdateActivityGatewayRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error)
+	// ResendActivity re-resolves the activity and re-pushes the resolved result to its
+	// configured destinations. Enrichers are not re-run; destinations that already have
+	// the activity are updated in place rather than duplicated.
+	ResendActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DeleteActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetActivityStats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*GetActivityStatsGatewayResponse, error)
 	// ===================== Showcases =====================
@@ -745,6 +755,26 @@ func (c *clientGatewayServiceClient) RefreshActivitySource(ctx context.Context, 
 	return out, nil
 }
 
+func (c *clientGatewayServiceClient) UpdateActivity(ctx context.Context, in *UpdateActivityGatewayRequest, opts ...grpc.CallOption) (*activity.StandardizedActivity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.StandardizedActivity)
+	err := c.cc.Invoke(ctx, ClientGatewayService_UpdateActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientGatewayServiceClient) ResendActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ClientGatewayService_ResendActivity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clientGatewayServiceClient) DeleteActivity(ctx context.Context, in *ActivityIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -1263,6 +1293,14 @@ type ClientGatewayServiceServer interface {
 	// RefreshActivitySource re-pulls the activity from its source and refreshes the
 	// immutable source layer of the persisted record, returning the resolved activity.
 	RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error)
+	// UpdateActivity writes the user-edit overlay for the given fields (only those named
+	// in update_mask are applied) and returns the resolved activity with the edit applied.
+	// The immutable source and append-only enricher layers are never modified.
+	UpdateActivity(context.Context, *UpdateActivityGatewayRequest) (*activity.StandardizedActivity, error)
+	// ResendActivity re-resolves the activity and re-pushes the resolved result to its
+	// configured destinations. Enrichers are not re-run; destinations that already have
+	// the activity are updated in place rather than duplicated.
+	ResendActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error)
 	DeleteActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error)
 	GetActivityStats(context.Context, *EmptyRequest) (*GetActivityStatsGatewayResponse, error)
 	// ===================== Showcases =====================
@@ -1475,6 +1513,12 @@ func (UnimplementedClientGatewayServiceServer) GetResolvedActivity(context.Conte
 }
 func (UnimplementedClientGatewayServiceServer) RefreshActivitySource(context.Context, *ActivityIdRequest) (*activity.StandardizedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshActivitySource not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) UpdateActivity(context.Context, *UpdateActivityGatewayRequest) (*activity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateActivity not implemented")
+}
+func (UnimplementedClientGatewayServiceServer) ResendActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResendActivity not implemented")
 }
 func (UnimplementedClientGatewayServiceServer) DeleteActivity(context.Context, *ActivityIdRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteActivity not implemented")
@@ -2493,6 +2537,42 @@ func _ClientGatewayService_RefreshActivitySource_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientGatewayService_UpdateActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateActivityGatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).UpdateActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_UpdateActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).UpdateActivity(ctx, req.(*UpdateActivityGatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientGatewayService_ResendActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivityIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientGatewayServiceServer).ResendActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientGatewayService_ResendActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientGatewayServiceServer).ResendActivity(ctx, req.(*ActivityIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClientGatewayService_DeleteActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ActivityIdRequest)
 	if err := dec(in); err != nil {
@@ -3483,6 +3563,14 @@ var ClientGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefreshActivitySource",
 			Handler:    _ClientGatewayService_RefreshActivitySource_Handler,
+		},
+		{
+			MethodName: "UpdateActivity",
+			Handler:    _ClientGatewayService_UpdateActivity_Handler,
+		},
+		{
+			MethodName: "ResendActivity",
+			Handler:    _ClientGatewayService_ResendActivity_Handler,
 		},
 		{
 			MethodName: "DeleteActivity",
