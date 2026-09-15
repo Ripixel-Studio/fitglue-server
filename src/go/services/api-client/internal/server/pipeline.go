@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pipelinem "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	"github.com/go-chi/chi/v5"
@@ -38,6 +39,8 @@ func (s *APIServer) registerPipelineRoutes(r chi.Router) {
 	r.Post("/users/me/pipeline-runs/{runId}/cancel", s.handleCancelPipelineRun)
 	r.Post("/users/me/activities/{id}/repost", s.handleRepostActivity)
 	r.Post("/users/me/activities/{id}/refresh-source", s.handleRefreshActivitySource)
+	r.Patch("/users/me/activities/{id}", s.handleUpdateActivity)
+	r.Post("/users/me/activities/{id}/resend", s.handleResendActivity)
 }
 
 func (s *APIServer) handleListPipelines(w http.ResponseWriter, r *http.Request) {
@@ -376,6 +379,102 @@ func (s *APIServer) handleRefreshActivitySource(w http.ResponseWriter, r *http.R
 	}
 
 	WriteJSON(w, res)
+}
+
+// updateActivityBody is the PATCH body the web frontend sends to edit an activity. Fields
+// are pointers so we can tell "field present (set/clear it)" from "field absent (leave it)".
+// An explicit update_mask wins; when it is omitted the mask is derived from the fields present
+// in the body, giving natural PATCH semantics (send only what you want to change).
+type updateActivityBody struct {
+	Name        *string   `json:"name"`
+	Description *string   `json:"description"`
+	Type        *string   `json:"type"`
+	Tags        *[]string `json:"tags"`
+	UpdateMask  []string  `json:"update_mask"`
+}
+
+// handleUpdateActivity writes the user-edit overlay for the named fields and returns the
+// resolved activity with the edit applied.
+func (s *APIServer) handleUpdateActivity(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var body updateActivityBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	req := &pipelinepb.UpdateActivityRequest{
+		UserId:     token.UID,
+		ActivityId: chi.URLParam(r, "id"),
+	}
+	if body.Name != nil {
+		req.Name = *body.Name
+	}
+	if body.Description != nil {
+		req.Description = *body.Description
+	}
+	if body.Type != nil {
+		req.Type = formatters.ParseActivityType(*body.Type)
+	}
+	if body.Tags != nil {
+		req.Tags = *body.Tags
+	}
+
+	// Derive the mask from the fields present in the body when the client did not send one.
+	req.UpdateMask = body.UpdateMask
+	if len(req.UpdateMask) == 0 {
+		if body.Name != nil {
+			req.UpdateMask = append(req.UpdateMask, "name")
+		}
+		if body.Description != nil {
+			req.UpdateMask = append(req.UpdateMask, "description")
+		}
+		if body.Type != nil {
+			req.UpdateMask = append(req.UpdateMask, "type")
+		}
+		if body.Tags != nil {
+			req.UpdateMask = append(req.UpdateMask, "tags")
+		}
+	}
+	if len(req.UpdateMask) == 0 {
+		WriteError(w, statusError(http.StatusBadRequest, "no editable fields provided"))
+		return
+	}
+
+	res, err := s.pipelineSvc.UpdateActivity(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// handleResendActivity re-resolves the activity and re-pushes it to its destinations.
+func (s *APIServer) handleResendActivity(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &pipelinepb.ResendActivityRequest{
+		UserId:     token.UID,
+		ActivityId: chi.URLParam(r, "id"),
+	}
+
+	_, err := s.pipelineSvc.ResendActivity(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // handleGetPipelineRunPayload returns a short-lived signed GCS download URL for the

@@ -387,14 +387,14 @@ func resolvePipelineRunStatusName(in string) (string, bool) {
 // equivalent exists. We also coerce a numeric status into its enum name.
 func normalizeRunData(data map[string]interface{}) map[string]interface{} {
 	camelToSnake := map[string]string{
-		"pipelineId":         "pipeline_id",
-		"activityId":         "activity_id",
-		"sourceActivityId":   "source_activity_id",
-		"startTime":          "start_time",
-		"createdAt":          "created_at",
-		"updatedAt":          "updated_at",
-		"statusMessage":      "status_message",
-		"pendingInputId":     "pending_input_id",
+		"pipelineId":          "pipeline_id",
+		"activityId":          "activity_id",
+		"sourceActivityId":    "source_activity_id",
+		"startTime":           "start_time",
+		"createdAt":           "created_at",
+		"updatedAt":           "updated_at",
+		"statusMessage":       "status_message",
+		"pendingInputId":      "pending_input_id",
 		"originalPayloadUri":  "original_payload_uri",
 		"enrichedEventUri":    "enriched_event_uri",
 		"activityRecordUri":   "activity_record_uri",

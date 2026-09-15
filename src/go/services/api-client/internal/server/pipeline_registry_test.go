@@ -35,6 +35,8 @@ type mockPipelineServiceClient struct {
 	getPipelineRun   func(ctx context.Context, in *pipelinepb.GetPipelineRunRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineRun, error)
 	submitInput      func(ctx context.Context, in *pipelinepb.SubmitInputRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	repostActivity   func(ctx context.Context, in *pipelinepb.RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	updateActivity   func(ctx context.Context, in *pipelinepb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error)
+	resendActivity   func(ctx context.Context, in *pipelinepb.ResendActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 func (m *mockPipelineServiceClient) ListPipelines(ctx context.Context, in *pipelinepb.ListPipelinesRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelinesResponse, error) {
@@ -111,6 +113,21 @@ func (m *mockPipelineServiceClient) ListSourceActivities(ctx context.Context, in
 }
 func (m *mockPipelineServiceClient) BackfillActivities(ctx context.Context, in *pipelinepb.BackfillActivitiesRequest, opts ...grpc.CallOption) (*pipelinepb.BackfillActivitiesResponse, error) {
 	return &pipelinepb.BackfillActivitiesResponse{}, nil
+}
+func (m *mockPipelineServiceClient) RefreshActivitySource(ctx context.Context, in *pipelinepb.RefreshActivitySourceRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *mockPipelineServiceClient) UpdateActivity(ctx context.Context, in *pipelinepb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	if m.updateActivity != nil {
+		return m.updateActivity(ctx, in, opts...)
+	}
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *mockPipelineServiceClient) ResendActivity(ctx context.Context, in *pipelinepb.ResendActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	if m.resendActivity != nil {
+		return m.resendActivity(ctx, in, opts...)
+	}
+	return &emptypb.Empty{}, nil
 }
 
 // =============================================================
