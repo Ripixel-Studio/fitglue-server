@@ -20,8 +20,10 @@ import (
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher"
 	"github.com/fitglue/server/src/go/internal/pipeline/router"
 	"github.com/fitglue/server/src/go/internal/pipeline/splitter"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	infradb "github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"golang.org/x/net/http2"
@@ -80,6 +82,22 @@ func main() {
 
 	// 1. gRPC Service (CRUD) — serves on the same port as HTTP (required for Cloud Run single-port)
 	svc := pipeline.NewService(store, pubClient, blobStore, logger, userClient)
+
+	// Wire out-of-band single-enricher invocation (editable-activities spec, DECISION 2a).
+	// The enricher registry is populated at init() via the blank imports in the enricher
+	// package (linked in for /pubsub/run above), so InvokeSingle resolves providers by name.
+	// SetService receives a bootstrap.Service assembled from the clients this binary already
+	// holds; the artifact-writing enrichers use its bucket/object Store.
+	enricherBootSvc := &bootstrap.Service{
+		DB:    db,
+		Store: &infrastorage.StorageAdapter{Client: gcsClient},
+		Pub:   pubClient,
+		Config: &bootstrap.Config{
+			ProjectID:         os.Getenv("PROJECT_ID"),
+			GCSArtifactBucket: bucketName,
+		},
+	}
+	svc.SetEnricherInvocation(db, enricher.NewSingleInvoker(enricherBootSvc, nil))
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pb.RegisterPipelineServiceServer(grpcServer, svc)

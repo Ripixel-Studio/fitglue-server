@@ -86,6 +86,47 @@ func EffectiveActivity(rec *pbactivity.ActivityRecord) *pbactivity.StandardizedA
 	return act
 }
 
+// ApplyEnricherContribution folds a single enricher's layerable field contribution onto
+// base in place, mirroring the subset of the fold the pipeline orchestrator applies when
+// running enrichers in sequence (name / name_suffix / type / tags / time_markers /
+// description section / hybrid_race_summary). Unset (nil / empty) fields are left
+// untouched. It is the shared fold used to (a) preview what accepting a proposed
+// enricher-run layer would produce and (b) apply an accepted proposal onto the derived
+// activity, so preview and accept always agree. No-op for nil inputs.
+func ApplyEnricherContribution(base *pbactivity.StandardizedActivity, c *pbactivity.EnricherContribution) {
+	if base == nil || c == nil {
+		return
+	}
+	if c.Name != nil {
+		base.Name = c.GetName()
+	}
+	if c.NameSuffix != nil {
+		base.Name += c.GetNameSuffix()
+	}
+	if c.Type != nil && c.GetType() != pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+		base.Type = c.GetType()
+	}
+	if len(c.Tags) > 0 {
+		base.Tags = append(base.Tags, c.Tags...)
+	}
+	if len(c.TimeMarkers) > 0 {
+		base.TimeMarkers = append(base.TimeMarkers, c.TimeMarkers...)
+	}
+	if c.Description != nil {
+		// Append this enricher's section, matching the orchestrator's slot join ("\n\n").
+		if section := c.GetDescription(); section != "" {
+			if base.Description != "" {
+				base.Description += "\n\n" + section
+			} else {
+				base.Description = section
+			}
+		}
+	}
+	if c.HybridRaceSummary != nil {
+		base.HybridRaceSummary = c.HybridRaceSummary
+	}
+}
+
 // ApplyUserEditOverlay mutates base in place, applying each set field of the overlay.
 // Unset overlay fields fall through to the derived value. Tags, when present on the
 // overlay, replace the derived tags (the user's edit is the authoritative tag set).

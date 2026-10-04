@@ -403,3 +403,12 @@ func TestAdminHandleListAllPipelines_Success(t *testing.T) {
 	svc.handleListAllPipelines(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+func (m *adminNopPipelineClient) InvokeEnricher(_ context.Context, _ *pipelinepb.InvokeEnricherRequest, _ ...grpc.CallOption) (*pipelinepb.InvokeEnricherResponse, error) {
+	return &pipelinepb.InvokeEnricherResponse{}, nil
+}
+func (m *adminNopPipelineClient) AcceptProposedEnricherRun(_ context.Context, _ *pipelinepb.AcceptProposedEnricherRunRequest, _ ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *adminNopPipelineClient) DismissProposedEnricherRun(_ context.Context, _ *pipelinepb.DismissProposedEnricherRunRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}

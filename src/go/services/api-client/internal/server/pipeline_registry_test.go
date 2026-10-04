@@ -26,17 +26,20 @@ import (
 // =============================================================
 
 type mockPipelineServiceClient struct {
-	listPipelines    func(ctx context.Context, in *pipelinepb.ListPipelinesRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelinesResponse, error)
-	getPipeline      func(ctx context.Context, in *pipelinepb.GetPipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error)
-	createPipeline   func(ctx context.Context, in *pipelinepb.CreatePipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error)
-	updatePipeline   func(ctx context.Context, in *pipelinepb.UpdatePipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error)
-	deletePipeline   func(ctx context.Context, in *pipelinepb.DeletePipelineRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	listPipelineRuns func(ctx context.Context, in *pipelinepb.ListPipelineRunsRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelineRunsResponse, error)
-	getPipelineRun   func(ctx context.Context, in *pipelinepb.GetPipelineRunRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineRun, error)
-	submitInput      func(ctx context.Context, in *pipelinepb.SubmitInputRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	repostActivity   func(ctx context.Context, in *pipelinepb.RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	updateActivity   func(ctx context.Context, in *pipelinepb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error)
-	resendActivity   func(ctx context.Context, in *pipelinepb.ResendActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	listPipelines              func(ctx context.Context, in *pipelinepb.ListPipelinesRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelinesResponse, error)
+	getPipeline                func(ctx context.Context, in *pipelinepb.GetPipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error)
+	createPipeline             func(ctx context.Context, in *pipelinepb.CreatePipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error)
+	updatePipeline             func(ctx context.Context, in *pipelinepb.UpdatePipelineRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineConfig, error)
+	deletePipeline             func(ctx context.Context, in *pipelinepb.DeletePipelineRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	listPipelineRuns           func(ctx context.Context, in *pipelinepb.ListPipelineRunsRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelineRunsResponse, error)
+	getPipelineRun             func(ctx context.Context, in *pipelinepb.GetPipelineRunRequest, opts ...grpc.CallOption) (*pbpipeline.PipelineRun, error)
+	submitInput                func(ctx context.Context, in *pipelinepb.SubmitInputRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	repostActivity             func(ctx context.Context, in *pipelinepb.RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	updateActivity             func(ctx context.Context, in *pipelinepb.UpdateActivityRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error)
+	resendActivity             func(ctx context.Context, in *pipelinepb.ResendActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	invokeEnricher             func(ctx context.Context, in *pipelinepb.InvokeEnricherRequest, opts ...grpc.CallOption) (*pipelinepb.InvokeEnricherResponse, error)
+	acceptProposedEnricherRun  func(ctx context.Context, in *pipelinepb.AcceptProposedEnricherRunRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error)
+	dismissProposedEnricherRun func(ctx context.Context, in *pipelinepb.DismissProposedEnricherRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 func (m *mockPipelineServiceClient) ListPipelines(ctx context.Context, in *pipelinepb.ListPipelinesRequest, opts ...grpc.CallOption) (*pipelinepb.ListPipelinesResponse, error) {
@@ -522,4 +525,22 @@ func TestHandleListSources_Success(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
+}
+func (m *mockPipelineServiceClient) InvokeEnricher(ctx context.Context, in *pipelinepb.InvokeEnricherRequest, opts ...grpc.CallOption) (*pipelinepb.InvokeEnricherResponse, error) {
+	if m.invokeEnricher != nil {
+		return m.invokeEnricher(ctx, in, opts...)
+	}
+	return &pipelinepb.InvokeEnricherResponse{}, nil
+}
+func (m *mockPipelineServiceClient) AcceptProposedEnricherRun(ctx context.Context, in *pipelinepb.AcceptProposedEnricherRunRequest, opts ...grpc.CallOption) (*pbactivitym.StandardizedActivity, error) {
+	if m.acceptProposedEnricherRun != nil {
+		return m.acceptProposedEnricherRun(ctx, in, opts...)
+	}
+	return &pbactivitym.StandardizedActivity{}, nil
+}
+func (m *mockPipelineServiceClient) DismissProposedEnricherRun(ctx context.Context, in *pipelinepb.DismissProposedEnricherRunRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	if m.dismissProposedEnricherRun != nil {
+		return m.dismissProposedEnricherRun(ctx, in, opts...)
+	}
+	return &emptypb.Empty{}, nil
 }
